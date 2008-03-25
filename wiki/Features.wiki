@@ -5,6 +5,6 @@
 || Automatic process restarting in the event of a crash || 100% || Done! ||
 || Simple ConfigurationFile for multiple processes || 90% || Still some kinks to work out, like MOTD not being processed on a per-server basis, maybe the variable interpolation doesn't work exactly right, etc.  Totally usable, though. ||
 || Event processing, for statistics generation || 80% || Have to revamp the event generation code to accept multi-line events for map-change events. ||
-|| Per-player latency and packet loss statistics || 0% || We get player IP addresses, but I haven't setup the "ping player, get results" framework yet.  That's a whole other Module in and of itself. ||
+|| ConnectionQualityStatistics || 0% || We get player IP addresses, but I haven't setup the "ping player, get results" framework yet.  That's a whole other Module in and of itself. ||
 || PlayerIdentity (IP-based) logging || 40% || Haven't setup persistence for this yet (saving to disk in some kind of database... probably PyXSE), but the event generation for a player connecting is there. ||
 || XML-RPC interface || 20% || ZDStack starts an XML-RPC server in a separate serving thread, but it doesn't do anything right now.  I could add start | stop | restart methods to it, but that requires me to add some kind of administration to the XML-RPC server and I haven't felt the motivation to do that yet. ||
