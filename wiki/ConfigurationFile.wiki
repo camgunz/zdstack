@@ -77,15 +77,6 @@ port = 10709
 advertise = 1
 maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
 
-;;; An example of a regular 'ol Brit11 server
-[Brit 11]
-type = ffa
-wads = brit11.wad,zvox2.wad
-timelimit = 0
-port = 10713
-advertise = 1
-maps =
-
 ;;; An example using custom DMFLAGS for a Shoot!.wad server (respawn items)
 [Shoot]
 type = 1-on-1
@@ -98,4 +89,5 @@ dmflags = 218180
 
 == Gotchas ==
 
-  * If a password is set on a server, then it will be passworded.  This also goes for setting a default password
+  * If a password is set on a server, then it will be passworded.  This also goes for setting a default password.
+  * If no maps are given, only the first map is used.  Unfortunately, due to limitations in the zserv configuration file format there is no way to specify "all" without some kind of lookup table mapping WADs to MAP#'s... which, if you think about it, is what you're doing in this configuration file in a way.
