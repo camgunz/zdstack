@@ -94,7 +94,8 @@ dmflags = 218180
   * The section names (`[Shoot]`, for example) are the server names.
   * Any of the defaults, or any of the server-specific configuration options can be referenced in other configuration values.  For example, the `DEFAULT` for `hostname` is `Greatest Servers | Greatland, GR | %(name)s`.  This means that the `Shoot` server's `hostname` will be "`Greatest Servers | Greatland, GR | Shoot`".  This is useful if you want to make the RCON password public, or to include the Team Damage ratio in the server's hostname, or any other type of crazy thing you can think of.  You can probably even add random stuff in the config and reference it later, like
 
-    {{{[DEFAULT]
+    {{{
+[DEFAULT]
 server_masthead = Greatest Servers
 idl_masthead = %(server_masthead)s IDL Season IV %(name)s
 ...
