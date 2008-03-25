@@ -1,0 +1,85 @@
+#summary zdstack.ini configuration file format
+
+= Introduction =
+
+The zdstack.ini file contains configuration information for all ZDStack processes, as well as individual zserv configuration (such as WADs, MOTD, DMFLAGS, etc.).
+
+= Example =
+
+{{{
+[DEFAULT]
+;;; The default RCON password for all servers
+rcon = supersecretrconpass
+;;; The full, absolute path to the WADs, but not IWADs
+waddir =
+;;; The full, absolute path to the IWADs, but not the WADs
+iwaddir =
+;;; The name of the IWAD to use
+iwad = doom2.wad
+;;; The default timeout for all servers
+timelimit = 15
+;;; Whether or not to advertise, 0=no, 1=yes
+advertise = 0
+;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
+teamdamage = 0
+motd = Welcome to the Greatest Servers!
+hostname = Greatest Servers | Greatland, GR | %(name)s
+template_dir =
+password =
+rootfolder =
+1on1_dmflags = 201796
+1on1_dmflags2 = 132608
+ffa_dmflags = 201796
+ffa_dmflags2 = 132608
+ctf_dmflags = 21508
+ctf_dmflags2 = 656896
+
+[D2M1]
+type = 1-on-1
+wads = zvox2.wad
+timelimit = 0
+port = 10666
+advertise = 1
+maps = map01
+
+[Judas]
+type = 1-on-1
+wads = judas23_.wad,zvox2.wad
+timelimit = 0
+port = 10667
+advertise = 1
+maps = map01
+
+[Super Secret CTF]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10655
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+password = illnevertell
+motd = 1st rule about Super Secret CTF is you don't talk about Super Secret CTF<br>2nd rule about Super Secret CTF is you don't talk about Super Secret CTF
+timelimit = 20
+rcon = fight club
+
+[ZD CTF 1,2,3]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10709
+advertise = 1
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+
+[Brit 11]
+type = ffa
+wads = brit11.wad,zvox2.wad
+timelimit = 0
+port = 10713
+advertise = 1
+maps =
+
+[Shoot]
+type = 1-on-1
+wads = shoot!.wad,zvox2.wad
+port = 10717
+advertise = 1
+maps = map01
+dmflags = 218180
+}}}
