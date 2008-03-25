@@ -1,7 +1,5 @@
 #summary XML-RPC Methods and Description
 
-= Methods =
-
 === start_zserv() ===
   Returns: True if succeeded
 
