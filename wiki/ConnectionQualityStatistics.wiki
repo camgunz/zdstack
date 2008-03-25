@@ -7,6 +7,7 @@ The two connection quality statistics people are concerned with are:
 
 We can provide all these, as well as a connection quality stats on a control connection (say... to www.google.com), by using the 'ping' utility and logging its output.  For example:
 
+  # Start a control ping to www.google.com
   # Ladna has connected (ip: 71.235.21.19)
   # (start ping here, capture output with a !LineParser)
   # Treat output like events:
