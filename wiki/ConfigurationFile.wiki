@@ -87,6 +87,9 @@ maps = map01
 dmflags = 218180
 }}}
 
+= Types =
+Supported types are `ctf`, `1-on-1` (I might add `Duel` as a synonym for this, as the dashes are a little inconvenient), and `ffa`.  `teamdm` and `coop` are planned for the future.
+
 = Gotchas & Cool Things =
 
   * If a password is set on a server, then it will be passworded.  This also goes for setting a default password.
