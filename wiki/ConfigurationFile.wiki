@@ -87,7 +87,20 @@ maps = map01
 dmflags = 218180
 }}}
 
-== Gotchas ==
+== Gotchas & Cool Things==
 
   * If a password is set on a server, then it will be passworded.  This also goes for setting a default password.
-  * If no maps are given, only the first map is used.  Unfortunately, due to limitations in the zserv configuration file format there is no way to specify "all" without some kind of lookup table mapping WADs to MAP#'s... which, if you think about it, is what you're doing in this configuration file in a way.
+  * If no maps are given, only the first map is used.  Unfortunately, due to limitations in the zserv configuration file format there is no way to specify "all" without some kind of lookup table mapping WADs to MAP#'s... which, if you think about it, is kind of what you're doing in this configuration file.
+  * The section names (`[Shoot]`, for example) are the server names.
+  * Any of the defaults, or any of the server-specific configuration options can be referenced in other configuration values.  For example, the `DEFAULT` for `hostname` is `Greatest Servers | Greatland, GR | %(name)s`.  This means that the `Shoot` server's `hostname` will be "`Greatest Servers | Greatland, GR | Shoot`".  This is useful if you want to make the RCON password public, or to include the Team Damage ratio in the server's hostname, or any other type of crazy thing you can think of.  You can probably even add random stuff in the config and reference it later, like
+
+    {{{[DEFAULT]
+server_masthead = Greatest Servers
+idl_masthead = %(server_masthead)s IDL Season IV %(name)s
+...
+
+[Week 3 STK vs NUB]
+hostname = %(idl_masthead)s
+    }}}
+
+    So the `IDL Week 3 STK vs NUB` server's hostname will end up being `Greatest Servers IDL Season IV Week 3 STK vs NUB`.  It seems kinda complicated, but it can save a lot of copying and pasting (and thus confusing mistakes).
