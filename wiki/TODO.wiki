@@ -6,16 +6,14 @@
 
   * make SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, BASE_SERVICE_URL configurable in INI file
 
-  * Implement XML-RPC API
+  * Implement XML-RPC API    
+    * start_server()
+    * stop_server()
+    * restart_server()
     * get_uptime()
     * get_players()
     * get_stats(maps=5)
-    * get_stats_for_last_map()
-    * get_stats_for_current_map()
     * get_maplist()
     * get_current_map()
     * get_current_stats()
     * get_last_game_stats()
-    * start_server()
-    * stop_server()
-    * restart_server()
