@@ -8,7 +8,7 @@ The two connection quality statistics people are concerned with are:
 We can provide all these, as well as a connection quality stats on a control connection (say... to www.google.com), by using the 'ping' utility and logging its output.  For example:
 
   # Ladna has connected (ip: 71.235.21.19)
-  # (start ping here, capture output with a LineParser)
+  # (start ping here, capture output with a !LineParser)
   # Treat output like events:
     * If a packet is received and returned, record the round-trip time and add it to the average
     * Otherwise assume packet loss, and add that to the average of packets lost
