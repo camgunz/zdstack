@@ -1,13 +1,15 @@
 #summary Individual player statistics.
 
-One of the things that ZDaemon is really missing is statistics.  zserv keeps logs, but the level of detail isn't quite on the level as modern FPS's, i.e., zserv is missing:
+One of the things that ZDaemon is really missing is statistics.  zserv keeps logs, but the level of detail isn't quite on the level as modern FPS's.
+
+=== Events zserv ignores ===
 
   * Shots taken & Shots landed
     * Shot accuracy, Shot fatality rate
   * Item pickup
     * Item whoring, Weapon preference
 
-zserv does log:
+=== Events zserv logs ===
 
   * Frags/Deaths (fragger, fraggee, weapon)
   * Flags (touched, lost, scored, dropped, returned)
@@ -16,13 +18,26 @@ zserv does log:
   * Team joins/switches
   * Map switches
 
-Since a log watcher can keep track of when it receives those log messages, we can add rates and durations to our stats, giving us:
+=== Events a log watcher can log ===
 
-  * Time between flag touch and flag loss/cap
-    * Flag-runner evasion, Flag-runner speed
-  * Time between frags
-    * Frag rate
-  * Time between deaths
-    * Death rate
+  * Time of event occurrence
+
+=== Possible player statistics ===
+
+  * Flags touched
+  * Flags lost (player had the flag and was killed, dropping the flag)
+  * Flags captured
+  * Flags dropped (player killed the flag runner)
+  * Flags returned
+  * Frags per weapon/player
+  * Deaths per weapon/player
+  * Messages (messages can be parsed for racism, profanity, lewdness, etc.)
+  * Team Switches
+  * All of the above over time
+  * Runner evasion/speed (time between touch and loss/cap)
+  * Defensive response (time between flag touch and flag drop)
+  * All of the above while offense has flag
+  * All of the above while flag is out
+  * All of the above during standoffs
 
 We also know player clans and colors, so we can bundle player stats into clan and team (color) stats.  Because zserv logs team switches, we can ensure that team stats aren't ruined by team switchers.
