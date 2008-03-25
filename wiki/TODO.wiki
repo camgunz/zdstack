@@ -1,15 +1,21 @@
 #summary To-Do list for ZDStack
 
   * automatic log rotation (at the end of the day and at server startup)
+
   * redirect STDOUT of zserv to /dev/null or w/e
+
   * Event queue (populated by log file events)
-  * rename servers.ini to zdstack.ini?
+
+  * rename servers.ini to zdstack.ini
+
   * make SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, BASE_SERVICE_URL configurable in INI file
+
   * Implement XML-RPC API
     * get_uptime()
     * get_players()
-    * get_stats_for_day(date)
-    * get_stats_for_map(map_number)
+    * get_stats(maps=5)
+    * get_stats_for_last_map()
+    * get_stats_for_current_map()
     * get_maplist()
     * get_current_map()
     * get_current_stats()
