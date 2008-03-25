@@ -19,6 +19,7 @@
 
 === get_stats() ===
   Returns: A list of StatisticsDicts.
+
   Usage:
   {{{
   get_stats(maps=5) # returns the stats for the last 5 maps
