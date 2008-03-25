@@ -1,0 +1,20 @@
+#summary Automatic server responses.
+
+Because a zserv process prints out its events to STDOUT, and if the `'-noinput'` flag is not used it will take console commands written to STDIN, ZDStack can respond to events as they occur.  Some of the cool things you could do include:
+
+  * Kick/Ban players who
+    * Write racist, profane, or lewd messages.
+    * Team kill and telefrag over a certain threshold (mistakes will be made...).
+    * Haven't gotten a frag in a configurable amount of time.
+    * Constantly team-switch (i.e., as flags are scored).
+    * Unbalance teams or join the winning team.
+
+  * Write console messages when
+    * Someone goes on a spree/rampage, etc.
+    * Flags are scored quickly or frequently.
+    * A blowout occurs.
+
+The level of automatic control you can have over a zserv process is pretty cool, but it's not yet a reality.  A typical frag event looks like this: {{{
+  {'fragger': 'Fastidious', 'fragee': 'Ladna', 'weapon': 'Super Shotgun'}
+}}}
+But the event itself doesn't have any state information, such as number of times Fastidious fragged Ladna (in the last 60 seconds), whether any team's flag is out, what game mode this is, whether Ladna had killed Fastidious 10 times earlier and this was revenge, or whether Ladna and Fastidious are on the same team.  So, to really be useful, the rule has to act on the state of ZDStack and the event, not just the event itself.  I'm not really sure how to create a rule language like that, though.
