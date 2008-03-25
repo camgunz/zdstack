@@ -40,7 +40,7 @@ ffa_dmflags2 = 132608
 ctf_dmflags = 21508
 ctf_dmflags2 = 656896
 
-;;; An example of a duel server that doesn't use any PWADs except for zvox2.wad
+;;; An example of a duel server that does not use any PWADs except for zvox2.wad
 [D2M1]
 type = 1-on-1
 wads = zvox2.wad
@@ -49,7 +49,7 @@ port = 10666
 advertise = 1
 maps = map01
 
-;;; An example of a regular 'ol Judas server
+;;; An example of a typical Judas server
 [Judas]
 type = 1-on-1
 wads = judas23_.wad,zvox2.wad
@@ -65,11 +65,11 @@ wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
 port = 10655
 maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
 password = illnevertell
-motd = 1st rule about Super Secret CTF is you don't talk about Super Secret CTF<br>2nd rule about Super Secret CTF is you don't talk about Super Secret CTF
+motd = 1st rule about Super Secret CTF is you do not talk about Super Secret CTF<br>2nd rule about Super Secret CTF is you do not talk about Super Secret CTF
 timelimit = 20
 rcon = fightclub
 
-;;; An example of a regular 'ol ZDCTF server
+;;; An example of a typical ZDCTF server
 [ZD CTF 1,2,3]
 type = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
