@@ -39,6 +39,6 @@ But the event itself doesn't have any state information, such as number of times
   {{{
   rules = kick_teamkiller
   }}}
-to the server's configuration section.
+  to the server's configuration section.
 
 The downside is that writing custom rules requires Python knowledge and a knowledge of the API/Object structures.  I can document the API and Object structures, and Python is pretty easy to learn... but it's still a barrier.  On the whole, though, I think this is the best way to do it.
