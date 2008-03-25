@@ -35,11 +35,10 @@ But the event itself doesn't have any state information, such as number of times
                   msg = "Banned: %s exceeded the teamkilling limit"
                   zdstack.kickban(fragger, msg % (fragger.name))
   }}}
-  * In zdstack.ini, there would be a new 'rules' directive.  In this case, if you wanted
-    to use the kick_teamkiller rule, you would just add
+  * In zdstack.ini, there would be a new 'rules' directive.  In this case, if you wanted to use the kick_teamkiller rule, you would just add 
   {{{
   rules = kick_teamkiller
   }}}
-    to the server's configuration section.
+to the server's configuration section.
 
 The downside is that writing custom rules requires Python knowledge and a knowledge of the API/Object structures.  I can document the API and Object structures, and Python is pretty easy to learn... but it's still a barrier.  On the whole, though, I think this is the best way to do it.
