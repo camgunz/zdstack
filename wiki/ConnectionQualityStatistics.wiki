@@ -1,0 +1,17 @@
+#summary Per-player connection quality statistics
+
+The two connection quality statistics people are concerned with are:
+
+  * Latency (ping)
+  * Packet loss
+
+We can provide all these, as well as a connection quality stats on a control connection (say... to www.google.com), by using the 'ping' utility and logging its output.  For example:
+
+  # Ladna has connected (ip: 71.235.21.19)
+  # (start ping here, capture output with a LineParser)
+  # Treat output like events:
+    * If a packet is received and returned, record the round-trip time and add it to the average
+    * Otherwise assume packet loss, and add that to the average of packets lost
+  # Overall, weight these stats relative to the control connection.
+
+I'm not really sure what the impact on the players will be.  Pinging all players every five seconds since their initial connection probably isn't a big deal, but I've never sent out 200 pings before... which might happen if you have ~18 servers and ~10 people in each of them.  One thing's for sure, an admin ought to be able to turn off connection quality stats on a global and per-server basis, and maybe even players can choose to opt out of it.  Like, if a player has no connection issues, they probably don't care... or if they have huge issues (like they live in a different hemisphere) they don't care either.  And most admins probably don't care about public FFA/CTF/Coop server connection quality, so the potential to minimize the use/impact is there.
