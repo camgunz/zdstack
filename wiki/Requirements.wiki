@@ -1,0 +1,16 @@
+#summary ZDStack Requirements.
+
+= Supported Platforms =
+
+ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
+
+= Required Packages =
+
+ZDStack requires:
+
+  * zserv ([http://www.zdaemon.org])
+    * In order to run fully, a file called an IWAD is needed.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.), and the awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01 and doom2map07.
+  * Python 2.5 or greater ([http://www.python.org])
+  * pyfileutils 0.8.1 or greater ([http://pyfileutils.googlecode.com])
+  * PyXSE 0.4 or greater ([http://pyxse.googlecode.com])
+
