@@ -1,0 +1,107 @@
+set cfg_activated "1"
+set hostname "TotalTrash FFA %(name)s"
+set motd "TotalTrash St. Louis Servers: %(name)s<br>Server mod: Nostar"
+set website "http:\\totaltrash.org"
+set email "nostarcast@yahoo.com"
+set maxclients "16"
+set maxplayers "16"
+// Will this server require a password to join? 1=Yes; 2=No
+set force_password "%(requires_password)s"
+// If the server does require a password, set the password here
+%(server_password)s
+set master_advertise "%(master_advertise)s"
+set deathmatch "1"
+set teamplay "0"
+set ctf "0"
+set teamdamage "%(teamdamage)s"
+%(scorelimit)s
+%(maxteams)s
+set maxplayersperteam "-1"
+set skill "4"
+set dmflags "%(dmflags)s"
+set dmflags2 "%(dmflags2)s"
+set timelimit "%(timelimit)s"
+%(fraglimit)s
+// addmap "map01"
+%(maps)s
+set enable_rcon "1"
+set rcon_password "%(rcon_password)s"
+set spam_window "10"
+set spam_limit "10"
+set optional_wads "zvox.wad zvox2.wad"
+set log_disposition "0"
+set sv_gravity "800"
+set sv_aircontrol "0"
+set sv_deathlimit "30"
+set speed_check "0"
+set restartemptymap "0"
+set minplayers "0"
+set removebotswhenhumans "0"
+
+// add_cvaroverride map01 sv_itemrespawn "false"
+// add_cvaroverride map07 sv_infiniteammo "true"
+
+add_cvaroverride map01 overtime 0
+add_cvaroverride map02 overtime 0
+add_cvaroverride map03 overtime 0
+add_cvaroverride map04 overtime 0
+add_cvaroverride map05 overtime 0
+add_cvaroverride map06 overtime 0
+add_cvaroverride map07 overtime 0
+add_cvaroverride map08 overtime 0
+add_cvaroverride map09 overtime 0
+add_cvaroverride map10 overtime 0
+add_cvaroverride map11 overtime 0
+add_cvaroverride map12 overtime 0
+add_cvaroverride map13 overtime 0
+add_cvaroverride map14 overtime 0
+add_cvaroverride map15 overtime 0
+add_cvaroverride map16 overtime 0
+add_cvaroverride map17 overtime 0
+add_cvaroverride map18 overtime 0
+add_cvaroverride map19 overtime 0
+add_cvaroverride map20 overtime 0
+add_cvaroverride map21 overtime 0
+add_cvaroverride map22 overtime 0
+add_cvaroverride map23 overtime 0
+add_cvaroverride map24 overtime 0
+add_cvaroverride map25 overtime 0
+add_cvaroverride map26 overtime 0
+add_cvaroverride map27 overtime 0
+add_cvaroverride map28 overtime 0
+add_cvaroverride map29 overtime 0
+add_cvaroverride map30 overtime 0
+add_cvaroverride map31 overtime 0
+add_cvaroverride map32 overtime 0
+add_cvaroverride map01 hostname "TotalTrash %(name)s Map01"
+add_cvaroverride map02 hostname "TotalTrash %(name)s Map02"
+add_cvaroverride map03 hostname "TotalTrash %(name)s Map03"
+add_cvaroverride map04 hostname "TotalTrash %(name)s Map04"
+add_cvaroverride map05 hostname "TotalTrash %(name)s Map05"
+add_cvaroverride map06 hostname "TotalTrash %(name)s Map06"
+add_cvaroverride map07 hostname "TotalTrash %(name)s Map07"
+add_cvaroverride map08 hostname "TotalTrash %(name)s Map08"
+add_cvaroverride map09 hostname "TotalTrash %(name)s Map09"
+add_cvaroverride map10 hostname "TotalTrash %(name)s Map10"
+add_cvaroverride map11 hostname "TotalTrash %(name)s Map11"
+add_cvaroverride map12 hostname "TotalTrash %(name)s Map12"
+add_cvaroverride map13 hostname "TotalTrash %(name)s Map13"
+add_cvaroverride map14 hostname "TotalTrash %(name)s Map14"
+add_cvaroverride map15 hostname "TotalTrash %(name)s Map15"
+add_cvaroverride map16 hostname "TotalTrash %(name)s Map16"
+add_cvaroverride map17 hostname "TotalTrash %(name)s Map17"
+add_cvaroverride map18 hostname "TotalTrash %(name)s Map18"
+add_cvaroverride map19 hostname "TotalTrash %(name)s Map19"
+add_cvaroverride map20 hostname "TotalTrash %(name)s Map20"
+add_cvaroverride map21 hostname "TotalTrash %(name)s Map21"
+add_cvaroverride map22 hostname "TotalTrash %(name)s Map22"
+add_cvaroverride map23 hostname "TotalTrash %(name)s Map23"
+add_cvaroverride map24 hostname "TotalTrash %(name)s Map24"
+add_cvaroverride map25 hostname "TotalTrash %(name)s Map25"
+add_cvaroverride map26 hostname "TotalTrash %(name)s Map26"
+add_cvaroverride map27 hostname "TotalTrash %(name)s Map27"
+add_cvaroverride map28 hostname "TotalTrash %(name)s Map28"
+add_cvaroverride map29 hostname "TotalTrash %(name)s Map29"
+add_cvaroverride map30 hostname "TotalTrash %(name)s Map30"
+add_cvaroverride map31 hostname "TotalTrash %(name)s Map31"
+add_cvaroverride map32 hostname "TotalTrash %(name)s Map32"

@@ -1,0 +1,4 @@
+- Separate zserv stuff and ZDStack stuff
+  - logs
+  - pids and PID files
+  - ports (necessary?  It's pretty cool that zserv uses UDP and ZDStack uses TCP)

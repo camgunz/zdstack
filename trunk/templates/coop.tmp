@@ -1,0 +1,103 @@
+set cfg_activated "1"
+set skill "4"
+set enable_rcon "1"
+set log_disposition "0"
+
+set deathmatch "%(deathmatch)s"
+set teamplay "%(teamplay)s"
+set ctf "%(ctf)s"
+set maxplayersperteam "%(max_players_per_team)s"
+
+set hostname "%(hostname)s"
+set motd "%(motd)s"
+set website "%(website)s"
+set email "%(admin_email)s"
+set maxclients "%(max_clients)s"
+set maxplayers "%(max_players)s"
+set force_password "%(requires_password)s"
+%(server_password)s
+set master_advertise "%(master_advertise)s"
+set teamdamage "%(teamdamage)s"
+%(scorelimit)s
+%(maxteams)s
+set dmflags "%(dmflags)s"
+set dmflags2 "%(dmflags2)s"
+set timelimit "%(timelimit)s"
+%(fraglimit)s
+%(maps)s
+%(optional_wads)s
+set rcon_password "%(rcon_password)s"
+set spam_window "%(spam_window)s"
+set spam_limit "%(spam_limit)s"
+set sv_gravity "%(gravity)s"
+set sv_aircontrol "%(air_control)s"
+set sv_deathlimit "%(death_limit)s"
+set speed_check "%(speed_check)s"
+set restartemptymap "%(restart_empty_map)s"
+set minplayers "%(min_players)s"
+set removebotswhenhumans "%(remove_bots_when_humans)s"
+
+add_cvaroverride map01 overtime 0
+add_cvaroverride map02 overtime 0
+add_cvaroverride map03 overtime 0
+add_cvaroverride map04 overtime 0
+add_cvaroverride map05 overtime 0
+add_cvaroverride map06 overtime 0
+add_cvaroverride map07 overtime 0
+add_cvaroverride map08 overtime 0
+add_cvaroverride map09 overtime 0
+add_cvaroverride map10 overtime 0
+add_cvaroverride map11 overtime 0
+add_cvaroverride map12 overtime 0
+add_cvaroverride map13 overtime 0
+add_cvaroverride map14 overtime 0
+add_cvaroverride map15 overtime 0
+add_cvaroverride map16 overtime 0
+add_cvaroverride map17 overtime 0
+add_cvaroverride map18 overtime 0
+add_cvaroverride map19 overtime 0
+add_cvaroverride map20 overtime 0
+add_cvaroverride map21 overtime 0
+add_cvaroverride map22 overtime 0
+add_cvaroverride map23 overtime 0
+add_cvaroverride map24 overtime 0
+add_cvaroverride map25 overtime 0
+add_cvaroverride map26 overtime 0
+add_cvaroverride map27 overtime 0
+add_cvaroverride map28 overtime 0
+add_cvaroverride map29 overtime 0
+add_cvaroverride map30 overtime 0
+add_cvaroverride map31 overtime 0
+add_cvaroverride map32 overtime 0
+add_cvaroverride map01 hostname "%(hostname)s Map01"
+add_cvaroverride map02 hostname "%(hostname)s Map02"
+add_cvaroverride map03 hostname "%(hostname)s Map03"
+add_cvaroverride map04 hostname "%(hostname)s Map04"
+add_cvaroverride map05 hostname "%(hostname)s Map05"
+add_cvaroverride map06 hostname "%(hostname)s Map06"
+add_cvaroverride map07 hostname "%(hostname)s Map07"
+add_cvaroverride map08 hostname "%(hostname)s Map08"
+add_cvaroverride map09 hostname "%(hostname)s Map09"
+add_cvaroverride map10 hostname "%(hostname)s Map10"
+add_cvaroverride map11 hostname "%(hostname)s Map11"
+add_cvaroverride map12 hostname "%(hostname)s Map12"
+add_cvaroverride map13 hostname "%(hostname)s Map13"
+add_cvaroverride map14 hostname "%(hostname)s Map14"
+add_cvaroverride map15 hostname "%(hostname)s Map15"
+add_cvaroverride map16 hostname "%(hostname)s Map16"
+add_cvaroverride map17 hostname "%(hostname)s Map17"
+add_cvaroverride map18 hostname "%(hostname)s Map18"
+add_cvaroverride map19 hostname "%(hostname)s Map19"
+add_cvaroverride map20 hostname "%(hostname)s Map20"
+add_cvaroverride map21 hostname "%(hostname)s Map21"
+add_cvaroverride map22 hostname "%(hostname)s Map22"
+add_cvaroverride map23 hostname "%(hostname)s Map23"
+add_cvaroverride map24 hostname "%(hostname)s Map24"
+add_cvaroverride map25 hostname "%(hostname)s Map25"
+add_cvaroverride map26 hostname "%(hostname)s Map26"
+add_cvaroverride map27 hostname "%(hostname)s Map27"
+add_cvaroverride map28 hostname "%(hostname)s Map28"
+add_cvaroverride map29 hostname "%(hostname)s Map29"
+add_cvaroverride map30 hostname "%(hostname)s Map30"
+add_cvaroverride map31 hostname "%(hostname)s Map31"
+add_cvaroverride map32 hostname "%(hostname)s Map32"

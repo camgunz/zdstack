@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import getopt
+import signal
+import os.path
+from ZDStack import ZDStack, get_configparser
+from pyfileutils import read_file, write_file
+
+def fork(logfile, pidfile, signal_handler):
+    if hasattr(os, 'devnull'):
+        stdin = os.devnull
+    else:
+        stdin = '/dev/null'
+    stdout = stderr = logfile
+    if os.fork():
+        os._exit(0)
+    # os.chdir('/')
+    os.umask(0)
+    os.setsid()
+    if os.fork():
+        os._exit(0)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    si = open(stdin, 'r')
+    so = open(logfile, 'a+')
+    se = open(logfile, 'a+', 0)
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    os.dup2(se.fileno(), sys.stderr.fileno())
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+    pid = str(os.getpid())
+    write_file(pid, pidfile)
+
+def print_usage(msg=None):
+    if msg:
+        print >> sys.stderr, msg
+    print >> sys.stderr, """\nzdstackctl\n
+Usage: zdstackctl [ start | stop | restart | start_all | stop_all | restart_all ]
+                [-c config file] [-n name]\n"""
+    sys.exit(-1)
+
+def start(cp, name):
+    try:
+        zdstack = ZDStack(cp, name)
+        if os.path.isfile(zdstack.pidfile):
+            print >> sys.stderr, "\nThis server is already running\n"
+            sys.exit(-1)
+        fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
+        zdstack.startup()
+    except Exception, e:
+        print >> sys.stderr, "\nError: %s\n" % (str(e))
+        sys.exit(-1)
+
+def stop(cp, name):
+    try:
+        zdstack = ZDStack(cp, name)
+        try:
+            os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
+        except OSError:
+            if os.path.isfile(zdstack.pidfile):
+                es = "\nServer not running, removing stale PID file.\n"
+                print >> sys.stderr, es
+                os.unlink(zdstack.pidfile)
+            else:
+                raise
+    except Exception, e:
+        print >> sys.stderr, "\nError: %s\n" % (str(e))
+        sys.exit(-1)
+
+def restart(cp, name):
+    stop(cp, name)
+    time.sleep(1)
+    start(cp, name)
+
+def start_all(cp):
+    for section in cp.sections():
+        s = "%s start -c '%s' -n '%s'"
+        os.system(s % (sys.argv[0], cp.filename, section))
+
+def stop_all(cp):
+    for section in cp.sections():
+        s = "%s stop -c '%s' -n '%s'"
+        os.system(s % (sys.argv[0], cp.filename, section))
+
+def restart_all(cp):
+    for section in cp.sections():
+        s = "%s restart -c '%s' -n '%s'"
+        os.system(s % (sys.argv[0], cp.filename, section))
+
+actions = ('start', 'stop', 'restart', 'debug', 'start_all', 'stop_all',
+           'restart_all')
+try:
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'n:c:', [])
+except getopt.GetoptError, ge:
+    print >> sys.stderr, "Error: %s" % (ge)
+    print_usage()
+if len(args) != 1 or args[0] not in actions:
+    print >> sys.stderr, "Error: %s" % \
+            ("Invalid number of arguments, or invalid action specified")
+    print_usage()
+opts = dict(opts)
+action = args[0]
+if not '-c' in opts:
+    config_file = None
+else:
+    config_file = opts['-c']
+cp = get_configparser(config_file)
+if action in ('start', 'stop', 'restart', 'debug'):
+    if not '-n' in opts:
+        print >> sys.stderr, "Error: %s" % ("Must specify a name")
+        print_usage()
+    name = opts['-n']
+    if action == 'start':
+        start(cp, name)
+    elif action == 'stop':
+        stop(cp, name)
+    elif action == 'restart':
+        restart(cp, name)
+    elif action == 'debug':
+        print >> sys.stderr, "Debugging not supported yet, sorry"
+        sys.exit(-1)
+        # debug(cp, name)
+else:
+    if action == 'start_all':
+        start_all(cp)
+    elif action == 'stop_all':
+        stop_all(cp)
+    elif action == 'restart_all':
+        restart_all(cp)
+    elif action == 'debug_all':
+        print >> sys.stderr, "Debugging not supported yet, sorry"
+        sys.exit(-1)
+        # debug_all(cp)
+
