@@ -1,5 +1,5 @@
 [DEFAULT]
-;;; The root folder under which all ZDStack processes will create their folders
+;;; The root folder under which all zserv processes will create their folders
 rootfolder =
 ;;; The full, absolute path to the WADs, but not IWADs
 waddir =
@@ -21,10 +21,14 @@ teamdm_team_score_limit = 5
 advertise = 0
 ;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
 teamdamage = 0
+;;; Enable RCON
+enable_rcon = 
 ;;; The default RCON password for all servers
-rcon =
-;;; The default password for passworded servers
-password =
+rcon_password =
+;;; Enable server password
+enable_password = 
+;;; The default password for all passworded servers
+server_password =
 ;;; Number of seconds in which spamming can occur
 spam_window = 10
 ;;; How many messages can occur in the spam window before "spamming" occurs

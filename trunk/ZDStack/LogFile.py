@@ -1,11 +1,12 @@
 import os
-from threading import Thread, Timer
+import time
+from threading import Thread
 
 from ZDStack.LogEvent import LogEvent
 
 class LogFile:
 
-    def __init__(self, file_path, log_type, line_parser, listeners=[]):
+    def __init__(self, file_path, log_type, parser, listeners=[]):
         if not os.path.isfile(file_path):
             fd = os.open(os.O_CREAT, file_path)
             os.close(fd)
@@ -16,9 +17,8 @@ class LogFile:
         self.file_path = file_path
         self.file_object = open(self.file_path)
         self.log_type = log_type
-        self.line_parser = line_parser
-        self.unprocessed_data = ''
-        self.keep_logging = False
+        self.parser = parser
+        self.parse = self.parser # tricky!
         self.listeners = listeners
         self.events = self.get_events()
         Thread(self.log).start()
@@ -29,42 +29,24 @@ class LogFile:
 
     def __repr__(self):
         return "LogFile(%s, %s, %s)" % (self.file_path, self.log_type,
-                                        self.line_parser)
+                                        repr(self.parser))
 
     def log(self):
-        event = self.events.next()
-        while event:
+        while 1:
+            event = self.events.next()
             for listener in self.listeners:
                 Thread(listener.handle_event, args=[event]).start()
-            event = self.events.next()
-        t = Timer(.5, self.log)
-
-    def add_listener(self, listener):
-        self.listeners.append(listener)
-
-    def remove_listener(self, listener):
-        self.listeners.remove(listener)
+            time.sleep(.01) # higher resolutions burn up CPU unnecessarily
 
     def get_events(self):
+        unprocessed_data = ''
         while 1:
-            lines = []
             events = []
-            current_line = list(self.unprocessed_data)
-            for c in self.fobj.read():
-                if not c == '\n':
-                    current_line.append(c)
-                elif current_line:
-                    lines.append(''.join(current_line))
-                    current_line = []
-            self.unprocessed_data += ''.join(current_line)
-            for line in lines:
-                try:
-                    event = self.line_parser.parse(line)
-                except Exception, e:
-                    event = LogEvent(datetime.now, 'error', str(e))
-                events.append(event)
-            if not self.listen:
-                yield []
-            else:
-                yield events
+            unprocessed_data += self.fobj.read()
+            try:
+                events, unprocessed_data = self.parse(unprocessed_data)
+            except Exception, e:
+                events = [LogEvent(datetime.now(), 'error', str(e))]
+            for event in event:
+                yield event
 

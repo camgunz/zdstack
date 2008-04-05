@@ -1,4 +1,4 @@
-from ZDStack.Dictable import Dictable
+from ZDStack.BaseStatKeeper import BaseStatKeeper
 from ZDStack.Listable import Listable
 
 def parse_player_name(name):
@@ -54,10 +54,10 @@ def parse_player_name(name):
     except IndexError: # no tag
         return ('', name)
 
-class Player(Dictable):
+class Player(BaseStatKeeper):
 
     def __init__(self, name, zdstack, ip=None):
-        Dictable.__init__(self)
+        BaseStatKeeper.__init__(self)
         self.name = name
         self.ip = ip
         self.escaped_name = self.name.replace('&', "&amp;")
@@ -69,34 +69,16 @@ class Player(Dictable):
         self.homogenized_name = self.homogenized_name.replace('\n', '')
         self.homogenized_name = self.homogenized_name.replace('\t', '')
         self.tag, self.player_name = parse_player_name(self.name)
-        self.frags = Listable()
-        self.deaths = Listable()
-        self.flag_drops = Listable()
         self.playing = False
-        self.has_flag = False
         self.team = None
-        self.rcon_denials = 0
-        self.rcon_accesses = 0
-        self.rcon_actions = 0
-        self.flag_returns = 0
-        self.flag_losses = 0
-        self.flag_caps = 0
-        self['name'] = self.name
-        self['ip'] = self.ip
-        self['escaped_name'] = self.escaped_name
-        self['homogenized_name'] = self.homogenized_name
-        self['self.player_name'] = self.player_name
-        self['tag'] = self.tag
-        self['frags'] = self.frags
-        self['deaths'] = self.frags
-        self['flag_drops'] = self.name
-        self['playing'] = self.playing
-        self['has_flag'] = self.has_flag
-        self['team'] = self.team
-        self['rcon_denials'] = self.rcon_denials
-        self['rcon_accesses'] = self.rcon_accesses
-        self['rcon_actions'] = self.rcon_actions
-        self['flag_returns'] = self.flag_returns
-        self['flag_losses'] = self.flag_losses
-        self['flag_caps'] = self.flag_caps
+        self.stat_container = self.team
+        ###
+        # TODO:
+        #   - Add Player-IP logging
+        #   - Add latency/packet-loss tracking
+        ###
+
+    def set_team(self, team):
+        self.team = team
+        self.stat_container = self.team
 

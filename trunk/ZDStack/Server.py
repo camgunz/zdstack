@@ -6,7 +6,7 @@ import socket
 import tempfile
 from datetime import datetime
 from threading import Thread, Event
-from SimpleXMLRPCServer import SimpleXMLRPCServer
+from DocXMLRPCServer import DocXMLRPCServer
 from pyfileutils import read_file, append_file, delete_file
 
 from ZDStack import HOSTNAME, SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, \
@@ -15,33 +15,31 @@ from ZDStack import HOSTNAME, SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, \
 
 class Server(SimpleXMLRPCServer):
 
-    def __init__(self, cp, name):
-        self.name = name
-        if not name in cp.sections():
-            raise ValueError("Could not find %s in server config file" % (name))
-        self.config = dict(cp.items(name))
+    def __init__(self, cp):
+        self.config = cp
         self.load_config()
-        os.chdir(self.workdir)
+        os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
         self.keep_serving = Event()
 
     def load_config(self):
-        self.hostname = self.config['hostname']
         if 'rootfolder' in self.config:
-            rootfolder = self.config['rootfolder']
+            self.rootfolder = self.config['rootfolder']
         else:
-            rootfolder = tempfile.gettempdir()
+            self.rootfolder = tempfile.gettempdir()
         if not os.path.isdir(rootfolder):
             raise ValueError("Root folder [%s] does not exist" % (rootfolder))
-        self.workdir = os.path.join(rootfolder, self.name)
-        if not os.path.isdir(self.workdir):
-            os.mkdir(self.workdir)
-        self.logfile = os.path.join(self.workdir, self.name + '.log')
-        self.pidfile = os.path.join(self.workdir, self.name + '.pid')
+        self.homedir = os.path.join(rootfolder, self.name)
+        if not os.path.isdir(self.homedir):
+            os.mkdir(self.homedir)
+        self.logfile = os.path.join(self.homedir, self.name + '.log')
+        self.pidfile = os.path.join(self.homedir, self.name + '.pid')
+        self.configfile = os.path.join(self.homedir, self.name + '.cfg')
 
     def startup(self):
-        self.server = SimpleXMLRPCServer((HOSTNAME, self.port))
+        self.xmlrpc_server = SimpleXMLRPCServer((HOSTNAME, self.port))
+        write_file('%d' % (os.getpid()), self.pidfile, overwrite=True)
         self.register_functions()
         self.serving_thread = Thread(target=self._serve)
         self.serving_thread.setDaemon(True)
@@ -57,7 +55,7 @@ class Server(SimpleXMLRPCServer):
     def _serve(self):
         while 1:
             self.keep_serving.wait()
-            self.server.handle_request()
+            self.xmlrpc_server.handle_request()
 
     def handle_signal(self, signum, frame):
         self.log("Received signal [%d]" % (signum))
@@ -67,12 +65,12 @@ class Server(SimpleXMLRPCServer):
             self.shutdown(signum=signum)
 
     def register_functions(self):
-        self.server.register_function(self.get_status)
-        self.server.register_function(self.get_logfile)
-        self.server.register_function(self.get_stats)
-        self.server.register_function(self.start)
-        self.server.register_function(self.stop)
-        self.server.register_function(self.restart)
+        self.xmlrpc_server.register_function(self.get_status)
+        self.xmlrpc_server.register_function(self.get_logfile)
+        self.xmlrpc_server.register_function(self.get_stats)
+        self.xmlrpc_server.register_function(self.start)
+        self.xmlrpc_server.register_function(self.stop)
+        self.xmlrpc_server.register_function(self.restart)
 
     def start_serving(self):
         self.keep_serving.set()

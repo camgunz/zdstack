@@ -27,22 +27,22 @@ class LogListener:
     def handle_unhandled_event(self, event):
         raise Exception("Unhandled event: %s" % (event))
 
-class ZDStackLogListener(LogListener):
+class ZServLogListener(LogListener):
 
-    def __init__(self, name, zdstack):
-        self.zdstack = zdstack
+    def __init__(self, name, zserv):
+        self.zserv = zserv
         LogListener.__init__(self, name)
 
     def handle_error_event(self, event):
-        self.zdstack.log("Event error: %s" % (event.data['error']))
+        self.zserv.log("Event error: %s" % (event.data['error']))
 
     def handle_unhandled_event(self, event):
         pass # do nothing... actually do not handle the event
 
-class ConnectionLogListener(ZDStackLogListener):
+class ConnectionLogListener(ZServLogListener):
 
-    def __init__(self, zdstack):
-        ZDStackLogListener.__init__(self, 'Connection Log Listener', zdstack)
+    def __init__(self, zserv):
+        ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
         self.event_types_to_handlers['connection'] = \
                                                 self.handle_connection_event
         self.event_types_to_handlers['disconnection'] = \
@@ -50,49 +50,56 @@ class ConnectionLogListener(ZDStackLogListener):
         self.event_types_to_handlers['game_join'] = self.handle_game_join_event
 
     def handle_connection_event(self, event):
-        player = Player(event.data['player'], self.zdstack, event.data['ip'])
-        self.zdstack.players.append(player)
+        player = Player(event.data['player'], self.zserv, event.data['ip'])
+        self.zserv.add_player(player)
 
     def handle_disconnection_event(self, event):
-        player = Player(event.data['player'], self.zdstack)
-        self.zdstack.players.remove(player)
+        player = Player(event.data['player'], self.zserv)
+        self.zserv.remove_player(player)
 
     def handle_game_join_event(self, event):
-        player = self.zdstack.get_player(event.data['player'])
-        if not player:
+        try:
+            player = self.zserv.get_player(event.data['player'])
+        except ValueError:
             es = "Received a game_join event for non-existent player %s"
-            self.zdstack.log(es % (event.data['player']))
-        else:
-            player.playing = True
-            player.team = event.data['team']
+            self.zserv.log(es % (event.data['player']))
+        try:
+            team = self.zserv.get_team(event.data['team'])
+        except ValueError:
+            es = "Received a team join event to non-existent team %s"
+            self.zserv.log(es % (event.data['team']))
+        player.playing = True
+        player.team = team
 
-class WeaponLogListener(ZDStackLogListener):
+class WeaponLogListener(ZServLogListener):
 
-    def __init__(self, zdstack):
-        ZDStackLogListener(self, 'Weapon Log Listener', zdstack)
+    def __init__(self, zserv):
+        ZServLogListener(self, 'Weapon Log Listener', zserv)
         self.event_types_to_handlers['frag'] = self.handle_frag_event
 
     def handle_frag_event(self, event):
-        fragger = self.zdstack.get_player(event.data['fragger'])
-        fraggee = self.zdstack.get_player(event.data['fraggee'])
-        if not fragger:
+        try:
+            fragger = self.zserv.get_player(event.data['fragger'])
+        except ValueError:
             es = "Received a frag event for non-existent player %s"
-            self.zdstack.log(es % (event.data['fragger']))
-        elif not fraggee:
+            self.zserv.log(es % (event.data['fragger']))
+        try:
+            fraggee = self.zserv.get_player(event.data['fraggee'])
+        except ValueError:
             es = "Received a death event for non-existent player %s"
-            self.zdstack.log(es % (event.data['fraggee']))
-        else:
-            frag = Frag(event.data['fragger'], event.data['fraggee'],
-                        event.data['weapon'])
-            fragger.frags.append(frag)
-            fraggee.deaths.append(frag)
-            if self.last_event.type == 'flag_loss':
-                fragger.flag_drops.append(frag)
+            self.zserv.log(es % (event.data['fraggee']))
+        frag = Frag(event.data['fragger'], event.data['fraggee'],
+                    event.data['weapon'])
+        fragger.add_frag(frag)
+        fraggee.add_death(frag)
+        if self.zserv.general_log_listener.last_event.type == 'flag_loss':
+            fragger.add_flag_drop(frag)
+            fraggee.add_flag_loss(frag)
 
-class GeneralLogListener(ZDStackLogListener):
+class GeneralLogListener(ZServLogListener):
 
-    def __init__(self, zdstack):
-        ZDStackLogListener(self, 'General Log Listener', zdstack)
+    def __init__(self, zserv):
+        ZServLogListener(self, 'General Log Listener', zserv)
         self.event_types_to_handlers['message'] = self.handle_message_event
         self.event_types_to_handlers['team_switch'] = \
                                                 self.handle_team_switch_event
@@ -114,45 +121,78 @@ class GeneralLogListener(ZDStackLogListener):
                                                 self.handle_map_change_event
 
     def handle_message_event(self, event):
-        self.zdstack.handle_message(event.data['contents'],
+        self.zserv.handle_message(event.data['contents'],
                                   event.data['possible_player_names'])
 
     def handle_team_switch_event(self, event):
-        player = self.zdstack.get_player(event.data['player'])
-        if not player:
-            es = "Received a team_switch event for non-existent player %s"
-            self.zdstack.log(es % (event.data['player']))
-        else:
-            player.set_team(event.data['team'])
-
-    def handle_rcon_denied_event(self, event):
-        self.zdstack.handle_rcon_denied(event.data['player'])
+        try:
+            team = self.zserv.get_team(event.data['team'])
+        except ValueError:
+            es = "Received a team switch event to non-existent team %s"
+            self.zserv.log(es % (event.data['team']))
+        try:
+            self.zserv.get_player(event.data['player']).set_team(team)
+        except ValueError:
+            es = "Received a team switch event for non-existent player %s"
+            self.zserv.log(es % (event.data['player']))
 
     def handle_rcon_granted_event(self, event):
-        self.zdstack.handle_rcon_granted(event.data['player'])
+        try:
+            self.get_player(event.data['player']).add_rcon_access()
+        except ValueError:
+            es = "Received an RCON access event for non-existant player [%s]"
+            self.log(es % (event.data['player']))
+
+    def handle_rcon_denied_event(self, event):
+        try:
+            self.get_player(event.data['player']).add_rcon_denial()
+        except ValueError:
+            es = "Received a RCON denial event for non-existant player [%s]"
+            self.log(es % (event.data['player']))
 
     def handle_rcon_action_event(self, event):
-        self.zdstack.handle_rcon_action(event.data['player'],
-                                      event.data['action'])
+        rcon_action = event.data['action']
+        try:
+            self.zserv.get_player(event.data['player']).add_rcon_action(action)
+        except ValueError:
+            es = "Received an RCON action event for non-existant player [%s]"
+            self.log(es % (event.data['player']))
 
     def handle_flag_touch_event(self, event):
-        player = self.zdstack.get_player(event.data['player'])
-        player.has_flag = True
-        player.flag_touches += 1
+        try:
+            self.zserv.get_player(event.data['player'])
+        except ValueError:
+            es = "Received a flag touch event for non-existent player %s"
+            self.zserv.log(es % (event.data['player']))
+        player.set_has_flag(True)
+        player.add_flag_touch()
 
     def handle_flag_loss_event(self, event):
-        player = self.zdstack.get_player(event.data['player'])
-        player.has_flag = False
-        player.flag_touches += 1
+        try:
+            self.zserv.get_player(event.data['player'])
+        except ValueError:
+            es = "Received a flag loss event for non-existent player %s"
+            self.zserv.log(es % (event.data['player']))
+        player.set_has_flag(False)
+        player.add_flag_touch()
 
     def handle_flag_cap_event(self, event):
-        player = self.zdstack.get_player(event.data['player'])
-        player.has_flag = False
-        player.flag_caps += 1
+        try:
+            self.zserv.get_player(event.data['player'])
+        except ValueError:
+            es = "Received a flag cap event for non-existent player %s"
+            self.zserv.log(es % (event.data['player']))
+        player.set_has_flag(False)
+        player.add_flag_cap()
 
     def handle_flag_return_event(self, event):
-        self.zdstack.get_player(event.data['player']).flag_returns += 1
+        try:
+            self.zserv.get_player(event.data['player']).add_flag_return()
+        except ValueError:
+            es = "Received a flag return event for non-existent player %s"
+            self.zserv.log(es % (event.data['player']))
 
     def handle_map_change_event(self, event):
-        self.zdstack.handle_map_change(event.data['map'])
+        self.zserv.handle_map_change(event.data['map_number'],
+                                     event.data['map_name'])
 
