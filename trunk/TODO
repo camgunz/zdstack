@@ -1,0 +1,36 @@
+TODO:
+
+    Write a Dictable.get_stats() function.  Maybe I can just re-appropriate
+      'get_dict()' in BaseStatKeeper.
+
+    Add Player => IP logging to Player upon initialization.  This requires the
+      persistence backend (and possible abstraction layer?).
+
+    Add Player latency and packet-loss tracking.  This requires the ping spawning
+      and parsing backend.
+
+    Add message responses.  Haven't completely figured out how to do this yet,
+      keep thinking on it.
+
+    Keep a pipe open to and from running zserv processes in ZServ, create
+      appropriate methods in ZServ to read from/send to pipes.
+
+    Normalize game-mode-specific stuff in ZServ's config section.  See source
+      for details
+
+    Create separate ZServ classes for different game modes, thereby spreading
+      out some of the configuration mess, and maybe making for cooler
+      customization.
+
+    Fix the types in ZServ's config section.
+
+    Figure out how to not remember a map if no one joined the game during it.
+
+    Fix the mess that is __init__, I don't even know what's going on in there.
+
+    Bring zdstackctl up to date.
+
+    Bring zdstack.ini-example up to date.
+
+    Re-add forking, logging, etc. to Server (WTF, where did it go?!).
+
