@@ -6,7 +6,4 @@ class Frag(Dictable):
         self.fragger = fragger
         self.fraggee = fraggee
         self.weapon = weapon
-        self.add_key('fragger', fragger)
-        self.add_key('fraggee', fraggee)
-        self.add_key('weapon', weapon)
 
