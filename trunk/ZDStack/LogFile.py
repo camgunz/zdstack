@@ -2,20 +2,14 @@ import os
 import time
 from threading import Thread
 
+from ZDStack.Alarm import Alarm
 from ZDStack.LogEvent import LogEvent
 
 class LogFile:
 
     def __init__(self, file_path, log_type, parser, listeners=[]):
-        if not os.path.isfile(file_path):
-            fd = os.open(os.O_CREAT, file_path)
-            os.close(fd)
-        ###
-        # Here, we want to automatically roll the log over if it exists.  This
-        # entails adding a number extension to the log and gzipping it.
-        ###
-        self.file_path = file_path
-        self.file_object = open(self.file_path)
+        self.file_object = None
+        self.new_filepath = False
         self.log_type = log_type
         self.parser = parser
         self.parse = self.parser # tricky!
@@ -38,9 +32,21 @@ class LogFile:
                 Thread(listener.handle_event, args=[event]).start()
             time.sleep(.01) # higher resolutions burn up CPU unnecessarily
 
+    def set_filepath(self, filepath):
+        self.filepath = filepath
+        self.new_filepath = True
+
     def get_events(self):
         unprocessed_data = ''
         while 1:
+            if self.new_filepath:
+                self.new_filepath = False
+                self.fobj.close()
+                self.fobj = None
+            while not self.fobj:
+                time.sleep(1) # wait for the file to appear if it doesn't exist
+                if os.path.isfile(self.filepath):
+                    self.fobj = open(self.filepath)
             events = []
             unprocessed_data += self.fobj.read()
             try:

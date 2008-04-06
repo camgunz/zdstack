@@ -1,81 +1,100 @@
 [DEFAULT]
+;;; The username needed to access administrative methods of the ZDStack process
+username: admin
+;;; The corresponding password
+password: pacman2000
 ;;; The root folder under which all zserv processes will create their folders
-rootfolder =
-;;; The full, absolute path to the WADs, but not IWADs
-waddir =
+rootfolder = /tmp
 ;;; The full, absolute path to the IWADs, but not the WADs
-iwaddir =
+iwaddir = /usr/local/share/zdstack/iwads
+;;; The full, absolute path to the WADs, but not IWADs
+waddir = /usr/local/share/zdstack/wads
 ;;; The name of the IWAD to use
-iwad =
+iwad = /usr/local/share/zdstack/iwads/doom2.wad
+;;; The number of maps to remember statistics for
+maps_to_remember = 10
 ;;; The message to display in the server selector (like ZLauncher or IDE)
-hostname =
+hostname = Greatest Servers %(name)s %(type)s Server
+;;; The administrator's e-mail address
+admin_email = greatest_admin@greatestservers.com
+;;; The site where WADs can be downloaded
+website = http://greatestservers.com/wads
 ;;; The message to display upon connecting to a server
-motd =
+motd = Welcome to the Greatest Servers<br><br>%(name)s %(type)s Server
 ;;; The default timeout for all servers
 timelimit = 15
 ;;; How many flags can be scored before one team wins (applies to CTF only)
 ctf_team_score_limit = 5
 ;;; How many frags can be scored before one team wins (applies to TeamDM only)
-teamdm_team_score_limit = 5
+tdm_team_score_limit = 5
 ;;; Whether or not to advertise, 0=no, 1=yes
 advertise = 0
 ;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
 teamdamage = 0
 ;;; Enable RCON
-enable_rcon = 
+enable_rcon = yes
 ;;; The default RCON password for all servers
-rcon_password =
+rcon_password = supersecretrconpassword
 ;;; Enable server password
-enable_password = 
+requires_password = yes
 ;;; The default password for all passworded servers
-server_password =
+server_password = supersecretserverpassword
 ;;; Number of seconds in which spamming can occur
 spam_window = 10
 ;;; How many messages can occur in the spam window before "spamming" occurs
 spam_limit = 10
-;;; Optional WADs, used if the player has them
+;;; Optional WADs, used if the player has them, separated by ','
 optional_wads = zvox2.wad
 ;;; Gravity value
 gravity = 800
 ;;; Air control value
-air_control = 0
+air_control = 0.00390625
 ;;; How many seconds a player can remain dead before being removed from play
 death_limit = 30
 ;;; Kick players who exceed the speed limit
 speed_check = 0
 ;;; Restart a map if no players are in the server
 restart_empty_map = 0
-;;; How many "players" must be in server, spawning bots to make up the difference
+;;; How many "players" must be in server, spawning bots to make up the 
+;;; difference
 min_players = 0
 ;;; Remove bots as soon as a second human player joins
-remove_bots_when_humans = 0
+remove_bots_when_humans = yes
+;;; Whether to add the map number to the advertised hostname
+add_mapnum_to_hostname = no
+;;; Whether to enable overtime
+overtime = no
+;;; Skill level
+skill = 4
+;;; Teamdamage Factor
+teamdamage = 0
 ;;; Default per-game-mode DMFLAGS
-1on1_dmflags = 201796
-1on1_dmflags2 = 132608
+duel_dmflags = 201796
+duel_dmflags2 = 132608
 ffa_dmflags = 201796
 ffa_dmflags2 = 132608
 ctf_dmflags = 21508
 ctf_dmflags2 = 656896
 coop_dmflags = 201796
 coop_dmflags2 = 132608
-teamdm_dmflags = 201796
-teamdm_dmflags2 = 132608
+tdm_dmflags = 201796
+tdm_dmflags2 = 132608
 ;;; Default per-game-mode number of players allowed to connect
-1on1_maxclients = 16
+duel_maxclients = 16
 ffa_maxclients = 16
 ctf_maxclients = 16
 coop_maxclients = 16
-teamdm_maxclients = 16
+tdm_maxclients = 16
 ;;; Default per-game-mode number of players allowed to play
-1on1_maxplayers = 2
+duel_maxplayers = 2
 ffa_maxplayers = 16
 ctf_maxplayers = 8
 coop_maxplayers = 16
-teamdm_maxplayers = 4
+tdm_maxplayers = 4
 
 ;;; An example of a duel server that does not use any PWADs except for zvox2.wad
 [D2M1]
-type = 1-on-1
+type = duel
 timelimit = 0
 port = 10666
 advertise = 1
@@ -83,7 +102,7 @@ maps = map01
 
 ;;; An example of a typical Judas server
 [Judas]
-type = 1-on-1
+type = duel
 wads = judas23_.wad
 timelimit = 0
 port = 10667
@@ -111,7 +130,7 @@ maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,m
 
 ;;; An example using custom DMFLAGS for a Shoot!.wad server (respawn items)
 [Shoot]
-type = 1-on-1
+type = duel
 wads = shoot!.wad,zvox2.wad
 port = 10669
 advertise = 1

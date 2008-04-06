@@ -11,5 +11,5 @@ class Alarm(Timer):
         seconds = timedelta_in_seconds(alarm_time - now)
         if seconds <= 0:
             raise ValueError("Must set Alarm for a time in the future")
-        Timer(self, seconds, func, args, kwargs).
+        Timer.__init__(self, seconds, func, args, kwargs)
 

@@ -5,7 +5,7 @@ import sys
 import getopt
 import signal
 import os.path
-from ZDStack import ZDStack, get_configparser
+from ZDStack import ZDStack
 from pyfileutils import read_file, write_file
 
 def fork(logfile, pidfile, signal_handler):
@@ -76,8 +76,7 @@ def restart(name, config_file):
     time.sleep(1)
     start(name, config_file):
 
-actions = ('start', 'stop', 'restart', 'debug', 'start_all', 'stop_all',
-           'restart_all')
+actions = ('start', 'stop', 'restart', 'debug')
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], 'n:c:', [])
 except getopt.GetoptError, ge:
@@ -93,31 +92,18 @@ if not '-c' in opts:
     config_file = None
 else:
     config_file = opts['-c']
-cp = get_configparser(config_file)
-if action in ('start', 'stop', 'restart', 'debug'):
-    if not '-n' in opts:
-        print >> sys.stderr, "Error: %s" % ("Must specify a name")
-        print_usage()
-    name = opts['-n']
-    if action == 'start':
-        start(cp, name)
-    elif action == 'stop':
-        stop(cp, name)
-    elif action == 'restart':
-        restart(cp, name)
-    elif action == 'debug':
-        print >> sys.stderr, "Debugging not supported yet, sorry"
-        sys.exit(-1)
-        # debug(cp, name)
-else:
-    if action == 'start_all':
-        start_all(cp)
-    elif action == 'stop_all':
-        stop_all(cp)
-    elif action == 'restart_all':
-        restart_all(cp)
-    elif action == 'debug_all':
-        print >> sys.stderr, "Debugging not supported yet, sorry"
-        sys.exit(-1)
-        # debug_all(cp)
+if not '-n' in opts:
+    print >> sys.stderr, "Error: %s" % ("Must specify a name")
+    print_usage()
+name = opts['-n']
+if action == 'start':
+    start(name, config_file)
+elif action == 'stop':
+    stop(name, config_file)
+elif action == 'restart':
+    restart(name, config_file)
+elif action == 'debug':
+    print >> sys.stderr, "Debugging not supported yet, sorry"
+    sys.exit(-1)
+    # debug(name, config_file)
 

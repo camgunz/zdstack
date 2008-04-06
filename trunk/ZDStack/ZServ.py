@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from ZDStack import yes, no
 from ZDStack.Map import Map
 from ZDStack.Team import Team
+from ZDStack.Alarm import Alarm
 from ZDStack.LogFile import LogFile
 from ZDStack.Listable import Listable
 from ZDStack.LogParser import ConnectionLogParser, WeaponLogParser, \
@@ -24,28 +25,7 @@ class ZServ:
         """
         ###
         # TODO:
-        #   1. game-mode-specific stuff is not normalized in the config, for
-        #   instance, if no dmflags are specified for a CTF server, the
-        #   configuration value for 'ctf_dmflags' is used... if it's valid.
-        #   However, the value inside 'config' for 'dmflags' is not changed
-        #   to the valiue inside 'config' for 'ctf_dmflags', so if, say,
-        #   config['hostname'] == 'Great Servers, good dmflags (%(dmflags)s)',
-        #   The hostname will be broken.  Really, to fix this, we have to
-        #   change...
-        #
-        #   2. Dear Lord is this crap long.  Especially the game-mode-specific
-        #   stuff, that really needs to be looped up somehow.  Maybe what I'll
-        #   do is subclass into something like TeamDM, Duel, FFA, CTF and Coop,
-        #   so every game-mode has its own class and we can avoid configuration
-        #   for other game-modes.  That saves about 1/2 this function, while
-        #   adding logic to ZDStack.  Even though it kinda seems like needless
-        #   classing, I feel like that's the best solution.
-        #
-        #   3. These values should be properly typed, like, fraglimit ought to
-        #   be an int.  Look for this to be changed when this is split up into
-        #   game-mode classes.
-        #
-        #   4. It would be good if somehow maps where no one joins a team are
+        #   1. It would be good if somehow maps where no one joins a team are
         #   not counted towards the number of maps to remember (why replace
         #   maps where stats actually exist with ones where they don't?).
         ###
@@ -53,10 +33,6 @@ class ZServ:
         self.name = name
         self.zdstack = zdstack
         self.keep_spawning = Event()
-        self.zserv_pid = None
-        self.connection_log = None
-        self.general_log = None
-        self.weapon_log = None
         self.log = lambda x: self.zdstack.log('%s: %s' % (self.name, x))
         def is_valid(x):
             return x in config and config[x]
@@ -64,7 +40,7 @@ class ZServ:
             return x in config and yes(x)
         ### mandatory stuff
         mandatory_options = ('base_iwad', 'iwad', 'waddir', 'iwaddir', 'wads',
-                             'port', 'type', 'maps_to_remember')
+                             'port', 'maps_to_remember')
         for mandatory_option in mandatory_option:
             if mandatory_option not in config:
                 es = "Could not find option '%s' in configuration"
@@ -87,13 +63,13 @@ class ZServ:
         for wad in self.wads:
             if not os.path.isfile(wad):
                 raise ValueError("WAD %s not found" % (wad))
-        self.cmd = [ZSERV_EXE, '-noinput', '-waddir', self.waddir, '-iwad',
-                    self.iwad, '-port', str(self.port), '-cfg',
-                    configfile, '-clog', '-wlog']
+        self.cmd = [ZSERV_EXE, '-waddir', self.waddir, '-iwad', self.iwad,
+                    '-port', str(self.port), '-cfg', self.configfile, '-clog',
+                    '-wlog', '-glog']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
+        # self.cmd.extend(['-noinput'])
         ### other mandatory stuff
-        self.type = config['type'].lower()
         self.address = 'http://%s:%d' % (HOSTNAME, self.port)
         ### admin stuff
         self.rcon_enabled = None
@@ -143,11 +119,11 @@ class ZServ:
         if self.requires_password and is_valid('server_password'):
             self.server_password = config['server_password']
         if is_valid('deathlimit'):
-            self.deathlimit = config['deathlimit']
+            self.deathlimit = int(config['deathlimit'])
         if is_valid('spam_window'):
-            self.spam_window = config['spam_window']
+            self.spam_window = int(config['spam_window'])
         if is_valid('spam_limit'):
-            self.spam_limit = config['spam_limit']
+            self.spam_limit = int(config['spam_limit'])
         if is_yes('speed_check'):
             self.speed_check = True
         if is_yes('restart_empty_map'):
@@ -176,181 +152,49 @@ class ZServ:
         if is_yes('overtime'):
             self.overtime = True
         if is_valid('skill'):
-            self.skill = config['skill']
+            self.skill = int(config['skill'])
         if is_valid('gravity'):
-            self.gravity = config['gravity']
+            self.gravity = int(config['gravity']
         if is_valid('air_control'):
-            self.air_control = config['air_control']
+            self.air_control = Decimal(config['air_control'])
         if is_valid('min_players'):
-            self.min_players = config['min_players']
-        ### Load default game-mode-specific config stuff
-        if self.type in ('ctf', 'teamdm'):
-            self.deathmatch = True
-            self.teamplay = True
-            if self.type == 'ctf':
-                self.ctf = True
-                if is_valid('dmflags'):
-                    self.dmflags = config['dmflags']
-                elif is_valid('ctf_dmflags'):
-                    self.dmflags = config['ctf_dmflags']
-                if is_valid('dmflags2'):
-                    self.dmflags2 = config['dmflags2']
-                elif is_valid('ctf_dmflags2'):
-                    self.dmflags2 = config['ctf_dmflags2']
-                if is_valid('teamdamage'):
-                    self.teamdamage = config['teamdamage']
-                elif is_valid('ctf_teamdamage'):
-                    self.teamdamage = config['ctf_teamdamage']
-                if is_valid('max_clients'):
-                    self.max_clients = config['max_clients']
-                elif is_valid('ctf_max_clients'):
-                    self.max_clients = config['ctf_max_clients']
-                if is_valid('max_players'):
-                    self.max_players = config['max_players']
-                elif is_valid('ctf_max_players'):
-                    self.max_players = config['ctf_max_players']
-                if is_valid('max_teams'):
-                    self.max_teams = config['max_teams']
-                elif is_valid('ctf_max_teams'):
-                    self.max_teams = config['ctf_max_teams']
-                if is_valid('max_players_per_team'):
-                    self.max_players_per_team = \
-                                            config['max_players_per_team']
-                elif is_valid('ctf_max_players_per_team'):
-                    self.max_players_per_team = \
-                                        config['ctf_max_players_per_team']
-                if is_valid('timelimit'):
-                    self.timelimit = config['timelimit']
-                elif is_valid('ctf_timelimit'):
-                    self.timelimit = config['ctf_timelimit']
-                if is_valid('scorelimit'):
-                    self.scorelimit = config['scorelimit']
-                elif is_valid('ctf_scorelimit'):
-                    self.scorelimit = config['ctf_scorelimit']
-            elif self.type == 'teamdm':
-                self.ctf = False
-                if is_valid('dmflags'):
-                    self.dmflags = config['dmflags']
-                elif is_valid('teamdm_dmflags'):
-                    self.dmflags = config['teamdm_dmflags']
-                if is_valid('dmflags2'):
-                    self.dmflags2 = config['dmflags2']
-                elif is_valid('teamdm_dmflags2'):
-                    self.dmflags2 = config['teamdm_dmflags2']
-                if is_valid('teamdamage'):
-                    self.teamdamage = config['teamdamage']
-                elif is_valid('teamdm_teamdamage'):
-                    self.teamdamage = config['teamdm_teamdamage']
-                if is_valid('max_clients'):
-                    self.max_clients = config['max_clients']
-                elif is_valid('teamdm_max_clients'):
-                    self.max_clients = config['teamdm_max_clients']
-                if is_valid('max_players'):
-                    self.max_players = config['max_players']
-                elif is_valid('teamdm_max_players'):
-                    self.max_players = config['teamdm_max_players']
-                if is_valid('max_teams'):
-                    self.max_teams = config['max_teams']
-                elif is_valid('teamdm_max_teams'):
-                    self.max_teams = config['teamdm_max_teams']
-                if is_valid('max_players_per_team'):
-                    self.max_players_per_team = \
-                                        config['max_players_per_team']
-                elif is_valid('teamdm_max_players_per_team'):
-                    self.max_players_per_team = \
-                                    config['teamdm_max_players_per_team']
-                if is_valid('timelimit'):
-                    self.timelimit = config['timelimit']
-                elif is_valid('teamdm_timelimit'):
-                    self.timelimit = config['teamdm_timelimit']
-                if is_valid('scorelimit'):
-                    self.scorelimit = config['scorelimit']
-                elif is_valid('teamdm_scorelimit'):
-                    self.scorelimit = config['teamdm_scorelimit']
-        elif self.type in ('1-on-1', 'duel', 'ffa', 'coop'):
-            self.teamplay = False
-            self.ctf = False
-            if self.type in ('1-on-1', 'duel', 'ffa'):
-                self.deathmatch = True
-            else:
-                self.deathmatch = False
-            if self.type in ('1-on-1', 'duel'):
-                if is_valid('dmflags'):
-                    self.dmflags = config['dmflags']
-                elif is_valid('duel_dmflags'):
-                    self.dmflags = config['duel_dmflags']
-                if is_valid('dmflags2'):
-                    self.dmflags2 = config['dmflags2']
-                elif is_valid('duel_dmflags2'):
-                    self.dmflags2 = config['duel_dmflags2']
-                if is_valid('max_clients'):
-                    self.max_clients = config['max_clients']
-                elif is_valid('duel_max_clients'):
-                    self.max_clients = config['duel_max_clients']
-                if is_valid('max_players'):
-                    self.max_players = config['max_players']
-                elif is_valid('duel_max_players'):
-                    self.max_players = config['duel_max_players']
-                if is_valid('timelimit'):
-                    self.timelimit = config['timelimit']
-                elif is_valid('duel_timelimit'):
-                    self.timelimit = config['duel_timelimit']
-                if is_valid('fraglimit'):
-                    self.fraglimit = config['fraglimit']
-                elif is_valid('duel_fraglimit'):
-                    self.fraglimit = config['duel_fraglimit']
-            elif self.type == 'ffa':
-                if is_valid('dmflags'):
-                    self.dmflags = config['dmflags']
-                elif is_valid('ffa_dmflags'):
-                    self.dmflags = config['ffa_dmflags']
-                if is_valid('dmflags2'):
-                    self.dmflags2 = config['dmflags2']
-                elif is_valid('ffa_dmflags2'):
-                    self.dmflags2 = config['ffa_dmflags2']
-                if is_valid('max_clients'):
-                    self.max_clients = config['max_clients']
-                elif is_valid('ffa_max_clients'):
-                    self.max_clients = config['ffa_max_clients']
-                if is_valid('max_players'):
-                    self.max_players = config['max_players']
-                elif is_valid('ffa_max_players'):
-                    self.max_players = config['ffa_max_players']
-                if is_valid('timelimit'):
-                    self.timelimit = config['timelimit']
-                elif is_valid('ffa_timelimit'):
-                    self.timelimit = config['ffa_timelimit']
-                if is_valid('fraglimit'):
-                    self.fraglimit = config['fraglimit']
-                elif is_valid('ffa_fraglimit'):
-                    self.fraglimit = config['ffa_fraglimit']
-            elif self.type == 'coop':
-                if is_valid('dmflags'):
-                    self.dmflags = config['dmflags']
-                elif is_valid('coop_dmflags'):
-                    self.dmflags = config['coop_dmflags']
-                if is_valid('dmflags2'):
-                    self.dmflags2 = config['dmflags2']
-                elif is_valid('coop_dmflags2'):
-                    self.dmflags2 = config['coop_dmflags2']
-                if is_valid('teamdamage'):
-                    self.teamdamage = config['teamdamage']
-                elif is_valid('coop_teamdamage'):
-                    self.teamdamage = config['coop_teamdamage']
-                if is_valid('max_clients'):
-                    self.max_clients = config['max_clients']
-                elif is_valid('coop_max_clients'):
-                    self.max_clients = config['coop_max_clients']
-                if is_valid('max_players'):
-                    self.max_players = config['max_players']
-                elif is_valid('coop_max_players'):
-                    self.max_players = config['coop_max_players']
-                if is_valid('timelimit'):
-                    self.timelimit = config['timelimit']
-                elif is_valid('coop_timelimit'):
-                    self.timelimit = config['coop_timelimit']
-            else:
-                raise ValueError("Unsupported game type [%s]" % (self.type))
+            self.min_players = int(config['min_players'])
+        config['name'] = self.name
+        self.config = config
+        self.configuration = self.get_configuration()
+        self.set_log_switch_alarm()
+        self.initialize()
+
+    def set_log_switch_alarm(self):
+        now = datetime.now()
+        today = datetime(now.year, now.month, now.day)
+        tomorrow = today + timedelta(days=1)
+        Alarm(tomorrow, self.switch_logs).start()
+
+    def switch_logs(self):
+        if self.connection_log:
+            self.connection_log.set_filepath(self.get_connection_log_filename())
+        if self.weapon_log:
+            self.weapon_log.set_filepath(self.get_weapon_log_filename())
+        if self.general_log:
+            self.general_log.set_filepath(self.get_general_log_filename())
+        self.set_log_switch_alarm()
+
+    def initialize(self):
+        self.red_team = Team('red')
+        self.blue_team = Team('blue')
+        self.green_team = Team('green')
+        self.white_team = Team('white')
+        self.map = None
+        self.teams = {'red': self.red_team, 'blue': self.blue_team,
+                      'green': self.green_team, 'white': self.white_team}
+        self.players = {}
+        self.pid = None
+        self.connection_log = None
+        self.general_log = None
+        self.weapon_log = None
+
+    def get_configuration(self):
         template = 'set cfg_activated "1"\n'
         if self.hostname:
             template += 'set hostname "%s"\n' % (self.hostname)
@@ -428,25 +272,13 @@ class ZServ:
             template += 'set fraglimit "%s"\n' % (self.fraglimit)
         if self.scorelimit:
             template += 'set team_scorelimit "%s"\n' % (self.scorelimit)
-        config['name'] = self.name
-        self.configuration = template % config
-        self.pid = None
-        self.connection_log = None
-        self.general_log = None
-        self.weapon_log = None
-        self.red_team = Team('red')
-        self.blue_team = Team('blue')
-        self.green_team = Team('green')
-        self.white_team = Team('white')
-        self.map = None
-        self.teams = {'red': self.red_team, 'blue': self.blue_team,
-                      'green': self.green_team, 'white': self.white_team}
-        self.players = {}
+        return template % self.config
 
     def start(self):
         self.keep_spawning.set()
         while 1:
             self.keep_spawning.wait()
+            self.initialize()
             self.connection_log = LogFile(self.get_connection_log_file(),
                                           'connection', ConnectionLogParser())
             self.general_log = LogFile(self.get_general_log_file(),
@@ -460,12 +292,10 @@ class ZServ:
             self.weapon_log.listeners.append(weapon_log_listener)
             self.general_log.listeners.append(general_log_listener)
             self.log("Spawning [%s]" % (' '.join(self.cmd))
-            self.pid = os.spawnv(os.P_NOWAIT, self.cmd[0], self.cmd)
-            os.waitpid(self.zserv_pid, 0)
-            self.pid = None
-            self.connection_log = None
-            self.general_log = None
-            self.weapon_log = None
+            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=None, bufsize=0,
+                               close_fds=True)
+            self.zserv.wait()
+            # Here, the zserv process has exited and we restart all over again
 
     def stop(self, signum=15):
         self.keep_spawning.clear()
@@ -482,6 +312,22 @@ class ZServ:
     def restart(self, signum=15):
         self.stop(signum)
         self.start()
+
+    def send_to_zserv(self, message):
+        self.zserv.stdin.write(message)
+        self.zserv.stdin.flush()
+
+    def get_logfile_suffix(self):
+        return date.today().strftime('-%Y%m%d')
+
+    def get_connection_log_filename(self):
+        return 'conn' + self.get_logfile_suffix()
+
+    def get_weapon_log_filename(self):
+        return 'weap' + self.get_logfile_suffix()
+
+    def get_general_log_filename(self):
+        return 'gen' + self.get_logfile_suffix()
 
     def add_player(self, player):
         ###

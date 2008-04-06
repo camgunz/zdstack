@@ -8,14 +8,15 @@ __hostnames = [x for x in [__host] + __aliases if '.' in x]
 if not __hostnames:
     raise Exception("Could not obtain the Fully Qualified Hostname")
 
-CONFIGPARSER = None
+__all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'yes', 'no',
+           'timedelta_in_seconds', 'get_configparser']
 
 HOSTNAME = __hostnames[0]
-SERVICE_ADMIN_SERVER = "totaltrash.org" # put server address (not URL) of admin server here
-SERVICE_PASSWORD = "thatimnotnocow" # put password here
-BASE_SERVICE_URL = 'http://%s/services/%%s/%%s' % (SERVICE_ADMIN_SERVER)
-
-ZSERV_EXE = '/root/bin/zserv'
+CONFIGPARSER = None
+SERVICE_ADMIN_SERVER = None
+SERVICE_PASSWORD = None
+BASE_SERVICE_URL = None
+ZSERV_EXE = None
 
 def yes(x):
     return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely')
@@ -23,23 +24,12 @@ def yes(x):
 def no(x):
     return x.lower() in ('n', 'no', 'f', 'false', '0', 'off', 'never')
 
-def get_service_info(info, service, address):
-    url = BASE_SERVICE_URL % (urllib.quote(info), urllib.quote(service))
-    return urllib.urlopen(url).read()
-
-def send_service_action(action, service, address, type):
-    params = {'service_address': address, 'authentication': SERVICE_PASSWORD}
-    url = BASE_SERVICE_URL % (urllib.quote(action), urllib.quote(service))
-    return urllib.urlopen(url, urllib.urlencode(params)).read()
-
 def timedelta_in_seconds(x):
     return (x.days * 86400) + x.seconds
 
 def get_configparser(config_file=None):
     global CONFIGPARSER
-    global SERVICE_ADMIN_SERVER
-    global SERVICE_PASSWORD
-    global SERVICE_URL_PATH
+    global ZSERV_EXE
     if CONFIGPARSER is None:
         cp = RCP()
         if config_file is not None:
@@ -58,15 +48,17 @@ def get_configparser(config_file=None):
         cp.read(config_file)
         cp.filename = config_file
         CONFIGPARSER = cp
-    if 'service_admin_server' not in CONFIGPARSER.defaults():
-        raise ValueError("Option 'service_admin_server' not found")
-    if 'service_password' not in CONFIGPARSER.defaults():
-        raise ValueError("Option 'service_password' not found")
-    if 'service_url_path' not in CONFIGPARSER.defaults():
-        raise ValueError("Option 'service_url_path' not found")
-    SERVICE_ADMIN_SERVER = CONFIGPARSER.defaults()['service_admin_server']
-    SERVICE_PASSWORD = CONFIGPARSER.defaults()['service_password']
-    SERVICE_URL_PATH = CONFIGPARSER.defaults()['service_url_path']
+    if 'zserv_exe' not in CONFIGPARSER.defaults():
+        raise ValueError("Option 'zserv_exe' not found")
+    else:
+        zserv_exe = CONFIGPARSER.defaults()['zserv_exe']
+        zserv_exe = os.path.expanduser(zserv_exe)
+        zserv_exe = os.path.abspath(zserv_exe)
+        if not os.path.isfile(zserv_exe):
+            raise ValueError("Could not find zserv executable")
+        if not os.access(zserv_exe, os.R_OK | os.X_OK):
+            raise ValueError("Could not execute zserv")
+    ZSERV_EXE = zserv_exe
     return CONFIGPARSER
 
 def rotate_log(self, log_path):

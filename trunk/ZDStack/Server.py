@@ -15,13 +15,43 @@ from ZDStack import HOSTNAME, SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, \
 
 class Server(SimpleXMLRPCServer):
 
-    def __init__(self, cp):
+    def __init__(self, cp, fork=True):
         self.config = cp
         self.load_config()
         os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
         self.keep_serving = Event()
+        # signal.signal(signal.SIGINT, self.handle_signal)
+        # signal.signal(signal.SIGQUIT, self.handle_signal)
+        # signal.signal(signal.SIGTERM, self.handle_signal)
+        # signal.signal(signal.SIGHUP, self.handle_signal)
+        # self.register()
+        # self.should_fork = fork
+
+    def _fork(self):
+        if hasattr(os, 'devnull'):
+            stdin = os.devnull
+        else:
+            stdin = '/dev/null'
+        stdout = stderr = self.logfile
+        if os.fork():
+            os._exit(0)
+        os.chdir('/')
+        os.umask(0)
+        os.setsid()
+        if os.fork():
+            os._exit(0)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        si = open(stdin, 'r')
+        so = open(self.logfile, 'a+')
+        se = open(self.logfile, 'a+', 0)
+        os.dup2(si.fileno(), sys.stdin.fileno())
+        os.dup2(so.fileno(), sys.stdout.fileno())
+        os.dup2(se.fileno(), sys.stderr.fileno())
+        pid = str(os.getpid())
+        write_file(pid, self.pidfile)
 
     def load_config(self):
         if 'rootfolder' in self.config:
@@ -38,8 +68,9 @@ class Server(SimpleXMLRPCServer):
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
 
     def startup(self):
-        self.xmlrpc_server = SimpleXMLRPCServer((HOSTNAME, self.port))
-        write_file('%d' % (os.getpid()), self.pidfile, overwrite=True)
+        if self.should_fork:
+            self._fork()
+        self.xmlrpc_server = DocXMLRPCServer((HOSTNAME, self.port))
         self.register_functions()
         self.serving_thread = Thread(target=self._serve)
         self.serving_thread.setDaemon(True)
@@ -87,14 +118,6 @@ class Server(SimpleXMLRPCServer):
             debug_msg = "DEBUG: %s" % (s)
             self.log(debug_msg)
 
-    def register(self):
-        response = send_service_action('register', self.name, self.address)
-        return response or True
-
-    def unregister(self):
-        response = send_service_action('unregister', self.name, self.address)
-        return response or True
-
     def get_status(self):
         return self.status
 
@@ -111,14 +134,11 @@ class Server(SimpleXMLRPCServer):
     def start(self):
         self.log("Starting")
         self.status = "Running"
-        self.keep_spawning.set()
         return True
 
     def stop(self):
         self.log("Stopping")
         self.status = "Stopped"
-        self.keep_spawning.clear()
-        self.stop_zserv()
         return True
 
     def restart(self):
