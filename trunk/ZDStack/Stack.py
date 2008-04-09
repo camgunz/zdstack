@@ -10,7 +10,7 @@ class AuthenticationError(Exception):
         es = "Error: Access to method [%s] was denied for user [%s]"
         Exception.__init__(self, es % (method, username))
 
-class ZDStack(Server):
+class Stack(Server):
 
     methods_requiring_authentication = []
 
@@ -93,42 +93,4 @@ class ZDStack(Server):
         for x in (self.start_zserv, self.stop_zserv, self.start_all_zservs,
                   self.stop_all_zservs):
             self.register_function(x)
-
-    def get_player(self, zserv_name, player_name):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        elif player_name not in self.zservs[zserv_name].players:
-            raise ValueError("Player [%s] not found" % (player_name))
-        return self.zservs[zserv_name].players[player_name]
-
-    def get_all_players(self, zserv_name):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        return self.zservs[zserv_name].players
-
-    def get_team(self, zserv_name, team_color):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        elif team_color not in self.zservs[zserv_name].teams:
-            raise ValueError("Team [%s] not found" % (team_color))
-        return self.zservs[zserv_name].teams[team_color]
-
-    def get_all_teams(self, zserv_name):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        return self.zservs[zserv_name].teams
-
-    def get_map(self, zserv_name, map_name):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        elif player_name not in self.zservs[zserv_name].players:
-            raise ValueError("Player [%s] not found" % (player_name))
-        return self.zservs[zserv_name].players[player_name]
-
-    def get_all_maps(self, zserv_name):
-        if zserv_name not in self.zservs:
-            raise ValueError("ZServ [%s] not found" % (zserv_name))
-        remembered_maps = self.zservs[zserv_name].remembered_maps
-        current_map = self.zservs[zserv_name].map
-        return remembered_maps + [current_map]
 

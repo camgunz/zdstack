@@ -1,8 +1,8 @@
 [DEFAULT]
 ;;; The username needed to access administrative methods of the ZDStack process
-username: admin
+username = admin
 ;;; The corresponding password
-password: pacman2000
+password = pacman2000
 ;;; The root folder under which all zserv processes will create their folders
 rootfolder = /tmp
 ;;; The full, absolute path to the IWADs, but not the WADs
@@ -10,7 +10,7 @@ iwaddir = /usr/local/share/zdstack/iwads
 ;;; The full, absolute path to the WADs, but not IWADs
 waddir = /usr/local/share/zdstack/wads
 ;;; The name of the IWAD to use
-iwad = /usr/local/share/zdstack/iwads/doom2.wad
+iwad = doom2.wad
 ;;; The number of maps to remember statistics for
 maps_to_remember = 10
 ;;; The message to display in the server selector (like ZLauncher or IDE)
