@@ -2,20 +2,18 @@ import os.path
 import urllib
 import socket
 from ConfigParser import RawConfigParser as RCP
+from PyXSE import Database
 
 __host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
 __hostnames = [x for x in [__host] + __aliases if '.' in x]
 if not __hostnames:
     raise Exception("Could not obtain the Fully Qualified Hostname")
 
-__all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'yes', 'no',
+__all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'yes', 'no',
            'timedelta_in_seconds', 'get_configparser']
 
 HOSTNAME = __hostnames[0]
 CONFIGPARSER = None
-SERVICE_ADMIN_SERVER = None
-SERVICE_PASSWORD = None
-BASE_SERVICE_URL = None
 ZSERV_EXE = None
 
 def yes(x):
@@ -61,13 +59,3 @@ def get_configparser(config_file=None):
     ZSERV_EXE = zserv_exe
     return CONFIGPARSER
 
-def rotate_log(self, log_path):
-    log_dir, log_file = (os.path.dirname(log_path), os.path.basename(log_path))
-    tokens = [x for x in log_file.split('.') if x]
-    if not tokens:
-        raise ValueError("Invalid log filename format")
-    if not tokens[-1].isnum():
-        log_file += '.1'
-    else:
-        log_file = log_file.replace('.' + tokens[-1],
-                                    '.' + str(int(tokens[-1]) + 1))

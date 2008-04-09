@@ -1,5 +1,3 @@
-from ZDStack.Listable import Listable
-
 class Dictable(dict):
 
     def __getattr__(self, key): 
@@ -17,13 +15,11 @@ class Dictable(dict):
         except KeyError, e:
             raise AttributeError, e
 
-    def get_dict(self):
+    def export(self):
         out = {}
         for x, y in self.items():
-            if isinstance(y, Dictable):
-                out[x] = y.get_dict()
-            if isinstance(y, Listable):
-                out[x] = y.get_list()
+            if hasattr(y, 'export'):
+                out[x] = y.export()
             else:
                 out[x] = y
         return out

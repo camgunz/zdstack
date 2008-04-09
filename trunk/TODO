@@ -1,21 +1,15 @@
 TODO:
 
-    At some point, expand the authentication scheme so that permissions are
-      a little more fine-grained.  As in, it would be nice to give out
-      the ability to restart servers and boot players... but not change the
-      configuration... and vice versa.
-
     Figure out how to not remember a map if no one joined the game during it.
-
-    Write a Dictable.get_stats() function.  Maybe I can just re-appropriate
-      'get_dict()' in BaseStatKeeper.
-
-    Add Player => IP logging to Player upon initialization.  This requires the
-      persistence backend (and possible abstraction layer?).
 
     Add Player latency and packet-loss tracking.  This requires the ping
       spawning and parsing backend.
 
     Add message responses.  Haven't completely figured out how to do this yet,
       keep thinking on it.
+
+    At some point, expand the authentication scheme so that permissions are
+      a little more fine-grained.  As in, it would be nice to give out
+      the ability to restart servers and boot players... but not change the
+      configuration... and vice versa.
 

@@ -7,6 +7,7 @@ from ZDStack.Map import Map
 from ZDStack.Team import Team
 from ZDStack.Alarm import Alarm
 from ZDStack.LogFile import LogFile
+from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
 from ZDStack.LogParser import ConnectionLogParser, WeaponLogParser, \
                               GeneralLogParser
@@ -186,9 +187,11 @@ class ZServ:
         self.green_team = Team('green')
         self.white_team = Team('white')
         self.map = None
-        self.teams = {'red': self.red_team, 'blue': self.blue_team,
-                      'green': self.green_team, 'white': self.white_team}
-        self.players = {}
+        self.teams = Dictable({'red': self.red_team,
+                               'blue': self.blue_team,
+                               'green': self.green_team,
+                               'white': self.white_team})
+        self.players = Dictable()
         self.pid = None
         self.connection_log = None
         self.general_log = None

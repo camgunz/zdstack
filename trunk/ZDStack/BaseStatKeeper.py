@@ -13,6 +13,7 @@ class BaseStatKeeper(Dictable):
         self.flag_returns = 0
         self.flag_caps = 0
         self.stat_container = stat_container
+        Dictable.__init__()
 
     def add_frag(self, frag):
         self.frags.append(frag)

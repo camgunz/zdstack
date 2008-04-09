@@ -1,5 +1,6 @@
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 from ZDStack.Listable import Listable
+from ZDStack import DATABASE as DB
 
 def parse_player_name(name):
     ###
@@ -72,11 +73,41 @@ class Player(BaseStatKeeper):
         self.playing = False
         self.team = None
         self.stat_container = self.team
+        self.possible_aliases = Listable()
+        # If this player has never connected before, insert it into the DB.
+        # Grab all the IP addresses for that player name
+        # Grab all the player names associated with any of those IP addresses
+        # Save that list in self.possible_aliases
+        def log_ip(row):
+            addresses = row['addresses'].split(',')
+            addresses.append(self.ip)
+            row['addresses'] = ','.join(addresses)
+        def get_ip_match_func(addresses):
+            addresses = addresses.split(',')
+            s1 = set(addresses.split(','))
+            f = lambda x: list(s1.intersection(x.split(',')))
+            return lambda r: f(r['addresses'])
+        if DB:
+            rs = DB.select('players', where=[lambda r: r['name'] == self.name])
+            rs = [x for x in rs]
+            if not rs:
+                DB.insert('players', values=(self.name, self.ip))
+            elif self.ip not in row['addresses']:
+                DB.update('players', set=[log_ip],
+                           where=[lambda r: r['name'] == self.name])
+            addresses = rs[0]['addresses'].split(',') + [self.ip]
+            for row in DB.select('players',
+                                 where=[get_ip_match_func(addresses)]):
+                self.possible_aliases.append(row['name'])
+        else:
+            self.zdstack.log("PyXSE not found, Player => IP Logging disabled")
+            
         ###
         # TODO:
-        #   - Add Player-IP logging
         #   - Add latency/packet-loss tracking
         ###
+
+    
 
     def set_team(self, team):
         self.team = team
