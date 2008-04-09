@@ -155,7 +155,7 @@ class ZServ:
         if is_valid('skill'):
             self.skill = int(config['skill'])
         if is_valid('gravity'):
-            self.gravity = int(config['gravity']
+            self.gravity = int(config['gravity'])
         if is_valid('air_control'):
             self.air_control = Decimal(config['air_control'])
         if is_valid('min_players'):
@@ -294,7 +294,7 @@ class ZServ:
             self.connection_log.listeners.append(connection_log_listener)
             self.weapon_log.listeners.append(weapon_log_listener)
             self.general_log.listeners.append(general_log_listener)
-            self.log("Spawning [%s]" % (' '.join(self.cmd))
+            self.log("Spawning [%s]" % (' '.join(self.cmd)))
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=None, bufsize=0,
                                close_fds=True)
             self.zserv.wait()
@@ -304,7 +304,7 @@ class ZServ:
         self.keep_spawning.clear()
         try:
             s = "Sending signal %s to %s PID: %s"
-            self.log(s % (signum, self.name, self.pid)
+            self.log(s % (signum, self.name, self.pid))
             os.kill(self.zserv_pid, signum)
             return True
         except Exception, e:

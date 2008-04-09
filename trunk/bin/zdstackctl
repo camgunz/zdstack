@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import os
 import sys
 import getopt
 import signal
 import os.path
-from ZDStack import ZDStack, get_configparser
+from ZDStack import Stack, get_configparser
 from pyfileutils import read_file, write_file
 
 def fork(logfile, pidfile, signal_handler):
@@ -43,9 +43,9 @@ def print_usage(msg=None):
 Usage: zdstackctl [ start | stop | restart ] [-c config file]\n"""
     sys.exit(-1)
 
-def start(name, config_file=None)
+def start(name, config_file=None):
     try:
-        zdstack = ZDStack(name, config_file)
+        zdstack = Stack(name, config_file)
         if os.path.isfile(zdstack.pidfile):
             print >> sys.stderr, "\nThis server is already running\n"
             sys.exit(-1)
@@ -57,7 +57,7 @@ def start(name, config_file=None)
 
 def stop(name, config_file=None):
     try:
-        zdstack = ZDStack(name, config_file)
+        zdstack = Stack(name, config_file)
         try:
             os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
         except OSError:
@@ -72,9 +72,9 @@ def stop(name, config_file=None):
         sys.exit(-1)
 
 def restart(name, config_file):
-    stop(name, config_file):
+    stop(name, config_file)
     time.sleep(1)
-    start(name, config_file):
+    start(name, config_file)
 
 actions = ('start', 'stop', 'restart', 'debug', 'start_all', 'stop_all',
            'restart_all')

@@ -56,8 +56,8 @@ class ConnectionLogParser(LogParser):
                 name = ' '.join(tokens[2:] + \
                                         tokens[:tokens.index(ip_tokens[0])])
                 events.append(LogEvent(line_dt, 'connection',
-                                       {'player': name, 'ip'; ip}))
-            elif message.endswith('disconnected')
+                                       {'player': name, 'ip': ip}))
+            elif message.endswith('disconnected'):
                 e = LogEvent(line_dt, 'disconnection',
                              {'player': ' '.join(tokens[2:] + tokens[:-1])})
                 events.append(e)
@@ -87,7 +87,7 @@ class WeaponLogParser(LogParser):
             line = lines.popleft()
             tokens = [x for x in line.split('\\') if x]
             if not len(tokens) == 3:
-                if len(lines) or data.endswith('\n')): # line was junk
+                if len(lines) or data.endswith('\n'): # line was junk
                     events.append(LogEvent(now, 'junk', {'data': line}))
                 else:
                     leftovers.append(line)
@@ -135,7 +135,7 @@ class GeneralLogParser(LogParser):
                 tag_level = 0
                 tag = []
                 for c in line:
-                    if c == '<'
+                    if c == '<':
                         if tag_level:
                             tag.append(c)
                         tag_level += 1
@@ -178,14 +178,14 @@ class GeneralLogParser(LogParser):
                     line_type = 'flag_loss'
                     line_data = {'player': ' '.join(tokens[:-4])}
                     events.append(LogEvent(now, line_type, line_data))
-                elif 'scored for the': in line:
-                    line_type = 'flag_cap':
+                elif 'scored for the' in line:
+                    line_type = 'flag_cap'
                     line_data = {'player': ' '.join(tokens[:-5]),
                                  'team': tokens[-2].lower()}
                     events.append(LogEvent(now, line_type, line_data))
                 elif 'returned the' in line:
-                    line_type = 'flag_return':
-                    line_data = {'player': ' '.join(tokens[:-4]),
+                    line_type = 'flag_return'
+                    line_data = {'player': ' '.join(tokens[:-4])}
                     events.append(LogEvent(now, line_type, line_data))
             elif line.startswith('map'):
                 map_number = int(x[:x.index(': ')][3:])
