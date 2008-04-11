@@ -1,5 +1,6 @@
 #summary Structure of the Player Dict.
 
+{{{
 {'<!>Ladna': {'color': 'red',
               'deaths': [{'fraggee': '<!>Ladna',
                           'fragger': '<!>Ladna',
@@ -35,4 +36,5 @@
               'rcon_accesses': 0,
               'rcon_actions': [],
               'rcon_denials': 0,
-              'tag': '<!>'}}
+              'tag': '<!>'}
+}}}
