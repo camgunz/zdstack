@@ -2,18 +2,7 @@
 
   * automatic log rotation (at the end of the day and at server startup)
 
-  * redirect STDOUT of zserv to /dev/null or w/e
-
-  * make SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, BASE_SERVICE_URL configurable in INI file
-
-  * Implement XML-RPC API    
-    * start_server()
-    * stop_server()
-    * restart_server()
-    * get_uptime()
-    * get_players()
-    * get_stats(maps=5)
-    * get_maplist()
-    * get_current_map()
-    * get_current_stats()
-    * get_last_game_stats()
+  * Fix Issue 7:
+    # Save "connected" players in teams
+    # Save teams with connected players in maps
+    # Save maps with teams in remembered maps
