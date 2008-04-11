@@ -1,36 +1,65 @@
 #summary XML-RPC Methods and Description
 
 === start_zserv() ===
+  Description: Starts a zserv process.
+  Usage:
+  {{{
+  start_zserv(zserv_name)
+  }}}
   Returns: True if succeeded
 
 === stop_zserv() ===
+  Description: Stops a zserv process.
+  Usage:
+  {{{
+  stop_zserv(zserv_name)
+  }}}
   Returns: True if succeeded
 
 === restart_zserv() ===
+  Description: Restarts a zserv process.
+  Usage:
+  {{{
+  restart_zserv(zserv_name)
+  }}}
   Returns: True if succeeded
 
 === get_uptime() ===
-  Returns: An int value of the number of seconds the zserv process has been running.  This value is for the internal zserv process, and not the ZDStack process as a whole.
-
-=== get_players() ===
-  Returns: A list of dict'ed PlayerObjects.
-
-=== get_stats() ===
-  Returns: A list of StatisticsDicts.
-
+  Description: Gets the uptime for a zserv process.
   Usage:
   {{{
-  get_stats(maps=5) # returns the stats for the last 5 maps
+  get_uptime(zserv_name)
   }}}
+  Returns: An int value of the number of seconds the zserv process has been running.  This value is for the internal zserv process, and not the ZDStack process as a whole.
 
-=== get_maplist() ===
-  Returns: A list of 2-Tuples (int map_number, string map_name)
+=== get_zserv() ===
+  Description: Gets a dict of zserv info.
+  Usage:
+  {{{
+  get_zserv(zserv_name)
+  }}}
+  Returns: a ZservDict.
 
-=== get_current_map() ===
-  Returns: A 2-Tuple (int map_number, string map_name)
+=== get_map() ===
+  Description: Gets a dict of map statistics and info.
+  Usage:
+  {{{
+  get_map(zserv_name, map_number)
+  }}}
+  Returns: a MapDict.
 
-=== get_current_stats() ===
-  Returns: A StatisticsDict of the current game's stats.
+=== get_team() ===
+  Description: Gets a dict of team statistics and info.
+  Usage:
+  {{{
+  get_team(zserv_name, team_color)
+  }}}
+  Returns: a TeamDict.
 
-=== get_last_game_stats() ===
-  Returns: A StatisticsDict of the most recent game's stats.
+=== get_player() ===
+  Description: Gets a dict of player statistics and info.
+  Usage:
+  {{{
+  get_player(zserv_name, player_name)
+  }}}
+  Returns: A PlayerDict.
