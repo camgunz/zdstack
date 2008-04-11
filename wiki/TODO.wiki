@@ -2,7 +2,7 @@
 
   * automatic log rotation (at the end of the day and at server startup)
 
-  * Fix Issue 7:
+  * Fix Issue 8:
     # Save "connected" players in teams
     # Save teams with connected players in maps
     # Save maps with teams in remembered maps
