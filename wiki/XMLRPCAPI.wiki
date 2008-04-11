@@ -33,14 +33,14 @@
 
   Usage:{{{get_zserv(zserv_name)}}}
 
-  Returns: a ZservDict.
+  Returns: A ZservDict.
 
 === get_current_map() ===
   Description: Gets a dict of the current map's statistics and info.
 
   Usage:{{{get_map(zserv_name, map_number)}}}
 
-  Returns: a MapDict.
+  Returns: A MapDict.
 
 === get_team() ===
   Description: Gets a dict of team statistics and info.
