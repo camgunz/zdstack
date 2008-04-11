@@ -9,19 +9,17 @@ from threading import Thread, Event
 from DocXMLRPCServer import DocXMLRPCServer
 from pyfileutils import read_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, SERVICE_ADMIN_SERVER, SERVICE_PASSWORD, \
-                    BASE_SERVICE_URL, ZSERV_EXE, send_service_action, \
-                    timedelta_in_seconds, rotate_log
+from ZDStack import HOSTNAME, ZSERV_EXE, timedelta_in_seconds
 
-class Server(SimpleXMLRPCServer):
+class Server:
 
     def __init__(self, cp, fork=True):
         self.config = cp
+        self.defaults = cp.defaults()
         self.load_config()
         os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
-        self.keep_serving = Event()
         # signal.signal(signal.SIGINT, self.handle_signal)
         # signal.signal(signal.SIGQUIT, self.handle_signal)
         # signal.signal(signal.SIGTERM, self.handle_signal)
@@ -54,39 +52,43 @@ class Server(SimpleXMLRPCServer):
         write_file(pid, self.pidfile)
 
     def load_config(self):
-        if 'rootfolder' in self.config:
-            self.rootfolder = self.config['rootfolder']
+        if 'rootfolder' in self.defaults:
+            rootfolder = self.defaults['rootfolder']
         else:
-            self.rootfolder = tempfile.gettempdir()
+            rootfolder = tempfile.gettempdir()
         if not os.path.isdir(rootfolder):
             raise ValueError("Root folder [%s] does not exist" % (rootfolder))
-        self.homedir = os.path.join(rootfolder, self.name)
-        if not os.path.isdir(self.homedir):
-            os.mkdir(self.homedir)
-        self.logfile = os.path.join(self.homedir, self.name + '.log')
-        self.pidfile = os.path.join(self.homedir, self.name + '.pid')
-        self.configfile = os.path.join(self.homedir, self.name + '.cfg')
+        if not 'zdstack_port' in self.defaults:
+            es = "Could not find option 'zdstack_port' in the configuration"
+            raise ValueError(es)
+        else:
+            self.port = int(self.defaults['zdstack_port'])
+        self.homedir = rootfolder
+        # if not os.path.isdir(self.homedir):
+        #     os.mkdir(self.homedir)
+        self.logfile = os.path.join(self.homedir, 'ZDStack.log')
+        self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
     def startup(self):
-        if self.should_fork:
-            self._fork()
+        # if self.should_fork:
+        #     self._fork()
         self.xmlrpc_server = DocXMLRPCServer((HOSTNAME, self.port))
+        self.xmlrpc_server.register_introspection_functions()
+        self.xmlrpc_server.allow_none = True
+        self.xmlrpc_server.set_server_title('ZDStack')
+        self.xmlrpc_server.set_server_name('ZDStack XML-RPC API')
+        self.xmlrpc_server.set_server_documentation("""\
+This is the documentation for the ZDStack XML-RPC API.  For more information, visit
+http://zdstack.googlecode.com.""")
         self.register_functions()
-        self.serving_thread = Thread(target=self._serve)
+        self.serving_thread = Thread(target=self.xmlrpc_server.serve_forever)
         self.serving_thread.setDaemon(True)
         self.serving_thread.start()
         self.start()
-        self.start_serving()
 
     def shutdown(self, signum=15):
-        self.stop_serving()
         self.stop()
         sys.exit(0)
-
-    def _serve(self):
-        while 1:
-            self.keep_serving.wait()
-            self.xmlrpc_server.handle_request()
 
     def handle_signal(self, signum, frame):
         self.log("Received signal [%d]" % (signum))
@@ -103,15 +105,9 @@ class Server(SimpleXMLRPCServer):
         self.xmlrpc_server.register_function(self.stop)
         self.xmlrpc_server.register_function(self.restart)
 
-    def start_serving(self):
-        self.keep_serving.set()
-
-    def stop_serving(self):
-        self.keep_serving.clear()
-
     def log(self, s):
         log_msg = "[%s] %s\n" % (time.ctime(), s)
-        append_file(log_msg, self.logfile)
+        append_file(log_msg, self.logfile, overwrite=True)
 
     def debug(self, s):
         if DEBUG:

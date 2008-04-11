@@ -5,22 +5,28 @@ username = admin
 password = pacman2000
 ;;; The root folder under which all zserv processes will create their folders
 rootfolder = /tmp
+;;; The path to the zserv executable
+zserv_exe = /root/bin/zserv
+;;; The port on which ZDStack should listen
+zdstack_port = 8888
+;;; The folder in which to create the Player => IP Database
+database_folder = /root/ZDStack/database
 ;;; The full, absolute path to the IWADs, but not the WADs
-iwaddir = /usr/local/share/zdstack/iwads
+iwaddir = /root/iWADs
 ;;; The full, absolute path to the WADs, but not IWADs
-waddir = /usr/local/share/zdstack/wads
+waddir = /root/WADs
 ;;; The name of the IWAD to use
 iwad = doom2.wad
 ;;; The number of maps to remember statistics for
 maps_to_remember = 10
 ;;; The message to display in the server selector (like ZLauncher or IDE)
-hostname = Greatest Servers %(name)s %(type)s Server
+hostname = Greatest Servers %(name)s %(type)s
 ;;; The administrator's e-mail address
 admin_email = greatest_admin@greatestservers.com
-;;; The site where WADs can be downloaded
-website = http://greatestservers.com/wads
+;;; The site where WADs can be downloaded; '/' should be replaced with '\'
+website = http:\\greatestservers.com\wads
 ;;; The message to display upon connecting to a server
-motd = Welcome to the Greatest Servers<br><br>%(name)s %(type)s Server
+motd = Welcome to the Greatest Servers!<br><br>We hope you have a great time!
 ;;; The default timeout for all servers
 timelimit = 15
 ;;; How many flags can be scored before one team wins (applies to CTF only)
@@ -34,11 +40,11 @@ teamdamage = 0
 ;;; Enable RCON
 enable_rcon = yes
 ;;; The default RCON password for all servers
-rcon_password = supersecretrconpassword
+rcon_password = makegreatchanges
 ;;; Enable server password
 requires_password = yes
 ;;; The default password for all passworded servers
-server_password = supersecretserverpassword
+server_password = iamgreatenough
 ;;; Number of seconds in which spamming can occur
 spam_window = 10
 ;;; How many messages can occur in the spam window before "spamming" occurs
@@ -47,7 +53,7 @@ spam_limit = 10
 optional_wads = zvox2.wad
 ;;; Gravity value
 gravity = 800
-;;; Air control value
+;;; Air control value, OS is 0, NS is 0.00390625 (as I understand it...)
 air_control = 0.00390625
 ;;; How many seconds a player can remain dead before being removed from play
 death_limit = 30
@@ -91,65 +97,26 @@ ffa_maxplayers = 16
 ctf_maxplayers = 8
 coop_maxplayers = 16
 tdm_maxplayers = 4
+;;; Default per-game-mode number of teams
+ctf_maxteams = 2
+tdm_maxteams = 2
+;;; Default per-game-mode number of players per team
+ctf_max_players_per_team = 4
+tdm_max_players_per_team = 2
 
-;;; An example of a duel server that does not use any PWADs except for zvox2.wad
-[D2M1]
-type = duel
-timelimit = 0
-port = 10666
-advertise = 1
-maps = map01
-
-;;; An example of a typical Judas server
-[Judas]
-type = duel
-wads = judas23_.wad
-timelimit = 0
-port = 10667
-advertise = 1
-maps = map01
-
-;;; An example of an un-advertised, passworded CTF server
-[Super Secret CTF]
-type = ctf
-wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad
-port = 10655
-maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
-password = illnevertell
-motd = 1st rule about Super Secret CTF is you do not talk about Super Secret CTF<br>2nd rule about Super Secret CTF is you do not talk about Super Secret CTF
-timelimit = 20
-rcon = fightclub
-
-;;; An example of a typical ZDCTF server
-[ZD CTF 1,2,3]
+[ZDCTF Test]
 type = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
-port = 10668
-advertise = 1
-maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
-
-;;; An example using custom DMFLAGS for a Shoot!.wad server (respawn items)
-[Shoot]
-type = duel
-wads = shoot!.wad,zvox2.wad
-port = 10669
-advertise = 1
-maps = map01
-dmflags = 218180
-
-;;; An example of a typical TeamDM server
-[DMPACK TeamDM]
-type = teamdm
-wads = dmpack.wad
-port = 10670
-advertise = 1
+optional_wads = zvox.wad,zvox2.wad
+port = 11000
 maps = map01,map02,map03,map04,map05,map06,map07,map08,map09,map10
-
-;;; An example of a typical Coop sever
-[COOPBUILDLM COOP]
-type = coop
-wads = coopbuildlm.wad
-port = 10671
-advertise = 1
-maps = map01,map02,map03,map04,map05,map06,map07,map08,map09,map10
-
+advertise = no
+requires_password = yes
+server_password = greatctf
+rcon_enabled = yes
+rcon_password = changectfgreatly
+scorelimit = 5
+timelimit = 15
+max_teams = 2
+max_players = 8
+max_clients = 16

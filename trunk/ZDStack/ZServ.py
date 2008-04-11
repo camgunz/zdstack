@@ -1,8 +1,12 @@
 import os
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from threading import Event
+from subprocess import Popen, PIPE
 
-from ZDStack import yes, no
+from pyfileutils import write_file
+
+from ZDStack import yes, no, ZSERV_EXE, HOSTNAME
 from ZDStack.Map import Map
 from ZDStack.Team import Team
 from ZDStack.Alarm import Alarm
@@ -16,7 +20,7 @@ from ZDStack.LogListener import ConnectionLogListener, WeaponLogListener, \
 
 class ZServ:
 
-    def __init__(self, name, config, zdstack):
+    def __init__(self, name, type, config, zdstack):
         """Initializes a ZServ instance.
 
         name:    a string representing the name of this ZServ.
@@ -32,17 +36,26 @@ class ZServ:
         ###
         self.start_time = datetime.now()
         self.name = name
+        self.type = type
         self.zdstack = zdstack
+        self.dn_fobj = open('/dev/null', 'r+')
+        self.devnull = self.dn_fobj.fileno()
+        self.homedir = os.path.join(self.zdstack.homedir, self.name)
+        self.pid_file = os.path.join(self.homedir, self.name + '.pid')
+        if not os.path.isdir(self.homedir):
+            os.mkdir(self.homedir)
+        self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.keep_spawning = Event()
         self.log = lambda x: self.zdstack.log('%s: %s' % (self.name, x))
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
-            return x in config and yes(x)
+            return x in config and yes(config[x])
+        self.remembered_maps = []
         ### mandatory stuff
-        mandatory_options = ('base_iwad', 'iwad', 'waddir', 'iwaddir', 'wads',
-                             'port', 'maps_to_remember')
-        for mandatory_option in mandatory_option:
+        mandatory_options = ('iwad', 'waddir', 'iwaddir', 'wads', 'port',
+                             'maps_to_remember')
+        for mandatory_option in mandatory_options:
             if mandatory_option not in config:
                 es = "Could not find option '%s' in configuration"
                 raise ValueError(es % (mandatory_option))
@@ -64,9 +77,9 @@ class ZServ:
         for wad in self.wads:
             if not os.path.isfile(wad):
                 raise ValueError("WAD %s not found" % (wad))
-        self.cmd = [ZSERV_EXE, '-waddir', self.waddir, '-iwad', self.iwad,
+        self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad', self.iwad,
                     '-port', str(self.port), '-cfg', self.configfile, '-clog',
-                    '-wlog', '-glog']
+                    '-wlog', '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
         # self.cmd.extend(['-noinput'])
@@ -163,6 +176,7 @@ class ZServ:
         config['name'] = self.name
         self.config = config
         self.configuration = self.get_configuration()
+        write_file(self.configuration, self.configfile, overwrite=True)
         self.set_log_switch_alarm()
         self.initialize()
 
@@ -182,11 +196,11 @@ class ZServ:
         self.set_log_switch_alarm()
 
     def initialize(self):
+        self.map = None
         self.red_team = Team('red')
         self.blue_team = Team('blue')
         self.green_team = Team('green')
         self.white_team = Team('white')
-        self.map = None
         self.teams = Dictable({'red': self.red_team,
                                'blue': self.blue_team,
                                'green': self.green_team,
@@ -196,8 +210,11 @@ class ZServ:
         self.connection_log = None
         self.general_log = None
         self.weapon_log = None
+        if os.path.isfile(self.pid_file):
+            os.unlink(self.pid_file)
 
     def get_configuration(self):
+        # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
         if self.hostname:
             template += 'set hostname "%s"\n' % (self.hostname)
@@ -209,6 +226,8 @@ class ZServ:
             template += 'set email "%s"\n' % (self.admin_email)
         if self.advertise:
             template += 'set master_advertise "1"\n'
+        else:
+            template += 'set master_advertise "0"\n'
         if self.rcon_enabled:
             template += 'set enable_rcon "1"\n'
             template += 'set rcon_password "%s"\n' % (self.rcon_password)
@@ -216,7 +235,7 @@ class ZServ:
             template += 'set enable_rcon "0"\n'
         if self.requires_password:
             template += 'set force_password "1"\n'
-            template += 'set server_password "%s"\n' % (self.server_password)
+            template += 'set password "%s"\n' % (self.server_password)
         else:
             template += 'set force_password "0"\n'
         if self.deathlimit:
@@ -235,7 +254,8 @@ class ZServ:
             for map in self.maps:
                 template += 'addmap "%s"\n' % (map)
         if self.optional_wads:
-            template += ' '.join(self.optional_wads) + '\n'
+            optional_wads = ' '.join(self.optional_wads)
+            template += optional_wads.join(['set optional_wads "', '"\n'])
         if self.overtime:
             for map in self.maps:
                 template += 'add_cvaroverride %s overtime 1\n' % (map)
@@ -261,20 +281,20 @@ class ZServ:
         if self.teamdamage:
             template += 'set teamdamage "%s"\n' % (self.teamdamage)
         if self.max_clients:
-            template += 'set max_clients "%s"\n' % (self.max_clients)
+            template += 'set maxclients "%s"\n' % (self.max_clients)
         if self.max_players:
-            template += 'set max_players "%s"\n' % (self.max_players)
+            template += 'set maxplayers "%s"\n' % (self.max_players)
         if self.max_teams:
-            template += 'set max_teams "%s"\n' % (self.max_teams)
+            template += 'set maxteams "%s"\n' % (self.max_teams)
         if self.max_players_per_team:
-            template += 'set max_players_per_team "%s"\n' % \
+            template += 'set maxplayersperteam "%s"\n' % \
                                                     (self.max_players_per_team)
         if self.timelimit:
             template += 'set timelimit "%s"\n' % (self.timelimit)
         if self.fraglimit:
             template += 'set fraglimit "%s"\n' % (self.fraglimit)
         if self.scorelimit:
-            template += 'set team_scorelimit "%s"\n' % (self.scorelimit)
+            template += 'set teamscorelimit "%s"\n' % (self.scorelimit)
         return template % self.config
 
     def start(self):
@@ -282,30 +302,44 @@ class ZServ:
         while 1:
             self.keep_spawning.wait()
             self.initialize()
-            self.connection_log = LogFile(self.get_connection_log_file(),
-                                          'connection', ConnectionLogParser())
-            self.general_log = LogFile(self.get_general_log_file(),
-                                          'general', GeneralLogParser())
-            self.weapon_log = LogFile(self.get_weapon_log_file(),
-                                          'weapon', WeaponLogParser())
-            connection_log_listener = ConnectionLogListener(self)
-            weapon_log_listener = WeaponLogListener(self)
-            general_log_listener = GeneralLogListener(self)
-            self.connection_log.listeners.append(connection_log_listener)
-            self.weapon_log.listeners.append(weapon_log_listener)
-            self.general_log.listeners.append(general_log_listener)
+            connection_log_filename = self.get_connection_log_filename()
+            weapon_log_filename = self.get_weapon_log_filename()
+            general_log_filename = self.get_general_log_filename()
+            connection_log_parser = ConnectionLogParser()
+            weapon_log_parser = WeaponLogParser()
+            general_log_parser = GeneralLogParser()
+            self.connection_log_listener = ConnectionLogListener(self)
+            self.weapon_log_listener = WeaponLogListener(self)
+            self.general_log_listener = GeneralLogListener(self)
+            self.connection_log = LogFile(connection_log_filename,
+                                          'connection',
+                                          connection_log_parser, self)
+            self.weapon_log = \
+                    LogFile(weapon_log_filename, 'weapon', weapon_log_parser, self)
+            self.general_log = \
+                    LogFile(general_log_filename, 'general', general_log_parser, self)
+            self.connection_log.listeners.append(self.connection_log_listener)
+            self.weapon_log.listeners.append(self.weapon_log_listener)
+            self.general_log.listeners.append(self.general_log_listener)
             self.log("Spawning [%s]" % (' '.join(self.cmd)))
-            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=None, bufsize=0,
-                               close_fds=True)
+            curdir = os.getcwd()
+            os.chdir(self.homedir)
+            # while 1:
+            #     time.sleep(1)
+            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
+                               bufsize=0, close_fds=True)
+            self.pid = self.zserv.pid
+            write_file(str(self.pid), self.pid_file)
+            os.chdir(curdir)
             self.zserv.wait()
-            # Here, the zserv process has exited and we restart all over again
+            # The zserv process has exited and we restart all over again
 
     def stop(self, signum=15):
         self.keep_spawning.clear()
         try:
             s = "Sending signal %s to %s PID: %s"
             self.log(s % (signum, self.name, self.pid))
-            os.kill(self.zserv_pid, signum)
+            os.kill(self.pid, signum)
             return True
         except Exception, e:
             es = str(e)
@@ -321,16 +355,16 @@ class ZServ:
         self.zserv.stdin.flush()
 
     def get_logfile_suffix(self):
-        return date.today().strftime('-%Y%m%d')
+        return date.today().strftime('-%Y%m%d') + '.log'
 
     def get_connection_log_filename(self):
-        return 'conn' + self.get_logfile_suffix()
+        return os.path.join(self.homedir, 'conn' + self.get_logfile_suffix())
 
     def get_weapon_log_filename(self):
-        return 'weap' + self.get_logfile_suffix()
+        return os.path.join(self.homedir, 'weap' + self.get_logfile_suffix())
 
     def get_general_log_filename(self):
-        return 'gen' + self.get_logfile_suffix()
+        return os.path.join(self.homedir, 'gen' + self.get_logfile_suffix())
 
     def add_player(self, player):
         ###
@@ -348,17 +382,17 @@ class ZServ:
         if player.name in self.players:
             del self.players[player.name]
 
-    def get_player(self, player):
-        if player.name not in self.players:
+    def get_player(self, name):
+        if name not in self.players:
             # Maybe we should make custom exceptions like PlayerNotFoundError
-            raise ValueError("Player [%s] not found" % (player.name))
-        return self.players[player.name]
+            raise ValueError("Player [%s] not found" % (name))
+        return self.players[name]
 
-    def get_team(self, team):
-        if team.color not in self.teams:
+    def get_team(self, color):
+        if color not in self.teams:
             # Maybe we should make custom exceptions like TeamNotFoundError
-            raise ValueError("%s team not found" % (team.color.capitalize()))
-        return self.teams[team.color]
+            raise ValueError("%s team not found" % (color.capitalize()))
+        return self.teams[color]
 
     def handle_message(self, message, possible_player_names):
         ###
@@ -370,32 +404,44 @@ class ZServ:
         # mionicd: "^no$" kick
         #
         ###
-        player_names = self.players.keys()
         messager = None
         for player_name in possible_player_names:
-            if player_name in player_names:
-                messager = player_names[player_name]
+            if player_name in self.players:
+                messager = self.players[player_name]
+                break
         if messager is None:
-            es = "Received a message from a non-existant player [%s]!"
-            self.log(es % (player_name))
+            es = "Received a message but none of the players existed: [%s]"
+            self.log(es % (', '.join(possible_player_names)))
         else:
+            message = message.replace(messager.name, '', 1)[3:]
+            es = "Received a message [%s] from player [%s]"
+            self.log(es % (message, messager.name))
             ###
             # Here we would do the lookup
             ###
             pass
 
-    def handle_map_change_event(self, map_number, map_name):
+    def handle_map_change(self, map_number, map_name):
         ###
         # TODO:
-        #   Need to add an option "maps_to_remember".  Also, it would be good
-        #   if somehow maps where no one joins a team are not counted towards
-        #   the number of maps to remember (why replace maps where stats
-        #   actually exist with ones where they don't?).
+        #   Don't remember maps where no one joined a game/team.
         ###
-        new_map = Map(map_number, map_name)
-        for team in self.teams.values():
-            team.set_map(new_map)
         if len(self.remembered_maps) == self.maps_to_remember:
             self.remembered_maps = self.remembered_maps[1:]
-        self.remembered_maps.append(new_map)
+        self.remembered_maps.append(self.map)
+        self.map = Map(map_number, map_name)
+        self.red_team = Team('red')
+        self.blue_team = Team('blue')
+        self.green_team = Team('green')
+        self.white_team = Team('white')
+        self.teams = Dictable({'red': self.red_team,
+                               'blue': self.blue_team,
+                               'green': self.green_team,
+                               'white': self.white_team})
+        self.players = Dictable()
+        for color, team in self.teams.items():
+            if type(team) != type([]):
+                team.set_map(self.map)
+            else:
+                print "Skipping team [%s], because it's a list" % (color)
 

@@ -5,11 +5,14 @@ from ZDStack.ZServ import ZServ
 class FFA(ZServ):
 
     def __init__(self, name, config, zdstack):
-        ZServ.__init__(self, name, config, zdstack)
-        self.type = 'ffa'
+        def is_valid(x):
+            return x in config and config[x]
+        def is_yes(x):
+            return x in config and yes(x)
         self.deathmatch = True
         self.teamplay = False
         self.ctf = False
+        ZServ.__init__(self, name, 'ffa', config, zdstack)
         if is_valid('dmflags'):
             self.dmflags = config['dmflags']
         elif is_valid('ffa_dmflags'):
@@ -41,4 +44,21 @@ class FFA(ZServ):
         config['timelimit'] = self.timelimit
         config['fraglimit'] = self.fraglimit
         self.configuration = self.get_configuration()
+        write_file(self.configuration, self.configfile, overwrite=True)
+
+    def get_configuration(self):
+        configuration = ZServ.get_configuration(self)
+        if self.deathmatch:
+            configuration += 'set deathmatch "1"\n'
+        else:
+            configuration += 'set deathmatch "0"\n'
+        if self.teamplay:
+            configuration += 'set teamplay "1"\n'
+        else:
+            configuration += 'set teamplay "0"\n'
+        if self.ctf:
+            configuration += 'set ctf "1"\n'
+        else:
+            configuration += 'set ctf "0"\n'
+        return configuration
 

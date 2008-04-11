@@ -1,5 +1,8 @@
 class Dictable(dict):
 
+    def __init__(self, d={}):
+        dict.__init__(self, d)
+
     def __getattr__(self, key): 
         try:
             return self[key]
@@ -15,9 +18,12 @@ class Dictable(dict):
         except KeyError, e:
             raise AttributeError, e
 
+    def exportables(self):
+        return [x for x in self.items()]
+
     def export(self):
         out = {}
-        for x, y in self.items():
+        for x, y in self.exportables():
             if hasattr(y, 'export'):
                 out[x] = y.export()
             else:

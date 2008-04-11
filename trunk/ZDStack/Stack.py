@@ -1,8 +1,13 @@
 from datetime import datetime, timedelta
 
 from ZDStack import get_configparser
-from ZDStack.ZServ import ZServ
+from ZDStack.CTF import CTF
+from ZDStack.Coop import Coop
+from ZDStack.Duel import Duel
+from ZDStack.FFA import FFA
+from ZDStack.TeamDM import TeamDM
 from ZDStack.Server import Server
+from ZDStack.Listable import Listable
 
 class AuthenticationError(Exception):
 
@@ -14,15 +19,32 @@ class Stack(Server):
 
     methods_requiring_authentication = []
 
-    def __init__(self, name, config_file=None):
-        Server.__init__(self, name, get_configparser(config_file))
+    def __init__(self, config_file=None):
+        Server.__init__(self, get_configparser(config_file))
         self.start_time = datetime.now()
         self.zservs = {}
         for section in self.config.sections():
-            if section in zservs:
+            if section in self.zservs:
                 es = "Duplicate ZServ configuration section [%s]"
                 raise ValueError(es % (section))
-            self.zservs[section] = ZServ(section, dict(cp.items(section)), self)
+            zs_config = dict(self.config.items(section))
+            if not 'type' in zs_config:
+                es = "Could not determine type of server [%s]"
+                raise ValueError(es % (section))
+            if zs_config['type'].lower() == 'ctf':
+                zs = CTF(section, zs_config, self)
+            elif zs_config['type'].lower() == 'coop':
+                zs = Coop(section, zs_config, self)
+            elif zs_config['type'].lower() in ('duel', '1-on-1'):
+                zs = Duel(section, zs_config, self)
+            elif zs_config['type'].lower() == 'ffa':
+                zs = FFA(section, zs_config, self)
+            elif zs_config['type'].lower() == 'teamdm':
+                zs = TeamDM(section, zs_config, self)
+            else:
+                es = "Invalid server type [%s]"
+                raise ValueError(es % (zs_config['type']))
+            self.zservs[section] = zs
         try:
             self.username = self.config.defaults()['username']
             self.password = self.config.defaults()['password']
@@ -89,8 +111,94 @@ class Stack(Server):
         delete_file(self.pidfile)
         sys.exit(0)
 
+    def get_zserv(self, zserv_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        zserv = self.zservs[zserv_name]
+        return {'name': zserv.name,
+                'type': zserv.type,
+                'port': zserv.port,
+                'iwad': zserv.base_iwad,
+                'wads': zserv.wads,
+                'optional_wads': zserv.optional_wads,
+                'maps': zserv.maps,
+                'dmflags': zserv.dmflags,
+                'dmflags2': zserv.dmflags2,
+                'admin_email': zserv.admin_email,
+                'website': zserv.website.replace('\\', '/'),
+                'advertise': zserv.advertise,
+                'hostname': zserv.hostname,
+                'motd': zserv.motd.replace('<br>', '\n'),
+                'remove_bots_when_humans': zserv.remove_bots_when_humans,
+                'overtime': zserv.overtime,
+                'skill': zserv.skill,
+                'gravity': zserv.gravity,
+                'air_control': zserv.air_control,
+                'min_players': zserv.min_players,
+                'max_players': zserv.max_players,
+                'max_clients': zserv.max_clients,
+                'max_teams': zserv.max_teams,
+                'max_players_per_team': zserv.max_players_per_team,
+                'teamdamage': zserv.teamdamage,
+                'deathlimit': zserv.deathlimit,
+                'timelimit': zserv.timelimit,
+                'fraglimit': zserv.fraglimit,
+                'scorelimit': zserv.scorelimit,
+                'spam_window': zserv.spam_window,
+                'spam_limit': zserv.spam_limit,
+                'speed_check': zserv.speed_check,
+                'restart_empty_map': zserv.restart_empty_map,
+                'map_number': zserv.map.number,
+                'map_name': zserv.map.name}
+
+    def get_all_zservs(self):
+        return [self.get_zserv(x) for x in self.zservs]
+
+    def list_zserv_names(self):
+        return self.zservs.keys()
+
+    def get_player(self, zserv_name, player_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        elif player_name not in self.zservs[zserv_name].players:
+            raise ValueError("Player [%s] not found" % (player_name))
+        return self.zservs[zserv_name].players[player_name]
+
+    def get_all_players(self, zserv_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        return self.zservs[zserv_name].players.export()
+
+    def get_team(self, zserv_name, team_color):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        elif team_color not in self.zservs[zserv_name].teams:
+            raise ValueError("Team [%s] not found" % (team_color))
+        return self.zservs[zserv_name].teams[team_color]
+
+    def get_all_teams(self, zserv_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        return self.zservs[zserv_name].teams.export()
+
+    def get_map(self, zserv_name, map_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        elif player_name not in self.zservs[zserv_name].players:
+            raise ValueError("Player [%s] not found" % (player_name))
+        return self.zservs[zserv_name].players[player_name]
+
+    def get_all_maps(self, zserv_name):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        remembered_maps = self.zservs[zserv_name].remembered_maps
+        current_map = self.zservs[zserv_name].map
+        return Listable(remembered_maps + [current_map]).export()
+
     def register_functions(self):
         for x in (self.start_zserv, self.stop_zserv, self.start_all_zservs,
-                  self.stop_all_zservs):
-            self.register_function(x)
+                  self.stop_all_zservs, self.get_player, self.get_all_players,
+                  self.get_team, self.get_all_teams, self.get_map,
+                  self.get_all_maps):
+            self.xmlrpc_server.register_function(x)
 
