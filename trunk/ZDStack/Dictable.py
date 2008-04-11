@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 class Dictable(dict):
 
     def __init__(self, d={}):
@@ -26,6 +28,8 @@ class Dictable(dict):
         for x, y in self.exportables():
             if hasattr(y, 'export'):
                 out[x] = y.export()
+            elif isinstance(y, Decimal):
+                out[x] = str(y)
             else:
                 out[x] = y
         return out
