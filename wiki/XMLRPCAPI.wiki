@@ -35,8 +35,8 @@
 
   Returns: a ZservDict.
 
-=== get_map() ===
-  Description: Gets a dict of map statistics and info.
+=== get_current_map() ===
+  Description: Gets a dict of the current map's statistics and info.
 
   Usage:{{{get_map(zserv_name, map_number)}}}
 
@@ -47,7 +47,7 @@
 
   Usage: {{{get_team(zserv_name, team_color)}}}
 
-  Returns: a TeamDict.
+  Returns: A TeamDict.
 
 === get_player() ===
   Description: Gets a dict of player statistics and info.
@@ -55,3 +55,31 @@
   Usage: {{{get_player(zserv_name, player_name)}}}
 
   Returns: A PlayerDict.
+
+=== get_all_zservs() ===
+  Description: Gets all dicts of zserv info
+
+  Usage: {{{get_all_zservs()}}}
+
+  Returns: A list of ZservDict instances.
+
+=== get_all_maps() ===
+  Description: Gets all dicts of map statistics and info.
+
+  Usage: {{{get_all_maps(zserv_name)}}}
+
+  Returns: A list of MapDict instances.
+
+=== get_all_teams() ===
+  Description: Gets all dicts of team statistics and info.
+
+  Usage: {{{get_all_teams(zserv_name)}}}
+
+  Returns: A list of TeamDict instances.
+
+=== get_all_players() ===
+  Description: Gets all dicts of team statistics and info.
+
+  Usage: {{{get_all_teams(zserv_name)}}}
+
+  Returns: A list of PlayerDict instances.
