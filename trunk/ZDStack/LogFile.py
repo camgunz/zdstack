@@ -9,6 +9,12 @@ from threading import Thread
 from ZDStack.Alarm import Alarm
 from ZDStack.LogEvent import LogEvent
 
+# def L(x):
+#     fobj = open('/root/ZDStack/bin/out.log', 'a')
+#     fobj.write(x + '\n')
+#     fobj.flush()
+#     fobj.close()
+
 class LogFile:
 
     def __init__(self, file_path, log_type, parser, zserv, listeners=[]):
@@ -62,8 +68,8 @@ class LogFile:
                     ed = {'error': e, 'traceback': tb}
                     events = [LogEvent(datetime.now(), 'error', ed)]
             for event in events:
-                if event.type == 'junk':
-                    # print "Got Junk event: [%s]" % (str(event.data))
+                if event.type.startswith('rcon'):
+                    # self.zserv.log("Got RCON event: [%s]" % (event.type))
                     pass
                 else:
                     self.zserv.log("Sending event [%s: %s]" % (event.type, str(event.data)))

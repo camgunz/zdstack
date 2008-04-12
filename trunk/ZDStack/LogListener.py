@@ -172,7 +172,7 @@ class GeneralLogListener(ZServLogListener):
             self.zserv.log(es % (event.data['player']))
 
     def handle_rcon_action_event(self, event):
-        rcon_action = event.data['action']
+        action = event.data['action']
         try:
             self.zserv.get_player(event.data['player']).add_rcon_action(action)
         except ValueError:

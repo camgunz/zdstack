@@ -182,8 +182,8 @@ class ZServ:
 
     def set_log_switch_alarm(self):
         now = datetime.now()
-        today = datetime(now.year, now.month, now.day)
-        tomorrow = today + timedelta(days=1)
+        then = now + timedelta(days=1)
+        tomorrow = datetime(then.year, then.month, then.day)
         Alarm(tomorrow, self.switch_logs).start()
 
     def switch_logs(self):
@@ -428,7 +428,8 @@ class ZServ:
         ###
         if len(self.remembered_maps) == self.maps_to_remember:
             self.remembered_maps = self.remembered_maps[1:]
-        self.remembered_maps.append(self.map)
+        if self.map is not None:
+            self.remembered_maps.append(self.map)
         self.map = Map(map_number, map_name)
         self.red_team = Team('red')
         self.blue_team = Team('blue')
@@ -440,8 +441,18 @@ class ZServ:
                                'white': self.white_team})
         self.players = Dictable()
         for color, team in self.teams.items():
-            if type(team) != type([]):
-                team.set_map(self.map)
-            else:
-                print "Skipping team [%s], because it's a list" % (color)
+            team.set_map(self.map)
+            # if type(team) != type([]):
+            #     team.set_map(self.map)
+            # else:
+            #     print "Skipping team [%s], because it's a list" % (color)
+        for player in self.players.values():
+            if player.color == 'red':
+                player.set_team(self.red_team)
+            elif player.color == 'blue':
+                player.set_team(self.blue_team)
+            elif player.color == 'green':
+                player.set_team(self.green_team)
+            elif player.color == 'white':
+                player.set_team(self.white_team)
 

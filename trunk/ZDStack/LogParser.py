@@ -122,7 +122,18 @@ class GeneralLogParser(LogParser):
         while len(lines):
             line = lines.popleft()
             tokens = line.split(' ')
-            if line.startswith('<'):
+            if 'RCON' in line and line.startswith('RCON'):
+                if line.endswith('denied!'):
+                    line_type = 'rcon_denied'
+                    line_data = {'player': ' '.join(tokens[2:-2])}
+                    events.append(LogEvent(now, line_type, line_data))
+                elif line.endswith('granted!'):
+                    line_type = 'rcon_granted'
+                    line_data = {'player': ' '.join(tokens[2:-2])}
+                    events.append(LogEvent(now, line_type, line_data))
+                else:
+                    events.append(LogEvent(now, junk, {'data': line}))
+            elif line.startswith('<') and '>' in line and ':' in line:
                 line_type = 'message'
                 ###
                 # There are certain strings that make it impossible to
@@ -148,6 +159,12 @@ class GeneralLogParser(LogParser):
                              'possible_player_names': possible_player_names}
                 e = LogEvent(now, 'message', line_data)
                 events.append(e)
+            elif 'RCON' in line and ' RCON (' in line and ' )' in line:
+                line_type = 'rcon_action'
+                line_data = \
+                        {'action': line[line.rindex('(')+1:line.rindex(')')-1],
+                         'player': line[:line.rindex('RCON')].strip()}
+                events.append(LogEvent(now, line_type, line_data))
             elif 'is now on the' in line:
                 token = ' is now on the '
                 xi = line.rindex(token)
@@ -156,26 +173,9 @@ class GeneralLogParser(LogParser):
                 e = LogEvent(now, 'team_switch',
                              {'player': player, 'team': team})
                 events.append(e)
-            elif 'RCON' in line:
-                if line.startswith('RCON'):
-                    if line.endswith('denied!'):
-                        line_type = 'rcon_denied'
-                        line_data = \
-                                {'player': ' '.join(tokens[2:] + tokens[:-2])}
-                        events.append(LogEvent(now, line_type, line_data))
-                    elif line.endswith('granted!'):
-                        line_type = 'rcon_granted'
-                        line_data = \
-                                {'player': ' '.join(tokens[2:] + tokens[:-2])}
-                        events.append(LogEvent(now, line_type, line_data))
-                    else:
-                        events.append(LogEvent(now, junk, {'data': line}))
-                else:
-                    line_type = 'rcon_action'
-                    line_data = \
-                            {'action': line[line.rindex('('):line.rindex(')')],
-                             'player': line[:line.rindex('RCON')].strip()}
-                    events.append(LogEvent(now, line_type, line_data))
+            # RCON for <!>Ladna is denied!
+            # RCON for <!>Ladna is granted!
+            # <!>Ladna RCON (map map02 )
             elif 'flag' in line:
                 if 'has taken the' in line:
                     line_type = 'flag_touch'

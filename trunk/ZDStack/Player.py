@@ -1,3 +1,5 @@
+from base64 import b64decode, b64encode
+
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 from ZDStack.Listable import Listable
 from ZDStack import get_database
@@ -100,6 +102,7 @@ class Player(BaseStatKeeper):
         self.homogenized_name = homogenize(self.name)
         self.escaped_name = html_escape(self.name)
         self.escaped_homogenized_name = html_escape(homogenize(self.name))
+        self.encoded_name = b64encode(self.name)
         self.homogenized_player_name = homogenize(self.player_name)
         self.escaped_player_name = html_escape(self.player_name)
         self.escaped_homogenized_player_name = \
@@ -124,10 +127,10 @@ class Player(BaseStatKeeper):
         if self.ip:
             if db:
                 rs = db.select('players',
-                               where=[lambda r: r['name'] == self.name])
+                               where=[lambda r: r['name'] == self.encoded_name])
                 rs = [x for x in rs]
                 if not rs:
-                    db.insert('players', values=(self.name, self.ip))
+                    db.insert('players', values=(self.encoded_name, self.ip))
                 addresses = set()
                 for r in rs:
                     for address in r['addresses'].split(','):
@@ -140,7 +143,7 @@ class Player(BaseStatKeeper):
                         a = [x for x in a if x not in s and not s.add(x)]
                         row['addresses'] = ','.join(a)
                     db.update('players', set=[log_ip],
-                               where=[lambda r: r['name'] == self.name])
+                               where=[lambda r: r['name'] == self.encoded_name])
             else:
                 es = "PyXSE not found, Player => IP matching unavailable"
                 self.zserv.log(es)
@@ -158,7 +161,7 @@ class Player(BaseStatKeeper):
             # Takes a set() of strings representing IP addresses
             f = lambda x: list(addresses.intersection(x.split(',')))
             return lambda r: f(r['addresses'])
-        names = set([self.name])
+        names = set([self.encoded_name])
         addresses = set([])
         if self.ip:
             addresses.add(self.ip)
@@ -191,7 +194,7 @@ class Player(BaseStatKeeper):
                     for address in r['addresses'].split(','):
                         addresses.add(address)
                     names.add(r['name'])
-        return sorted(list(names))
+        return sorted([b64decode(x) for x in list(names)])
 
     def exportables(self):
         out = []
