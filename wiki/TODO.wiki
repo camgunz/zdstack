@@ -1,5 +1,7 @@
 #summary Immediate To-Do list for ZDStack
 
+  * Fix Issue 7 (please please please)
+
   * automatic log rotation (at the end of the day and at server startup)
 
   * Fix Issue 8:
