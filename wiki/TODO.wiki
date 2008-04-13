@@ -7,3 +7,5 @@
   * Test alternate game modes (Coop, Duel, FFA, TeamDM)
 
   * Test all the server config variables like removebotswhenhumans, etc.
+
+  * Fully test all XML-RPC methods.
