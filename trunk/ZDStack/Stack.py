@@ -1,4 +1,7 @@
+import os.path
+
 from datetime import datetime, timedelta
+from threading import Thread
 
 from ZDStack import get_configparser
 from ZDStack.CTF import CTF
@@ -78,7 +81,7 @@ class Stack(Server):
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         if self.zservs[zserv_name].pid is not None:
             raise Exception("ZServ [%s] is already running" % (zserv_name))
-        self.zservs[zserv_name].start()
+        Thread(target=self.zservs[zserv_name].start).start()
 
     def stop_zserv(self, zserv_name):
         if zserv_name not in self.zservs:
@@ -93,8 +96,8 @@ class Stack(Server):
         self.start_zserv(zserv_name)
 
     def start_all_zservs(self):
-        for zserv in self.zservs.values():
-            zserv.start()
+        for zserv_name in self.zservs:
+            self.start_zserv(zserv_name)
 
     def stop_all_zservs(self):
         for zserv in [z for z in self.zservs.values() if z.pid is not None]:
@@ -129,7 +132,7 @@ class Stack(Server):
                          'type': zserv.type,
                          'port': zserv.port,
                          'iwad': zserv.base_iwad,
-                         'wads': zserv.wads,
+                         'wads': [os.path.basename(x) for x in zserv.wads],
                          'optional_wads': zserv.optional_wads,
                          'maps': zserv.maps,
                          'dmflags': zserv.dmflags,
@@ -200,22 +203,18 @@ class Stack(Server):
     def get_current_map(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        elif player_name not in self.zservs[zserv_name].players:
-            raise ValueError("Player [%s] not found" % (player_name))
         return self.zservs[zserv_name].map.export()
 
-    def get_all_maps(self, zserv_name):
+    def get_remembered_stats(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        remembered_maps = self.zservs[zserv_name].remembered_maps
-        current_map = self.zservs[zserv_name].map
-        return Listable(remembered_maps + [current_map]).export()
+        return self.zservs[zserv_name].remembered_stats.export()
 
     def register_functions(self):
         for x in (self.start_zserv, self.stop_zserv, self.restart_zserv,
                   self.start_all_zservs, self.stop_all_zservs,
                   self.restart_all_zservs, self.get_zserv, self.get_all_zservs,
-                  self.list_zserv_names, self.get_all_maps,
+                  self.list_zserv_names, self.get_remembered_stats,
                   self.get_current_map, self.get_team, self.get_all_teams,
                   self.get_player, self.get_all_players,
                   self.list_player_names):

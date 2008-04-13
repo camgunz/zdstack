@@ -117,6 +117,7 @@ class Player(BaseStatKeeper):
             self.escaped_homogenized_tag = None
         self.playing = False
         self.team = None
+        self.disconnected = False
         self.stat_container = self.team
         if self.team is not None:
             self.color = self.team.color
@@ -216,4 +217,10 @@ class Player(BaseStatKeeper):
         else:
             self.color = None
         self.stat_container = self.team
+
+    def __str__(self):
+        return "<Player [%s]>" % (self.name)
+
+    def __repr__(self):
+        return "Player(%s)" % (self.name)
 

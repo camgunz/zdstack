@@ -17,9 +17,9 @@ from ZDStack.LogEvent import LogEvent
 
 class LogFile:
 
-    def __init__(self, file_path, log_type, parser, zserv, listeners=[]):
+    def __init__(self, log_type, parser, zserv, listeners=[]):
         self.fobj = None
-        self.filepath = file_path
+        self.filepath = None
         self.new_filepath = False
         self.log_type = log_type
         self.parser = parser
@@ -46,7 +46,8 @@ class LogFile:
             if self.new_filepath:
                 self.zserv.log("Received new filepath [%s]" % (self.new_filepath))
                 self.new_filepath = False
-                self.fobj.close()
+                if self.fobj:
+                    self.fobj.close()
                 self.fobj = None
             while not self.fobj:
                 self.zserv.log("No fileobject: [%s]" % (self.filepath))

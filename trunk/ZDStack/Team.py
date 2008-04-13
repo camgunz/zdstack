@@ -5,6 +5,7 @@ class Team(BaseStatKeeper):
     def __init__(self, color):
         self.color = color
         self.map = None
+        self.name = self.color
         BaseStatKeeper.__init__(self, self.map)
 
     def exportables(self):

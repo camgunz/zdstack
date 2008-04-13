@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import getopt
 import signal
 import os.path
@@ -51,8 +52,19 @@ def start(config_file, debug=False):
             print >> sys.stderr, "\nThis server is already running: %s\n" % (zdstack.pidfile)
             sys.exit(-1)
         if not debug:
+            print "Forking"
             fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
+        else:
+            print "Debugging"
         zdstack.startup()
+        if debug:
+            import pprint
+            time.sleep(5)
+            pprint.pprint(zdstack.get_all_players('ZDCTF Test'))
+            pprint.pprint(zdstack.get_all_teams('ZDCTF Test'))
+            pprint.pprint(zdstack.get_current_map('ZDCTF Test'))
+            pprint.pprint(zdstack.get_all_zservs('ZDCTF Test'))
+            pprint.pprint(zdstack.get_remembered_stats('ZDCTF Test'))
     except Exception, e:
         raise # for debugging
         print >> sys.stderr, "\nError: %s\n" % (str(e))

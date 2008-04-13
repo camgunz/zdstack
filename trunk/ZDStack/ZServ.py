@@ -9,14 +9,13 @@ from pyfileutils import write_file
 from ZDStack import yes, no, ZSERV_EXE, HOSTNAME
 from ZDStack.Map import Map
 from ZDStack.Team import Team
-from ZDStack.Alarm import Alarm
+from ZDStack.Stats import Stats
+from ZDStack.Player import Player
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
-from ZDStack.LogParser import ConnectionLogParser, WeaponLogParser, \
-                              GeneralLogParser
-from ZDStack.LogListener import ConnectionLogListener, WeaponLogListener, \
-                                GeneralLogListener
+from ZDStack.LogParser import ConnectionLogParser,  GeneralLogParser
+from ZDStack.LogListener import ConnectionLogListener, GeneralLogListener
 
 class ZServ:
 
@@ -30,9 +29,10 @@ class ZServ:
         """
         ###
         # TODO:
-        #   1. It would be good if somehow maps where no one joins a team are
-        #   not counted towards the number of maps to remember (why replace
-        #   maps where stats actually exist with ones where they don't?).
+        #   1. It would be good if somehow maps where no one joins the game
+        #   are not counted towards the number of maps to remember (why
+        #   replace maps where stats actually exist with ones where they
+        #   don't?).
         ###
         self.start_time = datetime.now()
         self.name = name
@@ -51,7 +51,7 @@ class ZServ:
             return x in config and config[x]
         def is_yes(x):
             return x in config and yes(config[x])
-        self.remembered_maps = []
+        self.remembered_stats = Listable()
         ### mandatory stuff
         mandatory_options = ('iwad', 'waddir', 'iwaddir', 'wads', 'port',
                              'maps_to_remember')
@@ -79,12 +79,11 @@ class ZServ:
                 raise ValueError("WAD %s not found" % (wad))
         self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad', self.iwad,
                     '-port', str(self.port), '-cfg', self.configfile, '-clog',
-                    '-wlog', '-log']
+                    '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
         # self.cmd.extend(['-noinput'])
         ### other mandatory stuff
-        self.address = 'http://%s:%d' % (HOSTNAME, self.port)
         ### admin stuff
         self.rcon_enabled = None
         self.requires_password = None
@@ -177,23 +176,7 @@ class ZServ:
         self.config = config
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
-        self.set_log_switch_alarm()
         self.initialize()
-
-    def set_log_switch_alarm(self):
-        now = datetime.now()
-        then = now + timedelta(days=1)
-        tomorrow = datetime(then.year, then.month, then.day)
-        Alarm(tomorrow, self.switch_logs).start()
-
-    def switch_logs(self):
-        if self.connection_log:
-            self.connection_log.set_filepath(self.get_connection_log_filename())
-        if self.weapon_log:
-            self.weapon_log.set_filepath(self.get_weapon_log_filename())
-        if self.general_log:
-            self.general_log.set_filepath(self.get_general_log_filename())
-        self.set_log_switch_alarm()
 
     def initialize(self):
         self.map = None
@@ -206,16 +189,17 @@ class ZServ:
                                'green': self.green_team,
                                'white': self.white_team})
         self.players = Dictable()
+        self.disconnected_players = Dictable()
         self.pid = None
         self.connection_log = None
         self.general_log = None
-        self.weapon_log = None
         if os.path.isfile(self.pid_file):
             os.unlink(self.pid_file)
 
     def get_configuration(self):
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
+        template += 'set log_disposition "1"\n'
         if self.hostname:
             template += 'set hostname "%s"\n' % (self.hostname)
         if self.motd:
@@ -302,30 +286,20 @@ class ZServ:
         while 1:
             self.keep_spawning.wait()
             self.initialize()
-            connection_log_filename = self.get_connection_log_filename()
-            weapon_log_filename = self.get_weapon_log_filename()
-            general_log_filename = self.get_general_log_filename()
             connection_log_parser = ConnectionLogParser()
-            weapon_log_parser = WeaponLogParser()
             general_log_parser = GeneralLogParser()
+            self.connection_log = \
+                            LogFile('connection', connection_log_parser, self)
+            self.general_log = LogFile('general', general_log_parser, self)
             self.connection_log_listener = ConnectionLogListener(self)
-            self.weapon_log_listener = WeaponLogListener(self)
             self.general_log_listener = GeneralLogListener(self)
-            self.connection_log = LogFile(connection_log_filename,
-                                          'connection',
-                                          connection_log_parser, self)
-            self.weapon_log = \
-                    LogFile(weapon_log_filename, 'weapon', weapon_log_parser, self)
-            self.general_log = \
-                    LogFile(general_log_filename, 'general', general_log_parser, self)
             self.connection_log.listeners.append(self.connection_log_listener)
-            self.weapon_log.listeners.append(self.weapon_log_listener)
             self.general_log.listeners.append(self.general_log_listener)
+            self.connection_log.set_filepath(self.get_connection_log_filename())
+            self.general_log.set_filepath(self.get_general_log_filename())
             self.log("Spawning [%s]" % (' '.join(self.cmd)))
             curdir = os.getcwd()
             os.chdir(self.homedir)
-            # while 1:
-            #     time.sleep(1)
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
                                bufsize=0, close_fds=True)
             self.pid = self.zserv.pid
@@ -377,10 +351,15 @@ class ZServ:
         ###
         if player.name not in self.players:
             self.players[player.name] = player
+        else:
+            if player.name in self.disconnected_players:
+                del self.disconnected_players[player.name]
+            self.players[player.name].disconnected = False
 
     def remove_player(self, player):
         if player.name in self.players:
-            del self.players[player.name]
+            self.disconnected_players[player.name] = player
+        self.players[player.name].disconnected = True
 
     def get_player(self, name):
         if name not in self.players:
@@ -393,6 +372,17 @@ class ZServ:
             # Maybe we should make custom exceptions like TeamNotFoundError
             raise ValueError("%s team not found" % (color.capitalize()))
         return self.teams[color]
+
+    def roll_log(self, log_file_name):
+        if log_file_name == 'general':
+            general_log_filename = self.get_general_log_filename()
+            self.general_log.set_filepath(general_log_filename)
+        elif log_file_name == 'connection':
+            connection_log_filename = self.get_connection_log_filename()
+            self.general_log.set_filepath(connection_log_filename)
+        else:
+            es = "Received a log_roll event for non-existent log [%s]"
+            self.log(es % (log_file_name))
 
     def handle_message(self, message, possible_player_names):
         ###
@@ -422,37 +412,34 @@ class ZServ:
             pass
 
     def handle_map_change(self, map_number, map_name):
-        ###
-        # TODO:
-        #   Don't remember maps where no one joined a game/team.
-        ###
-        if len(self.remembered_maps) == self.maps_to_remember:
-            self.remembered_maps = self.remembered_maps[1:]
-        if self.map is not None:
-            self.remembered_maps.append(self.map)
+        if len(self.remembered_stats) == self.maps_to_remember:
+            self.remembered_stats = Listable(self.remembered_stats[1:])
+        if self.map:
+            stats = Stats(self.map.export(), self.red_team.export(),
+                          self.blue_team.export(), self.green_team.export(),
+                          self.white_team.export(), self.players.export())
+            print "ZServ: self.players [%s]" % (self.players)
+            print "ZServ: Saved players [%s]" % (self.players.export())
+            ###
+            # TODO:
+            #   Don't remember maps where no one joined a game/team.
+            ###
+            self.remembered_stats.append(stats)
         self.map = Map(map_number, map_name)
-        self.red_team = Team('red')
-        self.blue_team = Team('blue')
-        self.green_team = Team('green')
-        self.white_team = Team('white')
-        self.teams = Dictable({'red': self.red_team,
-                               'blue': self.blue_team,
-                               'green': self.green_team,
-                               'white': self.white_team})
-        self.players = Dictable()
-        for color, team in self.teams.items():
+        for player_name, player in self.players.items():
+            if player_name in self.disconnected_players:
+                del self.players[player_name]
+            else:
+                player.initialize()
+        self.disconnected_players = Dictable()
+        for team in self.teams.values():
+            team.initialize()
             team.set_map(self.map)
-            # if type(team) != type([]):
-            #     team.set_map(self.map)
-            # else:
-            #     print "Skipping team [%s], because it's a list" % (color)
-        for player in self.players.values():
-            if player.color == 'red':
-                player.set_team(self.red_team)
-            elif player.color == 'blue':
-                player.set_team(self.blue_team)
-            elif player.color == 'green':
-                player.set_team(self.green_team)
-            elif player.color == 'white':
-                player.set_team(self.white_team)
+
+    def log_ip(self, player_name, player_ip):
+        ###
+        # We just instantiate the player, that object takes care of the
+        # logging itself if an IP address is given.
+        ###
+        Player(player_name, player_ip)
 

@@ -27,7 +27,10 @@ class LogListener:
                 self.handle_unhandled_event(event)
             else:
                 self.event_types_to_handlers[event.type](event)
-            self.last_event = event
+            if event.type != 'junk':
+                print "%s: current event: [%s]" % (self.name, event)
+                print "%s: last_event: [%s]" % (self.name, self.last_event)
+                self.last_event = event
 
     def send_event(self, event):
         self.events.put_nowait(event) # be vocal (raise exception) if failure
@@ -43,6 +46,11 @@ class ZServLogListener(LogListener):
     def __init__(self, name, zserv):
         self.zserv = zserv
         LogListener.__init__(self, name)
+        self.event_types_to_handlers['log_roll'] = self.handle_log_roll_event
+
+    def handle_log_roll_event(self, event):
+        print "Handling log_roll event [%s]" % (event.data['log'])
+        self.zserv.roll_log(event.data['log'])
 
     def handle_error_event(self, event):
         self.zserv.log("Event error: %s" % (event.data['error']))
@@ -54,65 +62,10 @@ class ConnectionLogListener(ZServLogListener):
 
     def __init__(self, zserv):
         ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
-        self.event_types_to_handlers['connection'] = \
-                                                self.handle_connection_event
-        self.event_types_to_handlers['disconnection'] = \
-                                                self.handle_disconnection_event
-        self.event_types_to_handlers['game_join'] = self.handle_game_join_event
+        self.event_types_to_handlers['ip_log'] = self.handle_ip_log_event
 
-    def handle_connection_event(self, event):
-        player = Player(event.data['player'], self.zserv, event.data['ip'])
-        self.zserv.log("Received a connection event: [%s]" % (event.data))
-        self.zserv.add_player(player)
-
-    def handle_disconnection_event(self, event):
-        player = Player(event.data['player'], self.zserv)
-        self.zserv.remove_player(player)
-
-    def handle_game_join_event(self, event):
-        try:
-            player = self.zserv.get_player(event.data['player'])
-        except ValueError:
-            es = "Received a game_join event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
-            return
-        try:
-            team = self.zserv.get_team(event.data['team'])
-        except ValueError:
-            es = "Received a team join event to non-existent team [%s]"
-            self.zserv.log(es % (event.data['team']))
-            return
-        player.playing = True
-        player.team = team
-
-class WeaponLogListener(ZServLogListener):
-
-    def __init__(self, zserv):
-        ZServLogListener.__init__(self, 'Weapon Log Listener', zserv)
-        self.event_types_to_handlers['frag'] = self.handle_frag_event
-
-    def handle_frag_event(self, event):
-        try:
-            fragger = self.zserv.get_player(event.data['fragger'])
-        except ValueError:
-            es = "Received a frag event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['fragger']))
-            return
-        try:
-            fraggee = self.zserv.get_player(event.data['fraggee'])
-        except ValueError:
-            es = "Received a death event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['fraggee']))
-            return
-        frag = Frag(event.data['fragger'], event.data['fraggee'],
-                    event.data['weapon'])
-        if event.data['fragger'] != event.data['fraggee']: # no suicides
-            fragger.add_frag(frag)
-        fraggee.add_death(frag)
-        if self.zserv.general_log_listener.last_event.type == 'flag_loss':
-            # This is probably a race condition...
-            fragger.add_flag_drop(frag)
-            fraggee.add_flag_loss(frag)
+    def handle_ip_log_event(self, event):
+        self.zserv.log_ip(event.data['player'], event.data['ip'])
 
 class GeneralLogListener(ZServLogListener):
 
@@ -139,6 +92,79 @@ class GeneralLogListener(ZServLogListener):
                                                 self.handle_flag_pick_event
         self.event_types_to_handlers['map_change'] = \
                                                 self.handle_map_change_event
+        self.event_types_to_handlers['frag'] = self.handle_frag_event
+        self.event_types_to_handlers['death'] = self.handle_frag_event
+        self.event_types_to_handlers['connection'] = \
+                                                self.handle_connection_event
+        self.event_types_to_handlers['disconnection'] = \
+                                                self.handle_disconnection_event
+        self.event_types_to_handlers['game_join'] = self.handle_game_join_event
+        self.event_types_to_handlers['team_join'] = self.handle_game_join_event
+
+    def handle_connection_event(self, event):
+        player = Player(event.data['player'], self.zserv)
+        self.zserv.log("Received a connection event: [%s]" % (event.data))
+        self.zserv.add_player(player)
+
+    def handle_disconnection_event(self, event):
+        player = Player(event.data['player'], self.zserv)
+        self.zserv.remove_player(player)
+
+    def handle_game_join_event(self, event):
+        try:
+            player = self.zserv.get_player(event.data['player'])
+        except ValueError:
+            es = "Received a game_join event for non-existent player [%s]"
+            self.zserv.log(es % (event.data['player']))
+            return
+        player.playing = True
+        if event.type == 'team_join':
+            try:
+                team = self.zserv.get_team(event.data['team'])
+            except ValueError:
+                es = "Received a team join event to non-existent team [%s]"
+                self.zserv.log(es % (event.data['team']))
+                return
+            player.set_team(team)
+
+    def handle_frag_event(self, event):
+        try:
+            fraggee = self.zserv.get_player(event.data['fraggee'])
+            print "Got fraggee: %s" % (fraggee)
+        except ValueError:
+            es = "Received a death event for non-existent player [%s]"
+            self.zserv.log(es % (event.data['fraggee']))
+            return
+        frag = Frag(event.data['fragger'], event.data['fraggee'],
+                    event.data['weapon'])
+        print "Frag: %s" % (frag)
+        print "Fraggee's Deaths: %s" % (fraggee.deaths)
+        fraggee.add_death(frag)
+        print "Fraggee's Deaths: %s" % (fraggee.deaths)
+        if self.last_event.type == 'flag_loss':
+            print "Last Event was a Flag Loss"
+            fraggee.add_flag_loss(frag)
+        else:
+            print "Last Event was not a Flag Loss: %s" % (self.last_event)
+        if event.type == 'frag': # no suicides
+            print "Event type was a frag"
+            try:
+                fragger = self.zserv.get_player(event.data['fragger'])
+                print "Got fragger: %s" % (fragger)
+            except ValueError:
+                es = "Received a frag event for non-existent player [%s]"
+                self.zserv.log(es % (event.data['fragger']))
+                return
+            print "Fragger's frags: %s" % (fragger.frags)
+            fragger.add_frag(frag)
+            print "Fragger's frags: %s" % (fragger.frags)
+            if self.last_event.type == 'flag_loss':
+                print "Last Event was a Flag Loss"
+                fragger.add_flag_drop(frag)
+            else:
+                print "Last Event was not a Flag Loss: %s" % (self.last_event)
+        else:
+            print "Event type was not a frag"
 
     def handle_message_event(self, event):
         self.zserv.handle_message(event.data['contents'],

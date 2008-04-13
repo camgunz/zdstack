@@ -1,3 +1,4 @@
+import re
 import time
 from datetime import datetime
 from collections import deque
@@ -7,7 +8,101 @@ from ZDStack.LogEvent import LogEvent
 NUMS_TO_WEAPONS = {'1': 'fist', '2': 'chainsaw', '3': 'pistol',
                    '4': 'shotgun', '5': 'super shotgun', '6': 'chaingun',
                    '7': 'rocket launcher', '8': 'plasma rifle', '9': 'bfg',
-                   '12': 'rocket suicide'}
+                   '10': 'telefrag', '11': 'unknown', '12': 'suicide',
+                   '13': 'telefuck'}
+
+REGEXPS_AND_WEAPONS = \
+    [(r"^> (.*) chewed on (.*)'s fist.$", 'fist'),
+     (r"^> (.*) was mowed over by (.*)'s chainsaw.$", 'chainsaw'),
+     (r"^> (.*) was tickled by (.*)'s pea shooter.$", 'pistol'),
+     (r"^> (.*) chewed on (.*)'s boomstick.$", 'shotgun'),
+     (r"^> (.*) was mowed down by (.*)'s chaingun.$", 'chaingun'),
+     (r"^> (.*) was splattered by (.*)'s super shotgun.$", 'super shotgun'),
+     (r"^> (.*) rode (.*)'s rocket.$", 'rocket launcher'),
+     (r"^> (.*) was melted by (.*)'s plasma gun.$", 'plasma gun'),
+     (r"^> (.*) couldn't hide from (.*)'s BFG.$", 'bfg'),
+     (r"^> (.*) was splintered by (.*)'s BFG.$", 'bfg'),
+     (r"^> (.*) was telefragged by (.*).$", 'telefrag')]
+
+REGEXPS_AND_DEATHS = \
+    [(r"^> (.*) should have stood back.$", 'rocket suicide'),
+     (r"^> (.*) mutated.$", 'mutation'),
+     (r"^> (.*) fell too far.$", 'falling'),
+     (r"^> (.*) tried to leave.$", "exiting"),
+     (r"^> (.*) can't swim.$", "drowning"),
+     (r"^> (.*) checks his glasses.$", 'teamkill')]
+
+REGEXPS_AND_JOINS = \
+    [(r"^> (.*) is now on the (Blue|Red|White|Green) team.$", 'team_switch'),
+     (r"^> (.*) joined the game.$", 'game_join'),
+     (r"^> (.*) joined the game on the (Blue|Red|White|Green) team.$", 'team_join')]
+
+REGEXPS_AND_RCONS = \
+    [(r"^RCON for (.*) is denied!$", 'rcon_denied'),
+     (r"^RCON for (.*) is granted!$", 'rcon_granted'),
+     (r"^(.*) RCON \((.*) \)$", 'rcon_action')]
+
+REGEXPS_AND_FLAGS = \
+    [(r"^> (.*) has taken the (.*) flag", 'flag_touch'),
+     (r"^> (.*) lost the (.*) flag", 'flag_loss'),
+     (r"^> (.*) returned the (.*) flag", 'flag_return'),
+     (r"^> (.*) picked up the (.*) flag", 'flag_pick'),
+     (r"^> (.*) scored for the (.*) team", 'flag_cap')]
+
+def line_to_death_event(event_dt, line):
+    for regexp, weapon in REGEXPS_AND_WEAPONS:
+        match = re.match(regexp, line)
+        if match:
+            d = {'fragger': match.group(2), 'fraggee': match.group(1),
+                 'weapon': weapon}
+            return LogEvent(event_dt, 'frag', d)
+    for regexp, death in REGEXPS_AND_DEATHS:
+        match = re.match(regexp, line)
+        if match:
+            d = {'fragger': match.group(1), 'fraggee': match.group(1),
+                 'weapon': death}
+            return LogEvent(event_dt, 'death', d)
+
+def line_to_connection_event(event_dt, line):
+    match = re.match(r"^> (.*) has connected.$", line)
+    if match:
+        d = {'player': match.group(1)}
+        return LogEvent(event_dt, 'connection', d)
+    match = re.match(r"^> (.*) disconnected$", line)
+    if match:
+        d = {'player': match.group(1)}
+        return LogEvent(event_dt, 'disconnection', d)
+
+def line_to_join_event(event_dt, line):
+    for regexp, join in REGEXPS_AND_JOINS:
+        match = re.match(regexp, line)
+        if match:
+            d = {'player': match.group(1)}
+            if join.startswith('team'):
+                d['team'] = match.group(2).lower()
+            return LogEvent(event_dt, join, d)
+
+def line_to_rcon_event(event_dt, line):
+    for regexp, rcon in REGEXPS_AND_RCONS:
+        match = re.match(regexp, line)
+        if match:
+            d = {'player': match.group(1)}
+            if rcon == 'rcon_action':
+                d['action'] = match.group(2)
+            return LogEvent(event_dt, rcon, d)
+
+def line_to_flag_event(event_dt, line):
+    for regexp, flag in REGEXPS_AND_FLAGS:
+        match = re.match(regexp, line)
+        if match:
+            return LogEvent(event_dt, flag, {'player': match.group(1)})
+
+def line_to_map_event(event_dt, line):
+    match = re.match('^map(.*): (.*)$', line)
+    if match:
+        d = {'name': match.group(2), 'number': int(match.group(1))}
+        return LogEvent(event_dt, 'map_change', d)
+                        
 
 class LogParser:
 
@@ -47,7 +142,10 @@ class ConnectionLogParser(LogParser):
             timestamp = ' '.join([d, t])
             time_tup = time.strptime(timestamp, '%Y/%m/%d %H:%M:%S')
             line_dt = datetime(*time_tup[:6])
-            if line.endswith('has connected'):
+            if line.endswith('Connection Log Stopped'):
+                events.append(LogEvent(line_dt, 'log_roll',
+                                       {'log': 'connection'}))
+            elif line.endswith('has connected'):
                 ip_tokens = [x for x in tokens[2:] \
                                     if x.startswith('(') and x.endswith(')')]
                 if len(ip_tokens) != 1:
@@ -58,55 +156,29 @@ class ConnectionLogParser(LogParser):
                 xi = 0
                 yi = message.rindex(ip_tokens[0]) - 1
                 name = message[xi:yi]
-                events.append(LogEvent(line_dt, 'connection',
+                events.append(LogEvent(line_dt, 'ip_log',
                                        {'player': name, 'ip': ip}))
-            elif line.endswith('disconnected'):
-                tokens = [x for x in line.split() if x]
-                # ending_token = tokens.index('disconnected')
-                # name = tokens[2:ending_token]
-                e = LogEvent(line_dt, 'disconnection',
-                             {'player': ' '.join(tokens[2:-1])})
-                events.append(e)
-            elif 'joined the game on the' in message:
-                token = ' joined the game on the '
-                xi = message.rindex(token)
-                name = message[:xi]
-                team = message[xi+len(token):-6].lower() # ends with a '.'
-                e = LogEvent(line_dt, 'game_join',
-                             {'player': name, 'team': team})
-                events.append(e)
+            # elif line.endswith('disconnected'):
+            #     tokens = [x for x in line.split() if x]
+            #     # ending_token = tokens.index('disconnected')
+            #     # name = tokens[2:ending_token]
+            #     e = LogEvent(line_dt, 'disconnection',
+            #                  {'player': ' '.join(tokens[2:-1])})
+            #     events.append(e)
+            # elif 'joined the game on the' in message:
+            #     token = ' joined the game on the '
+            #     xi = message.rindex(token)
+            #     name = message[:xi]
+            #     team = message[xi+len(token):-6].lower() # ends with a '.'
+            #     e = LogEvent(line_dt, 'game_join',
+            #                  {'player': name, 'team': team})
+            #     events.append(e)
             elif (len(lines) and data.endswith('\n')) or \
                  'Connection Log Started' in line or \
                  'zserv startup' in line: # line is junk
                 events.append(LogEvent(line_dt, 'junk', {'data': line}))
             else: # line was incomplete
                 leftovers.append(line)
-        return (events, '\n'.join(leftovers))
-
-class WeaponLogParser(LogParser):
-
-    def __init__(self):
-        self.name = "Weapon Log Parser"
-
-    def parse(self, data):
-        now = datetime.now()
-        lines = self.split_data(data)
-        events = []
-        leftovers = []
-        while len(lines):
-            line = lines.popleft()
-            tokens = [x for x in line.split('\\') if x]
-            if not len(tokens) == 3:
-                if len(lines) or data.endswith('\n'): # line was junk
-                    events.append(LogEvent(now, 'junk', {'data': line}))
-                else:
-                    leftovers.append(line)
-                    raise ValueError("Error parsing line [%s]" % (line))
-                continue
-            e = LogEvent(now, 'frag', {'fragger': tokens[0],
-                                       'fraggee': tokens[1],
-                                       'weapon': NUMS_TO_WEAPONS[tokens[2]]})
-            events.append(e)
         return (events, '\n'.join(leftovers))
 
 class GeneralLogParser(LogParser):
@@ -122,17 +194,26 @@ class GeneralLogParser(LogParser):
         while len(lines):
             line = lines.popleft()
             tokens = line.split(' ')
-            if 'RCON' in line and line.startswith('RCON'):
-                if line.endswith('denied!'):
-                    line_type = 'rcon_denied'
-                    line_data = {'player': ' '.join(tokens[2:-2])}
-                    events.append(LogEvent(now, line_type, line_data))
-                elif line.endswith('granted!'):
-                    line_type = 'rcon_granted'
-                    line_data = {'player': ' '.join(tokens[2:-2])}
-                    events.append(LogEvent(now, line_type, line_data))
-                else:
-                    events.append(LogEvent(now, junk, {'data': line}))
+            death_event = line_to_death_event(now, line)
+            connection_event = line_to_connection_event(now, line)
+            join_event = line_to_join_event(now, line)
+            rcon_event = line_to_rcon_event(now, line)
+            flag_event = line_to_flag_event(now, line)
+            map_event = line_to_map_event(now, line)
+            if line == 'General logging off':
+                events.append(LogEvent(now, 'log_roll', {'log': 'general'}))
+            elif death_event:
+                events.append(death_event)
+            elif connection_event:
+                events.append(connection_event)
+            elif join_event:
+                events.append(join_event)
+            elif rcon_event:
+                events.append(rcon_event)
+            elif flag_event:
+                events.append(flag_event)
+            elif map_event:
+                events.append(map_event)
             elif line.startswith('<') and '>' in line and ':' in line:
                 line_type = 'message'
                 ###
@@ -159,52 +240,60 @@ class GeneralLogParser(LogParser):
                              'possible_player_names': possible_player_names}
                 e = LogEvent(now, 'message', line_data)
                 events.append(e)
-            elif 'RCON' in line and ' RCON (' in line and ' )' in line:
-                line_type = 'rcon_action'
-                line_data = \
-                        {'action': line[line.rindex('(')+1:line.rindex(')')-1],
-                         'player': line[:line.rindex('RCON')].strip()}
-                events.append(LogEvent(now, line_type, line_data))
-            elif 'is now on the' in line:
-                token = ' is now on the '
-                xi = line.rindex(token)
-                player = line[2:xi]
-                team = line[xi+len(token):-5].lower().replace('.', '').strip()
-                e = LogEvent(now, 'team_switch',
-                             {'player': player, 'team': team})
-                events.append(e)
-            # RCON for <!>Ladna is denied!
-            # RCON for <!>Ladna is granted!
-            # <!>Ladna RCON (map map02 )
-            elif 'flag' in line:
-                if 'has taken the' in line:
-                    line_type = 'flag_touch'
-                    line_data = {'player': ' '.join(tokens[1:-5])}
-                    events.append(LogEvent(now, line_type, line_data))
-                elif 'lost the' in line:
-                    line_type = 'flag_loss'
-                    line_data = {'player': ' '.join(tokens[1:-4])}
-                    events.append(LogEvent(now, line_type, line_data))
-                elif 'returned the' in line:
-                    line_type = 'flag_return'
-                    line_data = {'player': ' '.join(tokens[1:-4])}
-                    events.append(LogEvent(now, line_type, line_data))
-                elif 'picked up the' in line:
-                    line_type = 'flag_pick'
-                    line_data = {'player': ' '.join(tokens[1:-5])}
-                    events.append(LogEvent(now, line_type, line_data))
-            elif 'scored for the' in line:
-                line_type = 'flag_cap'
-                line_data = {'player': ' '.join(tokens[1:-5]),
-                             'team': tokens[-2].lower()}
-                events.append(LogEvent(now, line_type, line_data))
-            elif line.startswith('map'):
-                map_number = int(line[:line.index(': ')][3:])
-                map_name = line[line.index(': ')+2:]
-                line_data = {'number': map_number, 'name': map_name}
-                e = LogEvent(now, 'map_change', line_data)
-                events.append(e)
             else:
                 events.append(LogEvent(now, 'junk', {'data': line}))
         return (events, '\n'.join(leftovers))
+            # elif line.startswith('map'):
+            #     map_number = int(line[:line.index(': ')][3:])
+            #     map_name = line[line.index(': ')+2:]
+            #     line_data = {'number': map_number, 'name': map_name}
+            #     e = LogEvent(now, 'map_change', line_data)
+            #     events.append(e)
+            # elif 'RCON' in line and line.startswith('RCON'):
+            #     if line.endswith('denied!'):
+            #         line_type = 'rcon_denied'
+            #         line_data = {'player': ' '.join(tokens[2:-2])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            #     elif line.endswith('granted!'):
+            #         line_type = 'rcon_granted'
+            #         line_data = {'player': ' '.join(tokens[2:-2])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            #     else:
+            #         events.append(LogEvent(now, junk, {'data': line}))
+            # elif 'RCON' in line and ' RCON (' in line and ' )' in line:
+            #     line_type = 'rcon_action'
+            #     line_data = \
+            #             {'action': line[line.rindex('(')+1:line.rindex(')')-1],
+            #              'player': line[:line.rindex('RCON')].strip()}
+            #     events.append(LogEvent(now, line_type, line_data))
+            # elif 'is now on the' in line:
+            #     token = ' is now on the '
+            #     xi = line.rindex(token)
+            #     player = line[2:xi]
+            #     team = line[xi+len(token):-5].lower().replace('.', '').strip()
+            #     e = LogEvent(now, 'team_switch',
+            #                  {'player': player, 'team': team})
+            #     events.append(e)
+            # elif 'flag' in line:
+            #     if 'has taken the' in line:
+            #         line_type = 'flag_touch'
+            #         line_data = {'player': ' '.join(tokens[1:-5])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            #     elif 'lost the' in line:
+            #         line_type = 'flag_loss'
+            #         line_data = {'player': ' '.join(tokens[1:-4])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            #     elif 'returned the' in line:
+            #         line_type = 'flag_return'
+            #         line_data = {'player': ' '.join(tokens[1:-4])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            #     elif 'picked up the' in line:
+            #         line_type = 'flag_pick'
+            #         line_data = {'player': ' '.join(tokens[1:-5])}
+            #         events.append(LogEvent(now, line_type, line_data))
+            # elif 'scored for the' in line:
+            #     line_type = 'flag_cap'
+            #     line_data = {'player': ' '.join(tokens[1:-5]),
+            #                  'team': tokens[-2].lower()}
+            #     events.append(LogEvent(now, line_type, line_data))
 
