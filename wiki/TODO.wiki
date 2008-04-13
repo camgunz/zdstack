@@ -1,3 +1,9 @@
 #summary Immediate To-Do list for ZDStack
 
   * Fix Issue 1
+
+  * Test configuring multiple servers in zdstack.ini
+
+  * Test alternate game modes (Coop, Duel, FFA, TeamDM)
+
+  * Test all the server config variables like removebotswhenhumans, etc.
