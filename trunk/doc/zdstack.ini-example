@@ -104,7 +104,7 @@ tdm_maxteams = 2
 ctf_max_players_per_team = 4
 tdm_max_players_per_team = 2
 
-[ZDCTF Test]
+[ZDCTF]
 type = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
 optional_wads = zvox.wad,zvox2.wad
@@ -120,3 +120,16 @@ timelimit = 15
 max_teams = 2
 max_players = 8
 max_clients = 16
+
+[D5M1]
+type = duel
+wads = dwango5.wad,zvox2.wad
+port = 11001
+maps = map01
+advertise = no
+requires_password = no
+rcon_enabled = yes
+rcon_password = changeduelgreatly
+fraglimit = 50
+timelimit = 0
+

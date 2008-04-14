@@ -127,43 +127,7 @@ class Stack(Server):
     def get_zserv(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        zserv = self.zservs[zserv_name]
-        return Dictable({'name': zserv.name,
-                         'type': zserv.type,
-                         'port': zserv.port,
-                         'iwad': zserv.base_iwad,
-                         'wads': [os.path.basename(x) for x in zserv.wads],
-                         'optional_wads': zserv.optional_wads,
-                         'maps': zserv.maps,
-                         'dmflags': zserv.dmflags,
-                         'dmflags2': zserv.dmflags2,
-                         'admin_email': zserv.admin_email,
-                         'website': zserv.website.replace('\\', '/'),
-                         'advertise': zserv.advertise,
-                         'hostname': zserv.hostname,
-                         'motd': zserv.motd.replace('<br>', '\n'),
-                         'remove_bots_when_humans':
-                                                zserv.remove_bots_when_humans,
-                         'overtime': zserv.overtime,
-                         'skill': zserv.skill,
-                         'gravity': zserv.gravity,
-                         'air_control': zserv.air_control,
-                         'min_players': zserv.min_players,
-                         'max_players': zserv.max_players,
-                         'max_clients': zserv.max_clients,
-                         'max_teams': zserv.max_teams,
-                         'max_players_per_team': zserv.max_players_per_team,
-                         'teamdamage': zserv.teamdamage,
-                         'deathlimit': zserv.deathlimit,
-                         'timelimit': zserv.timelimit,
-                         'fraglimit': zserv.fraglimit,
-                         'scorelimit': zserv.scorelimit,
-                         'spam_window': zserv.spam_window,
-                         'spam_limit': zserv.spam_limit,
-                         'speed_check': zserv.speed_check,
-                         'restart_empty_map': zserv.restart_empty_map,
-                         'map_number': zserv.map.number,
-                         'map_name': zserv.map.name}).export()
+        return self.zservs[zserv_name].export()
 
     def get_all_zservs(self):
         return [self.get_zserv(x) for x in self.zservs]
@@ -181,7 +145,8 @@ class Stack(Server):
     def get_all_players(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        return self.zservs[zserv_name].players.export()
+        players = self.zservs[zserv_name].players
+        return players.export()
 
     def list_player_names(self, zserv_name):
         if zserv_name not in self.zservs:

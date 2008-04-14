@@ -28,8 +28,6 @@ class LogListener:
             else:
                 self.event_types_to_handlers[event.type](event)
             if event.type != 'junk':
-                print "%s: current event: [%s]" % (self.name, event)
-                print "%s: last_event: [%s]" % (self.name, self.last_event)
                 self.last_event = event
 
     def send_event(self, event):
@@ -48,8 +46,10 @@ class ZServLogListener(LogListener):
         LogListener.__init__(self, name)
         self.event_types_to_handlers['log_roll'] = self.handle_log_roll_event
 
+    def __str__(self):
+        return "<ZServLogListener for [%s]: %s>" % (self.zserv, self.name)
+
     def handle_log_roll_event(self, event):
-        print "Handling log_roll event [%s]" % (event.data['log'])
         self.zserv.roll_log(event.data['log'])
 
     def handle_error_event(self, event):
@@ -130,41 +130,25 @@ class GeneralLogListener(ZServLogListener):
     def handle_frag_event(self, event):
         try:
             fraggee = self.zserv.get_player(event.data['fraggee'])
-            print "Got fraggee: %s" % (fraggee)
         except ValueError:
             es = "Received a death event for non-existent player [%s]"
             self.zserv.log(es % (event.data['fraggee']))
             return
         frag = Frag(event.data['fragger'], event.data['fraggee'],
                     event.data['weapon'])
-        print "Frag: %s" % (frag)
-        print "Fraggee's Deaths: %s" % (fraggee.deaths)
         fraggee.add_death(frag)
-        print "Fraggee's Deaths: %s" % (fraggee.deaths)
         if self.last_event.type == 'flag_loss':
-            print "Last Event was a Flag Loss"
             fraggee.add_flag_loss(frag)
-        else:
-            print "Last Event was not a Flag Loss: %s" % (self.last_event)
         if event.type == 'frag': # no suicides
-            print "Event type was a frag"
             try:
                 fragger = self.zserv.get_player(event.data['fragger'])
-                print "Got fragger: %s" % (fragger)
             except ValueError:
                 es = "Received a frag event for non-existent player [%s]"
                 self.zserv.log(es % (event.data['fragger']))
                 return
-            print "Fragger's frags: %s" % (fragger.frags)
             fragger.add_frag(frag)
-            print "Fragger's frags: %s" % (fragger.frags)
             if self.last_event.type == 'flag_loss':
-                print "Last Event was a Flag Loss"
                 fragger.add_flag_drop(frag)
-            else:
-                print "Last Event was not a Flag Loss: %s" % (self.last_event)
-        else:
-            print "Event type was not a frag"
 
     def handle_message_event(self, event):
         self.zserv.handle_message(event.data['contents'],

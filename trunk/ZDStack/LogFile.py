@@ -6,14 +6,7 @@ import traceback
 from datetime import datetime
 from threading import Thread
 
-from ZDStack.Alarm import Alarm
 from ZDStack.LogEvent import LogEvent
-
-# def L(x):
-#     fobj = open('/root/ZDStack/bin/out.log', 'a')
-#     fobj.write(x + '\n')
-#     fobj.flush()
-#     fobj.close()
 
 class LogFile:
 
@@ -58,7 +51,7 @@ class LogFile:
             events = []
             rs, ws, xs = select.select([self.fobj], [], [])
             for r in rs:
-                unprocessed_data += self.fobj.read()
+                unprocessed_data += r.read()
                 try:
                     events, unprocessed_data = self.parse(unprocessed_data)
                 except Exception, e:
@@ -69,12 +62,9 @@ class LogFile:
                     ed = {'error': e, 'traceback': tb}
                     events = [LogEvent(datetime.now(), 'error', ed)]
             for event in events:
-                if event.type.startswith('rcon'):
-                    # self.zserv.log("Got RCON event: [%s]" % (event.type))
-                    pass
-                else:
-                    self.zserv.log("Sending event [%s: %s]" % (event.type, str(event.data)))
+                # es = "[%s] Sending event [%%s] to [%%s]" % (self.filepath)
                 for listener in self.listeners:
+                    # self.zserv.log(es % (event.type, listener))
                     listener.send_event(event)
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 

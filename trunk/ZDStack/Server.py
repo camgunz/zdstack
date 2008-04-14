@@ -120,13 +120,6 @@ http://zdstack.googlecode.com.""")
     def get_logfile(self):
         return read_file(self.logfile)
 
-    def get_stats(self):
-        s = {}
-        for x, y in self.stats.items():
-            s[x] = y
-        s['Runtime'] = timedelta_in_seconds(datetime.now() - self.start_time)
-        return s
-
     def start(self):
         self.log("Starting")
         self.status = "Running"

@@ -158,21 +158,6 @@ class ConnectionLogParser(LogParser):
                 name = message[xi:yi]
                 events.append(LogEvent(line_dt, 'ip_log',
                                        {'player': name, 'ip': ip}))
-            # elif line.endswith('disconnected'):
-            #     tokens = [x for x in line.split() if x]
-            #     # ending_token = tokens.index('disconnected')
-            #     # name = tokens[2:ending_token]
-            #     e = LogEvent(line_dt, 'disconnection',
-            #                  {'player': ' '.join(tokens[2:-1])})
-            #     events.append(e)
-            # elif 'joined the game on the' in message:
-            #     token = ' joined the game on the '
-            #     xi = message.rindex(token)
-            #     name = message[:xi]
-            #     team = message[xi+len(token):-6].lower() # ends with a '.'
-            #     e = LogEvent(line_dt, 'game_join',
-            #                  {'player': name, 'team': team})
-            #     events.append(e)
             elif (len(lines) and data.endswith('\n')) or \
                  'Connection Log Started' in line or \
                  'zserv startup' in line: # line is junk
@@ -243,57 +228,3 @@ class GeneralLogParser(LogParser):
             else:
                 events.append(LogEvent(now, 'junk', {'data': line}))
         return (events, '\n'.join(leftovers))
-            # elif line.startswith('map'):
-            #     map_number = int(line[:line.index(': ')][3:])
-            #     map_name = line[line.index(': ')+2:]
-            #     line_data = {'number': map_number, 'name': map_name}
-            #     e = LogEvent(now, 'map_change', line_data)
-            #     events.append(e)
-            # elif 'RCON' in line and line.startswith('RCON'):
-            #     if line.endswith('denied!'):
-            #         line_type = 'rcon_denied'
-            #         line_data = {'player': ' '.join(tokens[2:-2])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            #     elif line.endswith('granted!'):
-            #         line_type = 'rcon_granted'
-            #         line_data = {'player': ' '.join(tokens[2:-2])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            #     else:
-            #         events.append(LogEvent(now, junk, {'data': line}))
-            # elif 'RCON' in line and ' RCON (' in line and ' )' in line:
-            #     line_type = 'rcon_action'
-            #     line_data = \
-            #             {'action': line[line.rindex('(')+1:line.rindex(')')-1],
-            #              'player': line[:line.rindex('RCON')].strip()}
-            #     events.append(LogEvent(now, line_type, line_data))
-            # elif 'is now on the' in line:
-            #     token = ' is now on the '
-            #     xi = line.rindex(token)
-            #     player = line[2:xi]
-            #     team = line[xi+len(token):-5].lower().replace('.', '').strip()
-            #     e = LogEvent(now, 'team_switch',
-            #                  {'player': player, 'team': team})
-            #     events.append(e)
-            # elif 'flag' in line:
-            #     if 'has taken the' in line:
-            #         line_type = 'flag_touch'
-            #         line_data = {'player': ' '.join(tokens[1:-5])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            #     elif 'lost the' in line:
-            #         line_type = 'flag_loss'
-            #         line_data = {'player': ' '.join(tokens[1:-4])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            #     elif 'returned the' in line:
-            #         line_type = 'flag_return'
-            #         line_data = {'player': ' '.join(tokens[1:-4])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            #     elif 'picked up the' in line:
-            #         line_type = 'flag_pick'
-            #         line_data = {'player': ' '.join(tokens[1:-5])}
-            #         events.append(LogEvent(now, line_type, line_data))
-            # elif 'scored for the' in line:
-            #     line_type = 'flag_cap'
-            #     line_data = {'player': ' '.join(tokens[1:-5]),
-            #                  'team': tokens[-2].lower()}
-            #     events.append(LogEvent(now, line_type, line_data))
-

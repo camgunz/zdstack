@@ -178,6 +178,9 @@ class ZServ:
         write_file(self.configuration, self.configfile, overwrite=True)
         self.initialize()
 
+    def __str__(self):
+        return "<ZServ [%s:%d]>" % (self.name, self.port)
+
     def initialize(self):
         self.map = None
         self.red_team = Team('red')
@@ -293,8 +296,8 @@ class ZServ:
             self.general_log = LogFile('general', general_log_parser, self)
             self.connection_log_listener = ConnectionLogListener(self)
             self.general_log_listener = GeneralLogListener(self)
-            self.connection_log.listeners.append(self.connection_log_listener)
-            self.general_log.listeners.append(self.general_log_listener)
+            self.connection_log.listeners = [self.connection_log_listener]
+            self.general_log.listeners = [self.general_log_listener]
             self.connection_log.set_filepath(self.get_connection_log_filename())
             self.general_log.set_filepath(self.get_general_log_filename())
             self.log("Spawning [%s]" % (' '.join(self.cmd)))
@@ -441,5 +444,44 @@ class ZServ:
         # We just instantiate the player, that object takes care of the
         # logging itself if an IP address is given.
         ###
-        Player(player_name, player_ip)
+        Player(player_name, self, player_ip)
+
+    def export(self):
+        d = Dictable({'name': self.name,
+                      'type': self.type,
+                      'port': self.port,
+                      'iwad': self.base_iwad,
+                      'wads': [os.path.basename(x) for x in self.wads],
+                      'optional_wads': self.optional_wads,
+                      'maps': self.maps,
+                      'dmflags': self.dmflags,
+                      'dmflags2': self.dmflags2,
+                      'admin_email': self.admin_email,
+                      'website': self.website.replace('\\', '/'),
+                      'advertise': self.advertise,
+                      'hostname': self.hostname,
+                      'motd': self.motd.replace('<br>', '\n'),
+                      'remove_bots_when_humans': self.remove_bots_when_humans,
+                      'overtime': self.overtime,
+                      'skill': self.skill,
+                      'gravity': self.gravity,
+                      'air_control': self.air_control,
+                      'min_players': self.min_players,
+                      'max_players': self.max_players,
+                      'max_clients': self.max_clients,
+                      'max_teams': self.max_teams,
+                      'max_players_per_team': self.max_players_per_team,
+                      'teamdamage': self.teamdamage,
+                      'deathlimit': self.deathlimit,
+                      'timelimit': self.timelimit,
+                      'fraglimit': self.fraglimit,
+                      'scorelimit': self.scorelimit,
+                      'spam_window': self.spam_window,
+                      'spam_limit': self.spam_limit,
+                      'speed_check': self.speed_check,
+                      'restart_empty_map': self.restart_empty_map})
+        if self.map:
+            d['map_number'] = self.map.number
+            d['map_name'] = self.map.name
+        return d
 
