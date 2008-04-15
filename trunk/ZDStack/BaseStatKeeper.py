@@ -79,7 +79,6 @@ class BaseStatKeeper(Dictable):
             self.stat_container.add_flag_return()
 
     def add_flag_loss(self, flag_loss):
-        print "%s adding a flag loss" % (self.name)
         self.flag_losses.append(flag_loss)
         if self.stat_container:
             self.stat_container.add_flag_loss(flag_loss)

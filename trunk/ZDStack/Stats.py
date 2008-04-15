@@ -15,6 +15,5 @@ class Stats(Dictable):
                       'blue': self.blue_team,
                       'green': self.green_team,
                       'white': self.white_team}
-        print "Stats: Received players [%s]" % (players)
         self.players = players
 

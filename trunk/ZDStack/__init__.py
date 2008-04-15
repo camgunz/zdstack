@@ -82,7 +82,6 @@ def get_database(config_file=None):
                 es = "Could not find database folder [%s]"
                 raise ValueError(es % (database_folder))
         try:
-            print "Importing PyXSE stuff"
             from PyXSE.Database import Database, TableNotFoundError
             DATABASE = Database(database_folder)
             try:
@@ -90,7 +89,6 @@ def get_database(config_file=None):
             except TableNotFoundError:
                 DATABASE.create_table('players', ['name', 'addresses'],
                                       ['str', 'str'], ['name'])
-            print "Done with imports"
         except ImportError, e:
             raise # for debugging
             pass

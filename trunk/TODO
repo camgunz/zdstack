@@ -4,8 +4,6 @@ TODO:
 
     Test all the server config variables like removebotswhenhumans, etc. 
 
-    Fully test all XML-RPC methods. 
-
     Add Player latency and packet-loss tracking.  This requires the ping
       spawning and parsing backend.
 

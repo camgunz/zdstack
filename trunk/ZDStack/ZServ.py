@@ -1,10 +1,10 @@
 import os
 from decimal import Decimal
 from datetime import date, datetime, timedelta
-from threading import Event
+from threading import Event, Thread
 from subprocess import Popen, PIPE
 
-from pyfileutils import write_file
+from pyfileutils import read_file, write_file
 
 from ZDStack import yes, no, ZSERV_EXE, HOSTNAME
 from ZDStack.Map import Map
@@ -176,12 +176,13 @@ class ZServ:
         self.config = config
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
-        self.initialize()
+        self.pid = None
+        Thread(target=self.start_zserv).start()
 
     def __str__(self):
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
-    def initialize(self):
+    def initialize_stats(self):
         self.map = None
         self.red_team = Team('red')
         self.blue_team = Team('blue')
@@ -193,11 +194,6 @@ class ZServ:
                                'white': self.white_team})
         self.players = Dictable()
         self.disconnected_players = Dictable()
-        self.pid = None
-        self.connection_log = None
-        self.general_log = None
-        if os.path.isfile(self.pid_file):
-            os.unlink(self.pid_file)
 
     def get_configuration(self):
         # TODO: add support for "add_mapnum_to_hostname"
@@ -284,22 +280,22 @@ class ZServ:
             template += 'set teamscorelimit "%s"\n' % (self.scorelimit)
         return template % self.config
 
-    def start(self):
-        self.keep_spawning.set()
+    def initialize_logs(self):
+        connection_log_parser = ConnectionLogParser()
+        general_log_parser = GeneralLogParser()
+        self.connection_log = \
+                        LogFile('connection', connection_log_parser, self)
+        self.general_log = LogFile('general', general_log_parser, self)
+        self.connection_log_listener = ConnectionLogListener(self)
+        self.general_log_listener = GeneralLogListener(self)
+        self.connection_log.listeners = [self.connection_log_listener]
+        self.general_log.listeners = [self.general_log_listener]
+        self.connection_log.set_filepath(self.get_connection_log_filename())
+        self.general_log.set_filepath(self.get_general_log_filename())
+
+    def start_zserv(self):
         while 1:
             self.keep_spawning.wait()
-            self.initialize()
-            connection_log_parser = ConnectionLogParser()
-            general_log_parser = GeneralLogParser()
-            self.connection_log = \
-                            LogFile('connection', connection_log_parser, self)
-            self.general_log = LogFile('general', general_log_parser, self)
-            self.connection_log_listener = ConnectionLogListener(self)
-            self.general_log_listener = GeneralLogListener(self)
-            self.connection_log.listeners = [self.connection_log_listener]
-            self.general_log.listeners = [self.general_log_listener]
-            self.connection_log.set_filepath(self.get_connection_log_filename())
-            self.general_log.set_filepath(self.get_general_log_filename())
             self.log("Spawning [%s]" % (' '.join(self.cmd)))
             curdir = os.getcwd()
             os.chdir(self.homedir)
@@ -309,12 +305,24 @@ class ZServ:
             write_file(str(self.pid), self.pid_file)
             os.chdir(curdir)
             self.zserv.wait()
+            self.save_current_stats()
+            self.pid = None
+            self.initialize_stats()
+            if os.path.isfile(self.pid_file):
+                os.unlink(self.pid_file)
             # The zserv process has exited and we restart all over again
+
+    def start(self):
+        self.initialize_logs()
+        self.initialize_stats()
+        self.pid = None
+        self.keep_spawning.set()
+        return True
 
     def stop(self, signum=15):
         self.keep_spawning.clear()
         try:
-            s = "Sending signal %s to %s PID: %s"
+            s = "Sending signal [%s] to [%s] PID: [%s]"
             self.log(s % (signum, self.name, self.pid))
             os.kill(self.pid, signum)
             return True
@@ -326,6 +334,19 @@ class ZServ:
     def restart(self, signum=15):
         self.stop(signum)
         self.start()
+
+    def save_current_stats(self):
+        if len(self.remembered_stats) == self.maps_to_remember:
+            self.remembered_stats = Listable(self.remembered_stats[1:])
+        if self.map:
+            stats = Stats(self.map.export(), self.red_team.export(),
+                          self.blue_team.export(), self.green_team.export(),
+                          self.white_team.export(), self.players.export())
+            ###
+            # TODO:
+            #   Don't remember maps where no one joined a game/team.
+            ###
+            self.remembered_stats.append(stats)
 
     def send_to_zserv(self, message):
         self.zserv.stdin.write(message)
@@ -415,19 +436,7 @@ class ZServ:
             pass
 
     def handle_map_change(self, map_number, map_name):
-        if len(self.remembered_stats) == self.maps_to_remember:
-            self.remembered_stats = Listable(self.remembered_stats[1:])
-        if self.map:
-            stats = Stats(self.map.export(), self.red_team.export(),
-                          self.blue_team.export(), self.green_team.export(),
-                          self.white_team.export(), self.players.export())
-            print "ZServ: self.players [%s]" % (self.players)
-            print "ZServ: Saved players [%s]" % (self.players.export())
-            ###
-            # TODO:
-            #   Don't remember maps where no one joined a game/team.
-            ###
-            self.remembered_stats.append(stats)
+        self.save_current_stats()
         self.map = Map(map_number, map_name)
         for player_name, player in self.players.items():
             if player_name in self.disconnected_players:

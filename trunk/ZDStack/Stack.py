@@ -64,6 +64,10 @@ class Stack(Server):
         if method in self.methods_requiring_authentication:
             if not self.authenticate(params[0], params[1]):
                 raise AuthenticationError(params[0], method)
+            s = "Authentication user [%s] for method [%s]"
+            self.log(s % (params[0], method))
+        else:
+            self.log("Method [%s] did not require authentication" % (method))
         try:
             func = getattr(self, method)
             if not type(func) == type(get_configparser):
@@ -168,12 +172,20 @@ class Stack(Server):
     def get_current_map(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        return self.zservs[zserv_name].map.export()
+        if self.zservs[zserv_name].map:
+            return self.zservs[zserv_name].map.export()
+        else:
+            return None
 
     def get_remembered_stats(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         return self.zservs[zserv_name].remembered_stats.export()
+
+    def send_to_zserv(self, zserv_name, message):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        return self.zservs[zserv_name].send_to_zserv(message)
 
     def register_functions(self):
         for x in (self.start_zserv, self.stop_zserv, self.restart_zserv,
@@ -182,6 +194,6 @@ class Stack(Server):
                   self.list_zserv_names, self.get_remembered_stats,
                   self.get_current_map, self.get_team, self.get_all_teams,
                   self.get_player, self.get_all_players,
-                  self.list_player_names):
+                  self.list_player_names, self.send_to_zserv):
             self.xmlrpc_server.register_function(x)
 
