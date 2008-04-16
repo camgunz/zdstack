@@ -5,53 +5,28 @@ import signal
 import socket
 import tempfile
 from datetime import datetime
-from threading import Thread, Event
 from DocXMLRPCServer import DocXMLRPCServer
-from pyfileutils import read_file, append_file, delete_file
+from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, ZSERV_EXE, timedelta_in_seconds
+from ZDStack import HOSTNAME, get_configparser
 
 class Server:
 
     def __init__(self, cp, fork=True):
         self.config = cp
-        self.defaults = cp.defaults()
+        self.config_file = cp.filename
         self.load_config()
         os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
-        # signal.signal(signal.SIGINT, self.handle_signal)
-        # signal.signal(signal.SIGQUIT, self.handle_signal)
-        # signal.signal(signal.SIGTERM, self.handle_signal)
-        # signal.signal(signal.SIGHUP, self.handle_signal)
-        # self.register()
-        # self.should_fork = fork
+        self.keep_serving = False
+        signal.signal(signal.SIGINT, self.handle_signal)
+        signal.signal(signal.SIGQUIT, self.handle_signal)
+        signal.signal(signal.SIGTERM, self.handle_signal)
+        signal.signal(signal.SIGHUP, self.handle_signal)
 
-    def _fork(self):
-        if hasattr(os, 'devnull'):
-            stdin = os.devnull
-        else:
-            stdin = '/dev/null'
-        stdout = stderr = self.logfile
-        if os.fork():
-            os._exit(0)
-        os.chdir('/')
-        os.umask(0)
-        os.setsid()
-        if os.fork():
-            os._exit(0)
-        sys.stdout.flush()
-        sys.stderr.flush()
-        si = open(stdin, 'r')
-        so = open(self.logfile, 'a+')
-        se = open(self.logfile, 'a+', 0)
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
-        pid = str(os.getpid())
-        write_file(pid, self.pidfile)
-
-    def load_config(self):
+    def load_config(self, reload=False):
+        self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
             rootfolder = self.defaults['rootfolder']
         else:
@@ -61,17 +36,21 @@ class Server:
         if not 'zdstack_port' in self.defaults:
             es = "Could not find option 'zdstack_port' in the configuration"
             raise ValueError(es)
+        if 'xmlrpc_hostname' in self.defaults:
+            self.hostname = self.defaults['xmlrpc_hostname']
         else:
-            self.port = int(self.defaults['zdstack_port'])
+            self.hostname = HOSTNAME
+        self.port = int(self.defaults['zdstack_port'])
         self.homedir = rootfolder
-        # if not os.path.isdir(self.homedir):
-        #     os.mkdir(self.homedir)
         self.logfile = os.path.join(self.homedir, 'ZDStack.log')
         self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
+    def reload_config(self):
+        self.config = get_configparser(reload=True,
+                                       config_file=self.config_file)
+        self.load_config(reload=True)
+
     def startup(self):
-        # if self.should_fork:
-        #     self._fork()
         self.xmlrpc_server = DocXMLRPCServer((HOSTNAME, self.port))
         self.xmlrpc_server.register_introspection_functions()
         self.xmlrpc_server.allow_none = True
@@ -81,33 +60,51 @@ class Server:
 This is the documentation for the ZDStack XML-RPC API.  For more information, visit
 http://zdstack.googlecode.com.""")
         self.register_functions()
-        self.serving_thread = Thread(target=self.xmlrpc_server.serve_forever)
-        self.serving_thread.setDaemon(True)
-        self.serving_thread.start()
+        self.keep_serving = True
+        self.status = "Running"
+        write_file(str(os.getpid()), self.pidfile)
         self.start()
+        while self.keep_serving:
+            self.xmlrpc_server.handle_request()
 
     def shutdown(self, signum=15):
         self.stop()
+        self.keep_serving = False
+        try:
+            delete_file(self.pidfile)
+        except OSError, e:
+            self.log("Error removing PID file %s: [%s]" % (self.pidfile, e))
         sys.exit(0)
 
+    def start(self):
+        raise NotImplementedError()
+
+    def stop(self):
+        raise NotImplementedError()
+
+    def restart(self):
+        self.stop()
+        self.start()
+        return True
+
     def handle_signal(self, signum, frame):
-        self.log("Received signal [%d]" % (signum))
         if signum == signal.SIGHUP:
-            self.load_config()
+            self.reload_config()
         else:
             self.shutdown(signum=signum)
 
     def register_functions(self):
         self.xmlrpc_server.register_function(self.get_status)
         self.xmlrpc_server.register_function(self.get_logfile)
-        self.xmlrpc_server.register_function(self.get_stats)
+        self.xmlrpc_server.register_function(self.reload_config)
         self.xmlrpc_server.register_function(self.start)
         self.xmlrpc_server.register_function(self.stop)
         self.xmlrpc_server.register_function(self.restart)
 
     def log(self, s):
         log_msg = "[%s] %s\n" % (time.ctime(), s)
-        append_file(log_msg, self.logfile, overwrite=True)
+        print log_msg[:-1]
+        # append_file(log_msg, self.logfile, overwrite=True)
 
     def debug(self, s):
         if DEBUG:
@@ -119,20 +116,4 @@ http://zdstack.googlecode.com.""")
 
     def get_logfile(self):
         return read_file(self.logfile)
-
-    def start(self):
-        self.log("Starting")
-        self.status = "Running"
-        return True
-
-    def stop(self):
-        self.log("Stopping")
-        self.status = "Stopped"
-        return True
-
-    def restart(self):
-        self.log("Restarting")
-        self.stop()
-        self.start()
-        return True
 

@@ -1,19 +1,21 @@
 from decimal import Decimal
 
 from ZDStack.ZServ import ZServ
-from pyfileutils import write_file
 
 class CTF(ZServ):
 
     def __init__(self, name, config, zdstack):
-        def is_valid(x):
-            return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         self.deathmatch = True
         self.teamplay = True
         self.ctf = True
         ZServ.__init__(self, name, 'ctf', config, zdstack)
+
+    def load_config(self, config):
+        def is_valid(x):
+            return x in config and config[x]
+        def is_yes(x):
+            return x in config and yes(x)
+        ZServ.load_config(self, config)
         if is_valid('dmflags'):
             self.dmflags = config['dmflags']
         elif is_valid('ctf_dmflags'):
@@ -59,8 +61,6 @@ class CTF(ZServ):
         config['max_players_per_team'] = self.max_players_per_team
         config['timelimit'] = self.timelimit
         config['scorelimit'] = self.scorelimit
-        self.configuration = self.get_configuration()
-        write_file(self.configuration, self.configfile, overwrite=True)
 
     def get_configuration(self):
         configuration = ZServ.get_configuration(self)

@@ -7,14 +7,17 @@ from ZDStack.ZServ import ZServ
 class TeamDM(ZServ):
 
     def __init__(self, name, config, zdstack):
-        def is_valid(x):
-            return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         self.deathmatch = True
         self.teamplay = True
         self.ctf = False
         ZServ.__init__(self, name, 'teamdm', config, zdstack)
+
+    def load_config(self, config):
+        def is_valid(x):
+            return x in config and config[x]
+        def is_yes(x):
+            return x in config and yes(x)
+        ZServ.load_config(self, config)
         if is_valid('dmflags'):
             self.dmflags = config['dmflags']
         elif is_valid('tdm_dmflags'):

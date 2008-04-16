@@ -1,12 +1,11 @@
 import os
 from decimal import Decimal
 from datetime import date, datetime, timedelta
-from threading import Event, Thread
 from subprocess import Popen, PIPE
 
-from pyfileutils import read_file, write_file
+from pyfileutils import read_file, write_file, ls
 
-from ZDStack import yes, no, ZSERV_EXE, HOSTNAME
+from ZDStack import yes, no, start_thread, HOSTNAME
 from ZDStack.Map import Map
 from ZDStack.Team import Team
 from ZDStack.Stats import Stats
@@ -41,48 +40,60 @@ class ZServ:
         self.dn_fobj = open('/dev/null', 'r+')
         self.devnull = self.dn_fobj.fileno()
         self.homedir = os.path.join(self.zdstack.homedir, self.name)
+        self.old_log_dir = os.path.join(self.homedir, 'old-logs')
         self.pid_file = os.path.join(self.homedir, self.name + '.pid')
         if not os.path.isdir(self.homedir):
             os.mkdir(self.homedir)
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
-        self.keep_spawning = Event()
+        self.keep_spawning = False
+        self.spawning_thread = None
         self.log = lambda x: self.zdstack.log('%s: %s' % (self.name, x))
+        self.remembered_stats = Listable()
+        self.reload_config(config)
+        self.pid = None
+
+    def reload_config(self, config):
+        self.load_config(config)
+        self.configuration = self.get_configuration()
+        write_file(self.configuration, self.configfile, overwrite=True)
+
+    def load_config(self, config):
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
             return x in config and yes(config[x])
-        self.remembered_stats = Listable()
         ### mandatory stuff
-        mandatory_options = ('iwad', 'waddir', 'iwaddir', 'wads', 'port',
-                             'maps_to_remember')
+        mandatory_options = \
+                    ('iwad', 'waddir', 'iwaddir', 'port', 'maps_to_remember')
         for mandatory_option in mandatory_options:
             if mandatory_option not in config:
                 es = "Could not find option '%s' in configuration"
                 raise ValueError(es % (mandatory_option))
         ### CMD-line stuff
+        if not os.path.isdir(config['iwaddir']):
+            raise ValueError("IWAD dir %s is not valid" % (config['waddir']))
+        if not os.path.isdir(config['waddir']):
+            raise ValueError("WAD dir %s is not valid" % (config['waddir']))
+        if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
+            raise ValueError("Could not find IWAD %s" % (config['iwad']))
+        self.wads = []
+        if 'wads' in config and config['wads']:
+            for wad in config['wads'].split(','):
+                wadpath = os.path.join(config['waddir'], wad)
+                if not os.path.isfile(wadpath):
+                    raise ValueError("WAD [%s] not found" % (wad))
+            self.wads = config['wads'].split(',')
         self.iwaddir = config['iwaddir']
         self.waddir = config['waddir']
         self.base_iwad = config['iwad']
         self.iwad = os.path.join(self.iwaddir, self.base_iwad)
-        self.wads = config['wads'].split(',')
-        self.wads = [os.path.join(self.waddir, x) for x in self.wads if x]
         self.port = int(config['port'])
         self.maps_to_remember = int(config['maps_to_remember'])
-        if not os.path.isdir(self.iwaddir):
-            raise ValueError("IWAD dir %s is not valid" % (self.waddir))
-        if not os.path.isdir(self.waddir):
-            raise ValueError("WAD dir %s is not valid" % (self.waddir))
-        if not os.path.isfile(self.iwad):
-            raise ValueError("Could not find IWAD %s" % (self.iwad))
-        for wad in self.wads:
-            if not os.path.isfile(wad):
-                raise ValueError("WAD %s not found" % (wad))
         self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad', self.iwad,
                     '-port', str(self.port), '-cfg', self.configfile, '-clog',
                     '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
-        # self.cmd.extend(['-noinput'])
         ### other mandatory stuff
         ### admin stuff
         self.rcon_enabled = None
@@ -174,10 +185,6 @@ class ZServ:
             self.min_players = int(config['min_players'])
         config['name'] = self.name
         self.config = config
-        self.configuration = self.get_configuration()
-        write_file(self.configuration, self.configfile, overwrite=True)
-        self.pid = None
-        Thread(target=self.start_zserv).start()
 
     def __str__(self):
         return "<ZServ [%s:%d]>" % (self.name, self.port)
@@ -286,16 +293,54 @@ class ZServ:
         self.connection_log = \
                         LogFile('connection', connection_log_parser, self)
         self.general_log = LogFile('general', general_log_parser, self)
+        connection_log_filename = self.get_connection_log_filename()
+        general_log_filename = self.get_general_log_filename()
+        # if os.path.isfile(connection_log_filename):
+        #     self.archive_connection_log()
+        # if os.path.isfile(general_log_filename):
+        #     self.archive_general_log()
+        self.connection_log.set_filepath(self.get_connection_log_filename())
+        self.general_log.set_filepath(self.get_general_log_filename())
         self.connection_log_listener = ConnectionLogListener(self)
         self.general_log_listener = GeneralLogListener(self)
         self.connection_log.listeners = [self.connection_log_listener]
         self.general_log.listeners = [self.general_log_listener]
-        self.connection_log.set_filepath(self.get_connection_log_filename())
-        self.general_log.set_filepath(self.get_general_log_filename())
+        self.connection_log_listener.start()
+        self.general_log_listener.start()
+        self.connection_log.start()
+        self.general_log.start()
 
-    def start_zserv(self):
-        while 1:
-            self.keep_spawning.wait()
+    def archive_log(self, log_filename):
+        # - check for log files
+        # - if they exist
+        #   - move all old-logs/$logfile.n to old-logs/$logfile.n+1
+        #     - move $logfile to old-logs/$logfile.1
+        log_basename = os.path.basename(log_filename)
+        to_roll = []
+        for old_log_file in os.listdir(self.old_log_dir):
+            if old_log_file.startswith(log_basename):
+                tokens = old_log_file.split('.')
+                if tokens[-1].isdigit():
+                    file_num = str(int(tokens[-1]) + 1)
+                    tokens[-1] = file_num
+                else:
+                    file_num = '2'
+                    tokens.append(file_num)
+                old_log_path = os.path.join(self.old_log_dir, old_log_file)
+                new_log_path = os.path.join(self.old_log_dir, '.'.join(tokens))
+                to_roll.append((file_num, old_log_path, new_log_path))
+        for n, olp, nlp in reversed(sorted(to_roll)):
+            os.rename(olp, nlp)
+        os.rename(log_filename, os.path.join(self.old_log_dir, log_basename))
+
+    def archive_connection_log(self):
+        self.archive_log(self.get_connection_log_filename())
+
+    def archive_general_log(self):
+        self.archive_log(self.get_general_log_filename())
+
+    def spawn_zserv(self):
+        while self.keep_spawning:
             self.log("Spawning [%s]" % (' '.join(self.cmd)))
             curdir = os.getcwd()
             os.chdir(self.homedir)
@@ -304,32 +349,43 @@ class ZServ:
             self.pid = self.zserv.pid
             write_file(str(self.pid), self.pid_file)
             os.chdir(curdir)
-            self.zserv.wait()
+            try:
+                self.zserv.wait()
+            except AttributeError: # can be raised during interpreter shutdown
+                continue # skip all the rest of the stuff, shutting down
             self.save_current_stats()
             self.pid = None
             self.initialize_stats()
+            self.initialize_logs()
             if os.path.isfile(self.pid_file):
                 os.unlink(self.pid_file)
             # The zserv process has exited and we restart all over again
 
     def start(self):
-        self.initialize_logs()
         self.initialize_stats()
+        self.initialize_logs()
         self.pid = None
-        self.keep_spawning.set()
-        return True
+        self.keep_spawning = True
+        self.spawning_thread = start_thread(self.spawn_zserv)
 
     def stop(self, signum=15):
-        self.keep_spawning.clear()
-        try:
-            s = "Sending signal [%s] to [%s] PID: [%s]"
-            self.log(s % (signum, self.name, self.pid))
-            os.kill(self.pid, signum)
-            return True
-        except Exception, e:
-            es = str(e)
-            self.log(es)
-            return es
+        self.keep_spawning = False
+        if self.pid is not None:
+            try:
+                os.kill(self.pid, signum)
+                out = True
+            except Exception, e:
+                es = "Caught exception while stopping: [%s]"
+                self.log(es % (e))
+                out = es % (e)
+        # self.log("Joining spawning_thread")
+        # self.spawning_thread.join()
+        self.spawning_thread = None
+        for logfile in self.general_log, self.connection_log:
+            logfile.stop()
+        for listener in self.general_log_listener, self.connection_log_listener:
+            listener.stop()
+        return out
 
     def restart(self, signum=15):
         self.stop(signum)
@@ -352,16 +408,17 @@ class ZServ:
         self.zserv.stdin.write(message)
         self.zserv.stdin.flush()
 
-    def get_logfile_suffix(self):
-        return date.today().strftime('-%Y%m%d') + '.log'
+    def get_logfile_suffix(self, roll=False):
+        now = datetime.now()
+        today = datetime(now.year, now.month, now.day)
+        if roll and now.hour == 23:
+            today += timedelta(days=1)
+        return today.strftime('-%Y%m%d') + '.log'
 
-    def get_connection_log_filename(self):
+    def get_connection_log_filename(self, roll=False):
         return os.path.join(self.homedir, 'conn' + self.get_logfile_suffix())
 
-    def get_weapon_log_filename(self):
-        return os.path.join(self.homedir, 'weap' + self.get_logfile_suffix())
-
-    def get_general_log_filename(self):
+    def get_general_log_filename(self, roll=False):
         return os.path.join(self.homedir, 'gen' + self.get_logfile_suffix())
 
     def add_player(self, player):
@@ -399,10 +456,11 @@ class ZServ:
 
     def roll_log(self, log_file_name):
         if log_file_name == 'general':
-            general_log_filename = self.get_general_log_filename()
+            general_log_filename = self.get_general_log_filename(roll=True)
             self.general_log.set_filepath(general_log_filename)
         elif log_file_name == 'connection':
-            connection_log_filename = self.get_connection_log_filename()
+            connection_log_filename = \
+                                    self.get_connection_log_filename(roll=True)
             self.general_log.set_filepath(connection_log_filename)
         else:
             es = "Received a log_roll event for non-existent log [%s]"

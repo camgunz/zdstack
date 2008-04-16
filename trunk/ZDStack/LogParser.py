@@ -27,6 +27,8 @@ REGEXPS_AND_WEAPONS = \
 REGEXPS_AND_DEATHS = \
     [(r"^> (.*) should have stood back.$", 'rocket suicide'),
      (r"^> (.*) mutated.$", 'mutation'),
+     (r"^> (.*) melted.$", 'melting'),
+     (r"^> (.*) killed himself.$", 'suicide'),
      (r"^> (.*) fell too far.$", 'falling'),
      (r"^> (.*) tried to leave.$", "exiting"),
      (r"^> (.*) can't swim.$", "drowning"),

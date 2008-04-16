@@ -5,9 +5,12 @@ import sys
 import time
 import getopt
 import signal
-import os.path
-from ZDStack.Stack import Stack
+
 from pyfileutils import read_file, write_file
+
+from ZDStack import get_configparser
+from ZDStack.Stack import Stack
+from ZDStack.Server import Server
 
 def fork(logfile, pidfile, signal_handler):
     if hasattr(os, 'devnull'):
@@ -24,18 +27,15 @@ def fork(logfile, pidfile, signal_handler):
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    si = open(stdin, 'r')
-    so = open(logfile, 'a+')
-    se = open(logfile, 'a+', 0)
-    os.dup2(si.fileno(), sys.stdin.fileno())
-    os.dup2(so.fileno(), sys.stdout.fileno())
-    os.dup2(se.fileno(), sys.stderr.fileno())
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGQUIT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGHUP, signal_handler)
-    pid = str(os.getpid())
-    write_file(pid, pidfile)
+    # si = open(stdin, 'r')
+    # so = open(logfile, 'a+')
+    # se = open(logfile, 'a+', 0)
+    # os.dup2(si.fileno(), sys.stdin.fileno())
+    # os.dup2(so.fileno(), sys.stdout.fileno())
+    # os.dup2(se.fileno(), sys.stderr.fileno())
+
+def print_signal(signum, frame):
+    print "Received signal [%d]" % (signum)
 
 def print_usage(msg=None):
     if msg:
@@ -45,28 +45,32 @@ Usage: zdstackctl [ start | stop | restart ] [-c config file]\n"""
     sys.exit(-1)
 
 def start(config_file, debug=False):
-    print "Start: using config_file: [%s]" % (config_file)
     try:
+        # zdstack = Server(get_configparser(config_file), fork=False)
         zdstack = Stack(config_file)
         if os.path.isfile(zdstack.pidfile):
-            print >> sys.stderr, "\nThis server is already running: %s\n" % (zdstack.pidfile)
+            es = "\nThis server is already running: %s\n"
+            print >> sys.stderr, es % (zdstack.pidfile)
             sys.exit(-1)
         if not debug:
             print "Forking"
             fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
         else:
             print "Debugging"
+        print os.getpid()
         zdstack.startup()
         if debug:
             import pprint
-            time.sleep(5)
+            time.sleep(7)
             pprint.pprint(zdstack.get_all_players('ZDCTF Test'))
             pprint.pprint(zdstack.get_all_teams('ZDCTF Test'))
             pprint.pprint(zdstack.get_current_map('ZDCTF Test'))
-            pprint.pprint(zdstack.get_all_zservs('ZDCTF Test'))
+            pprint.pprint(zdstack.get_all_zservs())
             pprint.pprint(zdstack.get_remembered_stats('ZDCTF Test'))
     except Exception, e:
         raise # for debugging
+        if debug:
+            raise
         print >> sys.stderr, "\nError: %s\n" % (str(e))
         sys.exit(-1)
 
@@ -108,7 +112,6 @@ if not '-c' in opts:
     config_file = None
 else:
     config_file = opts['-c']
-    print "Using config_file [%s]" % (config_file)
 if action == 'start':
     start(config_file)
 elif action == 'stop':

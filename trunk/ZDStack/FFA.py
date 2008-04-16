@@ -1,20 +1,21 @@
 from decimal import Decimal
 
-from pyfileutils import write_file
-
 from ZDStack.ZServ import ZServ
 
 class FFA(ZServ):
 
     def __init__(self, name, config, zdstack):
-        def is_valid(x):
-            return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         self.deathmatch = True
         self.teamplay = False
         self.ctf = False
         ZServ.__init__(self, name, 'ffa', config, zdstack)
+
+    def load_config(self, config):
+        def is_valid(x):
+            return x in config and config[x]
+        def is_yes(x):
+            return x in config and yes(x)
+        ZServ.load_config(self, config)
         if is_valid('dmflags'):
             self.dmflags = config['dmflags']
         elif is_valid('ffa_dmflags'):
@@ -45,8 +46,6 @@ class FFA(ZServ):
         config['max_players'] = self.max_players
         config['timelimit'] = self.timelimit
         config['fraglimit'] = self.fraglimit
-        self.configuration = self.get_configuration()
-        write_file(self.configuration, self.configfile, overwrite=True)
 
     def get_configuration(self):
         configuration = ZServ.get_configuration(self)

@@ -1,20 +1,21 @@
 from decimal import Decimal
 
-from pyfileutils import write_file
-
 from ZDStack.ZServ import ZServ
 
 class Duel(ZServ):
 
     def __init__(self, name, config, zdstack):
-        def is_valid(x):
-            return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         self.deathmatch = True
         self.teamplay = False
         self.ctf = False
         ZServ.__init__(self, name, 'duel', config, zdstack)
+
+    def load_config(self, config):
+        def is_valid(x):
+            return x in config and config[x]
+        def is_yes(x):
+            return x in config and yes(x)
+        ZServ.load_config(self, config)
         if is_valid('dmflags'):
             self.dmflags = config['dmflags']
         elif is_valid('duel_dmflags'):
@@ -33,19 +34,6 @@ class Duel(ZServ):
             self.max_clients = int(config['duel_max_clients'])
         elif is_valid('1-on-1_max_clients'):
             self.max_clients = int(config['1-on-1_max_clients'])
-        ###
-        # I could offer the ability to have a different number of maximum
-        # players... but then it wouldn't be a duel.  If someone wants, say,
-        # a 3-way FFA then they can reduce a FFA down to 3 players.
-        #
-        # if is_valid('max_players'):
-        #     self.max_players = int(config['max_players'])
-        # elif is_valid('duel_max_players'):
-        #     self.max_players = int(config['duel_max_players'])
-        # elif is_valid('1-on-1_max_players'):
-        #     self.max_players = int(config['1-on-1_max_players'])
-        #
-        ###
         self.max_players = 2
         if is_valid('timelimit'):
             self.timelimit = int(config['timelimit'])
@@ -65,8 +53,6 @@ class Duel(ZServ):
         config['max_players'] = self.max_players
         config['timelimit'] = self.timelimit
         config['fraglimit'] = self.fraglimit
-        self.configuration = self.get_configuration()
-        write_file(self.configuration, self.configfile, overwrite=True)
 
     def get_configuration(self):
         configuration = ZServ.get_configuration(self)

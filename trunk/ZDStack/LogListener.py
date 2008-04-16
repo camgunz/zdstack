@@ -1,7 +1,6 @@
 import Queue
 
-from threading import Thread
-
+from ZDStack import start_thread
 from ZDStack.Frag import Frag
 from ZDStack.Player import Player
 
@@ -12,7 +11,17 @@ class LogListener:
         self.events = Queue.Queue()
         self.last_event = None
         self.event_types_to_handlers = {'error': self.handle_error_event}
-        Thread(target=self.handle_event).start()
+        self.keep_listening = False
+        self.listener_thread = None
+
+    def start(self):
+        self.keep_listening = True
+        self.listener_thread = start_thread(self.handle_event)
+
+    def stop(self):
+        self.keep_listening = False
+        # self.listener_thread.join()
+        self.listener_thread = None
 
     def __str__(self):
         return "<LogListener: %s>" % (self.name)

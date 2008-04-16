@@ -1,7 +1,12 @@
 import os
+import re
 import urllib
 import socket
+
+from threading import Thread
 from ConfigParser import RawConfigParser as RCP
+
+from pyfileutils import read_file
 
 __host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
 __hostnames = [x for x in [__host] + __aliases if '.' in x]
@@ -9,7 +14,8 @@ if not __hostnames:
     raise Exception("Could not obtain the Fully Qualified Hostname")
 
 __all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'yes', 'no',
-           'timedelta_in_seconds', 'get_configparser']
+           'timedelta_in_seconds', 'start_thread', 'load_configparser',
+           'get_configparser', 'get_zserv_exe', 'get_database']
 
 HOSTNAME = __hostnames[0]
 CONFIGPARSER = None
@@ -25,29 +31,52 @@ def no(x):
 def timedelta_in_seconds(x):
     return (x.days * 86400) + x.seconds
 
-def get_configparser(config_file=None):
+def start_thread(target, daemonic=True):
+    t = Thread(target=target)
+    t.setDaemon(daemonic)
+    t.start()
+    return t
+
+def resolve_file(f):
+    return os.path.abspath(os.path.expanduser(f))
+
+def get_configparser(config_file=None, reload=False):
     global CONFIGPARSER
-    global ZSERV_EXE
-    global DATABASE
-    if CONFIGPARSER is None:
-        cp = RCP()
-        if config_file is not None:
-            if not os.path.isfile(config_file):
-                es = "Could not find configuration file [%s]"
-                raise ValueError(es % (config_file))
-        else:
-            possible_config_files = ['zdstack.ini', '~/.zdstack/zdstack.ini',
-                                     '/etc/zdstack/zdstack.ini']
-            possible_config_files = [x for x in possible_config_files \
-                                                        if os.path.isfile(x)]
-            if not possible_config_files:
-                raise ValueError("Could not find a valid configuration file")
-            else:
-                config_file = possible_config_files[0]
-        cp.read(config_file)
-        cp.filename = config_file
-        CONFIGPARSER = cp
+    if reload or (CONFIGPARSER is None):
+        CONFIGPARSER = load_configparser(config_file)
     return CONFIGPARSER
+
+def load_configparser(config_file=None):
+    cp = RCP()
+    if config_file is not None:
+        config_file = resolve_file(config_file)
+        if not os.path.isfile(config_file):
+            es = "Could not find configuration file [%s]"
+            raise ValueError(es % (config_file))
+    else:
+        possible_config_files = ['zdstackrc', 'zdstack.ini',
+                                 '~/.zdstackrc', '~/.zdstack.ini',
+                                 '~/.zdstack/zdstackrc',
+                                 '~/.zdstack/zdstack.ini',
+                                 '/etc/zdstackrc', '/etc/zdstack.ini',
+                                 '/etc/zdstack/zdstackrc'
+                                 '/etc/zdstack/zdstack.ini']
+        possible_config_files = \
+                        [resolve_file(x) for x in possible_config_files]
+        if not [y for y in possible_config_files if os.path.isfile(y)]:
+            raise ValueError("Could not find a valid configuration file")
+        config_file = possible_config_files[0]
+    config_fobj = open(config_file)
+    regexp = r'^\[(.*)\]%'
+    sections = []
+    for line in config_fobj.read().splitlines():
+        if re.match(regexp, line) and line in sections:
+            es = "Duplicate section found in config: [%s]"
+            raise ValueError(es % (line))
+    config_fobj.seek(0)
+    cp.readfp(config_fobj)
+    cp.filename = config_file
+    return cp
 
 def get_zserv_exe(config_file=None):
     global CONFIGPARSER
