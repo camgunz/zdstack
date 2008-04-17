@@ -1,7 +1,23 @@
 #summary Immediate To-Do list for ZDStack
 
+  * Fix Issue 12
+
+  * Fix Issue 15
+
+  * Fix Issue 18
+
   * Test alternate game modes w/ !NoStar (Coop, Duel, FFA, TeamDM)
 
   * Test all the server config variables like removebotswhenhumans, etc.
 
-  * Fully test all XML-RPC methods.
+  * There are a lot of "CTF-Only" stats, like flag_returns, etc.  Maybe a player should
+    know what kind of server he's in, and hold his stats accordingly.  We could:
+
+    # Break stats out into CTFStatKeeper, TeamDMStatKeeper, FFAStatKeeper, 
+      !CoopStatKeeper and !DuelStatKeeper
+
+    # Break players out into CTFPlayer, TeamDMPlayer, FFAPlayer, !CoopPlayer and
+      !DuelPlayer, and rename Player to !BasePlayer
+
+    # Move all instantiation to classes that have ZServ references, like !LogListener or
+      ZServ itself.
