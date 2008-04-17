@@ -1,9 +1,9 @@
 #summary This is the list of features ZDStack is committed to, with current progress and status information.
 
 || Feature || Progress || What's the Hold Up? ||
-|| Easy ProcessManagement (start | stop | restart), including automatic process restarting || 80% || Not tested at all ||
+|| Easy ProcessManagement (start | stop | restart), including automatic process restarting || 99% || Tested start and stop, along with starting, stopping, reconfiguring and adding ZServs.  Only thing left is restart (for both ZDStack and individual ZServs) ||
 || Simple ConfigurationFile for multiple processes || 90% || Not fully tested, especially for game-modes other than CTF. ||
 || Event processing, for PlayerStatistics and ServerResponse || 100% || Done! ||
 || ConnectionQualityStatistics || 0% || We get player IP addresses, but I haven't setup the "ping player, get results" framework yet.  That's a whole other Module in and of itself. ||
 || PlayerIdentity (IP-based) database || 100% || Done! ||
-|| XML-RPC interface || 90% || The implementation is finished, but the zserv methods like start | stop | restart are un-tested.  Also, I'm not confident that the XML-RPC methods available will cover all use cases. ||
+|| XML-RPC interface || 99% || I'm not confident that the XML-RPC methods available will cover all use cases. ||
