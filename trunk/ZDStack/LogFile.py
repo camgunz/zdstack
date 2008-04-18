@@ -73,10 +73,10 @@ class LogFile:
                     ed = {'error': e, 'traceback': tb}
                     events = [LogEvent(datetime.now(), 'error', ed)]
             for event in events:
-                es = "Sending event [%s]"
+                # es = "Sending event [%s]"
                 for listener in self.listeners:
-                    if event.type != 'junk':
-                        self.zserv.log(es % (event.type))
+                    # if event.type != 'junk':
+                    #     self.zserv.log(es % (event.type))
                     listener.send_event(event)
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 

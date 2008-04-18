@@ -464,11 +464,17 @@ class ZServ:
 
     def roll_log(self, log_file_name):
         if log_file_name == 'general':
+            self.log("[%s] Rolling General Log" % (self.name))
             general_log_filename = self.get_general_log_filename(roll=True)
+            s = "[%s]: New General LogFile: [%s]"
+            self.log(s % (self.name, general_log_filename))
             self.general_log.set_filepath(general_log_filename)
         elif log_file_name == 'connection':
+            self.log("[%s] Rolling Connection log" % (self.name))
             connection_log_filename = \
                                     self.get_connection_log_filename(roll=True)
+            s = "[%s]: New Connection LogFile: [%s]"
+            self.log(s % (self.name, connection_log_filename))
             self.general_log.set_filepath(connection_log_filename)
         else:
             es = "Received a log_roll event for non-existent log [%s]"
