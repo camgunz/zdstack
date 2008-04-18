@@ -188,6 +188,7 @@ class GeneralLogParser(LogParser):
             flag_event = line_to_flag_event(now, line)
             map_event = line_to_map_event(now, line)
             if line == 'General logging off':
+            if line == 'General logging off':
                 events.append(LogEvent(now, 'log_roll', {'log': 'general'}))
             elif death_event:
                 events.append(death_event)

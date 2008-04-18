@@ -210,7 +210,7 @@ class ZServ:
     def get_configuration(self):
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
-        template += 'set log_disposition "1"\n'
+        template += 'set log_disposition "0"\n'
         if self.hostname:
             template += 'set hostname "%s"\n' % (self.hostname)
         if self.motd:
