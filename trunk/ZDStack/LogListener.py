@@ -2,7 +2,7 @@ import Queue
 
 from ZDStack import start_thread
 from ZDStack.Frag import Frag
-from ZDStack.Player import Player
+# from ZDStack.Player import Player
 
 class LogListener:
 
@@ -111,13 +111,14 @@ class GeneralLogListener(ZServLogListener):
         self.event_types_to_handlers['team_join'] = self.handle_game_join_event
 
     def handle_connection_event(self, event):
-        player = Player(event.data['player'], self.zserv)
-        self.zserv.log("Received a connection event: [%s]" % (event.data))
-        self.zserv.add_player(player)
+        # player = Player(event.data['player'], self.zserv)
+        # self.zserv.log("Received a connection event: [%s]" % (event.data))
+        print "LogListener: handle_connection_event: [%s]" % (event.data['player'])
+        self.zserv.add_player(event.data['player'])
 
     def handle_disconnection_event(self, event):
-        player = Player(event.data['player'], self.zserv)
-        self.zserv.remove_player(player)
+        # player = Player(event.data['player'], self.zserv)
+        self.zserv.remove_player(event.data['player'])
 
     def handle_game_join_event(self, event):
         try:
@@ -216,15 +217,6 @@ class GeneralLogListener(ZServLogListener):
             self.zserv.log(es % (event.data['player']))
             return
         runner.set_has_flag(False)
-        for i in range(len(self.zserv.map.frags)):
-            frag = self.zserv.map.frags[-i]
-            if frag.fraggee == runner.name:
-                runner.add_flag_loss(frag)
-                try:
-                    self.zserv.get_player(frag.fragger).add_flag_drop(frag)
-                except ValueError:
-                    es = "Received a flag drop event for non-existent player"
-                    self.zserv.log(es + ' [%s]' % (frag.fragger))
 
     def handle_flag_cap_event(self, event):
         try:

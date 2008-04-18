@@ -1,6 +1,9 @@
 from decimal import Decimal
 
 from ZDStack.ZServ import ZServ
+from ZDStack.CTFMap import CTFMap
+from ZDStack.CTFTeam import CTFTeam
+from ZDStack.CTFPlayer import CTFPlayer
 
 class CTF(ZServ):
 
@@ -8,7 +11,9 @@ class CTF(ZServ):
         self.deathmatch = True
         self.teamplay = True
         self.ctf = True
-        ZServ.__init__(self, name, 'ctf', config, zdstack)
+        ZServ.__init__(self, name, 'ctf', config, zdstack, CTFPlayer,
+                                                           CTFTeam,
+                                                           CTFMap)
 
     def load_config(self, config):
         def is_valid(x):

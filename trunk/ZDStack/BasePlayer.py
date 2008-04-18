@@ -91,7 +91,7 @@ def html_escape(s):
     t = t.replace('"', "&quot;")
     return t
 
-class Player(BaseStatKeeper):
+class BasePlayer(BaseStatKeeper):
 
     def __init__(self, name, zserv, ip=None):
         BaseStatKeeper.__init__(self)
@@ -115,14 +115,10 @@ class Player(BaseStatKeeper):
             self.homogenized_tag = None
             self.escaped_tag = None
             self.escaped_homogenized_tag = None
+        self.set_map(self.zserv.map)
+        self.stat_container = self.zserv.map
         self.playing = False
-        self.team = None
         self.disconnected = False
-        self.stat_container = self.team
-        if self.team is not None:
-            self.color = self.team.color
-        else:
-            self.color = None
         db = get_database()
         # If this player has never connected before, insert it into the db.
         if self.ip:
@@ -200,8 +196,15 @@ class Player(BaseStatKeeper):
     def exportables(self):
         out = []
         for x in BaseStatKeeper.exportables(self):
-            if x[0] != 'team' and x[1] != self.team and \
-               x[0] != 'zserv' and x[1] != self.zserv:
+            if x[0] != 'team' and \
+              (('team' in self and x[1] != self.team) or \
+               ('team' not in self)) and \
+               x[0] != 'map' and \
+              (('map' in self and x[1] != self.map) or \
+               ('map' not in self)) and \
+               x[0] != 'zserv' and \
+              (('zserv' in self and x[1] != self.zserv) or \
+               ('zserv' not in self)):
                 out.append(x)
         possible_aliases = self.get_possible_aliases()
         if possible_aliases:
@@ -210,13 +213,9 @@ class Player(BaseStatKeeper):
             out.append(('possible_player_aliases', None))
         return out
 
-    def set_team(self, team):
-        self.team = team
-        if self.team is not None:
-            self.color = self.team.color
-        else:
-            self.color = None
-        self.stat_container = self.team
+    def set_map(self, map):
+        self.map = map
+        self.stat_container = self.map
 
     def __str__(self):
         return "<Player [%s]>" % (self.name)

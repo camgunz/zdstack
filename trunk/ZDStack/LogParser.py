@@ -100,7 +100,7 @@ def line_to_flag_event(event_dt, line):
             return LogEvent(event_dt, flag, {'player': match.group(1)})
 
 def line_to_map_event(event_dt, line):
-    match = re.match('^map(.*): (.*)$', line)
+    match = re.match('^map(\d\d): (.*)$', line)
     if match:
         d = {'name': match.group(2), 'number': int(match.group(1))}
         return LogEvent(event_dt, 'map_change', d)

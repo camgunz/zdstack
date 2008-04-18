@@ -163,8 +163,7 @@ class Stack(Server):
     def get_all_players(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        players = self.zservs[zserv_name].players
-        return players.export()
+        return self.zservs[zserv_name].players.export()
 
     def list_player_names(self, zserv_name):
         if zserv_name not in self.zservs:
@@ -191,7 +190,12 @@ class Stack(Server):
         else:
             return None
 
-    def get_remembered_stats(self, zserv_name):
+    def get_remembered_stats(self, zserv_name, back=1):
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        return self.zservs[zserv_name].remembered_stats[-back].export()
+
+    def get_all_remembered_stats(self, zserv_name):
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         return self.zservs[zserv_name].remembered_stats.export()
@@ -207,8 +211,9 @@ class Stack(Server):
                   self.start_all_zservs, self.stop_all_zservs,
                   self.restart_all_zservs, self.get_zserv, self.get_all_zservs,
                   self.list_zserv_names, self.get_remembered_stats,
-                  self.get_current_map, self.get_team, self.get_all_teams,
-                  self.get_player, self.get_all_players,
-                  self.list_player_names, self.send_to_zserv):
+                  self.get_all_remembered_stats, self.get_current_map,
+                  self.get_team, self.get_all_teams, self.get_player,
+                  self.get_all_players, self.list_player_names,
+                  self.send_to_zserv):
             self.xmlrpc_server.register_function(x)
 

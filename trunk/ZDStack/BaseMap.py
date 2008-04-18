@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
-class Map(BaseStatKeeper):
+class BaseMap(BaseStatKeeper):
 
     def __init__(self, number, name):
         self.number = number

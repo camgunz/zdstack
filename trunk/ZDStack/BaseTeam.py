@@ -1,6 +1,6 @@
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
-class Team(BaseStatKeeper):
+class BaseTeam(BaseStatKeeper):
 
     def __init__(self, color):
         self.color = color

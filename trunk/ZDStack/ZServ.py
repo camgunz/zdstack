@@ -3,22 +3,24 @@ from decimal import Decimal
 from datetime import date, datetime, timedelta
 from subprocess import Popen, PIPE
 
-from pyfileutils import read_file, write_file, ls
+from pyfileutils import read_file, write_file
 
 from ZDStack import yes, no, start_thread, HOSTNAME
-from ZDStack.Map import Map
-from ZDStack.Team import Team
 from ZDStack.Stats import Stats
-from ZDStack.Player import Player
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
+from ZDStack.BaseMap import BaseMap
+from ZDStack.BaseTeam import BaseTeam
+from ZDStack.BasePlayer import BasePlayer
 from ZDStack.LogParser import ConnectionLogParser,  GeneralLogParser
 from ZDStack.LogListener import ConnectionLogListener, GeneralLogListener
 
 class ZServ:
 
-    def __init__(self, name, type, config, zdstack):
+    def __init__(self, name, type, config, zdstack, player_class=BasePlayer,
+                                                    team_class=BaseTeam,
+                                                    map_class=BaseMap):
         """Initializes a ZServ instance.
 
         name:    a string representing the name of this ZServ.
@@ -37,6 +39,9 @@ class ZServ:
         self.name = name
         self.type = type
         self.zdstack = zdstack
+        self.map_class = map_class
+        self.team_class = team_class
+        self.player_class = player_class
         self.dn_fobj = open('/dev/null', 'r+')
         self.devnull = self.dn_fobj.fileno()
         self.homedir = os.path.join(self.zdstack.homedir, self.name)
@@ -191,10 +196,10 @@ class ZServ:
 
     def initialize_stats(self):
         self.map = None
-        self.red_team = Team('red')
-        self.blue_team = Team('blue')
-        self.green_team = Team('green')
-        self.white_team = Team('white')
+        self.red_team = self.team_class('red')
+        self.blue_team = self.team_class('blue')
+        self.green_team = self.team_class('green')
+        self.white_team = self.team_class('white')
         self.teams = Dictable({'red': self.red_team,
                                'blue': self.blue_team,
                                'green': self.green_team,
@@ -421,7 +426,7 @@ class ZServ:
     def get_general_log_filename(self, roll=False):
         return os.path.join(self.homedir, 'gen' + self.get_logfile_suffix())
 
-    def add_player(self, player):
+    def add_player(self, player_name):
         ###
         # It's possible for players to have the same name, so that this
         # function will do nothing.  There's absolutely nothing we can do
@@ -430,6 +435,8 @@ class ZServ:
         # because a group of people could all join a server under the same
         # name, and blow up stats for a certain player.
         ###
+        print "ZServ: add_player [%s]" % (player_name)
+        player = self.player_class(player_name, self)
         if player.name not in self.players:
             self.players[player.name] = player
         else:
@@ -437,7 +444,8 @@ class ZServ:
                 del self.disconnected_players[player.name]
             self.players[player.name].disconnected = False
 
-    def remove_player(self, player):
+    def remove_player(self, player_name):
+        player = self.player_class(player_name, self)
         if player.name in self.players:
             self.disconnected_players[player.name] = player
         self.players[player.name].disconnected = True
@@ -495,7 +503,7 @@ class ZServ:
 
     def handle_map_change(self, map_number, map_name):
         self.save_current_stats()
-        self.map = Map(map_number, map_name)
+        self.map = self.map_class(map_number, map_name)
         for player_name, player in self.players.items():
             if player_name in self.disconnected_players:
                 del self.players[player_name]
@@ -511,44 +519,52 @@ class ZServ:
         # We just instantiate the player, that object takes care of the
         # logging itself if an IP address is given.
         ###
-        Player(player_name, self, player_ip)
+        self.player_class(player_name, self, player_ip)
 
     def export(self):
-        d = Dictable({'name': self.name,
-                      'type': self.type,
-                      'port': self.port,
-                      'iwad': self.base_iwad,
-                      'wads': [os.path.basename(x) for x in self.wads],
-                      'optional_wads': self.optional_wads,
-                      'maps': self.maps,
-                      'dmflags': self.dmflags,
-                      'dmflags2': self.dmflags2,
-                      'admin_email': self.admin_email,
-                      'website': self.website.replace('\\', '/'),
-                      'advertise': self.advertise,
-                      'hostname': self.hostname,
-                      'motd': self.motd.replace('<br>', '\n'),
-                      'remove_bots_when_humans': self.remove_bots_when_humans,
-                      'overtime': self.overtime,
-                      'skill': self.skill,
-                      'gravity': self.gravity,
-                      'air_control': self.air_control,
-                      'min_players': self.min_players,
-                      'max_players': self.max_players,
-                      'max_clients': self.max_clients,
-                      'max_teams': self.max_teams,
-                      'max_players_per_team': self.max_players_per_team,
-                      'teamdamage': self.teamdamage,
-                      'deathlimit': self.deathlimit,
-                      'timelimit': self.timelimit,
-                      'fraglimit': self.fraglimit,
-                      'scorelimit': self.scorelimit,
-                      'spam_window': self.spam_window,
-                      'spam_limit': self.spam_limit,
-                      'speed_check': self.speed_check,
-                      'restart_empty_map': self.restart_empty_map})
+        d = Dictable(
+            {'name': self.name,
+             'type': self.type,
+             'port': self.port,
+             'players': len(self.players) - len(self.disconnected_players),
+             'iwad': self.base_iwad,
+             'wads': [os.path.basename(x) for x in self.wads],
+             'optional_wads': self.optional_wads,
+             'maps': self.maps,
+             'dmflags': self.dmflags,
+             'dmflags2': self.dmflags2,
+             'admin_email': self.admin_email,
+             'website': self.website.replace('\\', '/'),
+             'advertise': self.advertise,
+             'hostname': self.hostname,
+             'motd': self.motd.replace('<br>', '\n'),
+             'remove_bots_when_humans': self.remove_bots_when_humans,
+             'overtime': self.overtime,
+             'skill': self.skill,
+             'gravity': self.gravity,
+             'air_control': self.air_control,
+             'min_players': self.min_players,
+             'max_players': self.max_players,
+             'max_clients': self.max_clients,
+             'max_teams': self.max_teams,
+             'max_players_per_team': self.max_players_per_team,
+             'teamdamage': self.teamdamage,
+             'deathlimit': self.deathlimit,
+             'timelimit': self.timelimit,
+             'fraglimit': self.fraglimit,
+             'scorelimit': self.scorelimit,
+             'spam_window': self.spam_window,
+             'spam_limit': self.spam_limit,
+             'speed_check': self.speed_check,
+             'restart_empty_map': self.restart_empty_map})
         if self.map:
-            d['map_number'] = self.map.number
-            d['map_name'] = self.map.name
-        return d
+            d['map'] = {'name': self.map.name, 'number': self.map.number,
+                        'index': 0}
+        d['remembered_stats'] = []
+        counter = 0
+        for rm in reversed(self.remembered_stats):
+            counter += 1
+            d['remembered_stats'].append({'name': rm.name, 'number': rm.number,
+                                          'index': counter})
+        return d.export()
 
