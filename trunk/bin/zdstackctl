@@ -52,21 +52,22 @@ def start(config_file, debug=False):
             es = "\nThis server is already running: %s\n"
             print >> sys.stderr, es % (zdstack.pidfile)
             sys.exit(-1)
-        if not debug:
-            print "Forking"
-            fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
-        else:
-            print "Debugging"
-        print os.getpid()
+        # if not debug:
+        #     print "Forking"
+        #     fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
+        # else:
+        #     print "Debugging"
+        fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
+        print "PID: ", os.getpid()
         zdstack.startup()
-        if debug:
-            import pprint
-            time.sleep(7)
-            pprint.pprint(zdstack.get_all_players('ZDCTF Test'))
-            pprint.pprint(zdstack.get_all_teams('ZDCTF Test'))
-            pprint.pprint(zdstack.get_current_map('ZDCTF Test'))
-            pprint.pprint(zdstack.get_all_zservs())
-            pprint.pprint(zdstack.get_remembered_stats('ZDCTF Test'))
+        # if debug:
+        #     import pprint
+        #     time.sleep(7)
+        #     pprint.pprint(zdstack.get_all_players('ZDCTF Test'))
+        #     pprint.pprint(zdstack.get_all_teams('ZDCTF Test'))
+        #     pprint.pprint(zdstack.get_current_map('ZDCTF Test'))
+        #     pprint.pprint(zdstack.get_all_zservs())
+        #     pprint.pprint(zdstack.get_remembered_stats('ZDCTF Test'))
     except Exception, e:
         raise # for debugging
         if debug:

@@ -1,12 +1,17 @@
 import os
 import re
+import time
 import urllib
 import socket
 
+from datetime import datetime, timedelta
 from threading import Thread
-from ConfigParser import RawConfigParser as RCP
+from cStringIO import StringIO
+from ConfigParser import ConfigParser as CP
 
-from pyfileutils import read_file
+from pyfileutils import read_file, append_file
+
+from ZDStack.Token import Token
 
 __host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
 __hostnames = [x for x in [__host] + __aliases if '.' in x]
@@ -15,12 +20,15 @@ if not __hostnames:
 
 __all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'yes', 'no',
            'timedelta_in_seconds', 'start_thread', 'load_configparser',
-           'get_configparser', 'get_zserv_exe', 'get_database']
+           'get_configparser', 'get_zserv_exe', 'get_database',
+           'get_logfile_suffix', 'resolve_file', 'log', 'homogenize',
+           'parse_player_name', 'html_escape']
 
 HOSTNAME = __hostnames[0]
 CONFIGPARSER = None
 ZSERV_EXE = None
 DATABASE = None
+LOGFILE = None
 
 def yes(x):
     return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely')
@@ -31,14 +39,25 @@ def no(x):
 def timedelta_in_seconds(x):
     return (x.days * 86400) + x.seconds
 
-def start_thread(target, daemonic=True):
-    t = Thread(target=target)
+def start_thread(target, name=None, daemonic=True):
+    log("Starting thread [%s]" % (name))
+    t = Thread(target=target, name=name)
     t.setDaemon(daemonic)
     t.start()
     return t
 
+def get_logfile_suffix(roll=False):
+    now = datetime.now()
+    today = datetime(now.year, now.month, now.day)
+    if roll and now.hour == 23:
+        today += timedelta(days=1)
+    return today.strftime('-%Y%m%d') + '.log'
+
 def resolve_file(f):
     return os.path.abspath(os.path.expanduser(f))
+
+def log(x):
+    append_file('[%s] %s\n' % (time.ctime(), x), get_logfile(), overwrite=True)
 
 def get_configparser(config_file=None, reload=False):
     global CONFIGPARSER
@@ -47,7 +66,7 @@ def get_configparser(config_file=None, reload=False):
     return CONFIGPARSER
 
 def load_configparser(config_file=None):
-    cp = RCP()
+    cp = CP()
     if config_file is not None:
         config_file = resolve_file(config_file)
         if not os.path.isfile(config_file):
@@ -66,16 +85,18 @@ def load_configparser(config_file=None):
         if not [y for y in possible_config_files if os.path.isfile(y)]:
             raise ValueError("Could not find a valid configuration file")
         config_file = possible_config_files[0]
-    config_fobj = open(config_file)
+    config_fobj = StringIO(read_file(config_file))
     regexp = r'^\[(.*)\]%'
     sections = []
-    for line in config_fobj.read().splitlines():
+    for line in config_fobj.getvalue().splitlines():
         if re.match(regexp, line) and line in sections:
             es = "Duplicate section found in config: [%s]"
             raise ValueError(es % (line))
     config_fobj.seek(0)
     cp.readfp(config_fobj)
     cp.filename = config_file
+    for section in cp.sections():
+        cp.set(section, 'name', section)
     return cp
 
 def get_zserv_exe(config_file=None):
@@ -122,4 +143,79 @@ def get_database(config_file=None):
             raise # for debugging
             pass
     return DATABASE
+
+def get_logfile(config_file=None):
+    global CONFIGPARSER
+    global LOGFILE
+    if CONFIGPARSER is None:
+        get_configparser(config_file)
+    if LOGFILE is None:
+        LOGFILE = os.path.join(CONFIGPARSER.defaults()['rootfolder'],
+                               'ZDStack.log')
+    return LOGFILE
+
+def homogenize(s):
+    return s.replace(' ', '').lower().replace('\n', '').replace('\t', '')
+
+def parse_player_name(name):
+    ###
+    # It's a little ridiculous, but people are VERY creative in how they
+    # add their clan/team tags.  So we have a ridiculous algorithm to
+    # figure this out.
+    ###
+    delimiters = {'[': ']', '<': '>', '(': ')', '*': '*', '_': '_',
+                  '-': '-', ']': '[', '>': '<', ')': '('}
+    seen = []
+    waiting = []
+    tokens = []
+    s = ''
+    other_stuff = ''
+    in_token = False
+    for c in name:
+        if c in delimiters.keys(): # found a delimiter
+            if waiting and waiting[-1] == c: # found the end of a token
+                tokens.append(Token(s, seen[-1], c))
+                s = ''
+                waiting = waiting[:-1]
+                seen = seen[:-1]
+                in_token = False
+            elif in_token: # found the beginning of a new token
+                tokens.append(Token(s, seen[-1]))
+                waiting = waiting[:-1]
+                seen = seen[:-1]
+                seen.append(c)
+                s = ''
+            else: # found the beginning of a token
+                waiting = waiting[:-1]
+                seen = seen[:-1]
+                seen.append(c)
+                waiting.append(delimiters[c])
+                # other_stuff += c
+                in_token = True
+        elif in_token: # add to the current token
+            s += c
+        else: # not a token
+            other_stuff += c
+    if s:
+        if in_token:
+            tokens.append(Token(s, ''.join(seen)))
+        else:
+            other_stuff += s
+    try:
+        tokens = sorted([(len(t), t) for t in tokens])
+        # tokens.reverse()
+        token = tokens[0][1]
+        tag = str(token)
+        return (tag, name.replace(tag, ''))
+    except IndexError: # no tag
+        return (None, name)
+
+def html_escape(s):
+    # Basically ripped from web.py
+    t = s.replace('&', "&amp;")
+    t = t.replace('<', "&lt;")
+    t = t.replace('>', "&gt;")
+    t = t.replace("'", "&#39;")
+    t = t.replace('"', "&quot;")
+    return t
 

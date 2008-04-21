@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from ZDStack import log
+
 class Dictable(dict):
 
     def __init__(self, d={}):
@@ -21,9 +23,11 @@ class Dictable(dict):
             raise AttributeError, e
 
     def exportables(self):
+        # log("Dictable: exportables")
         return [x for x in self.items()]
 
     def export(self):
+        # log("Dictable: export")
         out = {}
         for x, y in self.exportables():
             if hasattr(y, 'export'):

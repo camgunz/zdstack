@@ -1,13 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
 class BaseMap(BaseStatKeeper):
 
     def __init__(self, number, name):
+        BaseStatKeeper.__init__(self)
         self.number = number
         self.name = name
         self.start_time = datetime.now()
-        BaseStatKeeper.__init__(self)
 
     def __eq__(self, x):
         return type(x) == type(self) and \

@@ -1,6 +1,6 @@
 import Queue
 
-from ZDStack import start_thread
+from ZDStack import start_thread, log
 from ZDStack.Frag import Frag
 # from ZDStack.Player import Player
 
@@ -16,7 +16,8 @@ class LogListener:
 
     def start(self):
         self.keep_listening = True
-        self.listener_thread = start_thread(self.handle_event)
+        self.listener_thread = start_thread(self.handle_event,
+                                            "%s listener thread" % self.name)
 
     def stop(self):
         self.keep_listening = False
@@ -73,6 +74,10 @@ class ConnectionLogListener(ZServLogListener):
         ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
         self.event_types_to_handlers['ip_log'] = self.handle_ip_log_event
 
+    def handle_log_roll_event(self, event):
+        lf = self.zserv.get_connection_log_filename(roll=True)
+        self.zserv.roll_connection_log(lf)
+
     def handle_ip_log_event(self, event):
         self.zserv.log_ip(event.data['player'], event.data['ip'])
 
@@ -113,8 +118,12 @@ class GeneralLogListener(ZServLogListener):
     def handle_connection_event(self, event):
         # player = Player(event.data['player'], self.zserv)
         # self.zserv.log("Received a connection event: [%s]" % (event.data))
-        print "LogListener: handle_connection_event: [%s]" % (event.data['player'])
+        self.zserv.log("LogListener: handle_connection_event: [%s]" % (event.data['player']))
         self.zserv.add_player(event.data['player'])
+
+    def handle_log_roll_event(self, event):
+        # lf = self.zserv.get_general_log_filename(roll=True)
+        self.zserv.roll_general_log()
 
     def handle_disconnection_event(self, event):
         # player = Player(event.data['player'], self.zserv)
@@ -124,8 +133,8 @@ class GeneralLogListener(ZServLogListener):
         try:
             player = self.zserv.get_player(event.data['player'])
         except ValueError:
-            es = "Received a game_join event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            es = "Received a %s event for non-existent player [%s]"
+            self.zserv.log(es % (event.type, event.data['player']))
             return
         player.playing = True
         if event.type == 'team_join':
@@ -243,6 +252,5 @@ class GeneralLogListener(ZServLogListener):
             self.zserv.log(es % (event.data['player']))
 
     def handle_map_change_event(self, event):
-        self.zserv.handle_map_change(event.data['number'],
-                                     event.data['name'])
+        self.zserv.change_map(event.data['number'], event.data['name'])
 

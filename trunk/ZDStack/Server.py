@@ -8,7 +8,7 @@ from datetime import datetime
 from DocXMLRPCServer import DocXMLRPCServer
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, get_configparser
+from ZDStack import HOSTNAME, get_configparser, log
 
 class Server:
 
@@ -26,6 +26,7 @@ class Server:
         signal.signal(signal.SIGHUP, self.handle_signal)
 
     def load_config(self, reload=False):
+        log("Server: load_config")
         self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
             rootfolder = self.defaults['rootfolder']
@@ -46,11 +47,13 @@ class Server:
         self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
     def reload_config(self):
+        log("Server: reload_config")
         self.config = get_configparser(reload=True,
                                        config_file=self.config_file)
         self.load_config(reload=True)
 
     def startup(self):
+        log("Server: startup")
         self.xmlrpc_server = DocXMLRPCServer((HOSTNAME, self.port))
         self.xmlrpc_server.register_introspection_functions()
         self.xmlrpc_server.allow_none = True
@@ -68,32 +71,38 @@ http://zdstack.googlecode.com.""")
             self.xmlrpc_server.handle_request()
 
     def shutdown(self, signum=15):
+        log("Server: shutdown")
         self.stop()
         self.keep_serving = False
         try:
             delete_file(self.pidfile)
         except OSError, e:
-            self.log("Error removing PID file %s: [%s]" % (self.pidfile, e))
+            log("Error removing PID file %s: [%s]" % (self.pidfile, e))
         sys.exit(0)
 
     def start(self):
+        log("Server: start")
         raise NotImplementedError()
 
     def stop(self):
+        log("Server: stop")
         raise NotImplementedError()
 
     def restart(self):
+        log("Server: restart")
         self.stop()
         self.start()
         return True
 
     def handle_signal(self, signum, frame):
+        log("Server: handle_signal")
         if signum == signal.SIGHUP:
             self.reload_config()
         else:
             self.shutdown(signum=signum)
 
     def register_functions(self):
+        log("Server: register_functions")
         self.xmlrpc_server.register_function(self.get_status)
         self.xmlrpc_server.register_function(self.get_logfile)
         self.xmlrpc_server.register_function(self.reload_config)
@@ -101,19 +110,17 @@ http://zdstack.googlecode.com.""")
         self.xmlrpc_server.register_function(self.stop)
         self.xmlrpc_server.register_function(self.restart)
 
-    def log(self, s):
-        log_msg = "[%s] %s\n" % (time.ctime(), s)
-        print log_msg[:-1]
-        # append_file(log_msg, self.logfile, overwrite=True)
-
     def debug(self, s):
+        log("Server: debug")
         if DEBUG:
             debug_msg = "DEBUG: %s" % (s)
-            self.log(debug_msg)
+            log(debug_msg)
 
     def get_status(self):
+        log("Server: get_status")
         return self.status
 
     def get_logfile(self):
-        return read_file(self.logfile)
+        log("Server: get_logfile")
+        return read_file(logfile)
 

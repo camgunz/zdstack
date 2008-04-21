@@ -24,7 +24,8 @@ class LogFile:
 
     def start(self):
         self.keep_logging = True
-        self.logging_thread = start_thread(self.log)
+        self.logging_thread = \
+            start_thread(self.log, '%s logging thread' % (self.filepath))
 
     def stop(self):
         self.keep_logging = False
@@ -60,7 +61,10 @@ class LogFile:
                     self.fobj = open(self.filepath)
                     self.fobj.seek(0, os.SEEK_END)
             events = []
-            rs, ws, xs = select.select([self.fobj], [], [])
+            try:
+                rs, ws, xs = select.select([self.fobj], [], [])
+            except: # can be raised during interpreter shutdown
+                continue
             for r in rs:
                 unprocessed_data += r.read()
                 try:
@@ -73,7 +77,7 @@ class LogFile:
                     ed = {'error': e, 'traceback': tb}
                     events = [LogEvent(datetime.now(), 'error', ed)]
             for event in events:
-                # es = "Sending event [%s]"
+                es = "%s Sending event [%%s]" % (self.filepath)
                 for listener in self.listeners:
                     # if event.type != 'junk':
                     #     self.zserv.log(es % (event.type))

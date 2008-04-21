@@ -1,7 +1,5 @@
 TODO:
 
-    Test alternate game modes w/ NoStar (Coop, Duel, FFA, TeamDM) 
-
     Test all the server config variables like removebotswhenhumans, etc. 
 
     Add Player latency and packet-loss tracking.  This requires the ping
