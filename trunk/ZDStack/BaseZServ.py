@@ -85,7 +85,6 @@ class BaseZServ:
                     '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
-        ### other mandatory stuff
         ### admin stuff
         self.rcon_enabled = None
         self.requires_password = None
