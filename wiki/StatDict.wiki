@@ -1,0 +1,7 @@
+﻿#summary Structure of the StatDict
+
+{{{
+{'players': [PlayerDict, PlayerDict],
+ 'teams': [TeamDict, TeamDict],
+ 'map': MapDict}
+}}}
