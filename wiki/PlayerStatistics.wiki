@@ -1,4 +1,4 @@
-#summary Individual player statistics.
+﻿#summary Individual player statistics.
 
 One of the things that ZDaemon is really missing is statistics.  zserv keeps logs, but the level of detail isn't quite on the level as modern FPS's.
 
@@ -6,7 +6,7 @@ One of the things that ZDaemon is really missing is statistics.  zserv keeps log
 
   * Shots taken & Shots landed
     * Shot accuracy, Shot fatality rate
-  * Item pickup
+  * Weapon/Item pickup
     * Item whoring, Weapon preference
 
 === Events zserv logs ===

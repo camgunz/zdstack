@@ -1,85 +1,25 @@
-#summary XML-RPC Methods and Description
+﻿#summary XML-RPC Methods and Description
 
-=== start_zserv() ===
-  Description: Starts a zserv process.
+|| Method || Usage || Return Value ||
+|| start_zserv() || {{{start_zserv(zserv_name)}}} || True on Success ||
+|| start_all_zservs() || {{{start_all_zservs()}}} || True on Success ||
+|| stop_zserv() || {{{stop_zserv(zserv_name)}}} || True on Success ||
+|| stop_all_zservs() || {{{stop_all_zservs()}}} || True on Success ||
+|| restart_zserv() || {{{restart_zserv(zserv_name)}}} || True on Success ||
+|| restart_all_zservs() || {{{restart_all_zservs()}}} || True on Success ||
+|| get_uptime() || {{{get_uptime(zserv_name)}}} || seconds as an int ||
+|| get_zserv() || {{{get_zserv(zserv_name)}}} || a ZservDict ||
+|| get_all_zservs() || {{{get_all_zservs()}}} || a list of ZservDict ||
+|| list_zserv_names() || {{{list_zserv_names()}}} || a list of zserv names as strings ||
+|| get_current_map() || {{{get_current_map(zserv_name)}}} || a MapDict ||
+|| get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict ||
+|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDicts ||
+|| get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict ||
+|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDicts ||
+|| list_player_names() || {{{list_player_names(zserv_name)}}} || a list of player names as strings ||
+|| get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict ||
+|| get_status() || {{{get_status(zserv_name)}}} || ZServ status as a string, either 'Stopped' or 'Running' ||
+|| reload_config() || {{{reload_config(zserv_name)}}} || True on success ||
+|| reload_all_configs() || {{{reload_all_configs()}}} || True on success ||
+|| send_to_zserv() || {{{send_to_zserv(zserv_name, message, return_lines=40)}}} || a list of General log lines as strings ||
 
-  Usage: {{{start_zserv(zserv_name)}}}
-
-  Returns: True if succeeded
-
-=== stop_zserv() ===
-  Description: Stops a zserv process.
-
-  Usage: {{{stop_zserv(zserv_name)}}}
-
-  Returns: True if succeeded
-
-=== restart_zserv() ===
-  Description: Restarts a zserv process.
-
-  Usage: {{{restart_zserv(zserv_name)}}}
-
-  Returns: True if succeeded
-
-=== get_uptime() ===
-  Description: Gets the uptime for a zserv process.
-
-  Usage: {{{get_uptime(zserv_name)}}}
-
-  Returns: An int value of the number of seconds the zserv process has been running.  This value is for the internal zserv process, and not the ZDStack process as a whole.
-
-=== get_zserv() ===
-  Description: Gets a dict of zserv info.
-
-  Usage:{{{get_zserv(zserv_name)}}}
-
-  Returns: A ZservDict.
-
-=== get_current_map() ===
-  Description: Gets a dict of the current map's statistics and info.
-
-  Usage:{{{get_map(zserv_name, map_number)}}}
-
-  Returns: A MapDict.
-
-=== get_team() ===
-  Description: Gets a dict of team statistics and info.
-
-  Usage: {{{get_team(zserv_name, team_color)}}}
-
-  Returns: A TeamDict.
-
-=== get_player() ===
-  Description: Gets a dict of player statistics and info.
-
-  Usage: {{{get_player(zserv_name, player_name)}}}
-
-  Returns: A PlayerDict.
-
-=== get_all_zservs() ===
-  Description: Gets all dicts of zserv info
-
-  Usage: {{{get_all_zservs()}}}
-
-  Returns: A list of ZservDict instances.
-
-=== get_all_maps() ===
-  Description: Gets all dicts of map statistics and info.
-
-  Usage: {{{get_all_maps(zserv_name)}}}
-
-  Returns: A list of MapDict instances.
-
-=== get_all_teams() ===
-  Description: Gets all dicts of team statistics and info.
-
-  Usage: {{{get_all_teams(zserv_name)}}}
-
-  Returns: A list of TeamDict instances.
-
-=== get_all_players() ===
-  Description: Gets all dicts of team statistics and info.
-
-  Usage: {{{get_all_teams(zserv_name)}}}
-
-  Returns: A list of PlayerDict instances.
