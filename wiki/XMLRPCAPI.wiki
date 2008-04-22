@@ -13,9 +13,9 @@
 || list_zserv_names() || {{{list_zserv_names()}}} || a list of zserv names as strings || yes || yes ||
 || get_current_map() || {{{get_current_map(zserv_name)}}} || a MapDict || yes || yes ||
 || get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict || yes || partially ||
-|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDicts || yes || yes ||
+|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDict instances || yes || yes ||
 || get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict || yes || partially ||
-|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDicts || yes || yes ||
+|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDict instances || yes || yes ||
 || list_player_names() || {{{list_player_names(zserv_name)}}} || a list of player names as strings || yes || partially ||
 || get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict || yes || yes ||
 || get_status() || {{{get_status(zserv_name)}}} || ZServ status as a string, either 'Stopped' or 'Running' || yes || no ||
