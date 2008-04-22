@@ -1,4 +1,5 @@
-﻿{{{
+﻿#summary Sample configuration file for ZDStack
+{{{
 [DEFAULT]
 ;;; The username needed to access administrative methods of the ZDStack process
 username = admin

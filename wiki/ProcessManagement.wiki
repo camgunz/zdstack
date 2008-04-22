@@ -13,8 +13,8 @@ maps: map01
 To start this server, use the `zdstackctl` program.  Here's the usage information:
 {{{
 Usage: zdstackctl [ start | stop | restart | start_zserv [ -n name ] |
-											 stop_zserv [ -n name ] |
-											 restart_zserv [ -n name ] |
+                                             stop_zserv [ -n name ] |
+                                             restart_zserv [ -n name ] |
                     start_all | stop_all | restart_all ] [ -c configfile ]
 }}}
 Use of `-c` is optional, but `-n` is required.  In this case, the command-line would be:

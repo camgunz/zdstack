@@ -8,6 +8,6 @@
 
   * Class/Function/Member documentation is almost non-existent.  Although this
     will probably push us over 3k LOC, it's worth it if we're going to
-	implement the plugin system detailed in ServerResponse, so we can generate
-	pydocs for all the code.
+    implement the plugin system detailed in ServerResponse, so we can generate
+    pydocs for all the code.
 
