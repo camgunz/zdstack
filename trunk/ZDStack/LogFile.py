@@ -4,6 +4,7 @@ import select
 import traceback
 
 from datetime import datetime
+from threading import Lock
 
 from ZDStack import start_thread
 from ZDStack.LogEvent import LogEvent
@@ -13,7 +14,6 @@ class LogFile:
     def __init__(self, log_type, parser, zserv, listeners=[]):
         self.fobj = None
         self.filepath = None
-        self.new_filepath = False
         self.log_type = log_type
         self.parser = parser
         self.zserv = zserv
@@ -21,6 +21,7 @@ class LogFile:
         self.listeners = listeners
         self.keep_logging = False
         self.logging_thread = None
+        self.change_file_lock = Lock()
 
     def start(self):
         self.keep_logging = True
@@ -39,48 +40,49 @@ class LogFile:
         return "LogFile(%s, %s, %r)" % (self.filepath, self.log_type,
                                         self.parser)
 
-    def set_filepath(self, filepath):
-        self.filepath = filepath
-        self.new_filepath = True
+    def set_filepath(self, filepath, seek_to_end=False):
+        self.zserv.log("Received new filepath [%s]" % (self.filepath))
+        self.change_file_lock.acquire()
+        try:
+            self.filepath = filepath
+            if self.fobj:
+                self.fobj.close()
+            while not os.path.isfile(self.filepath):
+                time.sleep(.3) # wait for the file to appear
+            self.fobj = open(self.filepath)
+            if seek_to_end:
+                self.fobj.seek(0, os.SEEK_END)
+        finally:
+            self.change_file_lock.release()
 
     def log(self):
         unprocessed_data = ''
         while self.keep_logging:
-            if self.new_filepath:
-                self.zserv.log("Received new filepath [%s]" % (self.filepath))
-                self.new_filepath = False
-                if self.fobj:
-                    self.fobj.close()
-                self.fobj = None
-            while not self.fobj:
-                # self.zserv.log("No fileobject: [%s]" % (self.filepath))
-                time.sleep(.3) # wait for the file to appear if it doesn't exist
-                if os.path.isfile(self.filepath):
-                    self.new_filepath = False
-                    # self.zserv.log("Found a fileobject [%s]" % (self.filepath))
-                    self.fobj = open(self.filepath)
-                    self.fobj.seek(0, os.SEEK_END)
             events = []
+            self.change_file_lock.acquire()
             try:
-                rs, ws, xs = select.select([self.fobj], [], [])
-            except: # can be raised during interpreter shutdown
-                continue
-            for r in rs:
-                unprocessed_data += r.read()
                 try:
-                    events, unprocessed_data = self.parse(unprocessed_data)
-                except Exception, e:
-                    self.zserv.log("events: %s" % (events))
-                    self.zserv.log("unprocessed_data: %s" % (unprocessed_data))
-                    raise # for debugging
-                    tb = traceback.format_exc()
-                    ed = {'error': e, 'traceback': tb}
-                    events = [LogEvent(datetime.now(), 'error', ed)]
+                    rs, ws, xs = select.select([self.fobj], [], [])
+                except: # can be raised during interpreter shutdown
+                    continue
+                for r in rs:
+                    unprocessed_data += r.read()
+                    try:
+                        events, unprocessed_data = self.parse(unprocessed_data)
+                    except Exception, e:
+                        self.zserv.log("events: %s" % (events))
+                        self.zserv.log("unprocessed_data: %s" % (unprocessed_data))
+                        raise # for debugging
+                        tb = traceback.format_exc()
+                        ed = {'error': e, 'traceback': tb}
+                        events = [LogEvent(datetime.now(), 'error', ed)]
+            finally:
+                self.change_file_lock.release()
             for event in events:
                 es = "%s Sending event [%%s]" % (self.filepath)
                 for listener in self.listeners:
                     # if event.type != 'junk':
                     #     self.zserv.log(es % (event.type))
                     listener.send_event(event)
-            time.sleep(.05) # higher resolutions burn up CPU unnecessarily
+                time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 
