@@ -11,8 +11,6 @@ from ConfigParser import ConfigParser as CP
 
 from pyfileutils import read_file, append_file
 
-from ZDStack.Token import Token
-
 __host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
 __hostnames = [x for x in [__host] + __aliases if '.' in x]
 if not __hostnames:
@@ -163,6 +161,8 @@ def parse_player_name(name):
     # add their clan/team tags.  So we have a ridiculous algorithm to
     # figure this out.
     ###
+    from ZDStack.Token import Token
+
     delimiters = {'[': ']', '<': '>', '(': ')', '*': '*', '_': '_',
                   '-': '-', ']': '[', '>': '<', ')': '('}
     seen = []

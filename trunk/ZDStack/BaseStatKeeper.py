@@ -10,7 +10,6 @@ class BaseStatKeeper(Dictable):
         self.stat_container = stat_container
 
     def initialize(self):
-        log("BaseStatKeeper: initialize")
         self.frags = Listable()
         self.deaths = Listable()
         self.rcon_actions = Listable()

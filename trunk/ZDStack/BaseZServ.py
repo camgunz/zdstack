@@ -85,6 +85,7 @@ class BaseZServ:
                     '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
+        ### other mandatory stuff
         ### admin stuff
         self.rcon_enabled = None
         self.requires_password = None
@@ -290,7 +291,7 @@ class BaseZServ:
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
                                bufsize=0, close_fds=True)
             self.pid = self.zserv.pid
-            write_file(str(self.pid), self.pid_file)
+            # write_file(str(self.pid), self.pid_file)
             os.chdir(curdir)
             self.zdstack.spawn_lock.release()
             try:

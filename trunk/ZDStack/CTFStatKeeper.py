@@ -8,7 +8,6 @@ class CTFStatKeeper(TeamStatKeeper):
         TeamStatKeeper.__init__(self)
 
     def initialize(self):
-        log("CTFStatKeeper: initialize")
         TeamStatKeeper.initialize(self)
         self.flag_drops = Listable()
         self.flag_losses = Listable()

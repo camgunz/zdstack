@@ -1,3 +1,5 @@
+from ZDStack import homogenize
+
 class Token:
 
     def __init__(self, contents, opener='', closer=''):
