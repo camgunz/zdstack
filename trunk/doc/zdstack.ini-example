@@ -4,47 +4,51 @@ username = admin
 ;;; The corresponding password
 password = pacman2000
 ;;; The root folder under which all zserv processes will create their folders
-rootfolder = /tmp
+rootfolder = /var/zdstack
 ;;; The path to the zserv executable
-zserv_exe = /root/bin/zserv
+zserv_exe = /usr/local/bin/zserv
 ;;; The port on which ZDStack should listen
-zdstack_port = 8888
+zdstack_port = 8080
 ;;; The folder in which to create the Player => IP Database
-database_folder = /root/ZDStack/database
+database_folder = /var/zdstack/database
+;;; Whether or not to enable stat collection
+enable_stats = yes
+;;; Whether or not to enable Player IP logging
+enable_ip_logging = yes
 ;;; The full, absolute path to the IWADs, but not the WADs
-iwaddir = /root/iWADs
+iwaddir = /var/zdstack/iWADs
 ;;; The full, absolute path to the WADs, but not IWADs
-waddir = /root/WADs
+waddir = /var/zdstack/WADs
 ;;; The name of the IWAD to use
 iwad = doom2.wad
 ;;; The number of maps to remember statistics for
-maps_to_remember = 10
+maps_to_remember = 7
 ;;; The message to display in the server selector (like ZLauncher or IDE)
-hostname = Greatest Servers %(name)s %(type)s
+hostname = ZDStack Server %(name)s %(type)s
 ;;; The administrator's e-mail address
-admin_email = greatest_admin@greatestservers.com
-;;; The site where WADs can be downloaded; '/' should be replaced with '\'
-website = http:\\greatestservers.com\wads
+admin_email = zdstack@zdstack.com
+;;; The site where WADs can be downloaded
+website = http://zdstack.com/wads
 ;;; The message to display upon connecting to a server
-motd = Welcome to the Greatest Servers!<br><br>We hope you have a great time!
+motd = %(hostname)s<br><br>Statistics for this server provided by ZDStack
 ;;; The default timeout for all servers
-timelimit = 15
+timelimit = 0
 ;;; How many flags can be scored before one team wins (applies to CTF only)
 ctf_team_score_limit = 5
 ;;; How many frags can be scored before one team wins (applies to TeamDM only)
-tdm_team_score_limit = 5
-;;; Whether or not to advertise, 0=no, 1=yes
-advertise = 0
+teamdm_team_score_limit = 5
+;;; Whether or not to advertise
+advertise = yes
 ;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
 teamdamage = 0
 ;;; Enable RCON
 enable_rcon = yes
 ;;; The default RCON password for all servers
-rcon_password = makegreatchanges
+rcon_password = zdstackrcon
 ;;; Enable server password
-requires_password = yes
+requires_password = no
 ;;; The default password for all passworded servers
-server_password = iamgreatenough
+server_password = zdstackpassword
 ;;; Number of seconds in which spamming can occur
 spam_window = 10
 ;;; How many messages can occur in the spam window before "spamming" occurs
@@ -53,7 +57,7 @@ spam_limit = 10
 optional_wads = zvox2.wad
 ;;; Gravity value
 gravity = 800
-;;; Air control value, OS is 0, NS is 0.00390625 (as I understand it...)
+;;; Air control value (0 is OS, 0.00390625 is NS, and the default)
 air_control = 0.00390625
 ;;; How many seconds a player can remain dead before being removed from play
 death_limit = 30
@@ -74,6 +78,8 @@ overtime = no
 skill = 4
 ;;; Teamdamage Factor
 teamdamage = 0
+;;; Default WADs
+wads =
 ;;; Default per-game-mode DMFLAGS
 duel_dmflags = 201796
 duel_dmflags2 = 132608
@@ -81,55 +87,83 @@ ffa_dmflags = 201796
 ffa_dmflags2 = 132608
 ctf_dmflags = 21508
 ctf_dmflags2 = 656896
-coop_dmflags = 201796
-coop_dmflags2 = 132608
-tdm_dmflags = 201796
-tdm_dmflags2 = 132608
+coop_dmflags = 2418692
+coop_dmflags2 = 137198
+teamdm_dmflags = 87300
+teamdm_dmflags2 = 132096
 ;;; Default per-game-mode number of players allowed to connect
-duel_maxclients = 16
-ffa_maxclients = 16
-ctf_maxclients = 16
-coop_maxclients = 16
-tdm_maxclients = 16
+duel_max_clients = 16
+ffa_max_clients = 16
+ctf_max_clients = 16
+coop_max_clients = 16
+teamdm_max_clients = 16
 ;;; Default per-game-mode number of players allowed to play
-duel_maxplayers = 2
-ffa_maxplayers = 16
-ctf_maxplayers = 8
-coop_maxplayers = 16
-tdm_maxplayers = 4
+duel_max_players = 2
+ffa_max_players = 16
+ctf_max_players = 8
+coop_max_players = 16
+teamdm_max_players = 4
 ;;; Default per-game-mode number of teams
-ctf_maxteams = 2
-tdm_maxteams = 2
+ctf_max_teams = 2
+teamdm_max_teams = 2
 ;;; Default per-game-mode number of players per team
 ctf_max_players_per_team = 4
-tdm_max_players_per_team = 2
+teamdm_max_players_per_team = 2
 
-[ZDCTF]
-type = ctf
-wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
-optional_wads = zvox.wad,zvox2.wad
-port = 11000
-maps = map01,map02,map03,map04,map05,map06,map07,map08,map09,map10
-advertise = no
-requires_password = yes
-server_password = greatctf
-rcon_enabled = yes
-rcon_password = changectfgreatly
-scorelimit = 5
-timelimit = 15
-max_teams = 2
-max_players = 8
-max_clients = 16
+[Map01]
+type = duel
+port = 10666
+maps = map01
+wads = zvox2.wad
 
 [D5M1]
 type = duel
 wads = dwango5.wad,zvox2.wad
-port = 11001
+port = 10667
+maps = map02
+
+[shoot!]
+type = duel
+wads = shoot!.wad,zvox2.wad
+port = 10668
 maps = map01
-advertise = no
-requires_password = no
-rcon_enabled = yes
-rcon_password = changeduelgreatly
+dmflags = 218180
+
+[ZDCTF 1,2,3]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10669
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+timelimit = 15
+
+[Private CTF]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10670
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+requires_password = yes
+server_password = privaterulez
+rcon_password = privatercon
+timelimit = 15
+
+[Vex TeamDM]
+type = teamdm
+wads = vex-zdaemon.wad, zvox2.wad
+port = 10671
+maps = map01
+teamdamage = 1
+timelimit = 10
+
+[FFA]
+type = ffa
+maps = map01,map02,map03,map04,map05
 fraglimit = 50
+
+[Coop]
+type = coop
+maps = map01,map02,map03,map04,map05
+teamdamage = 1
 timelimit = 0
+fraglimit = 0
+scorelimit = 0
 
