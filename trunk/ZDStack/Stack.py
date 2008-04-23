@@ -17,10 +17,10 @@ class Stack(Server):
 
     def __init__(self, config_file=None):
         self.config_file = config_file
+        self.spawn_lock = Lock()
         self.zservs = {}
         self.start_time = datetime.now()
         Server.__init__(self, get_configparser(config_file))
-        self.spawn_lock = Lock()
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')

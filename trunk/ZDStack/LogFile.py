@@ -47,11 +47,11 @@ class LogFile:
             self.filepath = filepath
             if self.fobj:
                 self.fobj.close()
-            while not os.path.isfile(self.filepath):
-                time.sleep(.3) # wait for the file to appear
-            self.fobj = open(self.filepath)
-            if seek_to_end:
-                self.fobj.seek(0, os.SEEK_END)
+                self.fobj = None
+            if os.path.isfile(self.filepath):
+                self.fobj = open(self.filepath)
+                if seek_to_end:
+                    self.fobj.seek(0, os.SEEK_END)
         finally:
             self.change_file_lock.release()
 
@@ -59,30 +59,38 @@ class LogFile:
         unprocessed_data = ''
         while self.keep_logging:
             events = []
-            self.change_file_lock.acquire()
-            try:
+            if self.fobj:
+                self.change_file_lock.acquire()
                 try:
-                    rs, ws, xs = select.select([self.fobj], [], [])
-                except: # can be raised during interpreter shutdown
-                    continue
-                for r in rs:
-                    unprocessed_data += r.read()
                     try:
-                        events, unprocessed_data = self.parse(unprocessed_data)
-                    except Exception, e:
-                        self.zserv.log("events: %s" % (events))
-                        self.zserv.log("unprocessed_data: %s" % (unprocessed_data))
-                        raise # for debugging
-                        tb = traceback.format_exc()
-                        ed = {'error': e, 'traceback': tb}
-                        events = [LogEvent(datetime.now(), 'error', ed)]
-            finally:
-                self.change_file_lock.release()
-            for event in events:
-                es = "%s Sending event [%%s]" % (self.filepath)
-                for listener in self.listeners:
-                    if event.type != 'junk':
-                        self.zserv.log(es % (event.type))
-                    listener.send_event(event)
-                time.sleep(.05) # higher resolutions burn up CPU unnecessarily
+                        rs, ws, xs = select.select([self.fobj], [], [])
+                    except: # can be raised during interpreter shutdown
+                        continue
+                    for r in rs:
+                        unprocessed_data += r.read()
+                finally:
+                    self.change_file_lock.release()
+                try:
+                    events, unprocessed_data = \
+                                        self.parse(unprocessed_data)
+                except Exception, e:
+                    # raise # for debugging
+                    tb = traceback.format_exc()
+                    ed = {'error': e, 'traceback': tb}
+                    events = [LogEvent(datetime.now(), 'error', ed)]
+                for event in events:
+                    es = "%s Sending event [%%s]" % (self.filepath)
+                    for listener in self.listeners:
+                        if event.type != 'junk':
+                            self.zserv.log(es % (event.type))
+                        listener.events.put_nowait(event)
+            elif self.filepath and os.path.isfile(self.filepath):
+                self.change_file_lock.acquire()
+                try:
+                    self.fobj = open(self.filepath)
+                finally:
+                    self.change_file_lock.release()
+            else:
+                self.zserv.log("%s: No fobj" % (self.filepath))
+            time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 

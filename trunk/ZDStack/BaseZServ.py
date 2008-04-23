@@ -61,7 +61,7 @@ class BaseZServ:
                 raise ValueError(es % (mandatory_option))
         ### CMD-line stuff
         if not os.path.isdir(config['iwaddir']):
-            raise ValueError("IWAD dir %s is not valid" % (config['waddir']))
+            raise ValueError("IWAD dir %s is not valid" % (config['iwaddir']))
         if not os.path.isdir(config['waddir']):
             raise ValueError("WAD dir %s is not valid" % (config['waddir']))
         if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
@@ -282,18 +282,22 @@ class BaseZServ:
     def spawn_zserv(self):
         self.log("BaseZServ: spawn_zserv")
         while self.keep_spawning:
-            self.log("Spawning [%s]" % (' '.join(self.cmd)))
+            self.log("Acquiring spawn lock [%s]" % (self.name))
             self.zdstack.spawn_lock.acquire()
-            curdir = os.getcwd()
-            os.chdir(self.homedir)
-            for func, args, kwargs in self.pre_spawn_funcs:
-                func(*args, **kwargs)
-            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
-                               bufsize=0, close_fds=True)
-            self.pid = self.zserv.pid
-            # write_file(str(self.pid), self.pid_file)
-            os.chdir(curdir)
-            self.zdstack.spawn_lock.release()
+            try:
+                self.log("Acquired spawn lock [%s]" % (self.name))
+                curdir = os.getcwd()
+                os.chdir(self.homedir)
+                for func, args, kwargs in self.pre_spawn_funcs:
+                    func(*args, **kwargs)
+                self.log("Spawning [%s]" % (' '.join(self.cmd)))
+                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
+                                   bufsize=0, close_fds=True)
+                self.pid = self.zserv.pid
+                # write_file(str(self.pid), self.pid_file)
+                os.chdir(curdir)
+            finally:
+                self.zdstack.spawn_lock.release()
             try:
                 self.zserv.wait()
             except:      # can be raised during interpreter shutdown
@@ -324,10 +328,11 @@ class BaseZServ:
     def stop(self, signum=15):
         self.log("BaseZServ: stop")
         self.keep_spawning = False
+        out = True
         if self.pid is not None:
+            out = True
             try:
                 os.kill(self.pid, signum)
-                out = True
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
                 self.log(es % (e))

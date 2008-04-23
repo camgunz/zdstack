@@ -14,12 +14,17 @@ class LogListener:
         self.keep_listening = False
         self.listener_thread = None
 
+    def log(self, x):
+        log("LogListener: %s" % x)
+
     def start(self):
+        self.log("start")
         self.keep_listening = True
         self.listener_thread = start_thread(self.handle_event,
                                             "%s listener thread" % self.name)
 
     def stop(self):
+        self.log("start")
         self.keep_listening = False
         # self.listener_thread.join()
         self.listener_thread = None
@@ -40,9 +45,6 @@ class LogListener:
             if event.type != 'junk':
                 self.last_event = event
 
-    def send_event(self, event):
-        self.events.put_nowait(event) # be vocal (raise exception) if failure
-
     def handle_error_event(self, event):
         raise Exception(event.data['error'])
 
@@ -59,6 +61,9 @@ class ZServLogListener(LogListener):
     def __str__(self):
         return "<ZServLogListener for [%s]: %s>" % (self.zserv, self.name)
 
+    def log(self, x):
+        log("ZServLogListener for [%s]: %s" % (self.zserv, x))
+
     def handle_log_roll_event(self, event):
         self.zserv.roll_log(event.data['log'])
 
@@ -74,9 +79,12 @@ class ConnectionLogListener(ZServLogListener):
         ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
         self.event_types_to_handlers['ip_log'] = self.handle_ip_log_event
 
+    def log(self, x):
+        log("ConnectionLogListener for [%s]: %s" % (self.zserv, x))
+
     def handle_log_roll_event(self, event):
-        lf = self.zserv.get_connection_log_filename(roll=True)
-        self.zserv.roll_connection_log(lf)
+        self.log("Handling log_roll event")
+        self.zserv.set_connection_log_filename(roll=True)
 
     def handle_ip_log_event(self, event):
         self.zserv.log_ip(event.data['player'], event.data['ip'])
@@ -115,15 +123,17 @@ class GeneralLogListener(ZServLogListener):
         self.event_types_to_handlers['game_join'] = self.handle_game_join_event
         self.event_types_to_handlers['team_join'] = self.handle_game_join_event
 
+    def log(self, x):
+        log("GeneralLogListener for [%s]: %s" % (self.zserv, x))
+
     def handle_connection_event(self, event):
         # player = Player(event.data['player'], self.zserv)
         # self.zserv.log("Received a connection event: [%s]" % (event.data))
-        self.zserv.log("LogListener: handle_connection_event: [%s]" % (event.data['player']))
         self.zserv.add_player(event.data['player'])
 
     def handle_log_roll_event(self, event):
-        # lf = self.zserv.get_general_log_filename(roll=True)
-        self.zserv.roll_general_log()
+        self.log("Handling log_roll event")
+        self.zserv.set_general_log_filename(roll=True)
 
     def handle_disconnection_event(self, event):
         # player = Player(event.data['player'], self.zserv)

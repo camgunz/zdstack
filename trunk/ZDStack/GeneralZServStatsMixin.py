@@ -64,11 +64,10 @@ class GeneralZServStatsMixin:
         self.log("GeneralZServStatsMixin: initialize_general_log")
         general_log_parser = GeneralLogParser()
         self.general_log = LogFile('general', general_log_parser, self)
-        general_log_filename = self.get_general_log_filename()
-        self.general_log.set_filepath(self.get_general_log_filename())
         self.general_log_listener = GeneralLogListener(self)
         self.general_log.listeners = [self.general_log_listener]
         self.general_log_listener.start()
+        self.set_general_log_filename()
         self.general_log.start()
 
     def start_collecting_general_stats(self):
@@ -80,6 +79,16 @@ class GeneralZServStatsMixin:
         self.log("GeneralZServStatsMixin: stop_collecting_general_stats")
         self.general_log.stop()
         self.general_log_listener.stop()
+
+    def get_general_log_filename(self, roll=False):
+        self.log("GeneralZServStatsMixin: get_general_log_filename")
+        return os.path.join(self.homedir, 'gen' + get_logfile_suffix())
+
+    def set_general_log_filename(self, roll=False):
+        self.log("GeneralZServStatsMixin: set_general_log_filename")
+        general_log_filename = self.get_general_log_filename(roll=roll)
+        self.general_log.set_filepath(general_log_filename,
+                                      seek_to_end=not roll)
 
     def dump_stats(self):
         self.log("GeneralZServStatsMixin: dump_stats")
@@ -95,10 +104,6 @@ class GeneralZServStatsMixin:
             ###
             stats = self.stats_class(*self.dump_stats())
             self.remembered_stats.append(stats)
-
-    def get_general_log_filename(self, roll=False):
-        self.log("GeneralZServStatsMixin: get_general_log_filename")
-        return os.path.join(self.homedir, 'gen' + get_logfile_suffix())
 
     def add_player(self, player_name):
         self.log("GeneralZServStatsMixin: add_player: [%s]" % (player_name))
@@ -127,9 +132,9 @@ class GeneralZServStatsMixin:
     def remove_player(self, player_name):
         self.log("GeneralZServStatsMixin: remove_player")
         player = self.player_class(player_name, self)
-        if player.name in self.players:
-            self.disconnected_players[player.name] = player
-        self.players[player.name].disconnected = True
+        if player_name in self.players:
+            self.disconnected_players[player_name] = player
+        self.players[player_name].disconnected = True
 
     def get_player(self, name):
         self.log("GeneralZServStatsMixin: get_player")
@@ -137,11 +142,6 @@ class GeneralZServStatsMixin:
             # Maybe we should make custom exceptions like PlayerNotFoundError
             raise ValueError("Player [%s] not found" % (name))
         return self.players[name]
-
-    def roll_general_log(self):
-        self.log("GeneralZServStatsMixin: roll_general_log")
-        general_log_filename = self.get_general_log_filename(roll=True)
-        self.general_log.set_filepath(general_log_filename)
 
     def handle_message(self, message, possible_player_names):
         ###
