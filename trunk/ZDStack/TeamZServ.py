@@ -38,10 +38,10 @@ class TeamZServ(DMZServ):
         elif is_valid(self.type + '_max_players_per_team'):
             self.max_players_per_team = \
                             int(config[self.type + '_max_players_per_team'])
-        if is_valid('scorelimit'):
-            self.scorelimit = int(config['scorelimit'])
-        elif is_valid(self.type + '_scorelimit'):
-            self.scorelimit = int(config[self.type + '_scorelimit'])
+        if is_valid('team_score_limit'):
+            self.scorelimit = int(config['team_score_limit'])
+        elif is_valid(self.type + '_team_score_limit'):
+            self.scorelimit = int(config[self.type + '_team_score_limit'])
         config['teamdamage'] = self.teamdamage
         config['max_teams'] = self.max_teams
         config['max_players_per_team'] = self.max_players_per_team

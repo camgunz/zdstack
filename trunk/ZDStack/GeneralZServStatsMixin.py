@@ -134,7 +134,7 @@ class GeneralZServStatsMixin:
         player = self.player_class(player_name, self)
         if player_name in self.players:
             self.disconnected_players[player_name] = player
-        self.players[player_name].disconnected = True
+            self.players[player_name].disconnected = True
 
     def get_player(self, name):
         self.log("GeneralZServStatsMixin: get_player")

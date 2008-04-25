@@ -55,7 +55,7 @@ def resolve_file(f):
     return os.path.abspath(os.path.expanduser(f))
 
 def log(x):
-    return # to be fully re-implemented using the Logging module
+    # return # to be fully re-implemented using the Logging module
     append_file('[%s] %s\n' % (time.ctime(), x), get_logfile(), overwrite=True)
 
 def get_configparser(config_file=None, reload=False):

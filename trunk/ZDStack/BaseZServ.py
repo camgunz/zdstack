@@ -121,8 +121,9 @@ class BaseZServ:
         self.timelimit = None
         self.fraglimit = None
         self.scorelimit = None
+        self.auto_respawn = None
         ### Load admin stuff
-        if is_yes('rcon_enabled'):
+        if is_yes('enable_rcon'):
             self.rcon_enabled = True
         if is_yes('requires_password'):
             self.requires_password = True
@@ -191,6 +192,8 @@ class BaseZServ:
             self.timelimit = int(config['timelimit'])
         elif is_valid(self.type + '_timelimit'):
             self.timelimit = int(config[self.type + '_timelimit'])
+        if is_valid('auto_respawn'):
+            self.auto_respawn = int(config['auto_respawn'])
         config['name'] = self.name
         config['dmflags'] = self.dmflags
         config['dmflags2'] = self.dmflags2
@@ -277,6 +280,8 @@ class BaseZServ:
             template += 'set timelimit "%s"\n' % (self.timelimit)
         if self.fraglimit:
             template += 'set fraglimit "%s"\n' % (self.fraglimit)
+        if self.auto_respawn:
+            template += 'set sv_autorespawn "%d"\n' % (self.auto_respawn)
         return template # % self.config
 
     def spawn_zserv(self):
