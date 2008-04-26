@@ -1,4 +1,4 @@
-from ZDStack import log
+from ZDStack import debug
 from ZDStack.Listable import Listable
 from ZDStack.TeamStatKeeper import TeamStatKeeper
 
@@ -18,47 +18,47 @@ class CTFStatKeeper(TeamStatKeeper):
         self.has_flag = False
 
     def set_has_flag(self, has_flag):
-        log("CTFStatKeeper: set_has_flag")
+        debug()
         self.has_flag = has_flag
         if self.stat_container:
             self.stat_container.set_has_flag(has_flag)
 
     def add_flag_touch(self):
-        log("CTFStatKeeper: add_flag_touch")
+        debug()
         self.flag_touches += 1
         if self.stat_container:
             self.stat_container.add_flag_touch()
         self.set_has_flag(True)
 
     def add_flag_drop(self, flag_drop):
-        log("CTFStatKeeper: add_flag_drop")
+        debug()
         self.flag_drops.append(flag_drop)
         if self.stat_container:
             self.stat_container.add_flag_drop(flag_drop)
         self.set_has_flag(False)
 
     def add_flag_pick(self):
-        log("CTFStatKeeper: add_flag_pick")
+        debug()
         self.flag_picks += 1
         if self.stat_container:
             self.stat_container.add_flag_pick()
         self.set_has_flag(True)
 
     def add_flag_return(self):
-        log("CTFStatKeeper: add_flag_return")
+        debug()
         self.flag_returns += 1
         if self.stat_container:
             self.stat_container.add_flag_return()
 
     def add_flag_loss(self, flag_loss):
-        log("CTFStatKeeper: add_flag_loss")
+        debug()
         self.flag_losses.append(flag_loss)
         if self.stat_container:
             self.stat_container.add_flag_loss(flag_loss)
         self.set_has_flag(False)
 
     def add_flag_cap(self):
-        log("CTFStatKeeper: add_flag_cap")
+        debug()
         self.flag_caps += 1
         if self.stat_container:
             self.stat_container.add_flag_cap()

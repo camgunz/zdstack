@@ -12,7 +12,7 @@ from ZDStack import get_configparser
 from ZDStack.Stack import Stack
 from ZDStack.Server import Server
 
-def fork(logfile, pidfile, signal_handler):
+def fork(logfile, pidfile, signal_handler, debug=False):
     if hasattr(os, 'devnull'):
         stdin = os.devnull
     else:
@@ -20,22 +20,20 @@ def fork(logfile, pidfile, signal_handler):
     stdout = stderr = logfile
     if os.fork():
         os._exit(0)
-    # os.chdir('/')
+    os.chdir('/')
     os.umask(0)
     os.setsid()
     if os.fork():
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    # si = open(stdin, 'r')
-    # so = open(logfile, 'a+')
-    # se = open(logfile, 'a+', 0)
-    # os.dup2(si.fileno(), sys.stdin.fileno())
-    # os.dup2(so.fileno(), sys.stdout.fileno())
-    # os.dup2(se.fileno(), sys.stderr.fileno())
-
-def print_signal(signum, frame):
-    print "Received signal [%d]" % (signum)
+    if not debug:
+        si = open(stdin, 'r')
+        so = open(logfile, 'a+')
+        se = open(logfile, 'a+', 0)
+        os.dup2(si.fileno(), sys.stdin.fileno())
+        os.dup2(so.fileno(), sys.stdout.fileno())
+        os.dup2(se.fileno(), sys.stderr.fileno())
 
 def print_usage(msg=None):
     if msg:
@@ -46,16 +44,14 @@ Usage: zdstackctl [ start | stop | restart ] [-c config file]\n"""
 
 def start(config_file, debug=False):
     try:
-        zdstack = Stack(config_file)
+        zdstack = Stack(config_file, debugging=debug)
         if os.path.isfile(zdstack.pidfile):
-            es = "\nThis server is already running: %s\n"
+            es = "\nZDStack is already running: %s\n"
             print >> sys.stderr, es % (zdstack.pidfile)
             sys.exit(-1)
+        fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal, debug)
         if debug:
-            print "Debugging"
-        else:
-            fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal)
-        print "PID: ", os.getpid()
+            print "PID: ", os.getpid()
         zdstack.startup()
     except Exception, e:
         if debug:
@@ -68,13 +64,14 @@ def stop(config_file=None):
         zdstack = Stack(config_file)
         try:
             os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
-        except OSError:
-            if os.path.isfile(zdstack.pidfile):
-                es = "\nServer not running, removing stale PID file.\n"
+        except (OSError, IOError):
+            if not os.path.isfile(zdstack.pidfile):
+                es = "\nZDStack not running\n"
+                print >> sys.stderr, es
+            else:
+                es = "\nZDStack not running, removing stale PID file.\n"
                 print >> sys.stderr, es
                 os.unlink(zdstack.pidfile)
-            else:
-                raise
     except Exception, e:
         print >> sys.stderr, "\nError: %s\n" % (str(e))
         sys.exit(-1)

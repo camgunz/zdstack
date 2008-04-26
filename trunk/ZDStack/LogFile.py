@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime
 from threading import Lock
 
-from ZDStack import start_thread
+from ZDStack import start_thread, log, debug
 from ZDStack.LogEvent import LogEvent
 
 class LogFile:
@@ -41,7 +41,7 @@ class LogFile:
                                         self.parser)
 
     def set_filepath(self, filepath, seek_to_end=False):
-        self.zserv.log("Received new filepath [%s]" % (self.filepath))
+        log("Received new filepath [%s]" % (self.filepath))
         self.change_file_lock.acquire()
         try:
             self.filepath = filepath
@@ -82,7 +82,7 @@ class LogFile:
                     es = "%s Sending event [%%s]" % (self.filepath)
                     for listener in self.listeners:
                         if event.type != 'junk':
-                            self.zserv.log(es % (event.type))
+                            debug(es % (event.type))
                         listener.events.put_nowait(event)
             elif self.filepath and os.path.isfile(self.filepath):
                 self.change_file_lock.acquire()
@@ -91,6 +91,6 @@ class LogFile:
                 finally:
                     self.change_file_lock.release()
             else:
-                self.zserv.log("%s: No fobj" % (self.filepath))
+                debug("%s: No fobj" % (self.filepath))
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 

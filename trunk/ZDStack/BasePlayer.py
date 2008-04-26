@@ -4,12 +4,12 @@ from ZDStack.Listable import Listable
 from ZDStack.PlayerDB import save_player_ip, get_possible_aliases
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
-from ZDStack import parse_player_name, homogenize, html_escape, log
+from ZDStack import parse_player_name, homogenize, html_escape, debug
 
 class BasePlayer(BaseStatKeeper):
 
     def __init__(self, name, zserv, ip=None):
-        log("BasePlayer: __init__: name: [%s]" % (name))
+        debug("name: [%s]" % (name))
         BaseStatKeeper.__init__(self)
         self.name = name
         self.zserv = zserv
@@ -43,7 +43,7 @@ class BasePlayer(BaseStatKeeper):
         ###
 
     def exportables(self):
-        log("BasePlayer: exportables")
+        debug()
         out = []
         for x in BaseStatKeeper.exportables(self):
             if x[0] != 'map' and \
@@ -62,7 +62,7 @@ class BasePlayer(BaseStatKeeper):
         return out
 
     def set_map(self, map):
-        log("BasePlayer: set_map")
+        debug()
         self.map = map
         self.stat_container = self.map
 

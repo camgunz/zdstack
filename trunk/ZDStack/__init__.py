@@ -3,11 +3,13 @@ import re
 import time
 import urllib
 import socket
+import logging
 
 from datetime import datetime, timedelta
 from threading import Thread
 from cStringIO import StringIO
 from ConfigParser import ConfigParser as CP
+from logging.handlers import TimedRotatingFileHandler
 
 from pyfileutils import read_file, append_file
 
@@ -27,6 +29,15 @@ CONFIGPARSER = None
 ZSERV_EXE = None
 DATABASE = None
 LOGFILE = None
+DEBUGGING = None
+LOGGER = None
+TRACER = None
+DATEFMT = '%Y/%m/%d %H:%M:%S'
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(asctime)s] %(levelname)-8s %(message)s',
+                    datefmt=DATEFMT,
+                    filename='/dev/null')
 
 def yes(x):
     return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely')
@@ -38,7 +49,7 @@ def timedelta_in_seconds(x):
     return (x.days * 86400) + x.seconds
 
 def start_thread(target, name=None, daemonic=True):
-    log("Starting thread [%s]" % (name))
+    debug("Starting thread [%s]" % (name))
     t = Thread(target=target, name=name)
     t.setDaemon(daemonic)
     t.start()
@@ -53,10 +64,6 @@ def get_logfile_suffix(roll=False):
 
 def resolve_file(f):
     return os.path.abspath(os.path.expanduser(f))
-
-def log(x):
-    # return # to be fully re-implemented using the Logging module
-    append_file('[%s] %s\n' % (time.ctime(), x), get_logfile(), overwrite=True)
 
 def get_configparser(config_file=None, reload=False):
     global CONFIGPARSER
@@ -101,9 +108,9 @@ def load_configparser(config_file=None):
 def get_zserv_exe(config_file=None):
     global CONFIGPARSER
     global ZSERV_EXE
-    if CONFIGPARSER is None:
-        get_configparser(config_file)
     if ZSERV_EXE is None:
+        if CONFIGPARSER is None:
+            get_configparser(config_file)
         if 'zserv_exe' not in CONFIGPARSER.defaults():
             raise ValueError("Option 'zserv_exe' not found")
         else:
@@ -120,9 +127,9 @@ def get_zserv_exe(config_file=None):
 def get_database(config_file=None):
     global CONFIGPARSER
     global DATABASE
-    if CONFIGPARSER is None:
-        get_configparser(config_file)
     if DATABASE is None and 'database_folder' in CONFIGPARSER.defaults():
+        if CONFIGPARSER is None:
+            get_configparser(config_file)
         database_folder = CONFIGPARSER.defaults()['database_folder']
         if not os.path.isdir(database_folder):
             try:
@@ -133,25 +140,66 @@ def get_database(config_file=None):
         try:
             from PyXSE.Database import Database, TableNotFoundError
             DATABASE = Database(database_folder)
-            try:
-                DATABASE.get_table('players')
-            except TableNotFoundError:
-                DATABASE.create_table('players', ['name', 'addresses'],
-                                      ['str', 'str'], ['name'])
         except ImportError, e:
-            raise # for debugging
-            pass
+            return None
+        try:
+            DATABASE.get_table('players')
+        except TableNotFoundError:
+            DATABASE.create_table('players', ['name', 'addresses'],
+                                             ['str', 'str'], ['name'])
     return DATABASE
 
 def get_logfile(config_file=None):
     global CONFIGPARSER
     global LOGFILE
-    if CONFIGPARSER is None:
-        get_configparser(config_file)
     if LOGFILE is None:
+        if CONFIGPARSER is None:
+            get_configparser(config_file)
         LOGFILE = os.path.join(CONFIGPARSER.defaults()['rootfolder'],
                                'ZDStack.log')
     return LOGFILE
+
+def _get_trfh(level, log_string, config_file=None):
+    global LOGFILE
+    global LOGGER
+    if LOGGER is None:
+        if LOGFILE is None:
+            get_logfile(config_file)
+    logger = TimedRotatingFileHandler(LOGFILE, when='midnight', backupCount=4)
+    formatter = logging.Formatter(fmt=log_string, datefmt=DATEFMT)
+    logger.setLevel(level)
+    logger.setFormatter(formatter)
+    return logger
+
+def get_logger(config_file=None):
+    global LOGGER
+    if LOGGER is None:
+        format='[%(asctime)s] %(levelname)-8s %(message)s'
+        LOGGER = _get_trfh(logging.INFO, format, config_file)
+    return LOGGER
+
+def get_tracer(config_file=None):
+    global TRACER
+    if TRACER is None:
+        format='[%(asctime)s] %(module)s:%(lineno)d %(message)s'
+        TRACER = _get_trfh(logging.INFO, format, config_file)
+    return TRACER
+
+def set_debugging(debugging):
+    global DEBUGGING
+    DEBUGGING = debugging
+    if debugging:
+        logging.getLogger('').removeHandler(get_logger())
+        logging.getLogger('').addHandler(get_tracer())
+    else:
+        logging.getLogger('').removeHandler(get_tracer())
+        logging.getLogger('').addHandler(get_logger())
+
+def log(s):
+    logging.getLogger('').info(s)
+
+def debug(s=''):
+    logging.getLogger('').debug(s)
 
 def homogenize(s):
     return s.replace(' ', '').lower().replace('\n', '').replace('\t', '')

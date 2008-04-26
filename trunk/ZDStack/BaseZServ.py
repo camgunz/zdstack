@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 
 from pyfileutils import write_file
 
-from ZDStack import yes, no, start_thread, HOSTNAME, log
+from ZDStack import yes, no, start_thread, HOSTNAME, log, debug
 from ZDStack.Dictable import Dictable
 
 class BaseZServ:
@@ -33,7 +33,6 @@ class BaseZServ:
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.keep_spawning = False
         self.spawning_thread = None
-        self.log = lambda x: log('%s: %s' % (self.name, x))
         self.reload_config(config)
         self.pid = None
         self.pre_spawn_funcs = []
@@ -41,13 +40,13 @@ class BaseZServ:
         self.extra_exportables_funcs = []
 
     def reload_config(self, config):
-        self.log("BaseZServ: reload_config")
+        debug()
         self.load_config(config)
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
 
     def load_config(self, config):
-        self.log("BaseZServ: load_config")
+        debug()
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
@@ -206,7 +205,7 @@ class BaseZServ:
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
     def get_configuration(self):
-        self.log("BaseZServ: get_configuration")
+        debug()
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
         template += 'set log_disposition "0"\n'
@@ -285,17 +284,17 @@ class BaseZServ:
         return template # % self.config
 
     def spawn_zserv(self):
-        self.log("BaseZServ: spawn_zserv")
+        debug()
         while self.keep_spawning:
-            self.log("Acquiring spawn lock [%s]" % (self.name))
+            debug("Acquiring spawn lock [%s]" % (self.name))
             self.zdstack.spawn_lock.acquire()
             try:
-                self.log("Acquired spawn lock [%s]" % (self.name))
+                debug("Acquired spawn lock [%s]" % (self.name))
                 curdir = os.getcwd()
                 os.chdir(self.homedir)
                 for func, args, kwargs in self.pre_spawn_funcs:
                     func(*args, **kwargs)
-                self.log("Spawning [%s]" % (' '.join(self.cmd)))
+                log("Spawning [%s]" % (' '.join(self.cmd)))
                 self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
                                    bufsize=0, close_fds=True)
                 self.pid = self.zserv.pid
@@ -318,20 +317,20 @@ class BaseZServ:
             # The zserv process has exited and we restart all over again
 
     def clean_up_after_zserv(self):
-        self.log("BaseZServ: clean_up_after_zserv")
+        debug()
         self.pid = None
         if os.path.isfile(self.pid_file):
             os.unlink(self.pid_file)
 
     def start(self):
-        self.log("BaseZServ: start")
+        debug()
         self.pid = None
         self.keep_spawning = True
         self.spawning_thread = start_thread(self.spawn_zserv,
                                             "%s spawning thread" % (self.name))
 
     def stop(self, signum=15):
-        self.log("BaseZServ: stop")
+        debug()
         self.keep_spawning = False
         out = True
         if self.pid is not None:
@@ -340,23 +339,23 @@ class BaseZServ:
                 os.kill(self.pid, signum)
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
-                self.log(es % (e))
+                log(es % (e))
                 out = es % (e)
         self.spawning_thread = None
         return out
 
     def restart(self, signum=15):
-        self.log("BaseZServ: restart")
+        debug()
         self.stop(signum)
         self.start()
 
     def send_to_zserv(self, message):
-        self.log("BaseZServ: send_to_zserv")
+        debug()
         self.zserv.stdin.write(message)
         self.zserv.stdin.flush()
 
     def export(self):
-        self.log("BaseZServ: export")
+        debug()
         d = {'name': self.name,
              'type': self.type,
              'port': self.port,

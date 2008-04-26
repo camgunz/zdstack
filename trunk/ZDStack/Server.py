@@ -5,16 +5,17 @@ import signal
 import socket
 import tempfile
 from datetime import datetime
-from DocXMLRPCServer import DocXMLRPCServer
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, get_configparser, log
+from ZDStack import HOSTNAME, get_configparser, set_debugging, log, debug
+from ZDStack.XMLRPCServer import XMLRPCServer
 
 class Server:
 
-    def __init__(self, cp, fork=True):
-        self.config = cp
-        self.config_file = cp.filename
+    def __init__(self, config_parser, debugging=False):
+        set_debugging(debugging)
+        self.config = config_parser
+        self.config_file = config_parser.filename
         self.load_config()
         os.chdir(self.homedir)
         self.stats = {}
@@ -26,7 +27,7 @@ class Server:
         signal.signal(signal.SIGHUP, self.handle_signal)
 
     def load_config(self, reload=False):
-        log("Server: load_config")
+        debug()
         self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
             rootfolder = self.defaults['rootfolder']
@@ -47,21 +48,14 @@ class Server:
         self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
     def reload_config(self):
-        log("Server: reload_config")
+        debug()
         self.config = get_configparser(reload=True,
                                        config_file=self.config_file)
         self.load_config(reload=True)
 
     def startup(self):
-        log("Server: startup")
-        self.xmlrpc_server = DocXMLRPCServer((HOSTNAME, self.port))
-        self.xmlrpc_server.register_introspection_functions()
-        self.xmlrpc_server.allow_none = True
-        self.xmlrpc_server.set_server_title('ZDStack')
-        self.xmlrpc_server.set_server_name('ZDStack XML-RPC API')
-        self.xmlrpc_server.set_server_documentation("""\
-This is the documentation for the ZDStack XML-RPC API.  For more information, visit
-http://zdstack.googlecode.com.""")
+        debug()
+        self.xmlrpc_server = XMLRPCServer((HOSTNAME, self.port))
         self.register_functions()
         self.keep_serving = True
         self.status = "Running"
@@ -71,7 +65,7 @@ http://zdstack.googlecode.com.""")
             self.xmlrpc_server.handle_request()
 
     def shutdown(self, signum=15):
-        log("Server: shutdown")
+        debug()
         self.stop()
         self.keep_serving = False
         try:
@@ -81,28 +75,28 @@ http://zdstack.googlecode.com.""")
         sys.exit(0)
 
     def start(self):
-        log("Server: start")
+        debug()
         raise NotImplementedError()
 
     def stop(self):
-        log("Server: stop")
+        debug()
         raise NotImplementedError()
 
     def restart(self):
-        log("Server: restart")
+        debug()
         self.stop()
         self.start()
         return True
 
     def handle_signal(self, signum, frame):
-        log("Server: handle_signal")
+        debug()
         if signum == signal.SIGHUP:
             self.reload_config()
         else:
             self.shutdown(signum=signum)
 
     def register_functions(self):
-        log("Server: register_functions")
+        debug()
         self.xmlrpc_server.register_function(self.get_status)
         self.xmlrpc_server.register_function(self.get_logfile)
         self.xmlrpc_server.register_function(self.reload_config)
@@ -110,17 +104,11 @@ http://zdstack.googlecode.com.""")
         self.xmlrpc_server.register_function(self.stop)
         self.xmlrpc_server.register_function(self.restart)
 
-    def debug(self, s):
-        log("Server: debug")
-        if DEBUG:
-            debug_msg = "DEBUG: %s" % (s)
-            log(debug_msg)
-
     def get_status(self):
-        log("Server: get_status")
+        debug()
         return self.status
 
     def get_logfile(self):
-        log("Server: get_logfile")
+        debug()
         return read_file(logfile)
 

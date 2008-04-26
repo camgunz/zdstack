@@ -1,4 +1,4 @@
-from ZDStack import log
+from ZDStack import debug
 from ZDStack.TeamStatKeeper import TeamStatKeeper
 
 class BaseTeam(TeamStatKeeper):
@@ -12,7 +12,7 @@ class BaseTeam(TeamStatKeeper):
         pass
 
     def set_map(self, map):
-        log("BaseTeam: set_map")
+        debug()
         self.map = map
         self.stat_container = map
 

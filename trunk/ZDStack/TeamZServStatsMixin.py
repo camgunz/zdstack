@@ -1,4 +1,4 @@
-from ZDStack import log
+from ZDStack import debug
 from ZDStack.Dictable import Dictable
 from ZDStack.TeamMap import TeamMap
 from ZDStack.BaseTeam import BaseTeam
@@ -17,7 +17,7 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
                                               map_class, stats_class)
 
     def initialize_general_stats(self):
-        self.log("TeamZServStatsMixin: initialize_general_stats")
+        debug()
         GeneralZServStatsMixin.initialize_general_stats(self)
         self.red_team = self.team_class('red')
         self.blue_team = self.team_class('blue')
@@ -29,20 +29,20 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
                                'white': self.white_team})
 
     def dump_stats(self):
-        self.log("TeamZServStatsMixin: dump_stats")
+        debug()
         return [self.map.export(), self.red_team.export(),
                 self.blue_team.export(), self.green_team.export(),
                 self.white_team.export(), self.players.export()]
 
     def get_team(self, color):
-        self.log("TeamZServStatsMixin: get_team")
+        debug()
         if color not in self.teams:
             # Maybe we should make custom exceptions like TeamNotFoundError
             raise ValueError("%s team not found" % (color.capitalize()))
         return self.teams[color]
 
     def change_map(self, map_number, map_name):
-        self.log("TeamZServStatsMixin: change_map")
+        debug()
         GeneralZServStatsMixin.change_map(self, map_number, map_name)
         for team in self.teams.values():
             team.initialize()

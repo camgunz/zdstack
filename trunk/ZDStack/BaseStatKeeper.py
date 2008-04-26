@@ -1,4 +1,4 @@
-from ZDStack import log
+from ZDStack import debug
 from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
 
@@ -22,31 +22,31 @@ class BaseStatKeeper(Dictable):
                 if not (x[0] == 'stat_container' and x[1] == self.stat_container)]
 
     def add_frag(self, frag):
-        log("BaseStatKeeper: add_frag")
+        debug()
         self.frags.append(frag)
         if self.stat_container:
             self.stat_container.add_frag(frag)
 
     def add_death(self, death):
-        log("BaseStatKeeper: add_death")
+        debug()
         self.deaths.append(death)
         if self.stat_container:
             self.stat_container.add_death(death)
 
     def add_rcon_denial(self):
-        log("BaseStatKeeper: rcon_denial")
+        debug()
         self.rcon_denials += 1
         if self.stat_container:
             self.stat_container.add_rcon_denial()
 
     def add_rcon_access(self):
-        log("BaseStatKeeper: add_rcon_access")
+        debug()
         self.rcon_accesses += 1
         if self.stat_container:
             self.stat_container.add_rcon_access()
 
     def add_rcon_action(self, rcon_action):
-        log("BaseStatKeeper: add_rcon_action")
+        debug()
         self.rcon_actions.append(rcon_action)
         if self.stat_container:
             self.stat_container.add_rcon_action(rcon_action)

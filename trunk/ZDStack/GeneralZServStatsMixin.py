@@ -2,7 +2,7 @@ import os.path
 
 from datetime import datetime, timedelta
 
-from ZDStack import get_logfile_suffix
+from ZDStack import get_logfile_suffix, log, debug
 
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
@@ -52,16 +52,17 @@ class GeneralZServStatsMixin:
         self.extra_exportables_funcs.append((add_players, [], {}))
         self.extra_exportables_funcs.append((add_map, [], {}))
         self.extra_exportables_funcs.append((add_remembered_slots, [], {}))
-        self.log("Added Stats Mixin")
+        debug("Added Stats Mixin")
 
     def initialize_general_stats(self):
-        self.log("GeneralZServStatsMixin: initialize_general_stats")
+        debug()
         self.map = None
         self.players = Dictable()
         self.disconnected_players = Dictable()
+        self.should_remember = False
 
     def initialize_general_log(self):
-        self.log("GeneralZServStatsMixin: initialize_general_log")
+        debug()
         general_log_parser = GeneralLogParser()
         self.general_log = LogFile('general', general_log_parser, self)
         self.general_log_listener = GeneralLogListener(self)
@@ -71,30 +72,32 @@ class GeneralZServStatsMixin:
         self.general_log.start()
 
     def start_collecting_general_stats(self):
-        self.log("GeneralZServStatsMixin: start_collecting_general_stats")
+        debug()
         self.initialize_general_stats()
         self.initialize_general_log()
 
     def stop_collecting_general_stats(self):
-        self.log("GeneralZServStatsMixin: stop_collecting_general_stats")
+        debug()
         self.general_log.stop()
         self.general_log_listener.stop()
 
     def get_general_log_filename(self, roll=False):
-        self.log("GeneralZServStatsMixin: get_general_log_filename")
+        debug()
         return os.path.join(self.homedir, 'gen' + get_logfile_suffix())
 
     def set_general_log_filename(self, roll=False):
-        self.log("GeneralZServStatsMixin: set_general_log_filename")
+        debug()
         general_log_filename = self.get_general_log_filename(roll=roll)
         self.general_log.set_filepath(general_log_filename,
                                       seek_to_end=not roll)
 
     def dump_stats(self):
-        self.log("GeneralZServStatsMixin: dump_stats")
+        debug()
         return [self.map.export(), self.players.export()]
 
     def save_current_general_stats(self):
+        if not self.should_remember:
+            return
         if len(self.remembered_stats) == self.memory_slots:
             self.remembered_stats = Listable(self.remembered_stats[1:])
         if self.map:
@@ -106,7 +109,7 @@ class GeneralZServStatsMixin:
             self.remembered_stats.append(stats)
 
     def add_player(self, player_name):
-        self.log("GeneralZServStatsMixin: add_player: [%s]" % (player_name))
+        debug("player: [%s]" % (player_name))
         ###
         # It's possible for players to have the same name, so that this
         # function will do nothing.  There's absolutely nothing we can do
@@ -117,27 +120,27 @@ class GeneralZServStatsMixin:
         ###
         player = self.player_class(player_name, self)
         if player.name not in self.players:
-            s = "GeneralZServStatsMixin: players pre-add: [%s]"
-            self.log(s % (self.players))
+            s = "players pre-add: [%s]"
+            debug(s % (self.players))
             self.players[player.name] = player
-            s = "GeneralZServStatsMixin: players post-add: [%s]"
-            self.log(s % (self.players))
+            s = "players post-add: [%s]"
+            debug(s % (self.players))
         else:
-            s = "GeneralZServStatsMixin: add_player: [%s] already exists"
-            self.log(s % (player_name))
+            s = "[%s] already exists"
+            debug(s % (player_name))
             if player.name in self.disconnected_players:
                 del self.disconnected_players[player.name]
             self.players[player.name].disconnected = False
 
     def remove_player(self, player_name):
-        self.log("GeneralZServStatsMixin: remove_player")
+        debug()
         player = self.player_class(player_name, self)
         if player_name in self.players:
             self.disconnected_players[player_name] = player
             self.players[player_name].disconnected = True
 
     def get_player(self, name):
-        self.log("GeneralZServStatsMixin: get_player")
+        debug()
         if name not in self.players:
             # Maybe we should make custom exceptions like PlayerNotFoundError
             raise ValueError("Player [%s] not found" % (name))
@@ -153,7 +156,7 @@ class GeneralZServStatsMixin:
         # mionicd: "^no$" kick
         #
         ###
-        self.log("GeneralZServStatsMixin: handle_message")
+        debug()
         messager = None
         for player_name in possible_player_names:
             if player_name in self.players:
@@ -161,18 +164,18 @@ class GeneralZServStatsMixin:
                 break
         if messager is None:
             es = "Received a message but none of the players existed: [%s]"
-            self.log(es % (', '.join(possible_player_names)))
+            log(es % (', '.join(possible_player_names)))
         else:
             message = message.replace(messager.name, '', 1)[3:]
             es = "Received a message [%s] from player [%s]"
-            self.log(es % (message, messager.name))
+            log(es % (message, messager.name))
             ###
             # Here we would do the lookup
             ###
             pass
 
     def change_map(self, map_number, map_name):
-        self.log("GeneralZServStatsMixin: change_map")
+        debug()
         self.save_current_general_stats()
         self.map = self.map_class(map_number, map_name)
         for player_name, player in self.players.items():

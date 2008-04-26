@@ -1,6 +1,6 @@
 import Queue
 
-from ZDStack import start_thread, log
+from ZDStack import start_thread, log, debug
 from ZDStack.Frag import Frag
 # from ZDStack.Player import Player
 
@@ -14,17 +14,14 @@ class LogListener:
         self.keep_listening = False
         self.listener_thread = None
 
-    def log(self, x):
-        log("LogListener: %s" % x)
-
     def start(self):
-        self.log("start")
+        debug()
         self.keep_listening = True
         self.listener_thread = start_thread(self.handle_event,
                                             "%s listener thread" % self.name)
 
     def stop(self):
-        self.log("start")
+        debug()
         self.keep_listening = False
         # self.listener_thread.join()
         self.listener_thread = None
@@ -61,14 +58,12 @@ class ZServLogListener(LogListener):
     def __str__(self):
         return "<ZServLogListener for [%s]: %s>" % (self.zserv, self.name)
 
-    def log(self, x):
-        log("ZServLogListener for [%s]: %s" % (self.zserv, x))
-
     def handle_log_roll_event(self, event):
         self.zserv.roll_log(event.data['log'])
 
     def handle_error_event(self, event):
-        self.zserv.log("Event error: %s" % (event.data['error']))
+        log("Event error: %s" % (event.data['error']))
+        debug("Event traceback: \n%s\n" % (event.data['tb']))
 
     def handle_unhandled_event(self, event):
         pass # do nothing... actually do not handle the event
@@ -79,11 +74,7 @@ class ConnectionLogListener(ZServLogListener):
         ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
         self.event_types_to_handlers['ip_log'] = self.handle_ip_log_event
 
-    def log(self, x):
-        log("ConnectionLogListener for [%s]: %s" % (self.zserv, x))
-
     def handle_log_roll_event(self, event):
-        self.log("Handling log_roll event")
         self.zserv.set_connection_log_filename(roll=True)
 
     def handle_ip_log_event(self, event):
@@ -123,20 +114,13 @@ class GeneralLogListener(ZServLogListener):
         self.event_types_to_handlers['game_join'] = self.handle_game_join_event
         self.event_types_to_handlers['team_join'] = self.handle_game_join_event
 
-    def log(self, x):
-        log("GeneralLogListener for [%s]: %s" % (self.zserv, x))
-
     def handle_connection_event(self, event):
-        # player = Player(event.data['player'], self.zserv)
-        # self.zserv.log("Received a connection event: [%s]" % (event.data))
         self.zserv.add_player(event.data['player'])
 
     def handle_log_roll_event(self, event):
-        self.log("Handling log_roll event")
         self.zserv.set_general_log_filename(roll=True)
 
     def handle_disconnection_event(self, event):
-        # player = Player(event.data['player'], self.zserv)
         self.zserv.remove_player(event.data['player'])
 
     def handle_game_join_event(self, event):
@@ -144,15 +128,17 @@ class GeneralLogListener(ZServLogListener):
             player = self.zserv.get_player(event.data['player'])
         except ValueError:
             es = "Received a %s event for non-existent player [%s]"
-            self.zserv.log(es % (event.type, event.data['player']))
+            log(es % (event.type, event.data['player']))
             return
         player.playing = True
+        if not self.zserv.should_remember:
+            self.zserv.should_remember = True
         if event.type == 'team_join':
             try:
                 team = self.zserv.get_team(event.data['team'])
             except ValueError:
                 es = "Received a team join event to non-existent team [%s]"
-                self.zserv.log(es % (event.data['team']))
+                log(es % (event.data['team']))
                 return
             player.set_team(team)
 
@@ -161,7 +147,7 @@ class GeneralLogListener(ZServLogListener):
             fraggee = self.zserv.get_player(event.data['fraggee'])
         except ValueError:
             es = "Received a death event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['fraggee']))
+            log(es % (event.data['fraggee']))
             return
         frag = Frag(event.data['fragger'], event.data['fraggee'],
                     event.data['weapon'])
@@ -173,7 +159,7 @@ class GeneralLogListener(ZServLogListener):
                 fragger = self.zserv.get_player(event.data['fragger'])
             except ValueError:
                 es = "Received a frag event for non-existent player [%s]"
-                self.zserv.log(es % (event.data['fragger']))
+                log(es % (event.data['fragger']))
                 return
             fragger.add_frag(frag)
             if self.last_event.type == 'flag_loss':
@@ -188,27 +174,27 @@ class GeneralLogListener(ZServLogListener):
             team = self.zserv.get_team(event.data['team'])
         except ValueError:
             es = "Received a team switch event to non-existent team [%s]"
-            self.zserv.log(es % (event.data['team']))
+            log(es % (event.data['team']))
             return
         try:
             self.zserv.get_player(event.data['player']).set_team(team)
         except ValueError:
             es = "Received a team switch event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_rcon_granted_event(self, event):
         try:
             self.zserv.get_player(event.data['player']).add_rcon_access()
         except ValueError:
             es = "Received an RCON access event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_rcon_denied_event(self, event):
         try:
             self.zserv.get_player(event.data['player']).add_rcon_denial()
         except ValueError:
             es = "Received a RCON denial event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_rcon_action_event(self, event):
         action = event.data['action']
@@ -216,14 +202,14 @@ class GeneralLogListener(ZServLogListener):
             self.zserv.get_player(event.data['player']).add_rcon_action(action)
         except ValueError:
             es = "Received an RCON action event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_flag_touch_event(self, event):
         try:
             player = self.zserv.get_player(event.data['player'])
         except ValueError:
             es = "Received a flag touch event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
             return
         player.set_has_flag(True)
         player.add_flag_touch()
@@ -233,7 +219,7 @@ class GeneralLogListener(ZServLogListener):
             runner = self.zserv.get_player(event.data['player'])
         except ValueError:
             es = "Received a flag loss event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
             return
         runner.set_has_flag(False)
 
@@ -242,7 +228,7 @@ class GeneralLogListener(ZServLogListener):
             player = self.zserv.get_player(event.data['player'])
         except ValueError:
             es = "Received a flag cap event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
             return
         player.set_has_flag(False)
         player.add_flag_cap()
@@ -252,14 +238,14 @@ class GeneralLogListener(ZServLogListener):
             self.zserv.get_player(event.data['player']).add_flag_return()
         except ValueError:
             es = "Received a flag return event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_flag_pick_event(self, event):
         try:
             self.zserv.get_player(event.data['player']).add_flag_pick()
         except ValueError:
             es = "Received a flag pick event for non-existent player [%s]"
-            self.zserv.log(es % (event.data['player']))
+            log(es % (event.data['player']))
 
     def handle_map_change_event(self, event):
         self.zserv.change_map(event.data['number'], event.data['name'])
