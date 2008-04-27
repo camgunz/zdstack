@@ -98,6 +98,7 @@ class GeneralZServStatsMixin:
     def save_current_general_stats(self):
         if not self.should_remember:
             return
+        self.should_remember = False
         if len(self.remembered_stats) == self.memory_slots:
             self.remembered_stats = Listable(self.remembered_stats[1:])
         if self.map:
