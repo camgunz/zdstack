@@ -20,20 +20,20 @@ The level of automatic control you can have over a zserv process is pretty cool,
 }}}
 But the event itself doesn't have any state information, such as number of times Fastidious fragged Ladna (in the last 60 seconds), whether any team's flag is out, what game mode this is, whether Ladna had killed Fastidious 10 times earlier and this was revenge, or whether Ladna and Fastidious are on the same team.  So, to really be useful, the rule has to act on the state of ZDStack and the event, not just the event itself.  I'm not really sure how to create a rule language like that, though.  The easiest thing to do would be:
 
-  * Create a !ResponseRules.py file (the location of which is referenced in zdstack.ini), that contains uniquely named functions that take a ZDStack instance and an event as an argument.  For example:
+  * Create a !ResponseRules.py file (the location of which is referenced in zdstack.ini), that contains uniquely named functions that take a ZServ instance and an event as an argument.  For example:
   {{{
-  def kick_teamkiller(zdstack, event):
+  def kick_teamkiller(zserv, event):
       if event.type == 'frag':
-          fragger = zdstack.get_player(event.data['fragger'])
-          fraggee = zdstack.get_player(event.data['fraggee'])
-          teamkill_limit = zdstack.config['teamkill_limit']
+          fragger = zserv.get_player(event.data['fragger'])
+          fraggee = zserv.get_player(event.data['fraggee'])
+          teamkill_limit = zserv.config['teamkill_limit']
           if fragger.team == fraggee.team:
               if fragger.teamkills == teamkill_limit - 1:
                   msg = "%s, if you teamkill one more time, you will be kicked and banned"
-                  zdstack.say(msg % (fragger.name))
+                  zserv.say(msg % (fragger.name))
               elif fragger.teamkills >= teamkill_limit:
                   msg = "Banned: %s exceeded the teamkilling limit"
-                  zdstack.kickban(fragger, msg % (fragger.name))
+                  zserv.kickban(fragger, msg % (fragger.name))
   }}}
   * In zdstack.ini, there would be a new 'rules' directive.  In this case, if you wanted to use the kick_teamkiller rule, you would just add 
   {{{
