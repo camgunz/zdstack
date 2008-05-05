@@ -23,7 +23,7 @@ But the event itself doesn't have any state information, such as number of times
   * Create a !ResponseRules.py file (the location of which is referenced in zdstack.ini), that contains uniquely named functions that take a ZServ instance and an event as an argument.  For example:
   {{{
   def kick_teamkiller(zserv, event):
-      if event.type == 'frag':
+      if 'teamkill_limit' in zserv.config and event.type == 'frag':
           fragger = zserv.get_player(event.data['fragger'])
           fraggee = zserv.get_player(event.data['fraggee'])
           teamkill_limit = zserv.config['teamkill_limit']
