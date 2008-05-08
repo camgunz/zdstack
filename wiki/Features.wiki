@@ -1,4 +1,5 @@
 ﻿#summary This is the list of features ZDStack is committed to, with current progress and status information.
+#labels Featured
 
 || Feature || Progress || What's the Hold Up? ||
 || Easy ProcessManagement (start | stop | restart), including automatic process restarting || 100% || Done! ||
