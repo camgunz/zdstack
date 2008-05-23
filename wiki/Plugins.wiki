@@ -1,0 +1,16 @@
+#summary Description of ZDStack's plugin architecture
+
+= Introduction =
+
+ZDStack allows for the use of plugins, which are individual functions whose signature matches:
+
+{{{
+def plugin_func(event, zserv):
+    # do stuff
+}}}
+
+Plugins are designed to allow admins to customize the dynamic behavior of their ZServ instances.
+
+= Usage =
+
+Plugins are actually individual Python source files.  For
