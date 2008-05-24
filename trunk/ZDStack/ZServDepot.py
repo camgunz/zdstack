@@ -15,7 +15,8 @@ game_mode_dict = {'coop': (CoopZServ, GeneralZServStatsMixin),
                   'teamdm': (TeamDMZServ, TeamZServStatsMixin),
                   'ctf': (CTFZServ, CTFTeamZServStatsMixin)}
 
-def get_zserv_class(game_mode, memory_slots, enable_stats=False, log_ips=False):
+def get_zserv_class(game_mode, memory_slots, enable_stats=False,
+                    log_ips=False, load_plugins=False):
     if game_mode not in game_mode_dict:
         raise ValueError("Invalid game mode [%s]" % (game_mode))
     zs_class, mixin_class = game_mode_dict[game_mode]
@@ -29,14 +30,14 @@ def get_zserv_class(game_mode, memory_slots, enable_stats=False, log_ips=False):
             class StatsAndIPEnabledZServ(zs_class, stats_mixin, CZSM):
                 def __init__(self, name, config, zdstack):
                     zs_class.__init__(self, name, config, zdstack)
-                    stats_mixin.__init__(self)
+                    stats_mixin.__init__(self, load_plugins=load_plugins)
                     CZSM.__init__(self)
             return StatsAndIPEnabledZServ
         else:
             class StatsEnabledZServ(zs_class, stats_mixin):
                 def __init__(self, name, config, zdstack):
                     zs_class.__init__(self, name, config, zdstack)
-                    stats_mixin.__init__(self)
+                    stats_mixin.__init__(self, load_plugins=load_plugins)
             return StatsEnabledZServ
     elif log_ips:
             class IPEnabledZServ(zs_class, stats_mixin):
@@ -49,4 +50,19 @@ def get_zserv_class(game_mode, memory_slots, enable_stats=False, log_ips=False):
             def __init__(self, name, config, zdstack):
                 zs_class.__init__(self, name, config, zdstack)
         return PlainZServ
+
+def get_fake_client_zserv_class(game_mode):
+    if game_mode not in game_mode_dict:
+        raise ValueError("Invalid game mode [%s]" % (game_mode))
+    zs_class, mixin_class = game_mode_dict[game_mode]
+    s = "Got ZS [%s], MIXIN [%s] for game_mode [%s]"
+    debug(s % (zs_class, mixin_class, game_mode))
+    class stats_mixin(mixin_class):
+        def __init__(self):
+            mixin_class.__init__(self, memory_slots=-1, log_type='client')
+    class StatsEnabledZServ(zs_class, stats_mixin):
+        def __init__(self, name, config, zdstack):
+            zs_class.__init__(self, name, config, zdstack)
+            stats_mixin.__init__(self)
+    return StatsEnabledZServ
 

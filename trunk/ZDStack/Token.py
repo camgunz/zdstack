@@ -1,4 +1,4 @@
-from ZDStack import homogenize
+from ZDStack.Utils import homogenize
 
 class Token:
 

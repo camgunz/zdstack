@@ -1,10 +1,12 @@
 import Queue
 
-from ZDStack import start_thread, log, debug
+from ZDStack import get_plugins, log, debug
 from ZDStack.Frag import Frag
-# from ZDStack.Player import Player
+from ZDStack.Utils import start_thread
 
 class LogListener:
+
+    classname = 'LogListener'
 
     def __init__(self, name):
         self.name = name
@@ -27,20 +29,22 @@ class LogListener:
         self.listener_thread = None
 
     def __str__(self):
-        return "<LogListener: %s>" % (self.name)
+        return "<%s: %s>" % (self.classname, self.name)
 
     def __repr__(self):
-        return 'LogListener(%s)' % (self.name)
+        return '%s(%s)' % (self.classname, self.name)
 
     def handle_event(self):
-        while 1:
-            event = self.events.get()
-            if not event.type in self.event_types_to_handlers:
-                self.handle_unhandled_event(event)
-            else:
-                self.event_types_to_handlers[event.type](event)
-            if event.type != 'junk':
-                self.last_event = event
+        while self.keep_listening:
+            self._handle_event(self.events.get())
+
+    def _handle_event(self, event):
+        if not event.type in self.event_types_to_handlers:
+            self.handle_unhandled_event(event)
+        else:
+            self.event_types_to_handlers[event.type](event)
+        if event.type != 'junk':
+            self.last_event = event
 
     def handle_error_event(self, event):
         raise Exception(event.data['error'])
@@ -50,13 +54,15 @@ class LogListener:
 
 class ZServLogListener(LogListener):
 
+    classname = 'ZServLogListener'
+
     def __init__(self, name, zserv):
         self.zserv = zserv
         LogListener.__init__(self, name)
         self.event_types_to_handlers['log_roll'] = self.handle_log_roll_event
 
     def __str__(self):
-        return "<ZServLogListener for [%s]: %s>" % (self.zserv, self.name)
+        return "<%s for [%s]: %s>" % (self.classname, self.zserv, self.name)
 
     def handle_log_roll_event(self, event):
         self.zserv.roll_log(event.data['log'])
@@ -67,6 +73,20 @@ class ZServLogListener(LogListener):
 
     def handle_unhandled_event(self, event):
         pass # do nothing... actually do not handle the event
+
+class PluginLogListener(ZServLogListener):
+
+    def __init__(self, zserv, enabled_plugins):
+        ZServLogListener.__init__(self, 'Plugin Log Listener', zserv)
+        self.plugins = [x for x in PLUGINS if x.__name__ in enabled_plugins]
+
+    def _handle_event(self, event):
+        for plugin in self.plugins:
+            try:
+                plugin(event, self.zserv)
+            except Exception, e:
+                es = "Exception in plugin %s: [%s]"
+                log(es % (plugin.__name__, e))
 
 class ConnectionLogListener(ZServLogListener):
 
@@ -113,6 +133,7 @@ class GeneralLogListener(ZServLogListener):
                                                 self.handle_disconnection_event
         self.event_types_to_handlers['game_join'] = self.handle_game_join_event
         self.event_types_to_handlers['team_join'] = self.handle_game_join_event
+        self.lost_flag = []
 
     def handle_connection_event(self, event):
         self.zserv.add_player(event.data['player'])
@@ -149,11 +170,15 @@ class GeneralLogListener(ZServLogListener):
             es = "Received a death event for non-existent player [%s]"
             log(es % (event.data['fraggee']))
             return
+        if event.data['fraggee'] in self.lost_flag:
+            fragged_runner = True
+        else:
+            fragged_runner = False
         frag = Frag(event.data['fragger'], event.data['fraggee'],
-                    event.data['weapon'])
+                    event.data['weapon'], fragged_runner=fragged_runner)
         fraggee.add_death(frag)
-        if self.last_event.type == 'flag_loss':
-            fraggee.add_flag_loss(frag)
+        # if self.last_event.type == 'flag_loss':
+        #     fraggee.add_flag_loss(frag)
         if event.type == 'frag': # no suicides
             try:
                 fragger = self.zserv.get_player(event.data['fragger'])
@@ -230,8 +255,8 @@ class GeneralLogListener(ZServLogListener):
             es = "Received a flag cap event for non-existent player [%s]"
             log(es % (event.data['player']))
             return
-        player.set_has_flag(False)
         player.add_flag_cap()
+        player.set_has_flag(False)
 
     def handle_flag_return_event(self, event):
         try:
@@ -246,6 +271,7 @@ class GeneralLogListener(ZServLogListener):
         except ValueError:
             es = "Received a flag pick event for non-existent player [%s]"
             log(es % (event.data['player']))
+        player.set_has_flag(True)
 
     def handle_map_change_event(self, event):
         self.zserv.change_map(event.data['number'], event.data['name'])

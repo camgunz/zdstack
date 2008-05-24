@@ -6,7 +6,8 @@ import traceback
 from datetime import datetime
 from threading import Lock
 
-from ZDStack import start_thread, log, debug
+from ZDStack import log, debug
+from ZDStack.Utils import start_thread
 from ZDStack.LogEvent import LogEvent
 
 class LogFile:
@@ -58,6 +59,11 @@ class LogFile:
     def log(self):
         unprocessed_data = ''
         while self.keep_logging:
+            ###
+            # We put sleep up at the top to ensure it gets done.  Otherwise
+            # CPU usage can go through the roof
+            ###
+            time.sleep(.05) # higher resolutions burn up CPU unnecessarily
             events = []
             if self.fobj:
                 self.change_file_lock.acquire()
@@ -92,5 +98,4 @@ class LogFile:
                     self.change_file_lock.release()
             else:
                 debug("%s: No fobj" % (self.filepath))
-            time.sleep(.05) # higher resolutions burn up CPU unnecessarily
 

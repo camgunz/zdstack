@@ -5,111 +5,16 @@ from collections import deque
 
 from ZDStack.LogEvent import LogEvent
 
-NUMS_TO_WEAPONS = {'1': 'fist', '2': 'chainsaw', '3': 'pistol',
-                   '4': 'shotgun', '5': 'super shotgun', '6': 'chaingun',
-                   '7': 'rocket launcher', '8': 'plasma rifle', '9': 'bfg',
-                   '10': 'telefrag', '11': 'unknown', '12': 'suicide',
-                   '13': 'telefuck'}
-
-REGEXPS_AND_WEAPONS = \
-    [(r"^> (.*) chewed on (.*)'s fist.$", 'fist'),
-     (r"^> (.*) was mowed over by (.*)'s chainsaw.$", 'chainsaw'),
-     (r"^> (.*) was tickled by (.*)'s pea shooter.$", 'pistol'),
-     (r"^> (.*) chewed on (.*)'s boomstick.$", 'shotgun'),
-     (r"^> (.*) was mowed down by (.*)'s chaingun.$", 'chaingun'),
-     (r"^> (.*) was splattered by (.*)'s super shotgun.$", 'super shotgun'),
-     (r"^> (.*) rode (.*)'s rocket.$", 'rocket launcher'),
-     (r"^> (.*) was melted by (.*)'s plasma gun.$", 'plasma gun'),
-     (r"^> (.*) couldn't hide from (.*)'s BFG.$", 'bfg'),
-     (r"^> (.*) was splintered by (.*)'s BFG.$", 'bfg'),
-     (r"^> (.*) was telefragged by (.*).$", 'telefrag')]
-
-REGEXPS_AND_DEATHS = \
-    [(r"^> (.*) should have stood back.$", 'rocket suicide'),
-     (r"^> (.*) mutated.$", 'mutation'),
-     (r"^> (.*) melted.$", 'melting'),
-     (r"^> (.*) killed himself.$", 'suicide'),
-     (r"^> (.*) fell too far.$", 'falling'),
-     (r"^> (.*) tried to leave.$", "exiting"),
-     (r"^> (.*) can't swim.$", "drowning"),
-     (r"^> (.*) checks his glasses.$", 'teamkill')]
-
-REGEXPS_AND_JOINS = \
-    [(r"^> (.*) is now on the (Blue|Red|White|Green) team.$", 'team_switch'),
-     (r"^> (.*) joined the game.$", 'game_join'),
-     (r"^> (.*) joined the game on the (Blue|Red|White|Green) team.$", 'team_join')]
-
-REGEXPS_AND_RCONS = \
-    [(r"^RCON for (.*) is denied!$", 'rcon_denied'),
-     (r"^RCON for (.*) is granted!$", 'rcon_granted'),
-     (r"^(.*) RCON \((.*) \)$", 'rcon_action')]
-
-REGEXPS_AND_FLAGS = \
-    [(r"^> (.*) has taken the (.*) flag", 'flag_touch'),
-     (r"^> (.*) lost the (.*) flag", 'flag_loss'),
-     (r"^> (.*) returned the (.*) flag", 'flag_return'),
-     (r"^> (.*) picked up the (.*) flag", 'flag_pick'),
-     (r"^> (.*) scored for the (.*) team", 'flag_cap')]
-
-def line_to_death_event(event_dt, line):
-    for regexp, weapon in REGEXPS_AND_WEAPONS:
-        match = re.match(regexp, line)
-        if match:
-            d = {'fragger': match.group(2), 'fraggee': match.group(1),
-                 'weapon': weapon}
-            return LogEvent(event_dt, 'frag', d)
-    for regexp, death in REGEXPS_AND_DEATHS:
-        match = re.match(regexp, line)
-        if match:
-            d = {'fragger': match.group(1), 'fraggee': match.group(1),
-                 'weapon': death}
-            return LogEvent(event_dt, 'death', d)
-
-def line_to_connection_event(event_dt, line):
-    match = re.match(r"^> (.*) has connected.$", line)
-    if match:
-        d = {'player': match.group(1)}
-        return LogEvent(event_dt, 'connection', d)
-    match = re.match(r"^> (.*) disconnected$", line)
-    if match:
-        d = {'player': match.group(1)}
-        return LogEvent(event_dt, 'disconnection', d)
-
-def line_to_join_event(event_dt, line):
-    for regexp, join in REGEXPS_AND_JOINS:
-        match = re.match(regexp, line)
-        if match:
-            d = {'player': match.group(1)}
-            if join.startswith('team'):
-                d['team'] = match.group(2).lower()
-            return LogEvent(event_dt, join, d)
-
-def line_to_rcon_event(event_dt, line):
-    for regexp, rcon in REGEXPS_AND_RCONS:
-        match = re.match(regexp, line)
-        if match:
-            d = {'player': match.group(1)}
-            if rcon == 'rcon_action':
-                d['action'] = match.group(2)
-            return LogEvent(event_dt, rcon, d)
-
-def line_to_flag_event(event_dt, line):
-    for regexp, flag in REGEXPS_AND_FLAGS:
-        match = re.match(regexp, line)
-        if match:
-            return LogEvent(event_dt, flag, {'player': match.group(1)})
-
-def line_to_map_event(event_dt, line):
-    match = re.match('^map(\d\d): (.*)$', line)
-    if match:
-        d = {'name': match.group(2), 'number': int(match.group(1))}
-        return LogEvent(event_dt, 'map_change', d)
-                        
-
 class LogParser:
 
-    def __init__(self, name):
+    def __init__(self, name, logtype='server'):
         self.name = name
+        if type == 'server':
+            from ZDStack.ServerRegexps import *
+        elif type == 'client':
+            from ZDStack.ClientRegexps import *
+        else:
+            raise ValueError("Unsupported log type [%s]" % (logtype))
 
     def __str__(self):
         self.name.join(['<', '>'])

@@ -15,6 +15,10 @@ database_folder = /var/zdstack/database
 enable_stats = yes
 ;;; Whether or not to enable Player IP logging
 enable_ip_logging = yes
+;;; Whether or not to load plugins
+load_plugins = yes
+;;; Directory containing plugins
+plugin_dir = %(rootfolder)s/plugins
 ;;; The full, absolute path to the IWADs, but not the WADs
 iwaddir = /var/zdstack/iWADs
 ;;; The full, absolute path to the WADs, but not IWADs

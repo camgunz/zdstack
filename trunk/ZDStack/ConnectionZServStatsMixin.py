@@ -2,7 +2,8 @@ import os.path
 
 from base64 import b64encode
 
-from ZDStack import get_logfile_suffix, debug
+from ZDStack import debug
+from ZDStack.Utils import get_logfile_suffix
 from ZDStack.LogFile import LogFile
 from ZDStack.PlayerDB import save_player_ip
 from ZDStack.LogParser import ConnectionLogParser

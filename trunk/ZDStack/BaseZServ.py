@@ -1,11 +1,13 @@
 import os
 from decimal import Decimal
 from datetime import datetime
+from threading import Timer
 from subprocess import Popen, PIPE
 
 from pyfileutils import write_file
 
-from ZDStack import yes, no, start_thread, HOSTNAME, log, debug
+from ZDStack import HOSTNAME, log, debug
+from ZDStack.Utils import yes, no
 from ZDStack.Dictable import Dictable
 
 class BaseZServ:
@@ -26,13 +28,10 @@ class BaseZServ:
         self.dn_fobj = open('/dev/null', 'r+')
         self.devnull = self.dn_fobj.fileno()
         self.homedir = os.path.join(self.zdstack.homedir, self.name)
-        self.old_log_dir = os.path.join(self.homedir, 'old-logs')
-        self.pid_file = os.path.join(self.homedir, self.name + '.pid')
         if not os.path.isdir(self.homedir):
             os.mkdir(self.homedir)
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.keep_spawning = False
-        self.spawning_thread = None
         self.reload_config(config)
         self.pid = None
         self.pre_spawn_funcs = []
@@ -283,51 +282,43 @@ class BaseZServ:
             template += 'set sv_autorespawn "%d"\n' % (self.auto_respawn)
         return template # % self.config
 
-    def spawn_zserv(self):
-        debug()
-        while self.keep_spawning:
-            debug("Acquiring spawn lock [%s]" % (self.name))
-            self.zdstack.spawn_lock.acquire()
-            try:
-                debug("Acquired spawn lock [%s]" % (self.name))
-                curdir = os.getcwd()
-                os.chdir(self.homedir)
-                for func, args, kwargs in self.pre_spawn_funcs:
-                    func(*args, **kwargs)
-                log("Spawning [%s]" % (' '.join(self.cmd)))
-                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
-                                   bufsize=0, close_fds=True)
-                self.pid = self.zserv.pid
-                # write_file(str(self.pid), self.pid_file)
-                os.chdir(curdir)
-            finally:
-                self.zdstack.spawn_lock.release()
-            try:
-                self.zserv.wait()
-            except:      # can be raised during interpreter shutdown
-                try:
-                    if os.path.isfile(self.pid_file):
-                        os.unlink(self.pid_file)
-                except:
-                    pass
-                continue # shutting down, skip the post_spawn stuff
+    def watch_zserv(self, set_timer=True):
+        if not self.keep_spawning:
+            return
+        if self.zserv.poll():
             for func, args, kwargs in self.post_spawn_funcs:
                 func(*args, **kwargs)
             self.clean_up_after_zserv()
-            # The zserv process has exited and we restart all over again
+        debug("Acquiring spawn lock [%s]" % (self.name))
+        self.zdstack.spawn_lock.acquire()
+        try:
+            self.spawn_zserv()
+        finally:
+            self.zdstack.spawn_lock.release()
+        if self.set_timer == True:
+            Timer(.5, self.watch_zserv).start()
+
+    def spawn_zserv(self):
+        debug()
+        curdir = os.getcwd()
+        os.chdir(self.homedir)
+        for func, args, kwargs in self.pre_spawn_funcs:
+            func(*args, **kwargs)
+        log("Spawning [%s]" % (' '.join(self.cmd)))
+        self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
+                           bufsize=0, close_fds=True)
+        self.pid = self.zserv.pid
+        os.chdir(curdir)
 
     def clean_up_after_zserv(self):
         debug()
         self.pid = None
-        if os.path.isfile(self.pid_file):
-            os.unlink(self.pid_file)
 
     def start(self):
         debug()
         self.pid = None
         self.keep_spawning = True
-        self.spawning_thread = start_thread(self.spawn_zserv,
-                                            "%s spawning thread" % (self.name))
+        self.watch_zserv()
 
     def stop(self, signum=15):
         debug()
@@ -341,7 +332,6 @@ class BaseZServ:
                 es = "Caught exception while stopping: [%s]"
                 log(es % (e))
                 out = es % (e)
-        self.spawning_thread = None
         return out
 
     def restart(self, signum=15):

@@ -18,8 +18,6 @@ class TeamZServ(DMZServ):
         debug()
         def is_valid(x):
             return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         DMZServ.load_config(self, config)
         self.max_teams = None
         self.max_players_per_team = None

@@ -2,10 +2,13 @@ import time
 
 from datetime import datetime
 from threading import Lock
+from cStringIO import StringIO
 
-from ZDStack import get_configparser, yes, log, debug
+from ZDStack import get_configparser, log, debug
+from ZDStack.Utils import yes
 from ZDStack.Server import Server
 from ZDStack.ZServDepot import get_zserv_class
+from ZDStack.ConfigParser import RawConfigParser
 
 class AuthenticationError(Exception):
 
@@ -55,8 +58,9 @@ class Stack(Server):
                 memory_slots = int(zs_config['maps_to_remember'])
                 enable_stats = yes(zs_config['enable_stats'])
                 log_ips = yes(zs_config['enable_ip_logging'])
+                load_plugins = yes(zs_config['load_plugins'])
                 zs_class = get_zserv_class(game_mode, memory_slots,
-                                           enable_stats, log_ips)
+                                           enable_stats, log_ips, load_plugins)
                 zs = zs_class(zserv_name, zs_config, self)
                 log("Adding zserv [%s]" % (zserv_name))
                 self.zservs[zserv_name] = zs
@@ -64,6 +68,8 @@ class Stack(Server):
     def load_config(self, reload=False):
         debug()
         self.config = get_configparser(self.config_file)
+        self.raw_config = RawConfigParser()
+        self.raw_config.read(self.config.file)
         Server.load_config(self, reload)
         self.check_all_zserv_configs()
         try:
@@ -157,6 +163,22 @@ class Stack(Server):
     def list_zserv_names(self):
         debug()
         return self.zservs.keys()
+
+    def _items_to_section(self, name, items):
+        return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in items])
+
+    def get_zserv_config(self, zserv_name):
+        debug()
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        return self._items_to_section(zserv_name,
+                                      self.raw_config.items(zserv_name))
+
+    def set_zserv_config(self, zserv_name, data):
+        debug()
+        if zserv_name not in self.zservs:
+            raise ValueError("ZServ [%s] not found" % (zserv_name))
+        
 
     def get_player(self, zserv_name, player_name):
         debug()

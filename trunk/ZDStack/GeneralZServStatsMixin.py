@@ -1,9 +1,7 @@
 import os.path
 
-from datetime import datetime, timedelta
-
-from ZDStack import get_logfile_suffix, log, debug
-
+from ZDStack import log, debug
+from ZDStack.Utils import get_logfile_suffix
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
@@ -18,10 +16,19 @@ class GeneralZServStatsMixin:
 
     def __init__(self, memory_slots, player_class=BasePlayer,
                                      map_class=BaseMap,
-                                     stats_class=BaseStats):
+                                     stats_class=BaseStats,
+                                     load_plugins=False,
+                                     log_type='server'):
         self.map_class = map_class
         self.player_class = player_class
         self.stats_class = stats_class
+        self.load_plugins = load_plugins
+        if self.load_plugins and 'plugins' in self.config:
+            plugins = [x.strip() for x in self.config['plugins'].split(',')]
+            self.plugins = plugins
+        else:
+            self.plugins = None
+        self.log_type = log_type
         self.memory_slots = memory_slots
         self.remembered_stats = Listable()
         self.initialize_general_stats()
@@ -63,10 +70,13 @@ class GeneralZServStatsMixin:
 
     def initialize_general_log(self):
         debug()
-        general_log_parser = GeneralLogParser()
+        general_log_parser = GeneralLogParser(log_type=self.log_type)
         self.general_log = LogFile('general', general_log_parser, self)
         self.general_log_listener = GeneralLogListener(self)
         self.general_log.listeners = [self.general_log_listener]
+        if self.load_plugins and self.plugins:
+            self.plugin_log_listener = PluginLogListener(self, self.plugins)
+            self.general_log.listeners.append(self.plugin_log_listener)
         self.general_log_listener.start()
         self.set_general_log_filename()
         self.general_log.start()
@@ -79,7 +89,8 @@ class GeneralZServStatsMixin:
     def stop_collecting_general_stats(self):
         debug()
         self.general_log.stop()
-        self.general_log_listener.stop()
+        for listener in self.general_log.listeners:
+            listener.stop()
 
     def get_general_log_filename(self, roll=False):
         debug()
@@ -102,10 +113,6 @@ class GeneralZServStatsMixin:
         if len(self.remembered_stats) == self.memory_slots:
             self.remembered_stats = Listable(self.remembered_stats[1:])
         if self.map:
-            ###
-            # TODO:
-            #   Don't remember maps where no one joined a game/team.
-            ###
             stats = self.stats_class(*self.dump_stats())
             self.remembered_stats.append(stats)
 

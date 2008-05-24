@@ -11,8 +11,6 @@ class DMZServ(BaseZServ):
         debug()
         def is_valid(x):
             return x in config and config[x]
-        def is_yes(x):
-            return x in config and yes(x)
         BaseZServ.load_config(self, config)
         if is_valid('fraglimit'):
             self.fraglimit = int(self.config['fraglimit'])

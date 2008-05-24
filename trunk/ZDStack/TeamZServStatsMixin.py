@@ -11,10 +11,11 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
     def __init__(self, memory_slots, player_class=TeamPlayer,
                                      team_class=BaseTeam,
                                      map_class=TeamMap,
-                                     stats_class=TeamStats):
+                                     stats_class=TeamStats,
+                                     log_type='server'):
         self.team_class = team_class
         GeneralZServStatsMixin.__init__(self, memory_slots, player_class,
-                                              map_class, stats_class)
+                                              map_class, stats_class, log_type)
 
     def initialize_general_stats(self):
         debug()
