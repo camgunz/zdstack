@@ -11,6 +11,59 @@ def plugin_func(event, zserv):
 
 Plugins are designed to allow admins to customize the dynamic behavior of their ZServ instances.
 
-= Usage =
+= Usage/Installation =
 
-Plugins are actually individual Python source files.  For
+Plugins are actually Python source files, each containing one or more functions to be used as "Plugins".  Let's install a hypothetical `ban_teamkillers` plugin:
+
+  # create a plugin folder and put the plugin in there
+  # edit zdstackrc and make the following changes:
+    {{{
+    [DEFAULT]
+    plugin_dir: <full path to whatever the plugin folder is>
+    load_plugins: <comma-separated list of plugin names to load>
+    }}}
+  # Alternately, you can configure which servers load which plugins:
+    {{{
+    [Greatest Coop (teamkill limit, rated PG)]
+    load_plugins: ban_teamkiller,clean_language
+
+    [Adult Swim CTF]
+    load_plugins: raunchy_commentator
+    }}}
+
+= Plugin Development =
+
+Sticking with the `ban_teamkillers` plugin:
+
+{{{
+
+TEAMKILL_LIMIT = 5
+
+def ban_teamkillers(event, zserv):
+    if not event.type == 'frag':
+        return
+    fragger = zserv.get_player(event.data['fragger'])
+    fraggee = zserv.get_player(event.data['fraggee'])
+    if not hasattr(fragger, 'teamkills'):
+        fragger.teamkills = 0
+    if not hasattr(fraggee, 'teamkills'):
+        fragger.teamkills = 0
+    if fragger.team == fraggee.team and fragger:
+        if fragger.teamkills == (TEAMKILL_LIMIT - 1):
+            msg = "%s, one more teamkill and you will be banned" 
+            zserv.say(msg % event.data['fragger'])
+        elif fragger.teamkills >= TEAMKILL_LIMIT:
+            zserv.ban(event.data['fragger'], 'Teamkill limit reached')
+
+}}}
+
+There's a couple of things to be aware of here:
+
+  `ban_teamkillers` the function is picked up as the plugin, you can name the '.py' file anything you like.
+
+  All functions inside a plugin '.py' file are imported ("function" being defined as "given a member "x", inspect.isfunction(x) returns True"), but other members are not.  I might create a `plugin` decorator for this, so that global functions can exist and not be imported as plugins... and so that callable classes can be used as well.
+
+  The concurrency system in ZDStack isn't always straightforward... and there are what appear to be race conditions in the code that aren't.  That said, keep in mind two things:
+    # Plugins are generally running in a threaded environment, where server requests can be made of a ZServ at any time.  So be careful what you monkeypatch and modify.
+    # You are holding up the processing of other events, and other listeners responding to the same event.  ZDaemon runs at 35Hz, so if your plugin takes even 1/35 of a second to complete (.028 seconds) then you're lagging ZDStack.  Granted we're not going for hard real-time here, and there are definitely other sources of lag, but it's good to have perspective.
+  In general, be fast and be careful!
