@@ -1,4 +1,4 @@
-﻿#summary This is the list of features ZDStack is committed to, with current progress and status information.
+﻿#summary Feature summary and status
 #labels Featured
 
 || Feature || Progress || What's the Hold Up? ||
