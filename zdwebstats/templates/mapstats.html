@@ -1,0 +1,165 @@
+$def with (server, info, depth, index=None, stats=None)
+<div class="statlist">
+    <h3 class="centered">Statistics</h3>
+    <table>
+        <tr>
+            $if index == 0:
+                <td>&gt;</td>
+            $else:
+                <td></td>
+            <td>
+                <a href="$depth/$server['url_name']/0/">
+                    $server['map']['number']: $server['map']['name']
+                </a>
+            </td>
+        </tr>
+        $if server['remembered_stats']:
+            $for map in server['remembered_stats']:
+                <tr>
+                    $if index == map['index']:
+                        <td>&gt;</td>
+                    $else:
+                        <td></td>
+                    <td>
+                        <a href="$depth/$server['url_name']/$map['index']/">
+                            $map['number']: $map['name']
+                        </a>
+                    </td>
+                </tr>
+    </table>
+</div>
+$if stats:
+    <div class="mapstats">
+        <table class="stats">
+            <tr>
+                <th>Map</th>
+                <th>Frags</th>
+                <th>Deaths</th>
+                $if server['type'] == 'ctf':
+                    <th>Flag Drops</th>
+                    <th>Flag Losses</th>
+            </tr>
+            <tr>
+                <td>$stats['map']['name']</td>
+                <td class="centered">$stats['map']['total_frags']</td>
+                <td class="centered">$stats['map']['total_deaths']</td>
+            $if server['type'] == 'ctf':
+                    <td class="centered">$stats['map']['total_flag_drops']</td>
+                    <td class="centered">$stats['map']['total_flag_losses']</td>
+            </tr>
+        </table>
+        $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+            $if 'teams' in stats:
+                <table class="stats rowstyle-odd sortable-onload-0">
+                    <thead>
+                        <tr>
+                            <th class="sortable fd-column-0">Team</th>
+                            <th class="sortable fd-column-1">Frags</th>
+                            <th class="sortable fd-column-2">Deaths</th>
+                            $if server['type'] == 'ctf':
+                                <th class="sortable fd-column-3">Flags</th>
+                                <th class="sortable fd-column-4">Touches</th>
+                                <th class="sortable fd-column-5">Picks</th>
+                                <th class="sortable fd-column-6">Losses</th>
+                                <th class="sortable fd-column-7">Drops</th>
+                                <th class="sortable fd-column-8">Returns</th>
+                                <th class="sortable fd-column-9 sortable-numeric">Flag %</th>
+                                <th class="sortable fd-column-10 sortable-numeric">Pick %</th>
+                                <th class="sortable fd-column-11 sortable-numeric">Return %</th>
+                                <th class="sortable fd-column-12 sortable-numeric">Frag %</th>
+                            $else:
+                                <th class="sortable fd-column-3 sortable-numeric">Frag %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        $for team in stats['teams']:
+                            <tr>
+                                <td "centered">$team['color']</td>
+                                <td class="centered">$team['total_frags']</td>
+                                <td class="centered">$team['total_deaths']</td>
+                                $if server['type'] == 'ctf':
+                                    <td class="centered">$team['flag_caps']</td>
+                                    <td class="centered">$team['flag_touches']</td>
+                                    <td class="centered">$team['flag_picks']</td>
+                                    <td class="centered">$team['total_flag_losses']</td>
+                                    <td class="centered">$team['total_flag_drops']</td>
+                                    <td class="centered">$team['flag_returns']</td>
+                                    <td class="right">$team['flag_ratio']</td>
+                                    <td class="right">$team['pick_ratio']</td>
+                                    <td class="right">$team['return_ratio']</td>
+                                <td class="right">$team['frag_ratio']</td>
+                            </tr>
+                        </tbody>
+                </table>
+            $else:
+                <div class="line">No Teams</div>
+        $if stats['players']:
+            <table class="mapstats rowstyle-odd sortable-onload-0">
+                <thead>
+                    <tr>
+                        <th class="sortable fd-column-0">Player</th>
+                        $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+                            <th class="sortable fd-column-1">Team</th>
+                            <th class="sortable fd-column-2">Frags</th>
+                            <th class="sortable fd-column-3">Deaths</th>
+                            $if server['type'] == 'ctf':
+                                <th class="sortable fd-column-4">Flags</th>
+                                <th class="sortable fd-column-5">Touches</th>
+                                <th class="sortable fd-column-6">Picks</th>
+                                <th class="sortable fd-column-7">Losses</th>
+                                <th class="sortable fd-column-8">Drops</th>
+                                <th class="sortable fd-column-9">Returns</th>
+                                <th class="sortable fd-column-10 sortable-numeric">Flag %</th>
+                                <th class="sortable fd-column-11 sortable-numeric">Return %</th>
+                                <th class="sortable fd-column-12 sortable-numeric">Frag %</th>
+                            $else:
+                                <th class="sortable fd-column-4 sortable-numeric">Frag %</th>
+                        $else:
+                            <th class="sortable fd-column-1">Frags</th>
+                            <th class="sortable fd-column-2">Deaths</th>
+                            <th class="sortable fd-column-3 sortable-numeric">Frag %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    $for player in stats['players']:
+                        <tr>
+                            <td>
+                                <a href="$depth/$server['url_name']/$index/$stats['players'][player]['name']">
+                                    $stats['players'][player]['name']
+                                </a>
+                            </td>
+                            $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+                                $if 'color' in stats['players'][player]:
+                                    <td>$stats['players'][player]['color']</td>
+                                $else:
+                                    <td class="centered">...</td>
+                            <td class="centered">
+                                $stats['players'][player]['frag_stats']['frags']
+                            </td>
+                            <td class="centered">
+                                $stats['players'][player]['frag_stats']['deaths']
+                            </td>
+                            $if server['type'] == 'ctf':
+                                <td class="centered">$stats['players'][player]['flag_caps']</td>
+                                <td class="centered">$stats['players'][player]['flag_touches']</td>
+                                <td class="centered">$stats['players'][player]['flag_picks']</td>
+                                <td class="centered">
+                                    $stats['players'][player]['flag_frag_stats']['deaths']
+                                </td>
+                                <td class="centered">
+                                    $stats['players'][player]['flag_frag_stats']['frags']
+                                </td>
+                                </td>
+                                <td class="centered">$stats['players'][player]['flag_returns']</td>
+                                <td class="right">$stats['players'][player]['flag_ratio']</td>
+                                <td class="right">$stats['players'][player]['return_ratio']</td>
+                            <td class="right">$stats['players'][player]['frag_stats']['ratio']</td>
+                        </tr>
+                </tbody>
+            </table>
+        $else:
+            <table><tr><th>No Players</th></tr></table>
+    </div>
+<div class="infopanel">
+    $:info
+</div>

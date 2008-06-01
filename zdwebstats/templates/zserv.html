@@ -1,0 +1,65 @@
+$def with (server)
+    <table class="server">
+        <tr><td class="serveroption">Type:</td><td>$server['nice_type']</td></tr>
+        <tr><td class="serveroption">Port:</td><td>$server['port']</td></tr>
+            <td class="serveroption">Advertised:</td>
+            $if server['advertise']:
+                <td>yes</td>
+            $else:
+                <td>no</td>
+        </tr>
+        <tr><td class="serveroption">IWAD:</td><td>$server['iwad']</td></tr>
+        <tr>
+            <td class="serveroption">PWADs:</td>
+            <td>$server['joined_wads']</td>
+        </tr>
+        <tr>
+            <td class="serveroption">Maps:</td>
+            <td>$server['joined_maps']</td>
+        </tr>
+        <tr><td colspan="2"><hr /></td></tr>
+        <tr>
+            <td class="serveroption">Gravity:</td>
+            <td class="servervalue">$server['gravity']</td>
+        </tr>
+        <tr>
+                <td class="serveroption">Overtime:</th>
+                $if server['overtime']:
+                    <td class="servervalue">yes</td>
+                $else:
+                    <td class="servervalue">no</td>
+        </tr>
+        <tr>
+            <td class="serveroption">Air Control:</td>
+            <td class="servervalue">$server['air_control']</td>
+        $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+            <tr>
+                <td class="serveroption">Team Damage:</th>
+                <td class="servervalue">$server['teamdamage']</td>
+            </tr>
+        <tr>
+            <td class="serveroption">DMFLAGS / DMFLAGS2:</th>
+            <td class="servervalue">$server['dmflags'] / $server['dmflags2']</td>
+        </tr>
+        <tr>
+            $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+                <td class="serveroption">Time / Frag / Score Limit:</th>
+            $else:
+                <td class="serveroption">Time / Frag Limit:</th>
+            <td class="servervalue">
+                $if server['timelimit']:
+                    $server['timelimit']
+                $else:
+                    no
+                $if server['fraglimit']:
+                    / $server['fraglimit']
+                $else:
+                    / no
+                $if server['type'] == 'ctf' or server['type'] == 'teamdm':
+                    $if server['scorelimit']:
+                        / $server['scorelimit']
+                    $else:
+                        / no
+            </td>
+        </tr>
+    </table>

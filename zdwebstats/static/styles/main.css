@@ -1,0 +1,64 @@
+body {
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    /* background: #000 url('/images/sonicyouth.jpg') fixed no-repeat top center; */
+    /* background: #000 url('/images/toon-trashed.jpg') fixed no-repeat top center; */
+    background: #000 url('/images/Trash.jpg') fixed no-repeat top center;
+    font-family: monospace;
+    font-style: bold;
+    font-size: x-large;
+    color: #000;
+}
+
+a img {
+    border: 0;
+}
+
+#contents {
+    margin-top: 0px;
+    margin-bottom: 10px;
+    margin-right:auto;
+    margin-left:auto;
+    width: 770px;
+    padding: 10px;
+    padding-top: 0px;
+    text-align: left;
+}
+
+p#header {
+    position: relative;
+    width: auto;
+    float: right;
+    font-family: sans-serif;
+    top: -5px;
+    /* top: 5px; */
+    /* text-align: right; */
+}
+
+p#desc {
+    position: relative;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.centered {
+    text-align: center;
+}
+
+div.vert-middle span,img,a,p {
+    vertical-align: middle;
+}
+
+a {
+    text-decoration: none;
+    color: black;
+    font-style: bold;
+    font-size: x-large;
+}
+
+table.sortable th a {
+    text-decoration: none;
+    color: #000;
+}
+
