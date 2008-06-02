@@ -10,14 +10,9 @@ Grab the ZDWebStats bundle from svn (svn co https://zdstack.googlecode.com
     * /zdwebstats
       * /templates
       * /ZDStats
-
----- /zdwebstats
------- /templates
------- /ZDStats
------- /static
--------- /js
--------- /styles
-
+      * /static
+        * /js
+        * /styles
 
 = Lighttpd Configuration File =
 
