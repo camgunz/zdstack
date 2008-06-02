@@ -1,0 +1,49 @@
+#summary Configuring Lighttpd to run ZDWebStats
+
+= Installation =
+
+Grab the ZDWebStats bundle from svn (svn co https://zdstack.googlecode.com
+
+= Configuration =
+
+  * /var/www
+    * /zdwebstats
+      * /templates
+      * /ZDStats
+
+---- /zdwebstats
+------ /templates
+------ /ZDStats
+------ /static
+-------- /js
+-------- /styles
+
+
+= Lighttpd Configuration File =
+
+{{{
+fastcgi.server = (
+  "/servers" => (( "socket" => "/tmp/fastcgi.socket",
+                   "bin-path" => "/var/www/zdstats/zdstats.py",
+                   "max-procs" => 1,
+                   "bin-environment" => ( "REAL_SCRIPT_NAME" => "" ),
+                   "check-local" => "disable"
+                )))
+
+url.rewrite-once = (
+  "^/favicon.ico$" => "/static/favicon.ico",
+  "^/static/(.*)$" => "/$1",
+  "^/servers/(.*)$" => "/servers/$1",
+)
+
+}}}
+
+Add your content here.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
