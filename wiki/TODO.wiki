@@ -3,4 +3,6 @@
   * Test all the server response methods
 
   * Class/Function/Member documentation is almost non-existent.  This is necessary so that
-    we can generate PyDoc stuff for plugin authors.
+    we can generate !PyDoc stuff for plugin authors.
+
+  * Test new frag representation... there's still a little more work to do on this.
