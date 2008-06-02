@@ -1,17 +1,18 @@
 import csv
+import logging
 
 from base64 import b64encode
 
-from ZDStack import debug
 from ZDStack.Utils import parse_player_name, homogenize, html_escape, get_ratio
 from ZDStack.Listable import Listable
 from ZDStack.PlayerDB import save_player_ip, get_possible_aliases
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
+
 class BasePlayer(BaseStatKeeper):
 
     def __init__(self, name, zserv, ip=None):
-        debug("name: [%s]" % (name))
+        logging.getLogger('').debug('name: [%s]' % (name))
         BaseStatKeeper.__init__(self)
         self.name = name
         self.zserv = zserv
@@ -39,12 +40,14 @@ class BasePlayer(BaseStatKeeper):
         self.disconnected = False
         if self.ip:
             save_player_ip(self.name, self.ip)
+        self.initialize()
         ###
         # TODO:
         #   - Add latency/packet-loss tracking
         ###
 
     def initialize(self):
+        logging.getLogger('').debug('')
         self.adversaries = set()
         self.weapons = set()
         self.total_frags = 0
@@ -60,6 +63,7 @@ class BasePlayer(BaseStatKeeper):
         self.rcon_accesses = 0
 
     def add_adversary(self, adversary):
+        logging.getLogger('').debug('')
         self.adversaries.add(adversary)
         for a in self.adversaries:
             if a not in self.player_frags:
@@ -72,6 +76,7 @@ class BasePlayer(BaseStatKeeper):
                 self.player_weapon_deaths[a] = {}.fromkeys(self.weapons, 0)
 
     def add_weapon(self, weapon):
+        logging.getLogger('').debug('')
         self.weapons.add(weapon)
         for weapon in self.weapons:
             if weapon not in self.weapon_frags:
@@ -86,7 +91,7 @@ class BasePlayer(BaseStatKeeper):
                     self.player_weapon_deaths[player][weapon] = 0
 
     def add_frag(self, frag):
-        debug()
+        logging.getLogger('').debug('')
         self.total_frags += 1
         if not frag.weapon in self.weapons:
             self.add_weapon(frag.weapon)
@@ -99,7 +104,7 @@ class BasePlayer(BaseStatKeeper):
             self.stat_container.add_frag(frag)
 
     def add_death(self, death):
-        debug()
+        logging.getLogger('').debug('')
         self.total_deaths += 1
         if not death.weapon in self.weapons:
             self.add_weapon(death.weapon)
@@ -112,7 +117,7 @@ class BasePlayer(BaseStatKeeper):
             self.stat_container.add_death(death)
 
     def exportables(self):
-        debug()
+        logging.getLogger('').debug('')
         out = []
         for x in BaseStatKeeper.exportables(self):
             if x[0] != 'map' and \
@@ -131,7 +136,7 @@ class BasePlayer(BaseStatKeeper):
         return out
 
     def set_map(self, map):
-        debug()
+        logging.getLogger('').debug('')
         self.map = map
         self.stat_container = self.map
 
@@ -182,7 +187,7 @@ class BasePlayer(BaseStatKeeper):
         #   Flag Take/Cap Ratio, Flag Drop/Return Ratio, 
         ###
         d = self.export()
-        weapons = sorted(d['weapons'].keys()):
+        weapons = sorted(d['weapons'].keys())
         adversaries = sorted(d['adversaries'].keys())
         columns = ['Player', 'Frag/Death %']
         values = [self.name, get_ratio(self.total_frags, self.total_deaths)]

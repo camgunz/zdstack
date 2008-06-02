@@ -3,12 +3,14 @@ import sys
 import time
 import signal
 import socket
+import logging
 import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, get_configparser, set_debugging, log, debug
+from ZDStack import HOSTNAME, get_configparser, set_debugging, log
 from ZDStack.XMLRPCServer import XMLRPCServer
+from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 class Server:
 
@@ -27,7 +29,7 @@ class Server:
         signal.signal(signal.SIGHUP, self.handle_signal)
 
     def load_config(self, reload=False):
-        debug()
+        logging.getLogger('').debug('')
         self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
             rootfolder = self.defaults['rootfolder']
@@ -38,7 +40,17 @@ class Server:
         if not 'zdstack_port' in self.defaults:
             es = "Could not find option 'zdstack_port' in the configuration"
             raise ValueError(es)
-        if 'xmlrpc_hostname' in self.defaults:
+        if not 'rpc_protocol' in self.defaults:
+            es = "Could not find option 'rpc_protocol' in the configuration"
+            raise ValueError(es)
+        if self.defaults['rpc_protocol'].lower() in ('jsonrpc', 'json-rpc'):
+            self.rpc_class = SimpleJSONRPCServer
+        elif self.defaults['rpc_protocol'].lower() in ('xmlrpc', 'xml-rpc'):
+            self.rpc_class = XMLRPCServer
+        else:
+            es = "RPC Protocol [%s] not supported"
+            raise ValueError(es % (self.defaults['rpc_protocol']))
+        if 'rpc_hostname' in self.defaults:
             self.hostname = self.defaults['xmlrpc_hostname']
         else:
             self.hostname = HOSTNAME
@@ -48,24 +60,24 @@ class Server:
         self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
     def reload_config(self):
-        debug()
+        logging.getLogger('').debug('')
         self.config = get_configparser(reload=True,
                                        config_file=self.config_file)
         self.load_config(reload=True)
 
     def startup(self):
-        debug()
-        self.xmlrpc_server = XMLRPCServer((HOSTNAME, self.port))
+        logging.getLogger('').debug('')
+        self.rpc_server = self.rpc_class((HOSTNAME, self.port))
         self.register_functions()
         self.keep_serving = True
         self.status = "Running"
         write_file(str(os.getpid()), self.pidfile)
         self.start()
         while self.keep_serving:
-            self.xmlrpc_server.handle_request()
+            self.rpc_server.handle_request()
 
     def shutdown(self, signum=15):
-        debug()
+        logging.getLogger('').debug('')
         self.stop()
         self.keep_serving = False
         try:
@@ -75,40 +87,40 @@ class Server:
         sys.exit(0)
 
     def start(self):
-        debug()
+        logging.getLogger('').debug('')
         raise NotImplementedError()
 
     def stop(self):
-        debug()
+        logging.getLogger('').debug('')
         raise NotImplementedError()
 
     def restart(self):
-        debug()
+        logging.getLogger('').debug('')
         self.stop()
         self.start()
         return True
 
     def handle_signal(self, signum, frame):
-        debug()
+        logging.getLogger('').debug('')
         if signum == signal.SIGHUP:
             self.reload_config()
         else:
             self.shutdown(signum=signum)
 
     def register_functions(self):
-        debug()
-        self.xmlrpc_server.register_function(self.get_status)
-        self.xmlrpc_server.register_function(self.get_logfile)
-        self.xmlrpc_server.register_function(self.reload_config)
-        self.xmlrpc_server.register_function(self.start)
-        self.xmlrpc_server.register_function(self.stop)
-        self.xmlrpc_server.register_function(self.restart)
+        logging.getLogger('').debug('')
+        self.rpc_server.register_function(self.get_status)
+        self.rpc_server.register_function(self.get_logfile)
+        self.rpc_server.register_function(self.reload_config)
+        self.rpc_server.register_function(self.start)
+        self.rpc_server.register_function(self.stop)
+        self.rpc_server.register_function(self.restart)
 
     def get_status(self):
-        debug()
+        logging.getLogger('').debug('')
         return self.status
 
     def get_logfile(self):
-        debug()
+        logging.getLogger('').debug('')
         return read_file(logfile)
 

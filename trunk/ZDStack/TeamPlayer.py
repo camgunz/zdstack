@@ -8,6 +8,10 @@ class TeamPlayer(BasePlayer, TeamStatKeeper):
         TeamStatKeeper.__init__(self)
         self.color = None
 
+    def initialize(self):
+        BasePlayer.initialize(self)
+        TeamStatKeeper.initialize(self)
+
     def exportables(self):
         out = []
         for x in BasePlayer.exportables(self):

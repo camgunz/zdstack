@@ -5,7 +5,7 @@ from ZDStack.CTFPlayer import CTFPlayer
 from ZDStack.TeamZServStatsMixin import TeamZServStatsMixin
 
 class CTFTeamZServStatsMixin(TeamZServStatsMixin):
-    def __init__(self, memory_slots, log_type='server'):
+    def __init__(self, memory_slots, load_plugins=False, log_type='server'):
         map_class = CTFMap
         team_class = CTFTeam
         stats_class = CTFStats

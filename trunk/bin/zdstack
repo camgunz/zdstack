@@ -94,7 +94,6 @@ if len(args) != 1 or args[0] not in actions:
 opts = dict(opts)
 action = args[0]
 if not '-c' in opts:
-    print "Setting config_file to None"
     config_file = None
 else:
     config_file = opts['-c']

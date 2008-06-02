@@ -9,3 +9,9 @@ class BaseStats(Dictable):
         self.number = map['number']
         self.players = players
 
+    def __str__(self):
+        return "<Stats: %s>" % (self.name)
+
+    def __repr__(self):
+        return "Stats(%s,[%s])" % (self.name, self.players)
+

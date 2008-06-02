@@ -1,6 +1,7 @@
 import Queue
+import logging
 
-from ZDStack import get_plugins, log, debug
+from ZDStack import get_plugins, log
 from ZDStack.Frag import Frag
 from ZDStack.Utils import start_thread
 
@@ -17,13 +18,13 @@ class LogListener:
         self.listener_thread = None
 
     def start(self):
-        debug()
+        logging.getLogger('').info('')
         self.keep_listening = True
         self.listener_thread = start_thread(self.handle_event,
                                             "%s listener thread" % self.name)
 
     def stop(self):
-        debug()
+        logging.getLogger('').info('')
         self.keep_listening = False
         # self.listener_thread.join()
         self.listener_thread = None
@@ -36,7 +37,9 @@ class LogListener:
 
     def handle_event(self):
         while self.keep_listening:
-            self._handle_event(self.events.get())
+            event = self.events.get()
+            logging.getLogger('').debug("Handling event: %s" % (event.type))
+            self._handle_event(event)
 
     def _handle_event(self, event):
         if not event.type in self.event_types_to_handlers:
@@ -69,7 +72,7 @@ class ZServLogListener(LogListener):
 
     def handle_error_event(self, event):
         log("Event error: %s" % (event.data['error']))
-        debug("Event traceback: \n%s\n" % (event.data['tb']))
+        logging.getLogger('').info("Event traceback: \n%s\n" % (event.data['traceback']))
 
     def handle_unhandled_event(self, event):
         pass # do nothing... actually do not handle the event
@@ -78,15 +81,20 @@ class PluginLogListener(ZServLogListener):
 
     def __init__(self, zserv, enabled_plugins):
         ZServLogListener.__init__(self, 'Plugin Log Listener', zserv)
-        self.plugins = [x for x in PLUGINS if x.__name__ in enabled_plugins]
+        plugins = get_plugins()
+        self.plugins = [x for x in plugins if x.__name__ in enabled_plugins]
+        for p in self.plugins:
+            logging.getLogger('').debug("PLL Loaded Plugin [%s]" % (p.__name__))
 
     def _handle_event(self, event):
         for plugin in self.plugins:
+            logging.getLogger('').debug("Running plugin: %s" % (plugin.__name__))
             try:
                 plugin(event, self.zserv)
             except Exception, e:
+                raise
                 es = "Exception in plugin %s: [%s]"
-                log(es % (plugin.__name__, e))
+                logging.getLogger('').info(es % (plugin.__name__, e))
 
 class ConnectionLogListener(ZServLogListener):
 
@@ -145,6 +153,8 @@ class GeneralLogListener(ZServLogListener):
         self.zserv.remove_player(event.data['player'])
 
     def handle_game_join_event(self, event):
+        if not self.zserv.should_remember:
+            self.zserv.should_remember = True
         try:
             player = self.zserv.get_player(event.data['player'])
         except ValueError:
@@ -152,8 +162,6 @@ class GeneralLogListener(ZServLogListener):
             log(es % (event.type, event.data['player']))
             return
         player.playing = True
-        if not self.zserv.should_remember:
-            self.zserv.should_remember = True
         if event.type == 'team_join':
             try:
                 team = self.zserv.get_team(event.data['team'])
@@ -172,6 +180,7 @@ class GeneralLogListener(ZServLogListener):
             return
         if event.data['fraggee'] in self.lost_flag:
             fragged_runner = True
+            self.lost_flag = []
         else:
             fragged_runner = False
         frag = Frag(event.data['fragger'], event.data['fraggee'],
@@ -191,8 +200,8 @@ class GeneralLogListener(ZServLogListener):
                 fragger.add_flag_drop(frag)
 
     def handle_message_event(self, event):
-        self.zserv.handle_message(event.data['contents'],
-                                  event.data['possible_player_names'])
+        self.zserv.handle_message(event.data['message'],
+                                  event.data['messenger'])
 
     def handle_team_switch_event(self, event):
         try:
@@ -267,10 +276,12 @@ class GeneralLogListener(ZServLogListener):
 
     def handle_flag_pick_event(self, event):
         try:
-            self.zserv.get_player(event.data['player']).add_flag_pick()
+            player = self.zserv.get_player(event.data['player'])
         except ValueError:
             es = "Received a flag pick event for non-existent player [%s]"
             log(es % (event.data['player']))
+            return
+        player.add_flag_pick()
         player.set_has_flag(True)
 
     def handle_map_change_event(self, event):

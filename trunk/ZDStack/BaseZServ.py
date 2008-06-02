@@ -1,4 +1,6 @@
 import os
+import logging
+
 from decimal import Decimal
 from datetime import datetime
 from threading import Timer
@@ -6,7 +8,7 @@ from subprocess import Popen, PIPE
 
 from pyfileutils import write_file
 
-from ZDStack import HOSTNAME, log, debug
+from ZDStack import HOSTNAME, log
 from ZDStack.Utils import yes, no
 from ZDStack.Dictable import Dictable
 
@@ -33,19 +35,20 @@ class BaseZServ:
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.keep_spawning = False
         self.reload_config(config)
+        self.zserv = None
         self.pid = None
         self.pre_spawn_funcs = []
         self.post_spawn_funcs = []
         self.extra_exportables_funcs = []
 
     def reload_config(self, config):
-        debug()
+        logging.getLogger('').info('')
         self.load_config(config)
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
 
     def load_config(self, config):
-        debug()
+        logging.getLogger('').info('')
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
@@ -55,22 +58,26 @@ class BaseZServ:
                     ('iwad', 'waddir', 'iwaddir', 'port', 'maps_to_remember')
         for mandatory_option in mandatory_options:
             if mandatory_option not in config:
-                es = "Could not find option '%s' in configuration"
-                raise ValueError(es % (mandatory_option))
+                es = "%s: Could not find option '%s' in configuration"
+                raise ValueError(es % (self.name, mandatory_option))
         ### CMD-line stuff
         if not os.path.isdir(config['iwaddir']):
-            raise ValueError("IWAD dir %s is not valid" % (config['iwaddir']))
+            es = "%s: IWAD dir %s is not valid"
+            raise ValueError(es % (self.name, config['iwaddir']))
         if not os.path.isdir(config['waddir']):
-            raise ValueError("WAD dir %s is not valid" % (config['waddir']))
+            es = "%s: WAD dir %s is not valid"
+            raise ValueError(es % (self.name, config['waddir']))
         if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
-            raise ValueError("Could not find IWAD %s" % (config['iwad']))
+            es = "%s: Could not find IWAD %s"
+            raise ValueError(es % (config['iwad']))
         self.wads = []
         if 'wads' in config and config['wads']:
             wads = [x.strip() for x in config['wads'].split(',')]
             for wad in wads:
                 wadpath = os.path.join(config['waddir'], wad)
                 if not os.path.isfile(wadpath):
-                    raise ValueError("WAD [%s] not found" % (wad))
+                    es = "%s: WAD [%s] not found"
+                    raise ValueError(es % (self.name, wad))
             self.wads = wads
         self.iwaddir = config['iwaddir']
         self.waddir = config['waddir']
@@ -78,9 +85,9 @@ class BaseZServ:
         self.iwad = os.path.join(self.iwaddir, self.base_iwad)
         self.port = int(config['port'])
         self.maps_to_remember = int(config['maps_to_remember'])
-        self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad', self.iwad,
-                    '-port', str(self.port), '-cfg', self.configfile, '-clog',
-                    '-log']
+        self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad',
+                    self.iwad, '-port', str(self.port), '-cfg',
+                    self.configfile, '-clog', '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
         ### other mandatory stuff
@@ -204,7 +211,7 @@ class BaseZServ:
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
     def get_configuration(self):
-        debug()
+        logging.getLogger('').info('')
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
         template += 'set log_disposition "0"\n'
@@ -231,7 +238,7 @@ class BaseZServ:
         else:
             template += 'set force_password "0"\n'
         if self.deathlimit:
-            template += 'set deathlimit "%s"\n' % (self.deathlimit)
+            template += 'set sv_deathlimit "%s"\n' % (self.deathlimit)
         if self.spam_window:
             template += 'set spam_window "%s"\n' % (self.spam_window)
         if self.spam_limit:
@@ -285,43 +292,46 @@ class BaseZServ:
     def watch_zserv(self, set_timer=True):
         if not self.keep_spawning:
             return
-        if self.zserv.poll():
+        x = self.zserv.poll()
+        if x:
+            logging.getLogger('').info('Poll: %s' % (x))
             for func, args, kwargs in self.post_spawn_funcs:
                 func(*args, **kwargs)
             self.clean_up_after_zserv()
-        debug("Acquiring spawn lock [%s]" % (self.name))
-        self.zdstack.spawn_lock.acquire()
-        try:
             self.spawn_zserv()
-        finally:
-            self.zdstack.spawn_lock.release()
-        if self.set_timer == True:
+        if set_timer == True:
             Timer(.5, self.watch_zserv).start()
 
     def spawn_zserv(self):
-        debug()
-        curdir = os.getcwd()
-        os.chdir(self.homedir)
-        for func, args, kwargs in self.pre_spawn_funcs:
-            func(*args, **kwargs)
-        log("Spawning [%s]" % (' '.join(self.cmd)))
-        self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
-                           bufsize=0, close_fds=True)
-        self.pid = self.zserv.pid
-        os.chdir(curdir)
+        logging.getLogger('').info('Acquiring spawn lock [%s]' % (self.name))
+        self.zdstack.spawn_lock.acquire()
+        try:
+            curdir = os.getcwd()
+            os.chdir(self.homedir)
+            for func, args, kwargs in self.pre_spawn_funcs:
+                func(*args, **kwargs)
+            log("Spawning [%s]" % (' '.join(self.cmd)))
+            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
+                               bufsize=0, close_fds=True)
+            self.send_to_zserv('players')
+            self.pid = self.zserv.pid
+            os.chdir(curdir)
+        finally:
+            self.zdstack.spawn_lock.release()
 
     def clean_up_after_zserv(self):
-        debug()
+        logging.getLogger('').info('')
         self.pid = None
 
     def start(self):
-        debug()
+        logging.getLogger('').info('')
         self.pid = None
         self.keep_spawning = True
+        self.spawn_zserv()
         self.watch_zserv()
 
     def stop(self, signum=15):
-        debug()
+        logging.getLogger('').info('')
         self.keep_spawning = False
         out = True
         if self.pid is not None:
@@ -335,17 +345,12 @@ class BaseZServ:
         return out
 
     def restart(self, signum=15):
-        debug()
+        logging.getLogger('').info('')
         self.stop(signum)
         self.start()
 
-    def send_to_zserv(self, message):
-        debug()
-        self.zserv.stdin.write(message)
-        self.zserv.stdin.flush()
-
     def export(self):
-        debug()
+        logging.getLogger('').info('')
         d = {'name': self.name,
              'type': self.type,
              'port': self.port,

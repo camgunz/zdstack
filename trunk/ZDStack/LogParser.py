@@ -1,18 +1,23 @@
 import re
 import time
+import logging
+
 from datetime import datetime
 from collections import deque
 
 from ZDStack.LogEvent import LogEvent
+from ZDStack.LineParser import LineParser
+from ZDStack.ClientRegexps import Regexps as ClientRegexps
+from ZDStack.ServerRegexps import Regexps as ServerRegexps
 
 class LogParser:
 
     def __init__(self, name, logtype='server'):
         self.name = name
-        if type == 'server':
-            from ZDStack.ServerRegexps import *
-        elif type == 'client':
-            from ZDStack.ClientRegexps import *
+        if logtype == 'server':
+            self.lineparser = LineParser(ServerRegexps)
+        elif logtype == 'client':
+            self.lineparser = LineParser(ClientRegexps)
         else:
             raise ValueError("Unsupported log type [%s]" % (logtype))
 
@@ -33,7 +38,7 @@ class LogParser:
 
 class ConnectionLogParser(LogParser):
 
-    def __init__(self):
+    def __init__(self, log_type='server'):
         self.name = "Connection Log Parser"
 
     def parse(self, data):
@@ -75,7 +80,7 @@ class ConnectionLogParser(LogParser):
 
 class GeneralLogParser(LogParser):
 
-    def __init__(self):
+    def __init__(self, log_type='server'):
         LogParser.__init__(self, "General Log Parser")
 
     def parse(self, data):
@@ -85,28 +90,10 @@ class GeneralLogParser(LogParser):
         leftovers = []
         while len(lines):
             line = lines.popleft()
-            tokens = line.split(' ')
-            death_event = line_to_death_event(now, line)
-            connection_event = line_to_connection_event(now, line)
-            join_event = line_to_join_event(now, line)
-            rcon_event = line_to_rcon_event(now, line)
-            flag_event = line_to_flag_event(now, line)
-            map_event = line_to_map_event(now, line)
             if line == 'General logging off':
                 events.append(LogEvent(now, 'log_roll', {'log': 'general'}))
-            elif death_event:
-                events.append(death_event)
-            elif connection_event:
-                events.append(connection_event)
-            elif join_event:
-                events.append(join_event)
-            elif rcon_event:
-                events.append(rcon_event)
-            elif flag_event:
-                events.append(flag_event)
-            elif map_event:
-                events.append(map_event)
-            elif line.startswith('<') and '>' in line and ':' in line:
+            events.extend(self.lineparser.get_event(now, line))
+            if line.startswith('<') and '>' in line:
                 line_type = 'message'
                 ###
                 # There are certain strings that make it impossible to
@@ -132,6 +119,6 @@ class GeneralLogParser(LogParser):
                              'possible_player_names': possible_player_names}
                 e = LogEvent(now, 'message', line_data)
                 events.append(e)
-            else:
+            if not events:
                 events.append(LogEvent(now, 'junk', {'data': line}))
         return (events, '\n'.join(leftovers))

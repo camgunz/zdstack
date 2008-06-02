@@ -1,4 +1,5 @@
-from ZDStack import debug
+import logging
+
 from ZDStack.CTFZServ import CTFZServ
 from ZDStack.TeamDMZServ import TeamDMZServ
 from ZDStack.FFAZServ import FFAZServ
@@ -15,41 +16,28 @@ game_mode_dict = {'coop': (CoopZServ, GeneralZServStatsMixin),
                   'teamdm': (TeamDMZServ, TeamZServStatsMixin),
                   'ctf': (CTFZServ, CTFTeamZServStatsMixin)}
 
-def get_zserv_class(game_mode, memory_slots, enable_stats=False,
-                    log_ips=False, load_plugins=False):
+def get_zserv_class(game_mode, memory_slots, log_ips=False, load_plugins=False):
     if game_mode not in game_mode_dict:
         raise ValueError("Invalid game mode [%s]" % (game_mode))
     zs_class, mixin_class = game_mode_dict[game_mode]
     s = "Got ZS [%s], MIXIN [%s] for game_mode [%s]"
-    debug(s % (zs_class, mixin_class, game_mode))
+    logging.getLogger('').info(s % (zs_class, mixin_class, game_mode))
     class stats_mixin(mixin_class):
         def __init__(self):
-            mixin_class.__init__(self, memory_slots)
-    if enable_stats:
-        if log_ips:
-            class StatsAndIPEnabledZServ(zs_class, stats_mixin, CZSM):
-                def __init__(self, name, config, zdstack):
-                    zs_class.__init__(self, name, config, zdstack)
-                    stats_mixin.__init__(self, load_plugins=load_plugins)
-                    CZSM.__init__(self)
-            return StatsAndIPEnabledZServ
-        else:
-            class StatsEnabledZServ(zs_class, stats_mixin):
-                def __init__(self, name, config, zdstack):
-                    zs_class.__init__(self, name, config, zdstack)
-                    stats_mixin.__init__(self, load_plugins=load_plugins)
-            return StatsEnabledZServ
-    elif log_ips:
-            class IPEnabledZServ(zs_class, stats_mixin):
-                def __init__(self, name, config, zdstack):
-                    zs_class.__init__(self, name, config, zdstack)
-                    CZSM.__init__(self)
-            return IPEnabledZServ
-    else:
-        class PlainZServ(zs_class):
+            mixin_class.__init__(self, memory_slots, load_plugins=load_plugins)
+    if log_ips:
+        class StatsAndIPEnabledZServ(zs_class, stats_mixin, CZSM):
             def __init__(self, name, config, zdstack):
                 zs_class.__init__(self, name, config, zdstack)
-        return PlainZServ
+                stats_mixin.__init__(self)
+                CZSM.__init__(self)
+        return StatsAndIPEnabledZServ
+    else:
+        class StatsEnabledZServ(zs_class, stats_mixin):
+            def __init__(self, name, config, zdstack):
+                zs_class.__init__(self, name, config, zdstack)
+                stats_mixin.__init__(self)
+        return StatsEnabledZServ
 
 def get_fake_client_zserv_class(game_mode):
     if game_mode not in game_mode_dict:

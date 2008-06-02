@@ -1,13 +1,14 @@
+import logging
+
 from base64 import b64decode
-from ZDStack import get_database, log, debug
+from ZDStack import get_database
 
 def save_player_ip(player_name, encoded_player_name, player_ip):
-    debug("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
-    return # for debugging
+    logging.getLogger('').info("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
     db = get_database()
     if not db:
         es = "PyXSE not found, Player => IP matching unavailable"
-        log(es)
+        logging.getLogger('').info(es)
         return
     rs = db.select('players',
                    where=[lambda r: r['name'] == encoded_player_name])
@@ -29,7 +30,7 @@ def save_player_ip(player_name, encoded_player_name, player_ip):
                    where=[lambda r: r['name'] == encoded_player_name])
 
 def get_possible_aliases(name, encoded_name, ip_addresses=[]):
-    debug()
+    logging.getLogger('').info('')
     db = get_database()
     if not db:
         log("PyXSE not found, Player => IP Logging disabled")
@@ -47,8 +48,8 @@ def get_possible_aliases(name, encoded_name, ip_addresses=[]):
             addresses.add(address)
     else:
         es = "Found new player [%s], encoded: [%s], all names: [%s]"
-        debug(es % (name, encoded_name,
-                  ', '.join([x['name'] for x in db.select('players')])))
+        nl = ', '.join([x['name'] for x in db.select('players')])
+        logging.getLogger('').info(es % (name, encoded_name, nl))
     number_of_addresses = len(addresses)
     if number_of_addresses:
         rs = db.select('players', where=[get_ip_match_func(addresses)])

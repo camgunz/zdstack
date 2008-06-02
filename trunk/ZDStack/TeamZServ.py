@@ -1,6 +1,7 @@
+import logging
+
 from decimal import Decimal
 
-from ZDStack import debug
 from ZDStack.DMZServ import DMZServ
 
 class TeamZServ(DMZServ):
@@ -15,7 +16,7 @@ class TeamZServ(DMZServ):
         self.extra_exportables_funcs.append((add_team_info, [], {}))
 
     def load_config(self, config):
-        debug()
+        logging.getLogger('').info('')
         def is_valid(x):
             return x in config and config[x]
         DMZServ.load_config(self, config)
@@ -46,7 +47,7 @@ class TeamZServ(DMZServ):
         config['scorelimit'] = self.scorelimit
 
     def get_configuration(self):
-        debug()
+        logging.getLogger('').info('')
         template = DMZServ.get_configuration(self) + 'set teamplay "1"\n'
         if self.max_teams:
             template += 'set maxteams "%s"\n' % (self.max_teams)

@@ -1,3 +1,5 @@
+import re
+from ZDStack.LogEvent import LogEvent
 
 NUMS_TO_WEAPONS = {'1': 'fist', '2': 'chainsaw', '3': 'pistol',
                    '4': 'shotgun', '5': 'super shotgun', '6': 'chaingun',
@@ -15,6 +17,12 @@ REGEXPS_AND_COMMANDS = \
      (r"(?P<players>\d\d|\d) players$", 'number_of_players'),
      (r'(?P<player_num>\d\d|\d):  (?P<player_name>.*) \((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d))',
       'player_line')]
+
+REGEXPS_AND_WEAPONS = []
+REGEXPS_AND_DEATHS = []
+REGEXPS_AND_CONNECTIONS = []
+REGEXPS_AND_JOINS = []
+REGEXPS_AND_FLAGS = []
 
 def line_to_death_event(event_dt, line):
     for regexp, weapon in REGEXPS_AND_WEAPONS:

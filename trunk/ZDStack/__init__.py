@@ -13,7 +13,7 @@ from logging.handlers import TimedRotatingFileHandler
 from pyfileutils import read_file, append_file
 
 from ZDStack.Utils import resolve_file
-from ZDStack.ConfigParser import ConfigParser as CP
+from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 
 __host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
 __hostnames = [x for x in [__host] + __aliases if '.' in x]
@@ -24,7 +24,7 @@ __all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE',
            'DEBUGGING', 'LOGGER', 'TRACER', 'PLUGINS', 'DATEFMT', 'get_logger',
            'load_configparser', 'get_configparser', 'get_zserv_exe',
            'get_database', 'get_logfile', 'get_plugins', 'get_tracer',
-           'set_debugging', 'log', 'debug']
+           'set_debugging', 'log']
 
 HOSTNAME = __hostnames[0]
 CONFIGPARSER = None
@@ -49,14 +49,13 @@ def get_configparser(config_file=None, reload=False):
     return CONFIGPARSER
 
 def load_configparser(config_file=None):
-    cp = CP()
     if config_file is not None:
         config_file = resolve_file(config_file)
         if not os.path.isfile(config_file):
             es = "Configuration file [%s] not found"
             raise ValueError(es % (config_file))
     else:
-        possible_config_files = ['zdstackrc', 'zdstack.ini',
+        possible_config_files = ['./zdstackrc', './zdstack.ini',
                                  '~/.zdstackrc', '~/.zdstack.ini',
                                  '~/.zdstack/zdstackrc',
                                  '~/.zdstack/zdstack.ini',
@@ -68,21 +67,9 @@ def load_configparser(config_file=None):
         if not [y for y in possible_config_files if os.path.isfile(y)]:
             raise ValueError("Could not find a valid configuration file")
         config_file = possible_config_files[0]
-    config_fobj = StringIO(read_file(config_file))
-    sections = []
-    for line in config_fobj.getvalue().splitlines():
-        if re.match(cp.SECTCRE, line):
-            if line in sections:
-                es = "Duplicate section found in config: [%s]"
-                raise ValueError(es % (line))
-            else:
-                sections.append(line)
-    config_fobj.seek(0)
-    cp.readfp(config_fobj)
-    cp.filename = config_file
+    cp = CP(config_file, allow_duplicate_sections=False)
     for section in cp.sections():
         cp.set(section, 'name', section)
-    cp.file = config_file
     return cp
 
 def get_zserv_exe(config_file=None):
@@ -94,9 +81,7 @@ def get_zserv_exe(config_file=None):
         if 'zserv_exe' not in CONFIGPARSER.defaults():
             raise ValueError("Option 'zserv_exe' not found")
         else:
-            zserv_exe = CONFIGPARSER.defaults()['zserv_exe']
-            zserv_exe = os.path.expanduser(zserv_exe)
-            zserv_exe = os.path.abspath(zserv_exe)
+            zserv_exe = resolve_file(CONFIGPARSER.defaults()['zserv_exe'])
             if not os.path.isfile(zserv_exe):
                 raise ValueError("Could not find zserv executable")
             if not os.access(zserv_exe, os.R_OK | os.X_OK):
@@ -139,7 +124,7 @@ def get_plugins(plugins='all', config_file=None):
         if not 'plugin_dir' in d:
             PLUGINS = []
         plugin_dir = d['plugin_dir']
-        if not os.path.isdir(resolve_dir(plugin_dir)):
+        if not os.path.isdir(resolve_file(plugin_dir)):
             raise ValueError("Plugin folder [%s] not found" % (plugin_dir))
         from ZDStack.Plugins import get_plugins
         PLUGINS = get_plugins(plugin_dir)
@@ -163,7 +148,8 @@ def _get_trfh(level, log_string, config_file=None):
             get_logfile(config_file)
     logger = TimedRotatingFileHandler(LOGFILE, when='midnight', backupCount=4)
     formatter = logging.Formatter(fmt=log_string, datefmt=DATEFMT)
-    logger.setLevel(level)
+    # logger.setLevel(level)
+    logger.setLevel(logging.DEBUG)
     logger.setFormatter(formatter)
     return logger
 
@@ -177,8 +163,8 @@ def get_logger(config_file=None):
 def get_tracer(config_file=None):
     global TRACER
     if TRACER is None:
-        format='[%(asctime)s] %(module)s:%(lineno)d %(message)s'
-        TRACER = _get_trfh(logging.INFO, format, config_file)
+        format='[%(asctime)s] %(filename)s:%(module)s:%(lineno)d %(message)s'
+        TRACER = _get_trfh(logging.DEBUG, format, config_file)
     return TRACER
 
 def set_debugging(debugging):
@@ -193,7 +179,4 @@ def set_debugging(debugging):
 
 def log(s):
     logging.getLogger('').info(s)
-
-def debug(s=''):
-    logging.getLogger('').debug(s)
 

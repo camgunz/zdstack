@@ -1,6 +1,6 @@
-from decimal import Decimal
+import logging
 
-from ZDStack import debug
+from decimal import Decimal
 
 from ZDStack.TeamZServ import TeamZServ
 
@@ -11,7 +11,7 @@ class CTFZServ(TeamZServ):
         TeamZServ.__init__(self, name, 'ctf', config, zdstack)
 
     def get_configuration(self):
-        debug()
+        logging.getLogger('').info('')
         configuration = TeamZServ.get_configuration(self)
         configuration += 'set ctf "1"\n'
         return configuration

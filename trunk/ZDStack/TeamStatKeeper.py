@@ -1,23 +1,27 @@
+import logging
+
 from ZDStack import log
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
 class TeamStatKeeper(BaseStatKeeper):
 
     def __init__(self, stat_container=None):
+        logging.getLogger('').debug('')
         BaseStatKeeper.__init__(self, stat_container)
         self.set_team(stat_container)
-        # self._log_items('__init__')
 
     def initialize(self):
-        BaseStatKeeper.initialize(self)
+        logging.getLogger('').debug('')
         self.map = None
+        BaseStatKeeper.initialize(self)
 
     def _log_items(self, x):
         s = "TeamStatKeeper: x: items: [%s]"
-        log(s % (', '.join([str(x) for x in self.items()])))
+        t = (', '.join([str(x) for x in self.items()]))
+        logging.getLogger('').debug(s % t)
 
     def set_map(self, map):
-        log("TeamStatKeeper: set_team")
+        logging.getLogger('').debug('')
         # self._log_items('pre-set_map')
         self.map = map
         if self.team is None:
@@ -31,7 +35,7 @@ class TeamStatKeeper(BaseStatKeeper):
         # self._log_items('post-set_map')
 
     def set_team(self, team):
-        log("TeamStatKeeper: set_team")
+        logging.getLogger('').debug('')
         # self._log_items('pre-set_team')
         self.team = team
         if self.team is not None:

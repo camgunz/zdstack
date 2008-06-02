@@ -13,7 +13,6 @@ def timedelta_in_seconds(x):
     return (x.days * 86400) + x.seconds
 
 def start_thread(target, name=None, daemonic=True):
-    debug("Starting thread [%s]" % (name))
     t = Thread(target=target, name=name)
     t.setDaemon(daemonic)
     t.start()

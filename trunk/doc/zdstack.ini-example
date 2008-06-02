@@ -9,10 +9,10 @@ rootfolder = /var/zdstack
 zserv_exe = /usr/local/bin/zserv
 ;;; The port on which ZDStack should listen
 zdstack_port = 8080
+;;; The RPC protocol to use, either xml-rpc or json-rpc
+rpc_protocol = xml-rpc
 ;;; The folder in which to create the Player => IP Database
 database_folder = /var/zdstack/database
-;;; Whether or not to enable stat collection
-enable_stats = yes
 ;;; Whether or not to enable Player IP logging
 enable_ip_logging = yes
 ;;; Whether or not to load plugins

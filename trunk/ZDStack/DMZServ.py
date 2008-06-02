@@ -1,4 +1,5 @@
-from ZDStack import debug
+import logging
+
 from ZDStack.BaseZServ import BaseZServ
 
 class DMZServ(BaseZServ):
@@ -8,7 +9,7 @@ class DMZServ(BaseZServ):
         BaseZServ.__init__(self, name, type, config, zdstack)
 
     def load_config(self, config):
-        debug()
+        logging.getLogger('').info('')
         def is_valid(x):
             return x in config and config[x]
         BaseZServ.load_config(self, config)
@@ -19,6 +20,6 @@ class DMZServ(BaseZServ):
         self.config['fraglimit'] = self.fraglimit
 
     def get_configuration(self):
-        debug()
+        logging.getLogger('').info('')
         return BaseZServ.get_configuration(self) + 'set deathmatch "1"\n'
 
