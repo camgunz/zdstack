@@ -2,7 +2,7 @@
 
 = Installation =
 
-Grab the ZDWebStats bundle from svn (svn co https://zdstack.googlecode.com
+Grab the ZDWebStats bundle from svn (svn checkout http://zdstack.googlecode.com/svn/zdwebstats)
 
 = Configuration =
 
@@ -28,17 +28,19 @@ fastcgi.server = (
 url.rewrite-once = (
   "^/favicon.ico$" => "/static/favicon.ico",
   "^/static/(.*)$" => "/$1",
-  "^/servers/(.*)$" => "/servers/$1",
+  "^/servers/(.*)$" => "/servers/$1"
 )
 
 }}}
 
-Add your content here.
-
-
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+= zdstats.ini =
+{{{
+[DEFAULT]
+zdstack_address = http://blah.blah.blah.blah:port
+zdstack_protocol = xmlrpc
+zdstack_username = admin
+zdstack_password = pacman2000
+template_dir = /var/www/zdstats/templates
+title = Servers on Greatest Servers
+heading = Greatest Servers
+}}}
