@@ -4,7 +4,7 @@
 
 Grab the ZDWebStats bundle from svn (svn checkout http://zdstack.googlecode.com/svn/zdwebstats)
 
-= Configuration =
+= Folder Structure =
 
   * /var/www
     * /zdwebstats
@@ -33,7 +33,7 @@ url.rewrite-once = (
 
 }}}
 
-= zdstats.ini =
+= ZDWebStats Configuration File =
 {{{
 [DEFAULT]
 zdstack_address = http://blah.blah.blah.blah:port
