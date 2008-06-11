@@ -1,0 +1,11 @@
+#summary Todo list for the next (after current, see [http://code.google.com/p/zdstack/wiki/TODO TODO] for that list) release of ZDStack
+
+ * Add authentication
+
+ * Add client-log parse utility and !ZDWebStats interface
+
+ * Add global ban/whitelist
+
+ * Add CSV export to !ZDWebStats
+
+ * Add Connection Quality stats
