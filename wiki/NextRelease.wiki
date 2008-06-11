@@ -1,4 +1,4 @@
-#summary Todo list for the next (after current, see [http://code.google.com/p/zdstack/wiki/TODO TODO] for that list) release of ZDStack
+#summary Todo list for the next (after current) release of ZDStack
 
  * Add authentication
 
