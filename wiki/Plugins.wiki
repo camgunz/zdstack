@@ -2,14 +2,14 @@
 
 = Introduction =
 
-ZDStack allows for the use of plugins, which are individual functions whose signature matches:
+ZDStack allows for the use of plugins, which are designed to allow admins to customize the dynamic behavior of their ZServ instances.  Plugins themselves are individual functions whose signature matches:
 
 {{{
 def plugin_func(event, zserv):
     # do stuff
 }}}
 
-Plugins are designed to allow admins to customize the dynamic behavior of their ZServ instances.
+*Be aware!*  The ZDStack API is *not* finalized and *will* change.  The changes, however, will be minimal and shouldn't render plugins completely useless; only minor tweaks should be required to keep a plugin current.
 
 = Usage/Installation =
 
