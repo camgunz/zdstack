@@ -9,3 +9,5 @@
  * Add CSV export to !ZDWebStats
 
  * Add Connection Quality stats
+
+This will be version 0.9.1.
