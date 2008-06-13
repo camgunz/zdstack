@@ -9,9 +9,9 @@
 
 = Version 0.9.2 =
  * Add authentication
- * Add client-log parse utility and !ZDWebStats interface
+ * Add client-log parse utility and ZDWebStats interface
  * Add global ban/whitelist
- * Add CSV export to !ZDWebStats
+ * Add CSV export to ZDWebStats
  * Add ConnectionQualityStatistics
 
 = Version 0.9.3 =
