@@ -25,6 +25,13 @@ REGEXPS_AND_JOINS = []
 REGEXPS_AND_FLAGS = []
 
 def line_to_death_event(event_dt, line):
+    """If line represents a death event, returns a death Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, weapon in REGEXPS_AND_WEAPONS:
         match = re.match(regexp, line)
         if match:
@@ -39,6 +46,13 @@ def line_to_death_event(event_dt, line):
             return LogEvent(event_dt, 'death', d)
 
 def line_to_connection_event(event_dt, line):
+    """If line represents a connection event, returns a connection Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, x in REGEXPS_AND_CONNECTIONS:
         match = re.match(regexp, line)
         if match:
@@ -46,6 +60,13 @@ def line_to_connection_event(event_dt, line):
             return LogEvent(event_dt, x, d)
 
 def line_to_join_event(event_dt, line):
+    """If line represents a join event, returns a join Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, join in REGEXPS_AND_JOINS:
         match = re.match(regexp, line)
         if match:
@@ -55,6 +76,13 @@ def line_to_join_event(event_dt, line):
             return LogEvent(event_dt, join, d)
 
 def line_to_rcon_event(event_dt, line):
+    """If line represents a RCON event, returns a RCON Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, rcon in REGEXPS_AND_RCONS:
         match = re.match(regexp, line)
         if match:
@@ -64,18 +92,39 @@ def line_to_rcon_event(event_dt, line):
             return LogEvent(event_dt, rcon, d)
 
 def line_to_flag_event(event_dt, line):
+    """If line represents a flag event, returns a flag Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, flag in REGEXPS_AND_FLAGS:
         match = re.match(regexp, line)
         if match:
             return LogEvent(event_dt, flag, {'player': match.group(1)})
 
 def line_to_map_event(event_dt, line):
+    """If line represents a map change event, returns a map change Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     match = re.match('^map(\d\d): (.*)$', line)
     if match:
         d = {'name': match.group(2), 'number': int(match.group(1))}
         return LogEvent(event_dt, 'map_change', d)
 
 def line_to_command_event(event_dt, line):
+    """If line represents a command event, returns a command Event.
+
+    event_dt: a datetime instance representing the time at which the
+              event occurred.
+    line:     a string representing the line to parse.
+
+    """
     for regexp, cmd in REGEXPS_AND_COMMANDS:
         match = re.match(regexp, line)
         if match:

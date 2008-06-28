@@ -11,7 +11,17 @@ from ZDStack.BaseStatKeeper import BaseStatKeeper
 
 class BasePlayer(BaseStatKeeper):
 
+    """Base Player class, holds stats and info for a player."""
+
     def __init__(self, name, zserv, ip=None):
+        """Initializes a BasePlayer.
+
+        name:  a string representing the name of the player
+        zserv: a ZServ instance
+        ip:    optional, a string representing the IP address of the
+               player.
+
+        """
         logging.getLogger('').debug('name: [%s]' % (name))
         BaseStatKeeper.__init__(self)
         self.name = name
@@ -47,6 +57,7 @@ class BasePlayer(BaseStatKeeper):
         ###
 
     def initialize(self):
+        """Initializes player stats."""
         logging.getLogger('').debug('')
         self.adversaries = set()
         self.weapons = set()
@@ -63,6 +74,11 @@ class BasePlayer(BaseStatKeeper):
         self.rcon_accesses = 0
 
     def add_adversary(self, adversary):
+        """Adds an adversary to frag stats.
+
+        adversary: a string representing the name of an adversary.
+
+        """
         logging.getLogger('').debug('')
         self.adversaries.add(adversary)
         for a in self.adversaries:
@@ -76,6 +92,11 @@ class BasePlayer(BaseStatKeeper):
                 self.player_weapon_deaths[a] = {}.fromkeys(self.weapons, 0)
 
     def add_weapon(self, weapon):
+        """Adds a weapon to frag stats.
+
+        weapon: a string representing the name of the weapon.
+
+        """
         logging.getLogger('').debug('')
         self.weapons.add(weapon)
         for weapon in self.weapons:
@@ -91,6 +112,11 @@ class BasePlayer(BaseStatKeeper):
                     self.player_weapon_deaths[player][weapon] = 0
 
     def add_frag(self, frag):
+        """Adds a frag to frag stats.
+
+        frag: a Frag instance.
+
+        """
         logging.getLogger('').debug('')
         self.total_frags += 1
         if not frag.weapon in self.weapons:
@@ -104,6 +130,11 @@ class BasePlayer(BaseStatKeeper):
             self.stat_container.add_frag(frag)
 
     def add_death(self, death):
+        """Adds a death to frag stats.
+
+        death: a Frag instance.
+
+        """
         logging.getLogger('').debug('')
         self.total_deaths += 1
         if not death.weapon in self.weapons:
@@ -117,6 +148,7 @@ class BasePlayer(BaseStatKeeper):
             self.stat_container.add_death(death)
 
     def exportables(self):
+        """Returns a list of strings representing exportable values."""
         logging.getLogger('').debug('')
         out = []
         for x in BaseStatKeeper.exportables(self):
@@ -136,6 +168,11 @@ class BasePlayer(BaseStatKeeper):
         return out
 
     def set_map(self, map):
+        """Sets this player's map.
+
+        map: a Map instance to set.
+
+        """
         logging.getLogger('').debug('')
         self.map = map
         self.stat_container = self.map
@@ -147,6 +184,7 @@ class BasePlayer(BaseStatKeeper):
         return "Player(%s)" % (self.name)
 
     def get_frag_dict(self):
+        """Returns a dict of frag stats."""
         d = {'adversaries': {}.fromkeys(self.adversaries),
              'weapons': {}.fromkeys(self.weapons),
              'frags': self.total_frags,
@@ -175,11 +213,13 @@ class BasePlayer(BaseStatKeeper):
         return d
 
     def export(self):
+        """Exports this player as a dict of info and stats."""
         d = BaseStatKeeper.export(self)
         d.update(self.get_frag_dict())
         return d
 
     def export_summary(self):
+        """Exports a summary of player stats as a dict."""
         ###
         # Values:
         #   Player, Overall Frag/Death Ratio,

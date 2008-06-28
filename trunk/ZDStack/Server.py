@@ -14,7 +14,16 @@ from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 class Server:
 
+    """Server represents a daemonized process serving network requests."""
+
     def __init__(self, config_parser, debugging=False):
+        """Initializes a Server instance.
+
+        config_parser: a ZSConfigParser instance containing
+                       configuration options and values.
+        debugging:     a boolean, whether or not debugging is enabled.
+
+        """
         set_debugging(debugging)
         self.config = config_parser
         self.config_file = config_parser.filename
@@ -29,6 +38,12 @@ class Server:
         signal.signal(signal.SIGHUP, self.handle_signal)
 
     def load_config(self, reload=False):
+        """Loads the config.
+
+        reload: a boolean, whether or not the configuration is being
+                reloaded.
+
+        """
         logging.getLogger('').debug('')
         self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
@@ -60,12 +75,14 @@ class Server:
         self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
 
     def reload_config(self):
+        """Reloads the configuration."""
         logging.getLogger('').debug('')
         self.config = get_configparser(reload=True,
                                        config_file=self.config_file)
         self.load_config(reload=True)
 
     def startup(self):
+        """Starts the server up."""
         logging.getLogger('').debug('')
         self.rpc_server = self.rpc_class((HOSTNAME, self.port))
         self.register_functions()
@@ -77,6 +94,7 @@ class Server:
             self.rpc_server.handle_request()
 
     def shutdown(self, signum=15):
+        """Shuts the server down."""
         logging.getLogger('').debug('')
         self.stop()
         self.keep_serving = False
@@ -87,20 +105,24 @@ class Server:
         sys.exit(0)
 
     def start(self):
+        """Starts serving requests."""
         logging.getLogger('').debug('')
         raise NotImplementedError()
 
     def stop(self):
+        """Stops serving requests."""
         logging.getLogger('').debug('')
         raise NotImplementedError()
 
     def restart(self):
+        """Restarts the server."""
         logging.getLogger('').debug('')
         self.stop()
         self.start()
         return True
 
     def handle_signal(self, signum, frame):
+        """Handles a signal."""
         logging.getLogger('').debug('')
         if signum == signal.SIGHUP:
             self.reload_config()
@@ -108,6 +130,7 @@ class Server:
             self.shutdown(signum=signum)
 
     def register_functions(self):
+        """Registers public XML-RPC functions."""
         logging.getLogger('').debug('')
         self.rpc_server.register_function(self.get_status)
         self.rpc_server.register_function(self.get_logfile)
@@ -117,10 +140,12 @@ class Server:
         self.rpc_server.register_function(self.restart)
 
     def get_status(self):
+        """Returns the current status of the server."""
         logging.getLogger('').debug('')
         return self.status
 
     def get_logfile(self):
+        """Returns the contents of this server's logfile."""
         logging.getLogger('').debug('')
         return read_file(logfile)
 

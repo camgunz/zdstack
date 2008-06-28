@@ -13,6 +13,13 @@ from ZDStack.ServerRegexps import Regexps as ServerRegexps
 class LogParser:
 
     def __init__(self, name, logtype='server'):
+        """Initializes a LogParser.
+
+        name:    a string representing the name of this LogParser.
+        logtype: a string representing the type of log to parse.
+                 Valid options include 'server' and 'client'.
+
+        """
         self.name = name
         if logtype == 'server':
             self.lineparser = LineParser(ServerRegexps)
@@ -31,17 +38,44 @@ class LogParser:
         return self.parse(data)
 
     def parse(self, data):
+        """Parses data into LogEvents.
+
+        data: a string of log data.
+
+        Returns a 2-Tuple (list of LogEvents, string of leftover data)
+
+        """
         raise NotImplementedError()
 
     def split_data(self, data):
+        """Splits data into tokens that might be events.
+
+        data: a string of log data.
+
+        Returns a deque of split data.
+
+        """
         return deque([x for x in data.splitlines() if x])
 
 class ConnectionLogParser(LogParser):
 
     def __init__(self, log_type='server'):
+        """Initializes a ConnectionLogParser.
+
+        logtype: a string representing the type of log to parse.
+                 Valid options include 'server' and 'client'.
+
+        """
         self.name = "Connection Log Parser"
 
     def parse(self, data):
+        """Parses data into LogEvents.
+
+        data: a string of log data.
+
+        Returns a 2-Tuple (list of LogEvents, string of leftover data)
+
+        """
         lines = self.split_data(data)
         events = []
         leftovers = []
@@ -81,9 +115,22 @@ class ConnectionLogParser(LogParser):
 class GeneralLogParser(LogParser):
 
     def __init__(self, log_type='server'):
+        """Initializes a GeneralLogParser.
+
+        logtype: a string representing the type of log to parse.
+                 Valid options include 'server' and 'client'.
+
+        """
         LogParser.__init__(self, "General Log Parser")
 
     def parse(self, data):
+        """Parses data into LogEvents.
+
+        data: a string of log data.
+
+        Returns a 2-Tuple (list of LogEvents, string of leftover data)
+
+        """
         now = datetime.now()
         lines = self.split_data(data)
         events = []
@@ -122,3 +169,4 @@ class GeneralLogParser(LogParser):
             if not events:
                 events.append(LogEvent(now, 'junk', {'data': line}))
         return (events, '\n'.join(leftovers))
+

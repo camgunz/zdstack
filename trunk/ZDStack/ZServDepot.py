@@ -17,6 +17,17 @@ game_mode_dict = {'coop': (CoopZServ, GeneralZServStatsMixin),
                   'ctf': (CTFZServ, CTFTeamZServStatsMixin)}
 
 def get_zserv_class(game_mode, memory_slots, log_ips=False, load_plugins=False):
+    """Returns a ZServ class.
+
+    game_mode:    a string representing the game mode, valid options
+                  are in game_mode_dict.keys()
+    memory_slots: an int representing the number of games to remember
+    log_ips:      a boolean, whether or not to log IP addresses in the
+                  Player => IP database
+    load_plugins: a boolean, whether or not to load plugins
+
+
+    """
     if game_mode not in game_mode_dict:
         raise ValueError("Invalid game mode [%s]" % (game_mode))
     zs_class, mixin_class = game_mode_dict[game_mode]
@@ -40,6 +51,12 @@ def get_zserv_class(game_mode, memory_slots, log_ips=False, load_plugins=False):
         return StatsEnabledZServ
 
 def get_fake_client_zserv_class(game_mode):
+    """Returns a Fake ZServ class used to parse client logs.
+
+    game_mode:    a string representing the game mode, valid options
+                  are in game_mode_dict.keys()
+
+    """
     if game_mode not in game_mode_dict:
         raise ValueError("Invalid game mode [%s]" % (game_mode))
     zs_class, mixin_class = game_mode_dict[game_mode]

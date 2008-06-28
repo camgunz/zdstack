@@ -14,6 +14,16 @@ from ZDStack.Dictable import Dictable
 
 class BaseZServ:
 
+    """BaseZServ represents the base ZServ class.
+
+    BaseZServ does the following:
+        * Handles configuration of the zserv process
+        * Provides control over the zserv process
+        * Provides a method to communicate with the zserv process
+        * Exports server configuration information
+
+    """
+
     def __init__(self, name, type, config, zdstack):
         """Initializes a BaseZServ instance.
 
@@ -42,12 +52,22 @@ class BaseZServ:
         self.extra_exportables_funcs = []
 
     def reload_config(self, config):
+        """Reloads the config for the ZServ.
+
+        config: a dict of configuration options and values.
+
+        """
         logging.getLogger('').info('')
         self.load_config(config)
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
 
     def load_config(self, config):
+        """Loads this ZServ's config.
+
+        config: a dict of configuration options and values.
+
+        """
         logging.getLogger('').info('')
         def is_valid(x):
             return x in config and config[x]
@@ -290,6 +310,13 @@ class BaseZServ:
         return template # % self.config
 
     def watch_zserv(self, set_timer=True):
+        """Watches the zserv process, restarting it if it crashes.
+
+        set_timer: a Boolean that, if True, sets a timer to re-run
+                   this method half a second after completion.  True
+                   by default.
+
+        """
         if not self.keep_spawning:
             return
         x = self.zserv.poll()
@@ -303,6 +330,12 @@ class BaseZServ:
             Timer(.5, self.watch_zserv).start()
 
     def spawn_zserv(self):
+        """Starts the zserv process.
+        
+        This keeps a reference to the running zserv process in
+        self.zserv.
+        
+        """
         logging.getLogger('').info('Acquiring spawn lock [%s]' % (self.name))
         self.zdstack.spawn_lock.acquire()
         try:
@@ -313,17 +346,19 @@ class BaseZServ:
             log("Spawning [%s]" % (' '.join(self.cmd)))
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
                                bufsize=0, close_fds=True)
-            self.send_to_zserv('players')
+            self.send_to_zserv('players') # keeps the process from CPU spinning
             self.pid = self.zserv.pid
             os.chdir(curdir)
         finally:
             self.zdstack.spawn_lock.release()
 
     def clean_up_after_zserv(self):
+        """Cleans up after the zserv process exits."""
         logging.getLogger('').info('')
         self.pid = None
 
     def start(self):
+        """Starts the zserv process, restarting it if it crashes."""
         logging.getLogger('').info('')
         self.pid = None
         self.keep_spawning = True
@@ -331,6 +366,12 @@ class BaseZServ:
         self.watch_zserv()
 
     def stop(self, signum=15):
+        """Stops the zserv process.
+
+        signum: an int representing the signal number to send to the
+                zserv process.  15 (TERM) by default.
+
+        """
         logging.getLogger('').info('')
         self.keep_spawning = False
         out = True
@@ -345,11 +386,18 @@ class BaseZServ:
         return out
 
     def restart(self, signum=15):
+        """Restarts the zserv process, restarting it if it crashes.
+
+        signum: an int representing the signal number to send to the
+                zserv process.  15 (TERM) by default.
+
+        """
         logging.getLogger('').info('')
         self.stop(signum)
         self.start()
 
     def export(self):
+        """Returns a dict of ZServ configuration information."""
         logging.getLogger('').info('')
         d = {'name': self.name,
              'type': self.type,

@@ -5,7 +5,7 @@ from datetime import datetime
 from threading import Lock
 from cStringIO import StringIO
 
-from ZDStack import get_configparser, log
+from ZDStack import get_configparser, log, CONFIGPARSER
 from ZDStack.Utils import yes
 from ZDStack.Server import Server
 from ZDStack.ZServDepot import get_zserv_class
@@ -21,7 +21,18 @@ class Stack(Server):
 
     methods_requiring_authentication = []
 
+    """Stack represents the main ZDStack class."""
+
     def __init__(self, config_file=None, debugging=False):
+        """Initializes a Stack instance.
+
+        config_file: optional, a string representing the path to a
+                     configuration file.  If not given, looks for a
+                     configuration file in a predefined list of
+                     locations.
+        debugging:   a boolean, whether or not debugging is enabled
+
+        """
         self.config_file = config_file
         self.spawn_lock = Lock()
         self.zservs = {}
@@ -33,11 +44,17 @@ class Stack(Server):
         self.methods_requiring_authentication.append('stop_all_zservs')
 
     def check_all_zserv_configs(self):
+        """Ensures that all ZServ configuration sections are correct."""
         logging.getLogger('').debug('')
         for section in self.config.sections():
             self.check_zserv_config(dict(self.config.items(section)))
 
     def check_zserv_config(self, zserv_config):
+        """Ensures that a ZServ configuration section is correct.
+        
+        A dict containing ZServ configuration options and values.
+        
+        """
         logging.getLogger('').debug('')
         if not 'type' in zserv_config:
             es = "Could not determine type of server [%s]"
@@ -48,6 +65,7 @@ class Stack(Server):
             raise ValueError(es % (zserv_config['type']))
 
     def load_zservs(self):
+        """Instantiates all configured ZServs."""
         logging.getLogger('').debug('')
         for zserv_name in self.config.sections():
             zs_config = dict(self.config.items(zserv_name))
@@ -66,6 +84,12 @@ class Stack(Server):
                 self.zservs[zserv_name] = zs
 
     def load_config(self, reload=False):
+        """Loads the configuration.
+
+        reload: a boolean, whether or not the configuration is being
+                reloaded.
+
+        """
         logging.getLogger('').debug('')
         self.config = get_configparser(self.config_file)
         self.raw_config = RCP(self.config_file, allow_duplicate_sections=False)
@@ -82,6 +106,7 @@ class Stack(Server):
         self.load_zservs()
 
     def _dispatch(self, method, params):
+        """This should actually be monkeypatched into XMLRPCServer."""
         if method in self.methods_requiring_authentication:
             if not self.authenticate(params[0], params[1]):
                 s = "Authentication for method [%s] by user [%s] failed"
@@ -101,10 +126,21 @@ class Stack(Server):
             return func(*params)
 
     def authenticate(self, username, password):
+        """Returns True if a user authenticates successfully.
+
+        username: a string representing the user's username
+        password: a string representing the user's password
+
+        """
         logging.getLogger('').debug('')
         return username == self.username and password == self.password
 
     def start_zserv(self, zserv_name):
+        """Starts a ZServ.
+
+        zserv_name: a string representing the name of a ZServ to start
+
+        """
         logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
@@ -113,6 +149,11 @@ class Stack(Server):
         self.zservs[zserv_name].start()
 
     def stop_zserv(self, zserv_name):
+        """Stops a ZServ.
+
+        zserv_name: a string representing the name of a ZServ to stop
+
+        """
         logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
@@ -121,43 +162,68 @@ class Stack(Server):
         self.zservs[zserv_name].stop()
 
     def restart_zserv(self, zserv_name):
+        """Restarts a ZServ.
+
+        zserv_name: a string representing the name of a ZServ to
+                    restart
+
+        """
         logging.getLogger('').debug('')
         self.stop_zserv(zserv_name)
         time.sleep(1)
         self.start_zserv(zserv_name)
 
     def start_all_zservs(self):
+        """Starts all ZServs."""
         logging.getLogger('').debug('')
         for zserv_name in self.zservs:
             self.start_zserv(zserv_name)
 
     def stop_all_zservs(self):
+        """Stops all ZServs."""
         logging.getLogger('').debug('')
         for zserv in [z for z in self.zservs.values() if z.pid is not None]:
             zserv.stop()
 
     def restart_all_zservs(self):
+        """Restars all ZServs."""
         logging.getLogger('').debug('')
         for zserv in [z for z in self.zservs.values() if z.pid is not None]:
             zserv.restart()
 
     def start(self):
+        """Starts this Stack."""
         logging.getLogger('').debug('')
         self.start_all_zservs()
         return True
 
     def stop(self):
+        """Stops this Stack."""
         logging.getLogger('').debug('')
         self.stop_all_zservs()
         return True
 
     def _get_zserv(self, zserv_name):
+        """Returns a ZServ instance.
+        
+        zserv_name: a string representing the name of the ZServ to
+                    return
+        
+        """
         logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         return self.zservs[zserv_name]
 
     def _get_player(self, zserv_name, player_name):
+        """Returns a Player instance.
+
+        zserv_name:  a string representing the name of the ZServ in
+                     which to look for the player
+        player_name: a string representing the name of the Player to
+                     return
+
+        """
         logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         if player_name not in zserv.players:
@@ -165,6 +231,14 @@ class Stack(Server):
         return zserv.players[player_name]
 
     def _get_team(self, zserv_name, team_color):
+        """Returns a Team instance.
+
+        zserv_name: a string representing the name of the ZServ in
+                    which to look for the team
+        team_color: a string representing the color of the Team to
+                    return
+
+        """
         zserv = self._get_zserv(zserv_name)
         if not hasattr(zserv, 'teams'):
             raise Exception("%s is not a team server" % (zserv_name))
@@ -173,31 +247,71 @@ class Stack(Server):
         return zserv.teams[team_color]
 
     def get_zserv(self, zserv_name):
+        """Returns an marshallable representation of a ZServ.
+
+        zserv_name: the name of the ZServ to get
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).export()
 
     def get_all_zservs(self):
+        """Returns all ZServs in marshallable representations."""
         logging.getLogger('').debug('')
         return [self.get_zserv(x) for x in self.zservs]
 
     def list_zserv_names(self):
+        """Returns a list of ZServ names."""
         logging.getLogger('').debug('')
         return self.zservs.keys()
 
     def _items_to_section(self, name, items):
+        """Converts a list of items into a ConfigParser section.
+
+        name:  a string representing the name of the section to
+               generate
+        items: a list of option, value pairs (strings).
+
+        """
         return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in items])
 
     def get_zserv_config(self, zserv_name):
+        """Returns a ZServ's configuration as a string.
+
+        zserv_name: a string representing the ZServ's name
+
+        """
         logging.getLogger('').debug('')
         self._get_zserv(zserv_name)
         return self._items_to_section(zserv_name,
                                       self.raw_config.items(zserv_name))
 
     def set_zserv_config(self, zserv_name, data):
+        """Sets a ZServ's config.
+
+        zserv_name: a string representing the ZServ's name
+        data:       a string representing the new configuration data
+
+        """
         logging.getLogger('').debug('')
-        self._get_zserv(zserv_name)
+        cp = RCP()
+        sio = StringIO(data)
+        cp.readfp(sio)
+        main_cp = get_configparser()
+        for o, v in cp.items(zserv_name):
+            main_cp.set(zserv_name, o, v)
+        main_cp.save()
+        self._get_zserv(zserv_name).reload_config()
 
     def get_player(self, zserv_name, player_name):
+        """Returns a marshallable representation of a Player.
+
+        zserv_name:  a string representing the name of the ZServ in
+                     which to look for the player
+        player_name: a string representing the name of the Player to
+                     return
+
+        """
         logging.getLogger('').debug('')
         return self._get_player(zserv_name, player_name).export()
 
@@ -241,78 +355,216 @@ class Stack(Server):
         return self._get_zserv(zserv_name).remembered_stats.export()
 
     def send_to_zserv(self, zserv_name, message):
+        """Sends a command to a running zserv process.
+
+        zserv_name: a string representing the name of the ZServ to
+                    send the message to
+        message:    a string, the message to send
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).send_to_zserv(message)
 
     def addban(self, zserv_name, ip_address, reason='rofl'):
+        """Adds a ban.
+
+        zserv_name: a string representing the name of the ZServ to add
+                    the ban to
+        ip_address: a string representing the IP address to ban
+        reason:     a string representing the reason for the ban
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddban(ip_address, reason)
 
     def addbot(self, zserv_name, bot_name=None):
+        """Adds a bot.
+
+        zserv_name: a string representing the name of the ZServ to add
+                    the bot to
+        bot_name:   a string representing the name of the bot to add
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddbot(bot_name)
 
     def addmap(self, zserv_name, map_number):
+        """Adds a map to the maplist.
+
+        zserv_name: a string representing the name of the ZServ to add
+                    the map to
+        map_number: a string representing the number of the map to add
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddmap(map_number)
 
     def clearmaplist(self, zserv_name):
+        """Clears the maplist.
+
+        zserv_name: a string representing the name of the ZServ whose
+                    maplist is to be cleared
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zclearmaplist()
 
     def get(self, zserv_name, variable_name):
+        """Gets the value of a variable.
+
+        zserv_name:    a string representing the name of the ZServ to
+                       retrieve the variable value from
+        variable_name: a string representing the name of the variable
+                       whose value is to be retrieved
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zget(variable_name)
 
     def kick(self, zserv_name, player_number, reason='rofl'):
+        """Kicks a player from the zserv.
+
+        zserv_name:    a string representing the name of the ZServ to
+                       kick the player from
+        player_number: a string representing the number of the player
+                       to kick
+        reason:        a string representing the reason for the kick
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zkick(player_number, reason)
 
     def killban(self, zserv_name, ip_address):
+        """Removes a ban.
+
+        zserv_name: a string representing the name of the ZServ to
+                    remove the ban from
+        ip_address: a string representing the IP address to remove the
+                    ban for
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zkillban(ip_address)
 
     def map(self, zserv_name, map_number):
+        """Changes the current map.
+
+        zserv_name: a string representing the name of the ZServ to
+                    change the map on
+        map_number: a string representing the number of the map to
+                    change to
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zmap(map_number)
 
     def maplist(self, zserv_name):
+        """Returns the maplist.
+
+        zserv_name: a string representing the name of the ZServ to
+                    retrieve the maplist for
+
+        Returns a list of strings representing the numbers of the maps
+        in the maplist.
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zmaplist()
 
     def players(self, zserv_name):
+        """Returns a list of players and their info.
+
+        zserv_name: a string representing the name of the ZServ to
+                    list the players for
+
+        Returns a list of strings representing the number, name, and
+        IP address of all players.
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zplayers()
 
     def removebots(self, zserv_name):
+        """Removes all bots.
+
+        zserv_name: a string representing the name of the ZServ to
+                    remove the bots from
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zremovebots()
 
     def resetscores(self, zserv_name):
+        """Resets all scores.
+
+        zserv_name: a string representing the name of the ZServ to
+                    reset the scores for
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zresetscores()
 
     def say(self, zserv_name, message):
+        """Sends a message from "] CONSOLE [".
+
+        zserv_name: a string representing the name of the ZServ to
+                    send the message to
+        message:    a string, the message to send
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zsay(message)
 
     def set(self, zserv_name, variable_name, variable_value):
+        """Sets the value of a variable
+
+        zserv_name:     a string representing the name of the ZServ
+        variable_name:  a string representing the name of the variable
+                        to set
+        variable_value: a string representing the new value of the
+                        variable
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zset(variable_name, variable_value)
 
     def toggle(self, zserv_name, boolean_variable):
+        """Toggles a boolean option.
+
+        zserv_name:       a string representing the name of the ZServ
+        boolean_variable: a string representing the name of the
+                          boolean variable to toggle on or off
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).ztoggle(boolean_variable)
 
     def unset(self, zserv_name, variable_name):
+        """Unsets a variable (removes it).
+
+        zserv_name:    a string representing the name of the ZServ to
+                       remove the variable from
+        variable_name: the name of the variable to unset
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zunset(variable_name)
 
     def wads(self, zserv_name):
+        """Returns a list of the used WADs.
+
+        zserv_name: a string representing the name of the ZServ to add
+                    the bot to
+
+        Returns a list of strings representing the names of the used
+        WADs.
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zwads()
 
     def register_functions(self):
+        """Registers RPC functions."""
         logging.getLogger('').debug('')
         Server.register_functions(self)
         self.rpc_server.register_function(self.start_zserv)

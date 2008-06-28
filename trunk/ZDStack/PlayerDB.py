@@ -4,6 +4,15 @@ from base64 import b64decode
 from ZDStack import get_database
 
 def save_player_ip(player_name, encoded_player_name, player_ip):
+    """Saves a player IP address in the database.
+
+    player_name:         a string representing the name of the player
+    encoded_player_name: a string representing the base64 encoded name
+                         of the player
+    player_ip:           a string representing the IP address of the
+                         player
+
+    """
     logging.getLogger('').info("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
     db = get_database()
     if not db:
@@ -30,6 +39,16 @@ def save_player_ip(player_name, encoded_player_name, player_ip):
                    where=[lambda r: r['name'] == encoded_player_name])
 
 def get_possible_aliases(name, encoded_name, ip_addresses=[]):
+    """Returns a list of possible player aliases.
+
+    name:         a string representing the name of the player to
+                  to return aliases for
+    encoded_name  a string representing the base64 encoded name of the
+                  player to to return aliases for
+    ip_addresses: a list of strings representing the known IP
+                  addresses of the player ot return aliases for
+
+    """
     logging.getLogger('').info('')
     db = get_database()
     if not db:

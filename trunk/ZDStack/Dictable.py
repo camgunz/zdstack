@@ -4,7 +4,10 @@ from decimal import Decimal
 
 class Dictable(dict):
 
+    """Dictable is a class that exports its attributes as a dict."""
+
     def __init__(self, d={}):
+        """Initializes a Dictable."""
         dict.__init__(self, d)
 
     def __getattr__(self, key): 
@@ -24,9 +27,11 @@ class Dictable(dict):
             raise AttributeError, e
 
     def exportables(self):
+        """Returns a list of strings representing the names of exportable attributes."""
         return [x for x in self.items()]
 
     def export(self):
+        """Exports a dict of this class's attributes and values."""
         out = {}
         for x, y in self.exportables():
             if hasattr(y, 'export'):

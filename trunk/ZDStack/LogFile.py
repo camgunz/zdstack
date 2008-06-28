@@ -13,7 +13,18 @@ from ZDStack.LogEvent import LogEvent
 
 class LogFile:
 
+    """LogFile represents a zserv log file."""
+
     def __init__(self, log_type, parser, zserv, listeners=[]):
+        """Initializes a LogFile instance.
+
+        log_type:  a string representing the kind of LogFile this is,
+                   valid options are "client" and "server"
+        parser:    a LogParser instance
+        zserv:     a ZServ instance
+        listeners: a list of LogListener instances to send events to
+
+        """
         self.fobj = None
         self.filepath = None
         self.log_type = log_type
@@ -37,15 +48,25 @@ class LogFile:
                                         self.parse)
 
     def start(self):
+        """Starts logging events."""
         self.keep_logging = True
         self.logging_thread = \
             start_thread(self.log, '%s logging thread' % (self.filepath))
 
     def stop(self):
+        """Stops logging events."""
         self.keep_logging = False
         # self.logging_thread.join()
 
     def set_filepath(self, filepath, seek_to_end=False):
+        """Sets the filepath of the logfile to watch.
+
+        filepath:    a string representing the full path to the new
+                     logfile
+        seek_to_end: a boolean whether or not to seek to the end of
+                     the new logfile
+
+        """
         # log("Received new filepath [%s]" % (self.filepath))
         self.change_file_lock.acquire()
         try:
@@ -61,6 +82,20 @@ class LogFile:
             self.change_file_lock.release()
 
     def watch_for_response(self, response_event_type):
+        """Starts watching for a certain event type.
+
+        response_event_type: a string representing the type of event
+                             to watch for.
+
+        This method starts watching for a certain event type, and
+        stores matching events in self.response_events.  A Logfile
+        stops watching for response events only when it finds a
+        matching event (or events) and then finds one that doesn't.
+
+        There is also a time out of 1/20 of a second, so this doesn't
+        lockup the response mechanism.
+
+        """
         logging.getLogger('').debug('')
         self.command_lock.acquire()
         try:
@@ -73,6 +108,7 @@ class LogFile:
         self.response_finished.clear()
 
     def get_response(self):
+        """Returns the list of saved response events."""
         logging.getLogger('').debug('')
         output = []
         self.response_finished.wait(2)
@@ -86,11 +122,22 @@ class LogFile:
         return output
 
     def log(self):
+        """Watches a file for log events.
+
+        When events are found they are placed in the event queue of
+        every listener in self.listeners.
+
+        """
         unprocessed_data = ''
         while self.keep_logging:
             ###
             # We put sleep up at the top to ensure it gets done.  Otherwise
-            # CPU usage can go through the roof
+            # CPU usage can go through the roof.
+            ###
+            ###
+            # Consider to switching to a global sleep value that is less than
+            # .028 seconds (35Hz).  That keeps us exactly responsive with
+            # zserv... even if it's not exactly sync'd with other ports.
             ###
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
             events = []

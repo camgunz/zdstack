@@ -6,7 +6,18 @@ from ZDStack.DMZServ import DMZServ
 
 class TeamZServ(DMZServ):
 
+    """TeamZServ is a ZServ configured for team play."""
+
     def __init__(self, name, type, config, zdstack):
+        """Initializes TeamZServ.
+
+        name:    a string representing the name of this ZServ
+        type:    a string representing the type of thie ZServ.  Valid
+                 options are 'teamdm' and 'ctf'
+        config:  a dict of configuration options and values
+        zdstack: a Stack instance
+
+        """
         DMZServ.__init__(self, name, type, config, zdstack)
         def add_team_info(d):
             d['max_teams'] = self.max_teams
@@ -16,6 +27,11 @@ class TeamZServ(DMZServ):
         self.extra_exportables_funcs.append((add_team_info, [], {}))
 
     def load_config(self, config):
+        """Loads the config:
+
+        config: a dict of configuration options and values
+
+        """
         logging.getLogger('').info('')
         def is_valid(x):
             return x in config and config[x]
@@ -47,6 +63,7 @@ class TeamZServ(DMZServ):
         config['scorelimit'] = self.scorelimit
 
     def get_configuration(self):
+        """Returns a string of configuration data."""
         logging.getLogger('').info('')
         template = DMZServ.get_configuration(self) + 'set teamplay "1"\n'
         if self.max_teams:

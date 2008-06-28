@@ -3,7 +3,15 @@ from ZDStack.BaseStatKeeper import BaseStatKeeper
 
 class BaseMap(BaseStatKeeper):
 
+    """Base Map class, holds stats for a map."""
+
     def __init__(self, number, name):
+        """Initializes BaseMap
+
+        number: an integer representing the number of the map
+        name:   a string representing the name of the map
+
+        """
         BaseStatKeeper.__init__(self)
         self.number = number
         self.name = name
@@ -28,5 +36,6 @@ class BaseMap(BaseStatKeeper):
                x.start_time < self.start_time
 
     def set_has_flag(self, has_flag):
+        """Normally this toggles the 'has_flag' flag, but not for maps."""
         pass
 

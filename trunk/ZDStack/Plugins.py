@@ -4,9 +4,20 @@ import inspect
 import compileall
 
 def is_plugin(p):
+    """Returns True if 'p' is a plugin.
+
+    p: a string representing the filename of a potential plugin file
+
+    """
     return not p.startswith('__init__.py') and p.endswith('.pyc')
 
 def get_modules(plugin_path):
+    """Returns a list of compiled plugin modules.
+
+    plugin_path: a string representing the full path to the plugin
+                 folder
+
+    """
     modules = []
     compileall.compile_dir(plugin_path, quiet=True)
     plugin_names = [x for x in os.listdir(plugin_path) if is_plugin(x)]
@@ -22,6 +33,11 @@ def get_modules(plugin_path):
     return modules
 
 def extract_module_callables(module):
+    """Returns a list of functions contained in a plugin module.
+
+    module: a plugin module.  get_modules returns a list of these.
+
+    """
     functions = []
     for m in [x for x in inspect.getmembers(module) if x[0] != '__builtins__']:
         if inspect.isfunction(m[1]):
@@ -33,9 +49,14 @@ def extract_module_callables(module):
     return functions
 
 def get_plugins(plugin_path):
+    """Returns a list of plugin functions.
+
+    plugin_path: a string representing the full path to the plugin
+                 folder
+
+    """
     plugins = []
     for module in get_modules(plugin_path):
         plugins.extend(extract_module_callables(module))
     return plugins
-
 
