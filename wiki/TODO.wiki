@@ -2,8 +2,6 @@
 
   * Test all the server response methods
 
-  * Add Class/Function/Member documentation
-
   * Generate !PyDoc stuff for plugin authors.
 
   * Test new frag representation... there's still a little more work to do on this.
