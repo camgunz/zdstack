@@ -24,6 +24,6 @@ class CoopZServ(BaseZServ):
         configuration += 'set teamplay "0"\n'
         configuration += 'set ctf "0"\n'
         if self.teamdamage:
-            template += 'set teamdamage "%s"\n' % (self.teamdamage)
+            configuration += 'set teamdamage "%s"\n' % (self.teamdamage)
         return configuration
 
