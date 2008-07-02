@@ -1,0 +1,16 @@
+#summary Instructions for installing ZDStack.
+
+= Recommended Steps To Install ZDStack =
+
+  # Download ZDStack
+  # Download and install the [http://code.google.com/p/zdstack/wiki/Requirements requirements]
+  # `tar xjf ZDStack-*.tar.bz2`
+  # `cd zdstack`
+  # `python setup.py install --prefix=~/ZDStack` (or wherever you'd like to install it)
+
+= Installing the Example Configuration File =
+  ZDStack will look in the following locations for a configuration file
+  `cp docs/zdstack-example.ini ~/.zdstackrc`
+
+= Editing the Configuration File =
+  ZDStack will look in the following locations for a configuration file
