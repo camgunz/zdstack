@@ -1,0 +1,169 @@
+[DEFAULT]
+;;; The username needed to access administrative methods of the ZDStack process
+username = admin
+;;; The corresponding password
+password = pacman2000
+;;; The root folder under which all zserv processes will create their folders
+rootfolder = /var/zdstack
+;;; The path to the zserv executable
+zserv_exe = /usr/local/bin/zserv
+;;; The port on which ZDStack should listen
+zdstack_port = 8080
+;;; The folder in which to create the Player => IP Database
+database_folder = /var/zdstack/database
+;;; Whether or not to enable stat collection
+enable_stats = yes
+;;; Whether or not to enable Player IP logging
+enable_ip_logging = yes
+;;; The full, absolute path to the IWADs, but not the WADs
+iwaddir = /var/zdstack/iWADs
+;;; The full, absolute path to the WADs, but not IWADs
+waddir = /var/zdstack/WADs
+;;; The name of the IWAD to use
+iwad = doom2.wad
+;;; The number of maps to remember statistics for
+maps_to_remember = 7
+;;; The message to display in the server selector (like ZLauncher or IDE)
+hostname = ZDStack Server %(name)s %(type)s
+;;; The administrator's e-mail address
+admin_email = zdstack@zdstack.com
+;;; The site where WADs can be downloaded
+website = http://zdstack.com/wads
+;;; The message to display upon connecting to a server
+motd = %(hostname)s<br><br>Statistics for this server provided by ZDStack
+;;; The default timeout for all servers
+timelimit = 0
+;;; How many flags can be scored before one team wins (applies to CTF only)
+ctf_team_score_limit = 5
+;;; How many frags can be scored before one team wins (applies to TeamDM only)
+teamdm_team_score_limit = 5
+;;; Whether or not to advertise
+advertise = yes
+;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
+teamdamage = 0
+;;; Enable RCON
+enable_rcon = yes
+;;; The default RCON password for all servers
+rcon_password = zdstackrcon
+;;; Enable server password
+requires_password = no
+;;; The default password for all passworded servers
+server_password = zdstackpassword
+;;; Number of seconds in which spamming can occur
+spam_window = 10
+;;; How many messages can occur in the spam window before "spamming" occurs
+spam_limit = 10
+;;; Optional WADs, used if the player has them, separated by ','
+optional_wads = zvox2.wad
+;;; Gravity value
+gravity = 800
+;;; Air control value (0 is OS, 0.00390625 is NS, and the default)
+air_control = 0.00390625
+;;; How many seconds a player can remain dead before being removed from play
+death_limit = 30
+;;; Kick players who exceed the speed limit
+speed_check = 0
+;;; Restart a map if no players are in the server
+restart_empty_map = 0
+;;; How many "players" must be in server, spawning bots to make up the 
+;;; difference
+min_players = 0
+;;; Remove bots as soon as a second human player joins
+remove_bots_when_humans = yes
+;;; Whether to add the map number to the advertised hostname
+add_mapnum_to_hostname = no
+;;; Whether to enable overtime
+overtime = no
+;;; Skill level
+skill = 4
+;;; Teamdamage Factor
+teamdamage = 0
+;;; Default WADs
+wads =
+;;; Default per-game-mode DMFLAGS
+duel_dmflags = 201796
+duel_dmflags2 = 132608
+ffa_dmflags = 201796
+ffa_dmflags2 = 132608
+ctf_dmflags = 21508
+ctf_dmflags2 = 656896
+coop_dmflags = 2418692
+coop_dmflags2 = 137198
+teamdm_dmflags = 87300
+teamdm_dmflags2 = 132096
+;;; Default per-game-mode number of players allowed to connect
+duel_max_clients = 16
+ffa_max_clients = 16
+ctf_max_clients = 16
+coop_max_clients = 16
+teamdm_max_clients = 16
+;;; Default per-game-mode number of players allowed to play
+duel_max_players = 2
+ffa_max_players = 16
+ctf_max_players = 8
+coop_max_players = 16
+teamdm_max_players = 4
+;;; Default per-game-mode number of teams
+ctf_max_teams = 2
+teamdm_max_teams = 2
+;;; Default per-game-mode number of players per team
+ctf_max_players_per_team = 4
+teamdm_max_players_per_team = 2
+
+[Map01]
+type = duel
+port = 10666
+maps = map01
+wads = zvox2.wad
+
+[D5M1]
+type = duel
+wads = dwango5.wad,zvox2.wad
+port = 10667
+maps = map02
+
+[shoot!]
+type = duel
+wads = shoot!.wad,zvox2.wad
+port = 10668
+maps = map01
+dmflags = 218180
+
+[ZDCTF 1,2,3]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10669
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+timelimit = 15
+
+[Private CTF]
+type = ctf
+wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
+port = 10670
+maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+requires_password = yes
+server_password = privaterulez
+rcon_password = privatercon
+timelimit = 15
+
+[Vex TeamDM]
+type = teamdm
+wads = vex-zdaemon.wad, zvox2.wad
+port = 10671
+maps = map01
+teamdamage = 1
+timelimit = 10
+
+[FFA]
+type = ffa
+maps = map01,map02,map03,map04,map05
+fraglimit = 50
+
+[Coop]
+type = coop
+maps = map01,map02,map03,map04,map05
+teamdamage = 1
+timelimit = 0
+fraglimit = 0
+scorelimit = 0
+
