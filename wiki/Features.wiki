@@ -7,4 +7,4 @@
 || Event processing, for PlayerStatistics and ServerResponse || 100% || Done! ||
 || ConnectionQualityStatistics || 0% || We get player IP addresses, but I haven't setup the "ping player, get results" framework yet.  That's a whole other Module in and of itself. ||
 || PlayerIdentity (IP-based) database || 100% || Done! ||
-|| XML-RPC interface || 99% || I want to change the representation of "frags/deaths", and create a "Frags/Deaths" class that's Dictable. ||
+|| XML/JSON-RPC interface || 100% || Done! ||
