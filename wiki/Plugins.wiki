@@ -33,7 +33,7 @@ Plugins are actually Python source files, each containing one or more functions 
 
 = Plugin Development =
 
-Sticking with the `ban_teamkillers` plugin:
+Sticking with the `ban_teamkillers` plugin (this example is very simple):
 
 {{{
 
@@ -65,5 +65,5 @@ There's a couple of things to be aware of here:
 
   The concurrency system in ZDStack isn't always straightforward... and there are what appear to be race conditions in the code that aren't.  That said, keep in mind two things:
     # Plugins are generally running in a threaded environment, where server requests can be made of a ZServ at any time.  So be careful what you monkeypatch and modify.
-    # You are holding up the processing of other events, and other listeners responding to the same event.  ZDaemon runs at 35Hz, so if your plugin takes even 1/35 of a second to complete (.028 seconds) then you're lagging ZDStack.  Granted we're not going for hard real-time here, and there are definitely other sources of lag, but it's good to have perspective.
-  In general, be fast and be careful!
+    # Other plugins are waiting to respond to the same event.  ZDaemon runs at 35Hz, so if your plugin takes even 1/35 of a second to complete (.028 seconds) then you're lagging plugins loaded after yours.  Granted we're not going for hard real-time here, and there are definitely other sources of lag, but it's good to have perspective.
+  In general, be fast, be non-blocking, and be careful!
