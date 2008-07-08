@@ -1,0 +1,48 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ZServDepot</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>ZServDepot</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/ZServDepot.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/ZServDepot.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-get_fake_client_zserv_class"><strong>get_fake_client_zserv_class</strong></a>(game_mode)</dt><dd><tt>Returns&nbsp;a&nbsp;Fake&nbsp;ZServ&nbsp;class&nbsp;used&nbsp;to&nbsp;parse&nbsp;client&nbsp;logs.<br>
+&nbsp;<br>
+game_mode:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;game&nbsp;mode,&nbsp;valid&nbsp;options<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;are&nbsp;in&nbsp;game_mode_dict.keys()</tt></dd></dl>
+ <dl><dt><a name="-get_zserv_class"><strong>get_zserv_class</strong></a>(game_mode, memory_slots, log_ips<font color="#909090">=False</font>, load_plugins<font color="#909090">=False</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;ZServ&nbsp;class.<br>
+&nbsp;<br>
+game_mode:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;game&nbsp;mode,&nbsp;valid&nbsp;options<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;are&nbsp;in&nbsp;game_mode_dict.keys()<br>
+memory_slots:&nbsp;an&nbsp;int&nbsp;representing&nbsp;the&nbsp;number&nbsp;of&nbsp;games&nbsp;to&nbsp;remember<br>
+log_ips:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;to&nbsp;log&nbsp;IP&nbsp;addresses&nbsp;in&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Player&nbsp;=&gt;&nbsp;IP&nbsp;database<br>
+load_plugins:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;to&nbsp;load&nbsp;plugins</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>game_mode_dict</strong> = {'coop': (&lt;class ZDStack.CoopZServ.CoopZServ at 0x830df2c&gt;, &lt;class ZDStack.GeneralZServStatsMixin.GeneralZServStatsMixin at 0x833d9ec&gt;), 'ctf': (&lt;class ZDStack.CTFZServ.CTFZServ at 0x8309dac&gt;, &lt;class ZDStack.CTFTeamZServStatsMixin.CTFTeamZServStatsMixin at 0x8344a7c&gt;), 'duel': (&lt;class ZDStack.DuelZServ.DuelZServ at 0x830d32c&gt;, &lt;class ZDStack.GeneralZServStatsMixin.GeneralZServStatsMixin at 0x833d9ec&gt;), 'ffa': (&lt;class ZDStack.FFAZServ.FFAZServ at 0x8309ecc&gt;, &lt;class ZDStack.GeneralZServStatsMixin.GeneralZServStatsMixin at 0x833d9ec&gt;), 'teamdm': (&lt;class ZDStack.TeamDMZServ.TeamDMZServ at 0x8309e3c&gt;, &lt;class ZDStack.TeamZServStatsMixin.TeamZServStatsMixin at 0x83441ac&gt;)}</td></tr></table>
+</body></html>

@@ -1,0 +1,195 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module XMLRPCServer</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>XMLRPCServer</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/XMLRPCServer.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/XMLRPCServer.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="DocXMLRPCServer.html#DocXMLRPCServer">DocXMLRPCServer.DocXMLRPCServer</a>(<a href="SimpleXMLRPCServer.html#SimpleXMLRPCServer">SimpleXMLRPCServer.SimpleXMLRPCServer</a>, <a href="DocXMLRPCServer.html#XMLRPCDocGenerator">DocXMLRPCServer.XMLRPCDocGenerator</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="XMLRPCServer.html#XMLRPCServer">XMLRPCServer</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="XMLRPCServer">class <strong>XMLRPCServer</strong></a>(<a href="DocXMLRPCServer.html#DocXMLRPCServer">DocXMLRPCServer.DocXMLRPCServer</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="XMLRPCServer.html#XMLRPCServer">XMLRPCServer</a></dd>
+<dd><a href="DocXMLRPCServer.html#DocXMLRPCServer">DocXMLRPCServer.DocXMLRPCServer</a></dd>
+<dd><a href="SimpleXMLRPCServer.html#SimpleXMLRPCServer">SimpleXMLRPCServer.SimpleXMLRPCServer</a></dd>
+<dd><a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a></dd>
+<dd><a href="SocketServer.html#BaseServer">SocketServer.BaseServer</a></dd>
+<dd><a href="SimpleXMLRPCServer.html#SimpleXMLRPCDispatcher">SimpleXMLRPCServer.SimpleXMLRPCDispatcher</a></dd>
+<dd><a href="DocXMLRPCServer.html#XMLRPCDocGenerator">DocXMLRPCServer.XMLRPCDocGenerator</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="XMLRPCServer-__init__"><strong>__init__</strong></a>(self, addr)</dt></dl>
+
+<dl><dt><a name="XMLRPCServer-log_message"><strong>log_message</strong></a>(self, format, *args)</dt></dl>
+
+<hr>
+Data and other attributes inherited from <a href="SimpleXMLRPCServer.html#SimpleXMLRPCServer">SimpleXMLRPCServer.SimpleXMLRPCServer</a>:<br>
+<dl><dt><strong>allow_reuse_address</strong> = True</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>:<br>
+<dl><dt><a name="XMLRPCServer-close_request"><strong>close_request</strong></a>(self, request)</dt><dd><tt>Called&nbsp;to&nbsp;clean&nbsp;up&nbsp;an&nbsp;individual&nbsp;request.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-fileno"><strong>fileno</strong></a>(self)</dt><dd><tt>Return&nbsp;socket&nbsp;file&nbsp;number.<br>
+&nbsp;<br>
+Interface&nbsp;required&nbsp;by&nbsp;select().</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-get_request"><strong>get_request</strong></a>(self)</dt><dd><tt>Get&nbsp;the&nbsp;request&nbsp;and&nbsp;client&nbsp;address&nbsp;from&nbsp;the&nbsp;socket.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-server_activate"><strong>server_activate</strong></a>(self)</dt><dd><tt>Called&nbsp;by&nbsp;constructor&nbsp;to&nbsp;activate&nbsp;the&nbsp;server.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-server_bind"><strong>server_bind</strong></a>(self)</dt><dd><tt>Called&nbsp;by&nbsp;constructor&nbsp;to&nbsp;bind&nbsp;the&nbsp;socket.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-server_close"><strong>server_close</strong></a>(self)</dt><dd><tt>Called&nbsp;to&nbsp;clean-up&nbsp;the&nbsp;server.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>:<br>
+<dl><dt><strong>address_family</strong> = 2</dl>
+
+<dl><dt><strong>request_queue_size</strong> = 5</dl>
+
+<dl><dt><strong>socket_type</strong> = 1</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#BaseServer">SocketServer.BaseServer</a>:<br>
+<dl><dt><a name="XMLRPCServer-finish_request"><strong>finish_request</strong></a>(self, request, client_address)</dt><dd><tt>Finish&nbsp;one&nbsp;request&nbsp;by&nbsp;instantiating&nbsp;RequestHandlerClass.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-handle_error"><strong>handle_error</strong></a>(self, request, client_address)</dt><dd><tt>Handle&nbsp;an&nbsp;error&nbsp;gracefully.&nbsp;&nbsp;May&nbsp;be&nbsp;overridden.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;is&nbsp;to&nbsp;print&nbsp;a&nbsp;traceback&nbsp;and&nbsp;continue.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-handle_request"><strong>handle_request</strong></a>(self)</dt><dd><tt>Handle&nbsp;one&nbsp;request,&nbsp;possibly&nbsp;blocking.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-process_request"><strong>process_request</strong></a>(self, request, client_address)</dt><dd><tt>Call&nbsp;finish_request.<br>
+&nbsp;<br>
+Overridden&nbsp;by&nbsp;ForkingMixIn&nbsp;and&nbsp;ThreadingMixIn.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-serve_forever"><strong>serve_forever</strong></a>(self)</dt><dd><tt>Handle&nbsp;one&nbsp;request&nbsp;at&nbsp;a&nbsp;time&nbsp;until&nbsp;doomsday.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-verify_request"><strong>verify_request</strong></a>(self, request, client_address)</dt><dd><tt>Verify&nbsp;the&nbsp;request.&nbsp;&nbsp;May&nbsp;be&nbsp;overridden.<br>
+&nbsp;<br>
+Return&nbsp;True&nbsp;if&nbsp;we&nbsp;should&nbsp;proceed&nbsp;with&nbsp;this&nbsp;request.</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="SimpleXMLRPCServer.html#SimpleXMLRPCDispatcher">SimpleXMLRPCServer.SimpleXMLRPCDispatcher</a>:<br>
+<dl><dt><a name="XMLRPCServer-register_function"><strong>register_function</strong></a>(self, function, name<font color="#909090">=None</font>)</dt><dd><tt>Registers&nbsp;a&nbsp;function&nbsp;to&nbsp;respond&nbsp;to&nbsp;XML-RPC&nbsp;requests.<br>
+&nbsp;<br>
+The&nbsp;optional&nbsp;name&nbsp;argument&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;set&nbsp;a&nbsp;Unicode&nbsp;name<br>
+for&nbsp;the&nbsp;function.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-register_instance"><strong>register_instance</strong></a>(self, instance, allow_dotted_names<font color="#909090">=False</font>)</dt><dd><tt>Registers&nbsp;an&nbsp;instance&nbsp;to&nbsp;respond&nbsp;to&nbsp;XML-RPC&nbsp;requests.<br>
+&nbsp;<br>
+Only&nbsp;one&nbsp;instance&nbsp;can&nbsp;be&nbsp;installed&nbsp;at&nbsp;a&nbsp;time.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;has&nbsp;a&nbsp;_dispatch&nbsp;method&nbsp;then&nbsp;that<br>
+method&nbsp;will&nbsp;be&nbsp;called&nbsp;with&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;XML-RPC&nbsp;method&nbsp;and<br>
+its&nbsp;parameters&nbsp;as&nbsp;a&nbsp;tuple<br>
+e.g.&nbsp;instance._dispatch('add',(2,3))<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;does&nbsp;not&nbsp;have&nbsp;a&nbsp;_dispatch&nbsp;method<br>
+then&nbsp;the&nbsp;instance&nbsp;will&nbsp;be&nbsp;searched&nbsp;to&nbsp;find&nbsp;a&nbsp;matching&nbsp;method<br>
+and,&nbsp;if&nbsp;found,&nbsp;will&nbsp;be&nbsp;called.&nbsp;Methods&nbsp;beginning&nbsp;with&nbsp;an&nbsp;'_'<br>
+are&nbsp;considered&nbsp;private&nbsp;and&nbsp;will&nbsp;not&nbsp;be&nbsp;called&nbsp;by<br>
+SimpleXMLRPCServer.<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;registered&nbsp;function&nbsp;matches&nbsp;a&nbsp;XML-RPC&nbsp;request,&nbsp;then&nbsp;it<br>
+will&nbsp;be&nbsp;called&nbsp;instead&nbsp;of&nbsp;the&nbsp;registered&nbsp;instance.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;optional&nbsp;allow_dotted_names&nbsp;argument&nbsp;is&nbsp;true&nbsp;and&nbsp;the<br>
+instance&nbsp;does&nbsp;not&nbsp;have&nbsp;a&nbsp;_dispatch&nbsp;method,&nbsp;method&nbsp;names<br>
+containing&nbsp;dots&nbsp;are&nbsp;supported&nbsp;and&nbsp;resolved,&nbsp;as&nbsp;long&nbsp;as&nbsp;none&nbsp;of<br>
+the&nbsp;name&nbsp;segments&nbsp;start&nbsp;with&nbsp;an&nbsp;'_'.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;***&nbsp;SECURITY&nbsp;WARNING:&nbsp;***<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Enabling&nbsp;the&nbsp;allow_dotted_names&nbsp;options&nbsp;allows&nbsp;intruders<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;access&nbsp;your&nbsp;module's&nbsp;global&nbsp;variables&nbsp;and&nbsp;may&nbsp;allow<br>
+&nbsp;&nbsp;&nbsp;&nbsp;intruders&nbsp;to&nbsp;execute&nbsp;arbitrary&nbsp;code&nbsp;on&nbsp;your&nbsp;machine.&nbsp;&nbsp;Only<br>
+&nbsp;&nbsp;&nbsp;&nbsp;use&nbsp;this&nbsp;option&nbsp;on&nbsp;a&nbsp;secure,&nbsp;closed&nbsp;network.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-register_introspection_functions"><strong>register_introspection_functions</strong></a>(self)</dt><dd><tt>Registers&nbsp;the&nbsp;XML-RPC&nbsp;introspection&nbsp;methods&nbsp;in&nbsp;the&nbsp;system<br>
+namespace.<br>
+&nbsp;<br>
+see&nbsp;<a href="http://xmlrpc.usefulinc.com/doc/reserved.html">http://xmlrpc.usefulinc.com/doc/reserved.html</a></tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-register_multicall_functions"><strong>register_multicall_functions</strong></a>(self)</dt><dd><tt>Registers&nbsp;the&nbsp;XML-RPC&nbsp;multicall&nbsp;method&nbsp;in&nbsp;the&nbsp;system<br>
+namespace.<br>
+&nbsp;<br>
+see&nbsp;<a href="http://www.xmlrpc.com/discuss/msgReader$1208">http://www.xmlrpc.com/discuss/msgReader$1208</a></tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-system_listMethods"><strong>system_listMethods</strong></a>(self)</dt><dd><tt>system.listMethods()&nbsp;=&gt;&nbsp;['add',&nbsp;'subtract',&nbsp;'multiple']<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;the&nbsp;methods&nbsp;supported&nbsp;by&nbsp;the&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-system_methodHelp"><strong>system_methodHelp</strong></a>(self, method_name)</dt><dd><tt>system.methodHelp('add')&nbsp;=&gt;&nbsp;"Adds&nbsp;two&nbsp;integers&nbsp;together"<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;string&nbsp;containing&nbsp;documentation&nbsp;for&nbsp;the&nbsp;specified&nbsp;method.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-system_methodSignature"><strong>system_methodSignature</strong></a>(self, method_name)</dt><dd><tt>system.methodSignature('add')&nbsp;=&gt;&nbsp;[double,&nbsp;int,&nbsp;int]<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;describing&nbsp;the&nbsp;signature&nbsp;of&nbsp;the&nbsp;method.&nbsp;In&nbsp;the<br>
+above&nbsp;example,&nbsp;the&nbsp;add&nbsp;method&nbsp;takes&nbsp;two&nbsp;integers&nbsp;as&nbsp;arguments<br>
+and&nbsp;returns&nbsp;a&nbsp;double&nbsp;result.<br>
+&nbsp;<br>
+This&nbsp;server&nbsp;does&nbsp;NOT&nbsp;support&nbsp;system.methodSignature.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-system_multicall"><strong>system_multicall</strong></a>(self, call_list)</dt><dd><tt>system.multicall([{'methodName':&nbsp;'add',&nbsp;'params':&nbsp;[2,&nbsp;2]},&nbsp;...])&nbsp;=&gt;&nbsp;[[4],&nbsp;...]<br>
+&nbsp;<br>
+Allows&nbsp;the&nbsp;caller&nbsp;to&nbsp;package&nbsp;multiple&nbsp;XML-RPC&nbsp;calls&nbsp;into&nbsp;a&nbsp;single<br>
+request.<br>
+&nbsp;<br>
+See&nbsp;<a href="http://www.xmlrpc.com/discuss/msgReader$1208">http://www.xmlrpc.com/discuss/msgReader$1208</a></tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="DocXMLRPCServer.html#XMLRPCDocGenerator">DocXMLRPCServer.XMLRPCDocGenerator</a>:<br>
+<dl><dt><a name="XMLRPCServer-generate_html_documentation"><strong>generate_html_documentation</strong></a>(self)</dt><dd><tt><a href="#XMLRPCServer-generate_html_documentation">generate_html_documentation</a>()&nbsp;=&gt;&nbsp;html&nbsp;documentation&nbsp;for&nbsp;the&nbsp;server<br>
+&nbsp;<br>
+Generates&nbsp;HTML&nbsp;documentation&nbsp;for&nbsp;the&nbsp;server&nbsp;using&nbsp;introspection&nbsp;for<br>
+installed&nbsp;functions&nbsp;and&nbsp;instances&nbsp;that&nbsp;do&nbsp;not&nbsp;implement&nbsp;the<br>
+_dispatch&nbsp;method.&nbsp;Alternatively,&nbsp;instances&nbsp;can&nbsp;choose&nbsp;to&nbsp;implement<br>
+the&nbsp;_get_method_argstring(method_name)&nbsp;method&nbsp;to&nbsp;provide&nbsp;the<br>
+argument&nbsp;string&nbsp;used&nbsp;in&nbsp;the&nbsp;documentation&nbsp;and&nbsp;the<br>
+_methodHelp(method_name)&nbsp;method&nbsp;to&nbsp;provide&nbsp;the&nbsp;help&nbsp;text&nbsp;used<br>
+in&nbsp;the&nbsp;documentation.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-set_server_documentation"><strong>set_server_documentation</strong></a>(self, server_documentation)</dt><dd><tt>Set&nbsp;the&nbsp;documentation&nbsp;string&nbsp;for&nbsp;the&nbsp;entire&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-set_server_name"><strong>set_server_name</strong></a>(self, server_name)</dt><dd><tt>Set&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;generated&nbsp;HTML&nbsp;server&nbsp;documentation</tt></dd></dl>
+
+<dl><dt><a name="XMLRPCServer-set_server_title"><strong>set_server_title</strong></a>(self, server_title)</dt><dd><tt>Set&nbsp;the&nbsp;HTML&nbsp;title&nbsp;of&nbsp;the&nbsp;generated&nbsp;server&nbsp;documentation</tt></dd></dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

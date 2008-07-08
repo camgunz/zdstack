@@ -1,0 +1,599 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module SimpleJSONRPCServer</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>SimpleJSONRPCServer</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/SimpleJSONRPCServer.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/SimpleJSONRPCServer.py</a></font></td></tr></table>
+    <p><tt>Simple&nbsp;JSON-RPC&nbsp;Server.<br>
+&nbsp;<br>
+This&nbsp;module&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;create&nbsp;simple&nbsp;JSON-RPC&nbsp;servers<br>
+by&nbsp;creating&nbsp;a&nbsp;server&nbsp;and&nbsp;either&nbsp;installing&nbsp;functions,&nbsp;a<br>
+class&nbsp;instance,&nbsp;or&nbsp;by&nbsp;extending&nbsp;the&nbsp;<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a><br>
+class.<br>
+&nbsp;<br>
+A&nbsp;list&nbsp;of&nbsp;possible&nbsp;usage&nbsp;patterns&nbsp;follows:<br>
+&nbsp;<br>
+1.&nbsp;Install&nbsp;functions:<br>
+&nbsp;<br>
+server&nbsp;=&nbsp;<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>(("localhost",&nbsp;8000))<br>
+server.register_function(pow)<br>
+server.register_function(lambda&nbsp;x,y:&nbsp;x+y,&nbsp;'add')<br>
+server.serve_forever()<br>
+&nbsp;<br>
+2.&nbsp;Install&nbsp;an&nbsp;instance:<br>
+&nbsp;<br>
+class&nbsp;MyFuncs:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;__init__(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;make&nbsp;all&nbsp;of&nbsp;the&nbsp;string&nbsp;functions&nbsp;available&nbsp;through<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;string.func_name<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;import&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.<strong>string</strong>&nbsp;=&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;_listMethods(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;implement&nbsp;this&nbsp;method&nbsp;so&nbsp;that&nbsp;system.listMethods<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;knows&nbsp;to&nbsp;advertise&nbsp;the&nbsp;strings&nbsp;methods<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;<a href="#-list_public_methods">list_public_methods</a>(self)&nbsp;+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;['string.'&nbsp;+&nbsp;method&nbsp;for&nbsp;method&nbsp;in&nbsp;<a href="#-list_public_methods">list_public_methods</a>(self.<strong>string</strong>)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;pow(self,&nbsp;x,&nbsp;y):&nbsp;return&nbsp;pow(x,&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;add(self,&nbsp;x,&nbsp;y)&nbsp;:&nbsp;return&nbsp;x&nbsp;+&nbsp;y<br>
+&nbsp;<br>
+server&nbsp;=&nbsp;<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>(("localhost",&nbsp;8000))<br>
+server.register_introspection_functions()<br>
+server.register_instance(MyFuncs())<br>
+server.serve_forever()<br>
+&nbsp;<br>
+3.&nbsp;Install&nbsp;an&nbsp;instance&nbsp;with&nbsp;custom&nbsp;dispatch&nbsp;method:<br>
+&nbsp;<br>
+class&nbsp;Math:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;_listMethods(self):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;this&nbsp;method&nbsp;must&nbsp;be&nbsp;present&nbsp;for&nbsp;system.listMethods<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;to&nbsp;work<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;['add',&nbsp;'pow']<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;_methodHelp(self,&nbsp;method):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;this&nbsp;method&nbsp;must&nbsp;be&nbsp;present&nbsp;for&nbsp;system.methodHelp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;to&nbsp;work<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;method&nbsp;==&nbsp;'add':<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;"add(2,3)&nbsp;=&gt;&nbsp;5"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elif&nbsp;method&nbsp;==&nbsp;'pow':<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;"pow(x,&nbsp;y[,&nbsp;z])&nbsp;=&gt;&nbsp;number"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;By&nbsp;convention,&nbsp;return&nbsp;empty<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;string&nbsp;if&nbsp;no&nbsp;help&nbsp;is&nbsp;available<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;""<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;_dispatch(self,&nbsp;method,&nbsp;params):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;method&nbsp;==&nbsp;'pow':<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;pow(*params)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elif&nbsp;method&nbsp;==&nbsp;'add':<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;params[0]&nbsp;+&nbsp;params[1]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise&nbsp;'bad&nbsp;method'<br>
+&nbsp;<br>
+server&nbsp;=&nbsp;<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>(("localhost",&nbsp;8000))<br>
+server.register_introspection_functions()<br>
+server.register_instance(Math())<br>
+server.serve_forever()<br>
+&nbsp;<br>
+4.&nbsp;Subclass&nbsp;<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>:<br>
+&nbsp;<br>
+class&nbsp;MathServer(<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;_dispatch(self,&nbsp;method,&nbsp;params):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;We&nbsp;are&nbsp;forcing&nbsp;the&nbsp;'export_'&nbsp;prefix&nbsp;on&nbsp;methods&nbsp;that&nbsp;are<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;callable&nbsp;through&nbsp;JSON-RPC&nbsp;to&nbsp;prevent&nbsp;potential&nbsp;security<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;problems<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;func&nbsp;=&nbsp;getattr(self,&nbsp;'export_'&nbsp;+&nbsp;method)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;except&nbsp;AttributeError:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise&nbsp;<a href="exceptions.html#Exception">Exception</a>('method&nbsp;"%s"&nbsp;is&nbsp;not&nbsp;supported'&nbsp;%&nbsp;method)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;func(*params)<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def&nbsp;export_add(self,&nbsp;x,&nbsp;y):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;x&nbsp;+&nbsp;y<br>
+&nbsp;<br>
+server&nbsp;=&nbsp;MathServer(("localhost",&nbsp;8000))<br>
+server.serve_forever()<br>
+&nbsp;<br>
+Note&nbsp;that&nbsp;this&nbsp;server&nbsp;is&nbsp;certainly&nbsp;not&nbsp;up&nbsp;to&nbsp;the&nbsp;JSON-RPC&nbsp;spec.&nbsp;&nbsp;This<br>
+is&nbsp;due&nbsp;to&nbsp;the&nbsp;fact&nbsp;that&nbsp;I&nbsp;(Charlie)&nbsp;changed&nbsp;this&nbsp;in&nbsp;2&nbsp;hours,&nbsp;scattered<br>
+over&nbsp;15-minute&nbsp;increments.&nbsp;&nbsp;Over&nbsp;time,&nbsp;I'm&nbsp;sure&nbsp;it&nbsp;will&nbsp;become&nbsp;more<br>
+compliant,&nbsp;and&nbsp;less&nbsp;like&nbsp;I&nbsp;just&nbsp;changed&nbsp;the&nbsp;_marshaled_dispatch<br>
+method.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="BaseHTTPServer.html">BaseHTTPServer</a><br>
+<a href="SocketServer.html">SocketServer</a><br>
+</td><td width="25%" valign=top><a href="datetime.html">datetime</a><br>
+<a href="fcntl.html">fcntl</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+<a href="simplejson.html">simplejson</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="BaseHTTPServer.html#BaseHTTPRequestHandler">BaseHTTPServer.BaseHTTPRequestHandler</a>(<a href="SocketServer.html#StreamRequestHandler">SocketServer.StreamRequestHandler</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="SimpleJSONRPCServer.html#SimpleJSONRPCRequestHandler">SimpleJSONRPCRequestHandler</a>
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="SimpleJSONRPCServer.html#SimpleJSONRPCServer">SimpleJSONRPCServer</a>(<a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>, <a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>)
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>(<a href="SocketServer.html#BaseServer">SocketServer.BaseServer</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="SimpleJSONRPCServer.html#SimpleJSONRPCServer">SimpleJSONRPCServer</a>(<a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>, <a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>)
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="exceptions.html#Exception">exceptions.Exception</a>(<a href="exceptions.html#BaseException">exceptions.BaseException</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="SimpleJSONRPCServer.html#ProcedureNotFoundError">ProcedureNotFoundError</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="ProcedureNotFoundError">class <strong>ProcedureNotFoundError</strong></a>(<a href="exceptions.html#Exception">exceptions.Exception</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Raised&nbsp;when&nbsp;a&nbsp;non-existent&nbsp;procedure&nbsp;is&nbsp;called.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="SimpleJSONRPCServer.html#ProcedureNotFoundError">ProcedureNotFoundError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="ProcedureNotFoundError-__init__"><strong>__init__</strong></a>(self, method_name)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x8141680&gt;<dd><tt>T.<a href="#ProcedureNotFoundError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;object&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="ProcedureNotFoundError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="ProcedureNotFoundError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#ProcedureNotFoundError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+<dd><tt>exception&nbsp;message</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SimpleJSONRPCDispatcher">class <strong>SimpleJSONRPCDispatcher</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Mix-in&nbsp;class&nbsp;that&nbsp;dispatches&nbsp;JSON-RPC&nbsp;requests.<br>
+&nbsp;<br>
+This&nbsp;class&nbsp;is&nbsp;used&nbsp;to&nbsp;register&nbsp;JSON-RPC&nbsp;method&nbsp;handlers<br>
+and&nbsp;then&nbsp;to&nbsp;dispatch&nbsp;them.&nbsp;There&nbsp;should&nbsp;never&nbsp;be&nbsp;any<br>
+reason&nbsp;to&nbsp;instantiate&nbsp;this&nbsp;class&nbsp;directly.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="SimpleJSONRPCDispatcher-__init__"><strong>__init__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-datetime_to_seconds"><strong>datetime_to_seconds</strong></a>(self, dt)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-exception_to_dict"><strong>exception_to_dict</strong></a>(self, e, code, context)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-generate_response"><strong>generate_response</strong></a>(self, result<font color="#909090">=None</font>, error<font color="#909090">=None</font>, id<font color="#909090">=None</font>)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-register_function"><strong>register_function</strong></a>(self, function, name<font color="#909090">=None</font>)</dt><dd><tt>Registers&nbsp;a&nbsp;function&nbsp;to&nbsp;respond&nbsp;to&nbsp;JSON-RPC&nbsp;requests.<br>
+&nbsp;<br>
+The&nbsp;optional&nbsp;name&nbsp;argument&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;set&nbsp;a&nbsp;Unicode&nbsp;name<br>
+for&nbsp;the&nbsp;function.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-register_instance"><strong>register_instance</strong></a>(self, instance)</dt><dd><tt>Registers&nbsp;an&nbsp;instance&nbsp;to&nbsp;respond&nbsp;to&nbsp;JSON-RPC&nbsp;requests.<br>
+&nbsp;<br>
+Only&nbsp;one&nbsp;instance&nbsp;can&nbsp;be&nbsp;installed&nbsp;at&nbsp;a&nbsp;time.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;has&nbsp;a&nbsp;_dispatch&nbsp;method&nbsp;then&nbsp;that<br>
+method&nbsp;will&nbsp;be&nbsp;called&nbsp;with&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;JSON-RPC&nbsp;method&nbsp;and<br>
+its&nbsp;parameters&nbsp;as&nbsp;a&nbsp;tuple&nbsp;or&nbsp;a&nbsp;dict&nbsp;(depending&nbsp;upon&nbsp;whether<br>
+arguments&nbsp;were&nbsp;specified&nbsp;using&nbsp;position&nbsp;or&nbsp;naming,<br>
+respectively),&nbsp;e.g.&nbsp;instance._dispatch('add',(2,3))<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;does&nbsp;not&nbsp;have&nbsp;a&nbsp;_dispatch&nbsp;method<br>
+then&nbsp;the&nbsp;instance&nbsp;will&nbsp;be&nbsp;searched&nbsp;to&nbsp;find&nbsp;a&nbsp;matching&nbsp;method<br>
+and,&nbsp;if&nbsp;found,&nbsp;will&nbsp;be&nbsp;called.&nbsp;Methods&nbsp;beginning&nbsp;with&nbsp;an&nbsp;'_'<br>
+are&nbsp;considered&nbsp;private&nbsp;and&nbsp;will&nbsp;not&nbsp;be&nbsp;called&nbsp;by<br>
+<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>.<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;registered&nbsp;function&nbsp;matches&nbsp;a&nbsp;JSON-RPC&nbsp;request,&nbsp;then&nbsp;it<br>
+will&nbsp;be&nbsp;called&nbsp;instead&nbsp;of&nbsp;the&nbsp;registered&nbsp;instance.<br>
+&nbsp;<br>
+Dotted&nbsp;names&nbsp;are&nbsp;not&nbsp;supported.&nbsp;&nbsp;There's&nbsp;a&nbsp;couple&nbsp;of&nbsp;ways<br>
+around&nbsp;this&nbsp;that&nbsp;are&nbsp;actually&nbsp;secure,&nbsp;as&nbsp;opposed&nbsp;to&nbsp;using<br>
+dotted&nbsp;names...&nbsp;which&nbsp;isn't.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-register_introspection_functions"><strong>register_introspection_functions</strong></a>(self)</dt><dd><tt>Registers&nbsp;the&nbsp;JSON-RPC&nbsp;introspection&nbsp;methods&nbsp;in&nbsp;the&nbsp;system<br>
+namespace.<br>
+&nbsp;<br>
+We&nbsp;also&nbsp;register&nbsp;a&nbsp;couple&nbsp;of&nbsp;holdovers&nbsp;from&nbsp;XML-RPC.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-set_address"><strong>set_address</strong></a>(self, address)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;address.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-set_help_url"><strong>set_help_url</strong></a>(self, help_url)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;help&nbsp;URL.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-set_summary"><strong>set_summary</strong></a>(self, summary)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;summary.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-system_describe"><strong>system_describe</strong></a>(self)</dt><dd><tt>system.describe()&nbsp;=&gt;&nbsp;{'sdversion':&nbsp;'1.0',&nbsp;'name':&nbsp;...}</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-system_listMethods"><strong>system_listMethods</strong></a>(self)</dt><dd><tt>system.listMethods()&nbsp;=&gt;&nbsp;['add',&nbsp;'subtract',&nbsp;'multiple']<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;the&nbsp;methods&nbsp;supported&nbsp;by&nbsp;the&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-system_methodHelp"><strong>system_methodHelp</strong></a>(self, method_name)</dt><dd><tt>system.methodHelp('add')&nbsp;=&gt;&nbsp;"Adds&nbsp;two&nbsp;integers&nbsp;together"<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;string&nbsp;containing&nbsp;documentation&nbsp;for&nbsp;the&nbsp;specified&nbsp;method.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCDispatcher-system_methodSignature"><strong>system_methodSignature</strong></a>(self, method_name)</dt><dd><tt>system.methodSignature('add')&nbsp;=&gt;&nbsp;[double,&nbsp;int,&nbsp;int]<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;describing&nbsp;the&nbsp;signature&nbsp;of&nbsp;the&nbsp;method.&nbsp;In&nbsp;the<br>
+above&nbsp;example,&nbsp;the&nbsp;add&nbsp;method&nbsp;takes&nbsp;two&nbsp;integers&nbsp;as&nbsp;arguments<br>
+and&nbsp;returns&nbsp;a&nbsp;double&nbsp;result.<br>
+&nbsp;<br>
+This&nbsp;server&nbsp;does&nbsp;NOT&nbsp;support&nbsp;system.methodSignature.</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SimpleJSONRPCRequestHandler">class <strong>SimpleJSONRPCRequestHandler</strong></a>(<a href="BaseHTTPServer.html#BaseHTTPRequestHandler">BaseHTTPServer.BaseHTTPRequestHandler</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Simple&nbsp;JSON-RPC&nbsp;request&nbsp;handler&nbsp;class.<br>
+&nbsp;<br>
+Handles&nbsp;all&nbsp;HTTP&nbsp;POST&nbsp;requests&nbsp;and&nbsp;attempts&nbsp;to&nbsp;decode&nbsp;them&nbsp;as<br>
+JSON-RPC&nbsp;requests.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="SimpleJSONRPCServer.html#SimpleJSONRPCRequestHandler">SimpleJSONRPCRequestHandler</a></dd>
+<dd><a href="BaseHTTPServer.html#BaseHTTPRequestHandler">BaseHTTPServer.BaseHTTPRequestHandler</a></dd>
+<dd><a href="SocketServer.html#StreamRequestHandler">SocketServer.StreamRequestHandler</a></dd>
+<dd><a href="SocketServer.html#BaseRequestHandler">SocketServer.BaseRequestHandler</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="SimpleJSONRPCRequestHandler-do_POST"><strong>do_POST</strong></a>(self)</dt><dd><tt>Handles&nbsp;the&nbsp;HTTP&nbsp;POST&nbsp;request.<br>
+&nbsp;<br>
+Attempts&nbsp;to&nbsp;interpret&nbsp;all&nbsp;HTTP&nbsp;POST&nbsp;requests&nbsp;as&nbsp;JSON-RPC&nbsp;calls,<br>
+which&nbsp;are&nbsp;forwarded&nbsp;to&nbsp;the&nbsp;server's&nbsp;_dispatch&nbsp;method&nbsp;for&nbsp;handling.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-is_rpc_path_valid"><strong>is_rpc_path_valid</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-log_request"><strong>log_request</strong></a>(self, code<font color="#909090">='-'</font>, size<font color="#909090">='-'</font>)</dt><dd><tt>Selectively&nbsp;log&nbsp;an&nbsp;accepted&nbsp;request.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-report_404"><strong>report_404</strong></a>(self)</dt></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>rpc_paths</strong> = ()</dl>
+
+<hr>
+Methods inherited from <a href="BaseHTTPServer.html#BaseHTTPRequestHandler">BaseHTTPServer.BaseHTTPRequestHandler</a>:<br>
+<dl><dt><a name="SimpleJSONRPCRequestHandler-address_string"><strong>address_string</strong></a>(self)</dt><dd><tt>Return&nbsp;the&nbsp;client&nbsp;address&nbsp;formatted&nbsp;for&nbsp;logging.<br>
+&nbsp;<br>
+This&nbsp;version&nbsp;looks&nbsp;up&nbsp;the&nbsp;full&nbsp;hostname&nbsp;using&nbsp;gethostbyaddr(),<br>
+and&nbsp;tries&nbsp;to&nbsp;find&nbsp;a&nbsp;name&nbsp;that&nbsp;contains&nbsp;at&nbsp;least&nbsp;one&nbsp;dot.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-date_time_string"><strong>date_time_string</strong></a>(self, timestamp<font color="#909090">=None</font>)</dt><dd><tt>Return&nbsp;the&nbsp;current&nbsp;date&nbsp;and&nbsp;time&nbsp;formatted&nbsp;for&nbsp;a&nbsp;message&nbsp;header.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-end_headers"><strong>end_headers</strong></a>(self)</dt><dd><tt>Send&nbsp;the&nbsp;blank&nbsp;line&nbsp;ending&nbsp;the&nbsp;MIME&nbsp;headers.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-handle"><strong>handle</strong></a>(self)</dt><dd><tt>Handle&nbsp;multiple&nbsp;requests&nbsp;if&nbsp;necessary.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-handle_one_request"><strong>handle_one_request</strong></a>(self)</dt><dd><tt>Handle&nbsp;a&nbsp;single&nbsp;HTTP&nbsp;request.<br>
+&nbsp;<br>
+You&nbsp;normally&nbsp;don't&nbsp;need&nbsp;to&nbsp;override&nbsp;this&nbsp;method;&nbsp;see&nbsp;the&nbsp;class<br>
+__doc__&nbsp;string&nbsp;for&nbsp;information&nbsp;on&nbsp;how&nbsp;to&nbsp;handle&nbsp;specific&nbsp;HTTP<br>
+commands&nbsp;such&nbsp;as&nbsp;GET&nbsp;and&nbsp;POST.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-log_date_time_string"><strong>log_date_time_string</strong></a>(self)</dt><dd><tt>Return&nbsp;the&nbsp;current&nbsp;time&nbsp;formatted&nbsp;for&nbsp;logging.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-log_error"><strong>log_error</strong></a>(self, *args)</dt><dd><tt>Log&nbsp;an&nbsp;error.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;called&nbsp;when&nbsp;a&nbsp;request&nbsp;cannot&nbsp;be&nbsp;fulfilled.&nbsp;&nbsp;By<br>
+default&nbsp;it&nbsp;passes&nbsp;the&nbsp;message&nbsp;on&nbsp;to&nbsp;<a href="#SimpleJSONRPCRequestHandler-log_message">log_message</a>().<br>
+&nbsp;<br>
+Arguments&nbsp;are&nbsp;the&nbsp;same&nbsp;as&nbsp;for&nbsp;<a href="#SimpleJSONRPCRequestHandler-log_message">log_message</a>().<br>
+&nbsp;<br>
+XXX&nbsp;This&nbsp;should&nbsp;go&nbsp;to&nbsp;the&nbsp;separate&nbsp;error&nbsp;log.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-log_message"><strong>log_message</strong></a>(self, format, *args)</dt><dd><tt>Log&nbsp;an&nbsp;arbitrary&nbsp;message.<br>
+&nbsp;<br>
+This&nbsp;is&nbsp;used&nbsp;by&nbsp;all&nbsp;other&nbsp;logging&nbsp;functions.&nbsp;&nbsp;Override<br>
+it&nbsp;if&nbsp;you&nbsp;have&nbsp;specific&nbsp;logging&nbsp;wishes.<br>
+&nbsp;<br>
+The&nbsp;first&nbsp;argument,&nbsp;FORMAT,&nbsp;is&nbsp;a&nbsp;format&nbsp;string&nbsp;for&nbsp;the<br>
+message&nbsp;to&nbsp;be&nbsp;logged.&nbsp;&nbsp;If&nbsp;the&nbsp;format&nbsp;string&nbsp;contains<br>
+any&nbsp;%&nbsp;escapes&nbsp;requiring&nbsp;parameters,&nbsp;they&nbsp;should&nbsp;be<br>
+specified&nbsp;as&nbsp;subsequent&nbsp;arguments&nbsp;(it's&nbsp;just&nbsp;like<br>
+printf!).<br>
+&nbsp;<br>
+The&nbsp;client&nbsp;host&nbsp;and&nbsp;current&nbsp;date/time&nbsp;are&nbsp;prefixed&nbsp;to<br>
+every&nbsp;message.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-parse_request"><strong>parse_request</strong></a>(self)</dt><dd><tt>Parse&nbsp;a&nbsp;request&nbsp;(internal).<br>
+&nbsp;<br>
+The&nbsp;request&nbsp;should&nbsp;be&nbsp;stored&nbsp;in&nbsp;self.<strong>raw_requestline</strong>;&nbsp;the&nbsp;results<br>
+are&nbsp;in&nbsp;self.<strong>command</strong>,&nbsp;self.<strong>path</strong>,&nbsp;self.<strong>request_version</strong>&nbsp;and<br>
+self.<strong>headers</strong>.<br>
+&nbsp;<br>
+Return&nbsp;True&nbsp;for&nbsp;success,&nbsp;False&nbsp;for&nbsp;failure;&nbsp;on&nbsp;failure,&nbsp;an<br>
+error&nbsp;is&nbsp;sent&nbsp;back.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-send_error"><strong>send_error</strong></a>(self, code, message<font color="#909090">=None</font>)</dt><dd><tt>Send&nbsp;and&nbsp;log&nbsp;an&nbsp;error&nbsp;reply.<br>
+&nbsp;<br>
+Arguments&nbsp;are&nbsp;the&nbsp;error&nbsp;code,&nbsp;and&nbsp;a&nbsp;detailed&nbsp;message.<br>
+The&nbsp;detailed&nbsp;message&nbsp;defaults&nbsp;to&nbsp;the&nbsp;short&nbsp;entry&nbsp;matching&nbsp;the<br>
+response&nbsp;code.<br>
+&nbsp;<br>
+This&nbsp;sends&nbsp;an&nbsp;error&nbsp;response&nbsp;(so&nbsp;it&nbsp;must&nbsp;be&nbsp;called&nbsp;before&nbsp;any<br>
+output&nbsp;has&nbsp;been&nbsp;generated),&nbsp;logs&nbsp;the&nbsp;error,&nbsp;and&nbsp;finally&nbsp;sends<br>
+a&nbsp;piece&nbsp;of&nbsp;HTML&nbsp;explaining&nbsp;the&nbsp;error&nbsp;to&nbsp;the&nbsp;user.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-send_header"><strong>send_header</strong></a>(self, keyword, value)</dt><dd><tt>Send&nbsp;a&nbsp;MIME&nbsp;header.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-send_response"><strong>send_response</strong></a>(self, code, message<font color="#909090">=None</font>)</dt><dd><tt>Send&nbsp;the&nbsp;response&nbsp;header&nbsp;and&nbsp;log&nbsp;the&nbsp;response&nbsp;code.<br>
+&nbsp;<br>
+Also&nbsp;send&nbsp;two&nbsp;standard&nbsp;headers&nbsp;with&nbsp;the&nbsp;server&nbsp;software<br>
+version&nbsp;and&nbsp;the&nbsp;current&nbsp;date.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-version_string"><strong>version_string</strong></a>(self)</dt><dd><tt>Return&nbsp;the&nbsp;server&nbsp;software&nbsp;version&nbsp;string.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="BaseHTTPServer.html#BaseHTTPRequestHandler">BaseHTTPServer.BaseHTTPRequestHandler</a>:<br>
+<dl><dt><strong>MessageClass</strong> = &lt;class mimetools.Message at 0x829e7ac&gt;<dd><tt>A&nbsp;derived&nbsp;class&nbsp;of&nbsp;rfc822.Message&nbsp;that&nbsp;knows&nbsp;about&nbsp;MIME&nbsp;headers&nbsp;and<br>
+contains&nbsp;some&nbsp;hooks&nbsp;for&nbsp;decoding&nbsp;encoded&nbsp;and&nbsp;multipart&nbsp;messages.</tt></dl>
+
+<dl><dt><strong>error_message_format</strong> = '&lt;head&gt;<font color="#c040c0">\n</font>&lt;title&gt;Error response&lt;/title&gt;<font color="#c040c0">\n</font>&lt;/head&gt;<font color="#c040c0">\n</font>&lt;bo...ode explanation: %(code)s = %(explain)s.<font color="#c040c0">\n</font>&lt;/body&gt;<font color="#c040c0">\n</font>'</dl>
+
+<dl><dt><strong>monthname</strong> = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']</dl>
+
+<dl><dt><strong>protocol_version</strong> = 'HTTP/1.0'</dl>
+
+<dl><dt><strong>responses</strong> = {100: ('Continue', 'Request received, please continue'), 101: ('Switching Protocols', 'Switching to new protocol; obey Upgrade header'), 200: ('OK', 'Request fulfilled, document follows'), 201: ('Created', 'Document created, URL follows'), 202: ('Accepted', 'Request accepted, processing continues off-line'), 203: ('Non-Authoritative Information', 'Request fulfilled from cache'), 204: ('No Content', 'Request fulfilled, nothing follows'), 205: ('Reset Content', 'Clear input form for further input.'), 206: ('Partial Content', 'Partial content follows.'), 300: ('Multiple Choices', 'Object has several resources -- see URI list'), ...}</dl>
+
+<dl><dt><strong>server_version</strong> = 'BaseHTTP/0.3'</dl>
+
+<dl><dt><strong>sys_version</strong> = 'Python/2.5.2'</dl>
+
+<dl><dt><strong>weekdayname</strong> = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#StreamRequestHandler">SocketServer.StreamRequestHandler</a>:<br>
+<dl><dt><a name="SimpleJSONRPCRequestHandler-finish"><strong>finish</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCRequestHandler-setup"><strong>setup</strong></a>(self)</dt></dl>
+
+<hr>
+Data and other attributes inherited from <a href="SocketServer.html#StreamRequestHandler">SocketServer.StreamRequestHandler</a>:<br>
+<dl><dt><strong>rbufsize</strong> = -1</dl>
+
+<dl><dt><strong>wbufsize</strong> = 0</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#BaseRequestHandler">SocketServer.BaseRequestHandler</a>:<br>
+<dl><dt><a name="SimpleJSONRPCRequestHandler-__init__"><strong>__init__</strong></a>(self, request, client_address, server)</dt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SimpleJSONRPCServer">class <strong>SimpleJSONRPCServer</strong></a>(<a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>, <a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Simple&nbsp;JSON-RPC&nbsp;server.<br>
+&nbsp;<br>
+Simple&nbsp;JSON-RPC&nbsp;server&nbsp;that&nbsp;allows&nbsp;functions&nbsp;and&nbsp;a&nbsp;single&nbsp;instance<br>
+to&nbsp;be&nbsp;installed&nbsp;to&nbsp;handle&nbsp;requests.&nbsp;The&nbsp;default&nbsp;implementation<br>
+attempts&nbsp;to&nbsp;dispatch&nbsp;JSON-RPC&nbsp;calls&nbsp;to&nbsp;the&nbsp;functions&nbsp;or&nbsp;instance<br>
+installed&nbsp;in&nbsp;the&nbsp;server.&nbsp;Override&nbsp;the&nbsp;_dispatch&nbsp;method&nbsp;inhereted<br>
+from&nbsp;<a href="#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>&nbsp;to&nbsp;change&nbsp;this&nbsp;behavior.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="SimpleJSONRPCServer.html#SimpleJSONRPCServer">SimpleJSONRPCServer</a></dd>
+<dd><a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a></dd>
+<dd><a href="SocketServer.html#BaseServer">SocketServer.BaseServer</a></dd>
+<dd><a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="SimpleJSONRPCServer-__init__"><strong>__init__</strong></a>(self, addr, requestHandler<font color="#909090">=&lt;class SimpleJSONRPCServer.SimpleJSONRPCRequestHandler at 0x829065c&gt;</font>, logRequests<font color="#909090">=True</font>)</dt></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>allow_reuse_address</strong> = True</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>:<br>
+<dl><dt><a name="SimpleJSONRPCServer-close_request"><strong>close_request</strong></a>(self, request)</dt><dd><tt>Called&nbsp;to&nbsp;clean&nbsp;up&nbsp;an&nbsp;individual&nbsp;request.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-fileno"><strong>fileno</strong></a>(self)</dt><dd><tt>Return&nbsp;socket&nbsp;file&nbsp;number.<br>
+&nbsp;<br>
+Interface&nbsp;required&nbsp;by&nbsp;select().</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-get_request"><strong>get_request</strong></a>(self)</dt><dd><tt>Get&nbsp;the&nbsp;request&nbsp;and&nbsp;client&nbsp;address&nbsp;from&nbsp;the&nbsp;socket.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-server_activate"><strong>server_activate</strong></a>(self)</dt><dd><tt>Called&nbsp;by&nbsp;constructor&nbsp;to&nbsp;activate&nbsp;the&nbsp;server.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-server_bind"><strong>server_bind</strong></a>(self)</dt><dd><tt>Called&nbsp;by&nbsp;constructor&nbsp;to&nbsp;bind&nbsp;the&nbsp;socket.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-server_close"><strong>server_close</strong></a>(self)</dt><dd><tt>Called&nbsp;to&nbsp;clean-up&nbsp;the&nbsp;server.<br>
+&nbsp;<br>
+May&nbsp;be&nbsp;overridden.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="SocketServer.html#TCPServer">SocketServer.TCPServer</a>:<br>
+<dl><dt><strong>address_family</strong> = 2</dl>
+
+<dl><dt><strong>request_queue_size</strong> = 5</dl>
+
+<dl><dt><strong>socket_type</strong> = 1</dl>
+
+<hr>
+Methods inherited from <a href="SocketServer.html#BaseServer">SocketServer.BaseServer</a>:<br>
+<dl><dt><a name="SimpleJSONRPCServer-finish_request"><strong>finish_request</strong></a>(self, request, client_address)</dt><dd><tt>Finish&nbsp;one&nbsp;request&nbsp;by&nbsp;instantiating&nbsp;RequestHandlerClass.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-handle_error"><strong>handle_error</strong></a>(self, request, client_address)</dt><dd><tt>Handle&nbsp;an&nbsp;error&nbsp;gracefully.&nbsp;&nbsp;May&nbsp;be&nbsp;overridden.<br>
+&nbsp;<br>
+The&nbsp;default&nbsp;is&nbsp;to&nbsp;print&nbsp;a&nbsp;traceback&nbsp;and&nbsp;continue.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-handle_request"><strong>handle_request</strong></a>(self)</dt><dd><tt>Handle&nbsp;one&nbsp;request,&nbsp;possibly&nbsp;blocking.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-process_request"><strong>process_request</strong></a>(self, request, client_address)</dt><dd><tt>Call&nbsp;finish_request.<br>
+&nbsp;<br>
+Overridden&nbsp;by&nbsp;ForkingMixIn&nbsp;and&nbsp;ThreadingMixIn.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-serve_forever"><strong>serve_forever</strong></a>(self)</dt><dd><tt>Handle&nbsp;one&nbsp;request&nbsp;at&nbsp;a&nbsp;time&nbsp;until&nbsp;doomsday.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-verify_request"><strong>verify_request</strong></a>(self, request, client_address)</dt><dd><tt>Verify&nbsp;the&nbsp;request.&nbsp;&nbsp;May&nbsp;be&nbsp;overridden.<br>
+&nbsp;<br>
+Return&nbsp;True&nbsp;if&nbsp;we&nbsp;should&nbsp;proceed&nbsp;with&nbsp;this&nbsp;request.</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="SimpleJSONRPCServer.html#SimpleJSONRPCDispatcher">SimpleJSONRPCDispatcher</a>:<br>
+<dl><dt><a name="SimpleJSONRPCServer-datetime_to_seconds"><strong>datetime_to_seconds</strong></a>(self, dt)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-exception_to_dict"><strong>exception_to_dict</strong></a>(self, e, code, context)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-generate_response"><strong>generate_response</strong></a>(self, result<font color="#909090">=None</font>, error<font color="#909090">=None</font>, id<font color="#909090">=None</font>)</dt></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-register_function"><strong>register_function</strong></a>(self, function, name<font color="#909090">=None</font>)</dt><dd><tt>Registers&nbsp;a&nbsp;function&nbsp;to&nbsp;respond&nbsp;to&nbsp;JSON-RPC&nbsp;requests.<br>
+&nbsp;<br>
+The&nbsp;optional&nbsp;name&nbsp;argument&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;set&nbsp;a&nbsp;Unicode&nbsp;name<br>
+for&nbsp;the&nbsp;function.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-register_instance"><strong>register_instance</strong></a>(self, instance)</dt><dd><tt>Registers&nbsp;an&nbsp;instance&nbsp;to&nbsp;respond&nbsp;to&nbsp;JSON-RPC&nbsp;requests.<br>
+&nbsp;<br>
+Only&nbsp;one&nbsp;instance&nbsp;can&nbsp;be&nbsp;installed&nbsp;at&nbsp;a&nbsp;time.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;has&nbsp;a&nbsp;_dispatch&nbsp;method&nbsp;then&nbsp;that<br>
+method&nbsp;will&nbsp;be&nbsp;called&nbsp;with&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;JSON-RPC&nbsp;method&nbsp;and<br>
+its&nbsp;parameters&nbsp;as&nbsp;a&nbsp;tuple&nbsp;or&nbsp;a&nbsp;dict&nbsp;(depending&nbsp;upon&nbsp;whether<br>
+arguments&nbsp;were&nbsp;specified&nbsp;using&nbsp;position&nbsp;or&nbsp;naming,<br>
+respectively),&nbsp;e.g.&nbsp;instance._dispatch('add',(2,3))<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;registered&nbsp;instance&nbsp;does&nbsp;not&nbsp;have&nbsp;a&nbsp;_dispatch&nbsp;method<br>
+then&nbsp;the&nbsp;instance&nbsp;will&nbsp;be&nbsp;searched&nbsp;to&nbsp;find&nbsp;a&nbsp;matching&nbsp;method<br>
+and,&nbsp;if&nbsp;found,&nbsp;will&nbsp;be&nbsp;called.&nbsp;Methods&nbsp;beginning&nbsp;with&nbsp;an&nbsp;'_'<br>
+are&nbsp;considered&nbsp;private&nbsp;and&nbsp;will&nbsp;not&nbsp;be&nbsp;called&nbsp;by<br>
+<a href="#SimpleJSONRPCServer">SimpleJSONRPCServer</a>.<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;registered&nbsp;function&nbsp;matches&nbsp;a&nbsp;JSON-RPC&nbsp;request,&nbsp;then&nbsp;it<br>
+will&nbsp;be&nbsp;called&nbsp;instead&nbsp;of&nbsp;the&nbsp;registered&nbsp;instance.<br>
+&nbsp;<br>
+Dotted&nbsp;names&nbsp;are&nbsp;not&nbsp;supported.&nbsp;&nbsp;There's&nbsp;a&nbsp;couple&nbsp;of&nbsp;ways<br>
+around&nbsp;this&nbsp;that&nbsp;are&nbsp;actually&nbsp;secure,&nbsp;as&nbsp;opposed&nbsp;to&nbsp;using<br>
+dotted&nbsp;names...&nbsp;which&nbsp;isn't.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-register_introspection_functions"><strong>register_introspection_functions</strong></a>(self)</dt><dd><tt>Registers&nbsp;the&nbsp;JSON-RPC&nbsp;introspection&nbsp;methods&nbsp;in&nbsp;the&nbsp;system<br>
+namespace.<br>
+&nbsp;<br>
+We&nbsp;also&nbsp;register&nbsp;a&nbsp;couple&nbsp;of&nbsp;holdovers&nbsp;from&nbsp;XML-RPC.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-set_address"><strong>set_address</strong></a>(self, address)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;address.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-set_help_url"><strong>set_help_url</strong></a>(self, help_url)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;help&nbsp;URL.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-set_summary"><strong>set_summary</strong></a>(self, summary)</dt><dd><tt>Sets&nbsp;this&nbsp;server's&nbsp;summary.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-system_describe"><strong>system_describe</strong></a>(self)</dt><dd><tt>system.describe()&nbsp;=&gt;&nbsp;{'sdversion':&nbsp;'1.0',&nbsp;'name':&nbsp;...}</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-system_listMethods"><strong>system_listMethods</strong></a>(self)</dt><dd><tt>system.listMethods()&nbsp;=&gt;&nbsp;['add',&nbsp;'subtract',&nbsp;'multiple']<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;the&nbsp;methods&nbsp;supported&nbsp;by&nbsp;the&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-system_methodHelp"><strong>system_methodHelp</strong></a>(self, method_name)</dt><dd><tt>system.methodHelp('add')&nbsp;=&gt;&nbsp;"Adds&nbsp;two&nbsp;integers&nbsp;together"<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;string&nbsp;containing&nbsp;documentation&nbsp;for&nbsp;the&nbsp;specified&nbsp;method.</tt></dd></dl>
+
+<dl><dt><a name="SimpleJSONRPCServer-system_methodSignature"><strong>system_methodSignature</strong></a>(self, method_name)</dt><dd><tt>system.methodSignature('add')&nbsp;=&gt;&nbsp;[double,&nbsp;int,&nbsp;int]<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;describing&nbsp;the&nbsp;signature&nbsp;of&nbsp;the&nbsp;method.&nbsp;In&nbsp;the<br>
+above&nbsp;example,&nbsp;the&nbsp;add&nbsp;method&nbsp;takes&nbsp;two&nbsp;integers&nbsp;as&nbsp;arguments<br>
+and&nbsp;returns&nbsp;a&nbsp;double&nbsp;result.<br>
+&nbsp;<br>
+This&nbsp;server&nbsp;does&nbsp;NOT&nbsp;support&nbsp;system.methodSignature.</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-list_public_methods"><strong>list_public_methods</strong></a>(obj)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;attribute&nbsp;strings,&nbsp;found&nbsp;in&nbsp;the&nbsp;specified<br>
+object,&nbsp;which&nbsp;represent&nbsp;callable&nbsp;attributes</tt></dd></dl>
+ <dl><dt><a name="-remove_duplicates"><strong>remove_duplicates</strong></a>(lst)</dt><dd><tt><a href="#-remove_duplicates">remove_duplicates</a>([2,2,2,1,3,3])&nbsp;=&gt;&nbsp;[3,1,2]<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;copy&nbsp;of&nbsp;a&nbsp;list&nbsp;without&nbsp;duplicates.&nbsp;Every&nbsp;list<br>
+item&nbsp;must&nbsp;be&nbsp;hashable&nbsp;and&nbsp;the&nbsp;order&nbsp;of&nbsp;the&nbsp;items&nbsp;in&nbsp;the<br>
+resulting&nbsp;list&nbsp;is&nbsp;not&nbsp;defined.</tt></dd></dl>
+ <dl><dt><a name="-resolve_dotted_attribute"><strong>resolve_dotted_attribute</strong></a>(obj, attr, allow_dotted_names<font color="#909090">=True</font>)</dt><dd><tt><a href="#-resolve_dotted_attribute">resolve_dotted_attribute</a>(a,&nbsp;'b.c.d')&nbsp;=&gt;&nbsp;a.b.c.d<br>
+&nbsp;<br>
+Resolves&nbsp;a&nbsp;dotted&nbsp;attribute&nbsp;name&nbsp;to&nbsp;an&nbsp;object.&nbsp;&nbsp;Raises<br>
+an&nbsp;AttributeError&nbsp;if&nbsp;any&nbsp;attribute&nbsp;in&nbsp;the&nbsp;chain&nbsp;starts&nbsp;with&nbsp;a&nbsp;'_'.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;optional&nbsp;allow_dotted_names&nbsp;argument&nbsp;is&nbsp;false,&nbsp;dots&nbsp;are&nbsp;not<br>
+supported&nbsp;and&nbsp;this&nbsp;function&nbsp;operates&nbsp;similar&nbsp;to&nbsp;getattr(obj,&nbsp;attr).</tt></dd></dl>
+</td></tr></table>
+</body></html>

@@ -1,0 +1,78 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module BaseRegexps</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>BaseRegexps</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/BaseRegexps.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/BaseRegexps.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="re.html">re</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-line_to_command_event"><strong>line_to_command_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;command&nbsp;event,&nbsp;returns&nbsp;a&nbsp;command&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_connection_event"><strong>line_to_connection_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;connection&nbsp;event,&nbsp;returns&nbsp;a&nbsp;connection&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_death_event"><strong>line_to_death_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;death&nbsp;event,&nbsp;returns&nbsp;a&nbsp;death&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_flag_event"><strong>line_to_flag_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;flag&nbsp;event,&nbsp;returns&nbsp;a&nbsp;flag&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_join_event"><strong>line_to_join_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;join&nbsp;event,&nbsp;returns&nbsp;a&nbsp;join&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_map_event"><strong>line_to_map_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;map&nbsp;change&nbsp;event,&nbsp;returns&nbsp;a&nbsp;map&nbsp;change&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+ <dl><dt><a name="-line_to_rcon_event"><strong>line_to_rcon_event</strong></a>(event_dt, line)</dt><dd><tt>If&nbsp;line&nbsp;represents&nbsp;a&nbsp;RCON&nbsp;event,&nbsp;returns&nbsp;a&nbsp;RCON&nbsp;Event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;instance&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;to&nbsp;parse.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>NUMS_TO_WEAPONS</strong> = {'1': 'fist', '10': 'telefrag', '11': 'unknown', '12': 'suicide', '13': 'telefuck', '2': 'chainsaw', '3': 'pistol', '4': 'shotgun', '5': 'super shotgun', '6': 'chaingun', ...}<br>
+<strong>REGEXPS_AND_COMMANDS</strong> = [('^Unknown command (?P&lt;command&gt;.*)$', 'unknown_command'), (r'(?P&lt;players&gt;\d\d|\d) players$', 'number_of_players'), (r'(?P&lt;player_num&gt;\d\d|\d):  (?P&lt;player_name&gt;.*) \(...\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d))', 'player_line')]<br>
+<strong>REGEXPS_AND_CONNECTIONS</strong> = []<br>
+<strong>REGEXPS_AND_DEATHS</strong> = []<br>
+<strong>REGEXPS_AND_FLAGS</strong> = []<br>
+<strong>REGEXPS_AND_JOINS</strong> = []<br>
+<strong>REGEXPS_AND_RCONS</strong> = [('^RCON for (.*) is denied!$', 'rcon_denied'), ('^RCON for (.*) is granted!$', 'rcon_granted'), (r'^(.*) RCON \((.*) \)$', 'rcon_action')]<br>
+<strong>REGEXPS_AND_WEAPONS</strong> = []</td></tr></table>
+</body></html>

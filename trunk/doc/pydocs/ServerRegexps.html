@@ -1,0 +1,48 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ServerRegexps</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>ServerRegexps</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/ServerRegexps.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/ServerRegexps.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ServerRegexps.html#Regexps">Regexps</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Regexps">class <strong>Regexps</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Data and other attributes defined here:<br>
+<dl><dt><strong>COMMANDS</strong> = [('^Unknown command "(?P&lt;command&gt;.*)"$', 'unknown_command'), (r'^(?P&lt;player_ip&gt;(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|...|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) added to banlist$', 'addban_command'), ("^couldn't find (?P&lt;bot_name&gt;.*) in bots.cfg$", 'addbot_command'), (r'^(?P&lt;player_ip&gt;(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|...d|\*)\.(?:\d\d\d|\d\d|\d|\*)) \((?P&lt;reason&gt;.*)\)$', 'banlist_command'), (r'^Cleared (?P&lt;cleared_maps&gt;\d\d\d|\d\d|\d) maps from que.$', 'clearmaplist_command'), ('^"(?P&lt;var_name&gt;.*)" is "(?P&lt;var_value&gt;.*)"$', 'get_command'), (r'^\s.\*\*\s*Player (?P&lt;player_num&gt;\d\d|\d) not found!$', 'kick_command'), (r'^&gt;\s*(?P&lt;player_name&gt;.*) was kicked from the game (?P&lt;reason&gt;)$', 'kick_command'), (r'^(?P&lt;player_ip&gt;(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|...\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) unbanned.$', 'killban_command'), ('^No such ban$', 'killban_command'), (r'^(?P&lt;sequence_number&gt;\d\d\d|\d\d|\d)\. (?P&lt;map_number&gt;.*)$', 'maplist_command'), (r'^(?P&lt;player_num&gt;\d\d|\d):\s*(?P&lt;player_name&gt;.*)\...\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d))', 'players_command'), ('^Removed all bots.$', 'removebots_command'), ('^&gt; === ALL SCORES RESET BY SERVER ADMIN ===$', 'resetscores_command'), (r'^\] CONSOLE \[ (?P&lt;message&gt;.*)$', 'say_command'), ('^&gt; (?P&lt;var_name&gt;.*) is now (?P&lt;var_value&gt;.*)$', 'set_command'), (r'^(?P&lt;wad_number&gt;\d\d\d|\d\d|\d)\. (?P&lt;wad_name&gt;.*.wad)$', 'wads_command')]</dl>
+
+<dl><dt><strong>CONNECTIONS</strong> = [('^&gt; (.*) has connected.$', 'connection'), ('^&gt; (.*) disconnected$', 'disconnection')]</dl>
+
+<dl><dt><strong>DEATHS</strong> = [('^&gt; (.*) should have stood back.$', 'rocket suicide'), ('^&gt; (.*) mutated.$', 'mutation'), ('^&gt; (.*) died.$', 'death'), ('^&gt; (.*) melted.$', 'melting'), ('^&gt; (.*) killed himself.$', 'suicide'), ('^&gt; (.*) killed herself.$', 'suicide'), ('^&gt; (.*) fell too far.$', 'falling'), ('^&gt; (.*) tried to leave.$', 'exiting'), ("^&gt; (.*) can't swim.$", 'drowning'), ('^&gt; (.*) checks her glasses.$', 'teamkill'), ('^&gt; (.*) checks his glasses.$', 'teamkill')]</dl>
+
+<dl><dt><strong>FLAGS</strong> = [('^&gt; (.*) has taken the (.*) flag', 'flag_touch'), ('^&gt; (.*) lost the (.*) flag', 'flag_loss'), ('^&gt; (.*) returned the (.*) flag', 'flag_return'), ('^&gt; (.*) picked up the (.*) flag', 'flag_pick'), ('^&gt; (.*) scored for the (.*) team', 'flag_cap')]</dl>
+
+<dl><dt><strong>JOINS</strong> = [('^&gt; (.*) is now on the (Blue|Red|White|Green) team.$', 'team_switch'), ('^&gt; (.*) joined the game.$', 'game_join'), ('^&gt; (.*) joined the game on the (Blue|Red|White|Green) team.$', 'team_join')]</dl>
+
+<dl><dt><strong>NUMS_TO_WEAPONS</strong> = {'1': 'fist', '10': 'telefrag', '11': 'unknown', '12': 'suicide', '13': 'telefuck', '2': 'chainsaw', '3': 'pistol', '4': 'shotgun', '5': 'super shotgun', '6': 'chaingun', ...}</dl>
+
+<dl><dt><strong>RCONS</strong> = [('^RCON for (.*) is denied!$', 'rcon_denied'), ('^RCON for (.*) is granted!$', 'rcon_granted'), (r'^(.*) RCON \((.*) \)$', 'rcon_action')]</dl>
+
+<dl><dt><strong>WEAPONS</strong> = [("^&gt; (.*) chewed on (.*)'s fist.$", 'fist'), ("^&gt; (.*) was mowed over by (.*)'s chainsaw.$", 'chainsaw'), ("^&gt; (.*) was tickled by (.*)'s pea shooter.$", 'pistol'), ("^&gt; (.*) chewed on (.*)'s boomstick.$", 'shotgun'), ("^&gt; (.*) was mowed down by (.*)'s chaingun.$", 'chaingun'), ("^&gt; (.*) was splattered by (.*)'s super shotgun.$", 'super shotgun'), ("^&gt; (.*) rode (.*)'s rocket.$", 'rocket launcher'), ("^&gt; (.*) was melted by (.*)'s plasma gun.$", 'plasma gun'), ("^&gt; (.*) couldn't hide from (.*)'s BFG.$", 'bfg'), ("^&gt; (.*) was splintered by (.*)'s BFG.$", 'bfg'), ('^&gt; (.*) was telefragged by (.*).$', 'telefrag')]</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>
