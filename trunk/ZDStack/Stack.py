@@ -316,25 +316,57 @@ class Stack(Server):
         return self._get_player(zserv_name, player_name).export()
 
     def get_all_players(self, zserv_name):
+        """Returns a list of marshallable representations of players.
+
+        zserv_name: a string representing the name of the ZServ
+                    from which to retrieve the players
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).players.export()
 
     def list_player_names(self, zserv_name):
+        """Returns a list of strings representing player names.
+
+        zserv_name: a string representing the name of the ZServ
+                    from which to retrieve the names
+
+        """
         logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         return self._get_zserv(zserv_name).players.keys()
 
     def get_team(self, zserv_name, team_color):
+        """Returns a marshallable representation of a team.
+
+        zserv_name: a string representing the name of the ZServ from
+                    which to retrieve the team
+        team_color: a string representing the color of the team to
+                    retrieve
+
+        """
         logging.getLogger('').debug('')
         return self._get_team(zserv_name, team_color).export()
 
     def get_all_teams(self, zserv_name):
+        """Returns a list of marshallable representations of all teams.
+
+        zserv_name: a string representing the name of the ZServ from
+                    which to retrieve the teams
+
+        """
         logging.getLogger('').debug('')
         self._get_zserv(zserv_name)
         return self.zservs[zserv_name].teams.export()
 
     def get_current_map(self, zserv_name):
+        """Returns a marshallable representation of the current map.
+
+        zserv_name: a string representing the name of the ZServ from
+                    which to retrieve the map
+
+        """
         logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         if zserv.map:
@@ -343,6 +375,22 @@ class Stack(Server):
             return None
 
     def get_remembered_stats(self, zserv_name, back=1):
+        """Returns a marshallable representation map stats.
+
+        zserv_name: a string representing the name of the ZServ from
+                    which to retrieve the stats
+        back:       which map to retrieve, starts at/defaults to 1
+
+        Note that remembered stats are held in a list ordered from
+        least to most recent, i.e.:
+
+          [map01, map02, map03, map04, map07]
+
+        So a back value of 1 retrieves map07, 2 retrieves map04, etc.
+        Also, the current map is not held in this list, use
+        get_current_map() for that.
+
+        """
         logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         slots = zserv.memory_slots
@@ -351,6 +399,12 @@ class Stack(Server):
         return zserv.remembered_stats[-back].export()
 
     def get_all_remembered_stats(self, zserv_name):
+        """Returns a list of marshallable representations of all stats.
+
+        zserv_name: a string representing the name of the ZServ from
+                    which to retrieve the stats
+
+        """
         logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).remembered_stats.export()
 
@@ -576,6 +630,8 @@ class Stack(Server):
         self.rpc_server.register_function(self.get_zserv)
         self.rpc_server.register_function(self.get_all_zservs)
         self.rpc_server.register_function(self.list_zserv_names)
+        self.rpc_server.register_function(self.get_zserv_config)
+        self.rpc_server.register_function(self.set_zserv_config)
         self.rpc_server.register_function(self.get_remembered_stats)
         self.rpc_server.register_function(self.get_all_remembered_stats)
         self.rpc_server.register_function(self.get_current_map)

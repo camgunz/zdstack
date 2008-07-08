@@ -82,14 +82,25 @@ class BasePlayer(BaseStatKeeper):
         logging.getLogger('').debug('')
         self.adversaries.add(adversary)
         for a in self.adversaries:
-            if a not in self.player_frags:
-                self.player_frags[a] = 0
-            if a not in self.player_deaths:
-                self.player_deaths[a] = 0
-            if a not in self.player_weapon_frags:
-                self.player_weapon_frags[a] = {}.fromkeys(self.weapons, 0)
-            if a not in self.player_weapon_deaths:
-                self.player_weapon_deaths[a] = {}.fromkeys(self.weapons, 0)
+            self._add_adversary(a)
+
+    def _add_adversary(self, adversary):
+        """Adds an adversary to frag stats.
+
+        adversary: a string representing the name of an adversary.
+
+        This method is called on every adversary in self.adversaries by
+        self.add_adversary.  It exists to be overridden by subclasses.
+       
+        """
+        if adversary not in self.player_frags:
+            self.player_frags[adversary] = 0
+        if adversary not in self.player_deaths:
+            self.player_deaths[adversary] = 0
+        if adversary not in self.player_weapon_frags:
+            self.player_weapon_frags[adversary] = {}.fromkeys(self.weapons, 0)
+        if adversary not in self.player_weapon_deaths:
+            self.player_weapon_deaths[adversary] = {}.fromkeys(self.weapons, 0)
 
     def add_weapon(self, weapon):
         """Adds a weapon to frag stats.
@@ -100,16 +111,27 @@ class BasePlayer(BaseStatKeeper):
         logging.getLogger('').debug('')
         self.weapons.add(weapon)
         for weapon in self.weapons:
-            if weapon not in self.weapon_frags:
-                self.weapon_frags[weapon] = 0
-            if weapon not in self.weapon_deaths:
-                self.weapon_deaths[weapon] = 0
-            for player in self.player_weapon_frags:
-                if weapon not in self.player_weapon_frags[player]:
-                    self.player_weapon_frags[player][weapon] = 0
-            for player in self.player_weapon_deaths:
-                if weapon not in self.player_weapon_deaths[player]:
-                    self.player_weapon_deaths[player][weapon] = 0
+            self._add_weapon(weapon)
+
+    def _add_weapon(self, weapon):
+        """Private method.
+
+        weapon: a string representing the name of a weapon to add
+
+        This method is called on every weapon in self.weapons by
+        self.add_weapon.  It exists to be overridden by subclasses.
+
+        """
+        if weapon not in self.weapon_frags:
+            self.weapon_frags[weapon] = 0
+        if weapon not in self.weapon_deaths:
+            self.weapon_deaths[weapon] = 0
+        for player in self.player_weapon_frags:
+            if weapon not in self.player_weapon_frags[player]:
+                self.player_weapon_frags[player][weapon] = 0
+        for player in self.player_weapon_deaths:
+            if weapon not in self.player_weapon_deaths[player]:
+                self.player_weapon_deaths[player][weapon] = 0
 
     def add_frag(self, frag):
         """Adds a frag to frag stats.
@@ -233,17 +255,17 @@ class BasePlayer(BaseStatKeeper):
         values = [self.name, get_ratio(self.total_frags, self.total_deaths)]
         for weapon in weapons:
             columns.append('Frag with %s' % (weapon))
-            values.append(d['weapons'][weapon]['frags'])
             columns.append('Death by %s' % (weapon))
-            values.append(d['weapons'][weapon]['deaths'])
             columns.append('Ratio with %s' % (weapon))
+            values.append(d['weapons'][weapon]['frags'])
+            values.append(d['weapons'][weapon]['deaths'])
             values.append(d['weapons'][weapon]['ratio'])
         for adversary in adversaries:
             columns.append('Fragged %s' % (adversary))
-            values.append(d['adversaries'][adversary]['frags'])
             columns.append('Fragged by %s' % (adversary))
-            values.append(d['adversaries'][adversary]['deaths'])
             columns.append('Ratio against %s' % (adversary))
+            values.append(d['adversaries'][adversary]['frags'])
+            values.append(d['adversaries'][adversary]['deaths'])
             values.append(d['adversaries'][adversary]['ratio'])
         return dict(zip(columns, values))
 

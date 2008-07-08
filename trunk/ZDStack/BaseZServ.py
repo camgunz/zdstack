@@ -17,12 +17,18 @@ class BaseZServ:
     """BaseZServ represents the base ZServ class.
 
     BaseZServ does the following:
-        * Handles configuration of the zserv process
-        * Provides control over the zserv process
-        * Provides a method to communicate with the zserv process
-        * Exports server configuration information
+
+      * Handles configuration of the zserv process
+      * Provides control over the zserv process
+      * Provides a method to communicate with the zserv process
+      * Exports server configuration information
 
     """
+
+    # There are probably a lot of race conditions here...
+    # TODO: add locks, specifically in RPC-accessible methods and
+    #       around the data structures they use.
+
 
     def __init__(self, name, type, config, zdstack):
         """Initializes a BaseZServ instance.
