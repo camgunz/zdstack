@@ -48,7 +48,7 @@ def ban_teamkillers(event, zserv):
         fragger.teamkills = 0
     if not hasattr(fraggee, 'teamkills'):
         fragger.teamkills = 0
-    if fragger.team == fraggee.team and fragger:
+    if fragger.team == fraggee.team and fragger.name != fraggee.name:
         if fragger.teamkills == (TEAMKILL_LIMIT - 1):
             msg = "%s, one more teamkill and you will be banned" 
             zserv.say(msg % event.data['fragger'])
