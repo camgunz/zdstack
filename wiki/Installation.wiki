@@ -1,5 +1,5 @@
 #summary Instructions for installing ZDStack.
-#labels Featured
+#labels Featured,Phase-Deploy
 
 = Recommended Steps To Install ZDStack =
 
