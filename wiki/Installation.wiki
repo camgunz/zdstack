@@ -4,9 +4,9 @@
 
   # Download ZDStack
   # Download and install the [http://code.google.com/p/zdstack/wiki/Requirements requirements]
-  # `tar xjf ZDStack-*.tar.bz2`
-  # `cd zdstack`
-  # `python setup.py install --prefix=~/ZDStack` (or wherever you'd like to install it)
+  # `$ tar xjf ZDStack-*.tar.bz2`
+  # `$ cd zdstack`
+  # `$ python setup.py install --prefix=~/ZDStack` (or wherever you'd like to install it)
   # Install the ZDStack configuration file
 
 = Installing the Example Configuration File =
