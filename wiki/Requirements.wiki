@@ -1,5 +1,5 @@
 ﻿#summary ZDStack Requirements.
-#labels Featured
+#labels Featured,Phase-Requirements
 
 = Supported Platforms =
 
