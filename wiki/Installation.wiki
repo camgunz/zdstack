@@ -1,4 +1,5 @@
 #summary Instructions for installing ZDStack.
+#labels Featured
 
 = Recommended Steps To Install ZDStack =
 
