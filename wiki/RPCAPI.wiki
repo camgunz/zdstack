@@ -1,0 +1,24 @@
+#summary RPC Methods and Description
+
+|| Method || Usage || Return Value || Implemented || Tested ||
+|| start_zserv() || {{{start_zserv(zserv_name)}}} || True on Success || yes || yes ||
+|| start_all_zservs() || {{{start_all_zservs()}}} || True on Success || yes || partially ||
+|| stop_zserv() || {{{stop_zserv(zserv_name)}}} || True on Success || yes || partially ||
+|| stop_all_zservs() || {{{stop_all_zservs()}}} || True on Success || yes || partially ||
+|| restart_zserv() || {{{restart_zserv(zserv_name)}}} || True on Success || yes || partially ||
+|| restart_all_zservs() || {{{restart_all_zservs()}}} || True on Success || yes || partially ||
+|| get_uptime() || {{{get_uptime(zserv_name)}}} || seconds as an int || yes || no ||
+|| get_zserv() || {{{get_zserv(zserv_name)}}} || a ZservDict || yes || yes ||
+|| get_all_zservs() || {{{get_all_zservs()}}} || a list of ZservDict || yes || yes ||
+|| list_zserv_names() || {{{list_zserv_names()}}} || a list of zserv names as strings || yes || yes ||
+|| get_current_map() || {{{get_current_map(zserv_name)}}} || a MapDict || yes || yes ||
+|| get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict || yes || partially ||
+|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDict instances || yes || yes ||
+|| get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict || yes || partially ||
+|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDict instances || yes || yes ||
+|| list_player_names() || {{{list_player_names(zserv_name)}}} || a list of player names as strings || yes || partially ||
+|| get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict || yes || yes ||
+|| get_status() || {{{get_status(zserv_name)}}} || ZServ status as a string, either 'Stopped' or 'Running' || yes || no ||
+|| reload_config() || {{{reload_config(zserv_name)}}} || True on success || yes || partially ||
+|| reload_all_configs() || {{{reload_all_configs()}}} || True on success || yes || partially ||
+|| send_to_zserv() || {{{send_to_zserv(zserv_name, message, return_lines=40)}}} || a list of General log lines as strings || partially || partially ||
