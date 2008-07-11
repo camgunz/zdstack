@@ -1,19 +1,17 @@
 ﻿#summary Todo list for the current release of ZDStack
 
-  * ~~Test new frag representation... there's still a little more work to do on this.~~
+  * ~~Test new frag representation.~~
 
-  * Test all the server response methods.
-
-  * Generate !PyDoc stuff for plugin authors.
+  * ~~Generate !PyDoc stuff for plugin authors.~~
 
   * Make sure the URL structuring of ZDWebStats works OK (i.e., at the root and at an arbitrary relative location).
 
   * Fix ugly server info stuff in ZDWebStats.  Probably make it so that $SERVER_URL/$SERVER/ displays server info, and $SERVER_URL/$SERVER/$MAP_NUM/ displays what we're used to... necessitating changes in the main page as well (server name goes to server info, map name goes to map stats).
 
+  * Test all the server response methods.
+
   * Test on-the-fly config modification.
 
   * Augment setup.py to install the sample config file in the proper location (i.e., if root install in /etc/zdstack, otherwise install in ~/.zdstack).
-
-  * Augment setup.py to install the PyDocs in $PREFIX/share/doc/ZDStack.
 
   * Add a README file, and an INSTALL file.
