@@ -3,14 +3,14 @@
 
 =Environment Variables=
 
-POSIX operating systems like BSD, Mac OS X and Linux have a concept called *Environment Variables*, which basically store information so that the programs you run can retrieve it later.  Some examples include DOOMWADDIR, which some DooM source ports use to search for WAD files.
+POSIX operating systems like BSD, Mac OS X and Linux have a concept called *Environment Variables*, which basically store information so that the programs you run can retrieve it later.  An example is DOOMWADDIR, which some DooM source ports use to search for WAD files.
 
 =Using and Setting Environment Variables=
 
 Different shells have different ways of doing this, however, the two main styles are BASH and CSH.
 
-BASH Style: `export PYTHONPATH=~/ZDStack/lib/python2.4/site-packages/ZDStack`
-CSH Style: `setenv PYTHONPATH ~/ZDStack/lib/python2.4/site-packages/ZDStack`
+  * BASH Style: `export PYTHONPATH=~/ZDStack/lib/python2.4/site-packages/ZDStack`
+  * CSH Style: `setenv PYTHONPATH ~/ZDStack/lib/python2.4/site-packages/ZDStack`
 
 TCSH uses the same style as CSH.
 
@@ -18,6 +18,18 @@ TCSH uses the same style as CSH.
 
 When you log out, your environment is reset, so any variables you may have set are lost.  You can automate the setting of environment variables by saving the commands in an "rc" file, however, this file is also different depending upon which shell you are using.
 
-BASH rc file: ~/.bashrc
-CSH rc file: ~/.cshrc
-TCSH rc file: ~/.tcshrc
+  * BASH rc file: `~/.bashrc`
+  * CSH rc file: `~/.cshrc`
+  * TCSH rc file: `~/.tcshrc`
+
+For example, in BASH, add the line `export PYTHONPATH=~/ZDStack/lib/python2.4/site-packages/ZDStack` to ~/.bashrc.
+
+=Possible Differences/Miscellaneous=
+
+These examples assume that your Python version is 2.4.  If it's not, modify the PYTHONPATH value appropriately.
+
+If there is already a PYTHONPATH set in your shell's rc file, you can still add to it.  This would look like (assuming BASH):
+
+  {{{ export PYTHONPATH=~/superpythonprogram/lib:~/ZDStack/lib/python2.4/site-packages/ZDStack }}}
+
+If you don't know what shell you are running, the command `env | grep SHELL` will almost always tell you.
