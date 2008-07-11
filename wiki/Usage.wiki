@@ -1,4 +1,5 @@
 #summary Running ZDStack from the command-line
+#labels Featured
 
 =Overview=
 Using ZDStack is fairly straight-forward, it is done with 2 programs, `zdstackctl` and `zservctl`.  A web-interface via ZDWebStats is planned, but not started yet.
