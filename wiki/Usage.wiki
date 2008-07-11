@@ -1,7 +1,7 @@
-#summary Managing ZDStack from the command-line
+#summary Running ZDStack from the command-line
 
 =Overview=
-Managing ZDStack is fairly straight-forward, it is done with 2 programs, `zdstackctl` and `zservctl`.
+Using ZDStack is fairly straight-forward, it is done with 2 programs, `zdstackctl` and `zservctl`.  A web-interface via ZDWebStats is planned, but not started yet.
 
 =zdstackctl=
 
@@ -28,3 +28,44 @@ Usage:
 }}}
 
 It's important to note that `zservctl reload-config` must be run after making changes to the configuration files, otherwise the changes won't be recognized.
+
+=zdstackrc=
+
+`zdstackrc` contains server configuration information.  `zdstackctl` and `zservctl` look for this file in the following locations (in order):
+
+  * ./zdstackrc
+  * ./zdstack.ini
+  * ~/.zdstackrc
+  * ~/.zdstack.ini
+  * /etc/zdstackrc
+  * /etc/zdstack.ini
+  * /etc/zdstack/zdstackrc
+  * /etc/zdstack/zdstack.ini
+
+When one of these files is found, it is used, and the ones below are ignored.
+
+=Examples=
+
+To add a server:
+{{{
+$ ### Edit Config Here ###
+$ zservctl reload-config
+$ zservctl start -n 'Public ZD CTF'
+}}}
+
+If you want to remove this server, run:
+
+{{{
+$ zservctl stop -n 'Public ZD CTF'
+$ ### Edit Config Here ###
+$ zservctl reload-config
+}}}
+
+If you want to change the wads and name of a server, say from ZD CTF to Odamex CTF, do the following:
+
+{{{
+$ zservctl stop -n 'Public ZD CTF'
+$ ### Edit Config Here ###
+$ zservctl reload-config
+$ zservctl start -n 'Public ODA CTF'
+}}}
