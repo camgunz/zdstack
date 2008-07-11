@@ -3,11 +3,14 @@
 
 = Recommended Steps To Install ZDStack =
 
+These steps will install ZDStack for a specific user only.  System-wide installation is not recommended, just as running ZDStack as root is not recommended.
+
   # Download ZDStack
   # Download and install the [http://code.google.com/p/zdstack/wiki/Requirements requirements]
   # `$ tar xjf ZDStack-*.tar.bz2`
   # `$ cd zdstack`
-  # `$ python setup.py install --prefix=~/ZDStack` (or wherever you'd like to install it)
+  # `$ python setup.py install --prefix=~/ZDStack`
+  # Add `~/ZDStack/lib/python<pythonversion>/site-packages/ZDStack` to the PYTHONPATH environment variable ([http://code.google.com/p/zdstack/wiki/PythonPath instructions])
   # Install the ZDStack configuration file
 
 = Installing the Example Configuration File =
