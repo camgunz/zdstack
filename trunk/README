@@ -1,0 +1,48 @@
+=== Introduction ===
+
+This is the README file for ZDStack.  ZDStack is released under the MIT license,
+specific details are in the LICENSE file contained in this distribution.
+Alternately, the license can be found at http://www.opensource.org/licenses/mit-license.php, although, if the LICENSE file is not included, the distributor has
+violated the license.
+
+=== Overview ===
+
+ZDStack manages multiple zserv processes.  Normally, zserv does not fork to the background, which makes running multiple zserv processes cumbersome.  The
+traditional solution is to use GNU Screen or to write a quick wrapper script.
+However, these solutions require you to login to the server if you want to
+manage the processes in any way.  ZDStack resolves this, making zserv
+management much easier, while providing other useful features.
+
+=== What ZDStack Actually Is ===
+
+Technically, ZDStack is an RPC server (either XML-RPC or JSON-RPC).  It spawns
+zserv processes as subprocesses and listens to their log output for events (like
+frags, deaths, flag captures, etc.)  ZDStack can be queried over its RPC
+interface and return information like:
+
+  * Frags/Deaths/Flag Captures... and game stats in general
+  * Server information, like uptime, gravity, air control, maplist, etc.
+
+You can also use this RPC interface to control a zserv process.  You can send
+console messages, change maps, kick/ban players, anything you could normally do
+from a console.  However, the RPC interface can be used from any machine, and
+it's even possible to create a GUI or web app that controls zserv processes via
+that interface.
+
+ZDStack also maintains a database of player names to IP addresses.  For
+administrative reasons, it's important to know who is playing on your servers,
+even if those players are using aliases.  The Player=>IP database allows just
+that.
+
+=== Documentation/Usage ===
+
+ZDStack is fairly well documented in its Wiki at http://zdstack.googlecode.com.
+
+=== Contact ===
+
+I can be contacted using my GMail address (available at the above website) or
+sometimes on IRC at irc.oftc.net in #IDL (nick: Ladna).  I'd prefer, if bugs
+or other issues are discovered, that the Google Code issue page be used.  Odds
+are I'll forget things if someone just PMs or e-mails me.  I'm always happy to
+help users though, just let me know if you have a problem.
+

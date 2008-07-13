@@ -1,0 +1,29 @@
+=== INSTALLATION ===
+System-wide installation is not recommended, just as running ZDStack as root is
+not recommended.
+
+   1. Download ZDStack
+   2. Download and install the requirements
+   3. $ tar xjf ZDStack-*.tar.bz2
+   4. $ cd zdstack
+   5. $ python setup.py install --prefix=~/ZDStack
+   6. Add ~/ZDStack/lib/python<pythonversion>/site-packages/ZDStack to the
+      PYTHONPATH environment variable (instructions)
+   7. Install the ZDStack configuration file 
+
+zdstackctl and zservctl will look in the following locations for a configuration
+file: 
+
+     * ./zdstackrc
+     * ./zdstack.ini
+     * ~/.zdstackrc
+     * ~/.zdstack.ini
+     * /etc/zdstackrc
+     * /etc/zdstack.ini
+     * /etc/zdstack/zdstackrc
+     * /etc/zdstack/zdstack.ini 
+
+For system-wide installations (not recommended), the preferred location is
+/etc/zdstack/zdstackrc. For user-local installations, the preferred location is
+~/.zdstackrc. 
+
