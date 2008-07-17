@@ -16,31 +16,59 @@ Grab the ZDWebStats bundle from svn (svn checkout http://zdstack.googlecode.com/
 
 = Lighttpd Configuration File =
 
+Assuming you want to access ZDWebStats at the root URL:
+
 {{{
 fastcgi.server = (
-  "/servers" => (( "socket" => "/tmp/fastcgi.socket",
-                   "bin-path" => "/var/www/zdstats/zdstats.py",
-                   "max-procs" => 1,
-                   "bin-environment" => ( "REAL_SCRIPT_NAME" => "" ),
-                   "check-local" => "disable"
-                )))
+  "/zdwebstats.py" => (( "socket" => "/tmp/fastcgi.socket",
+                         "bin-path" => "/var/www/zdwebstats/zdwebstats.py",
+                         "max-procs" => 1,
+                         "bin-environment" => ( "REAL_SCRIPT_NAME" => "" ),
+                         "check-local" => "disable"
+                      ))
+)
 
 url.rewrite-once = (
   "^/favicon.ico$" => "/static/favicon.ico",
   "^/static/(.*)$" => "/$1",
-  "^/servers/(.*)$" => "/servers/$1"
+  "^/(.*)$" => "/zdwebstats.py/$1"
+)
+
+}}}
+
+If you want to move ZDWebStats to a different URL, say, "/servers":
+
+{{{
+fastcgi.server = (
+  "/servers/zdwebstats.py" => (( "socket" => "/tmp/fastcgi.socket",
+                                 "bin-path" => "/var/www/zdwebstats/zdwebstats.py",
+                                 "max-procs" => 1,
+                                 "bin-environment" => ( "REAL_SCRIPT_NAME" => "" ),
+                                 "check-local" => "disable"
+                              ))
+)
+
+url.rewrite-once = (
+  "^/favicon.ico$" => "/static/favicon.ico",
+  "^/static/(.*)$" => "/$1",
+  "^/servers/(.*)$" => "/servers/zdwebstats.py/$1"
 )
 
 }}}
 
 = ZDWebStats Configuration File =
+
 {{{
 [DEFAULT]
 zdstack_address = http://blah.blah.blah.blah:port
 zdstack_protocol = xmlrpc
 zdstack_username = admin
 zdstack_password = pacman2000
-template_dir = /var/www/zdstats/templates
+template_dir = /var/www/zdwebstats/templates
 title = Servers on Greatest Servers
 heading = Greatest Servers
+;;; Use this if you want to access ZDWebStats at the root URL
+base_url = /
+;;; Use this if you want to access ZDWebStats somewhere else, say, "/servers"
+base_url = /servers
 }}}
