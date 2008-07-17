@@ -2,17 +2,13 @@
 
 = Installation =
 
-Grab the ZDWebStats bundle from svn (svn checkout http://zdstack.googlecode.com/svn/zdwebstats)
+These installation instructions assume that your document root is /var/www/html.  Other potential document roots are /srv/www, /www, and /var/www by itself.  Adjust the instructions accordingly.
 
-= Folder Structure =
+Grab the ZDWebStats bundle from svn (svn co http://zdstack.googlecode.com/svn/zdwebstats)
 
-  * /var/www
-    * /zdwebstats
-      * /templates
-      * /ZDStats
-      * /static
-        * /js
-        * /styles
+Place the zdwebstats folder in /var/www (mv zdwebstats /var/www)
+
+Link the static folder to /var/www/html/zdwebstats (ln -s /var/www/zdwebstats/static /var/www/html/static)
 
 = Lighttpd Configuration File =
 
@@ -30,7 +26,7 @@ fastcgi.server = (
 
 url.rewrite-once = (
   "^/favicon.ico$" => "/static/favicon.ico",
-  "^/static/(.*)$" => "/$1",
+  "^/static/(.*)$" => "/static/$1",
   "^/(.*)$" => "/zdwebstats.py/$1"
 )
 
@@ -50,7 +46,7 @@ fastcgi.server = (
 
 url.rewrite-once = (
   "^/favicon.ico$" => "/static/favicon.ico",
-  "^/static/(.*)$" => "/$1",
+  "^/servers/static/(.*)$" => "/static/$1",
   "^/servers/(.*)$" => "/servers/zdwebstats.py/$1"
 )
 
