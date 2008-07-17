@@ -86,5 +86,6 @@ def get_server(config_file=None):
 
 def render_main(title=get_config()['title'], heading=get_config()['heading'],
                 content='', error=None):
-    return RENDER.main(title, heading, content, error)
+    base_url = get_config()['base_url']
+    return RENDER.main(base_url, title, heading, content, error)
 
