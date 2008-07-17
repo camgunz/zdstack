@@ -20,18 +20,19 @@ def get_config(config_file=None):
                 es = "Specified configuration file [%s] is not a file"
                 raise ValueError(es % (config_file))
         else:
-            possible_config_files = [
-                                     os.path.join(os.getcwd(), 'zdstatsrc'),
-                                     os.path.join(os.getcwd(), 'zdstats.ini'),
-                                     os.path.expanduser('~/.zdstatsrc'),
-                                     os.path.expanduser('~/.zdstats.ini'),
-                                     os.path.expanduser('~/.zdstats/zdstatsrc'),
-                                     os.path.expanduser('~/.zdstats/zdstats.ini'),
-                                     '/etc/zdstatsrc',
-                                     '/etc/zdstats.ini',
-                                     '/etc/zdstats/zdstatsrc',
-                                     '/etc/zdstats/zdstats.ini'
-                                    ]
+            possible_config_files = \
+                [
+                 os.path.join(os.getcwd(), 'zdwebstatsrc'),
+                 os.path.join(os.getcwd(), 'zdwebstats.ini'),
+                 os.path.expanduser('~/.zdwebstatsrc'),
+                 os.path.expanduser('~/.zdwebstats.ini'),
+                 os.path.expanduser('~/.zdwebstats/zdwebstatsrc'),
+                 os.path.expanduser('~/.zdwebstats/zdwebstats.ini'),
+                 '/etc/zdwebstatsrc',
+                 '/etc/zdwebstats.ini',
+                 '/etc/zdwebstats/zdwebstatsrc',
+                 '/etc/zdwebstats/zdwebstats.ini'
+                ]
             config_files = [x for x in possible_config_files if os.path.isfile(x)]
             if not config_files:
                 raise RuntimeError("Could not find a suitable configuration file")
@@ -53,6 +54,13 @@ def get_config(config_file=None):
             raise ValueError("Option [zdstack_password] not found in config")
         if not 'server_ip' in config:
             raise ValueError("Option [server_ip] not found in config")
+        if not 'base_url' in config:
+            raise ValueError("Option [base_url] not found in config")
+        elif not (config['base_url'].startswith('http://') or
+                  config['base_url'].startswith('/')):
+            raise ValueError("Option [base_url] is malformed, it must start with either a '/' or a 'http://'")
+        else:
+            config['base_url'] = config['base_url'].rstrip('/')
         if not 'template_dir' in config:
             raise ValueError("Option [template_dir] not found in config")
         elif not os.path.isdir(config['template_dir']):
@@ -73,7 +81,7 @@ def get_server(config_file=None):
             __SERVER = ServerProxy(config['zdstack_address'])
         elif config['zdstack_protocol'].lower() in ('jsonrpc', 'json-rpc'):
             from jsonrpc import ServiceProxy
-            __SERVER = ServerProxy(config['zdstack_address'])
+            __SERVER = ServiceProxy(config['zdstack_address'])
     return __SERVER
 
 def render_main(title=get_config()['title'], heading=get_config()['heading'],

@@ -7,8 +7,6 @@ import web
 from ZDStats import get_server
 from ZDStats import StatTransform
 
-from pyfileutils import append_file
-
 SERVER = get_server()
 
 __all__ = ['ZServNotFoundError', 'nice_gamemode', 'get_zserv',
@@ -35,12 +33,6 @@ class ZServStatsLimit(Exception):
 nice_gamemode = {'coop': 'Coop', 'ctf': 'CTF',
                  'duel': 'Duel', 'ffa': 'FFA',
                  'teamdm': 'TeamDM'}
-
-def _log(s):
-    append_file('===\n%s\n===\n' % (s), 'zdstats.log', overwrite=True)
-
-def _log_data(description, data):
-    _log('%s:\n%s' % (description, pprint.pformat(data)))
 
 def ellipsize(x, max_length=30):
     if len(x) > max_length:
@@ -78,7 +70,6 @@ def get_zserv(zserv_name):
         zserv = SERVER.get_zserv(zserv_name)
     except:
         raise ZServNotFoundError(zserv_name)
-    # _log_data('ZServ', zserv)
     return _transform_zserv(zserv)
 
 def get_all_zservs():
@@ -169,38 +160,7 @@ def get_stats(zserv, back=0):
             zserv['map']['name'] = ellipsize(zserv['map']['name'])
     deaths = []
     flag_losses = []
-    for player in stats['players']:
-        deaths.extend(player['deaths'])
-        if zserv['type'] == 'ctf':
-            flag_losses.extend(player['flag_losses'])
-        del player['frags']
-        del player['deaths']
-        if 'flag_drops' in player:
-            del player['flag_drops']
-        if 'flag_losses' in player:
-            del player['flag_losses']
-    processed_deaths = StatTransform.process_frags(deaths)
-    processed_flag_losses = StatTransform.process_frags(flag_losses)
-    for player in stats['players']:
-        if player['name'] in processed_deaths:
-            normal_frag_stats = processed_deaths[player['name']]
-        else:
-            normal_frag_stats = {'frags': 0, 'deaths': 0, 'ratio': '0.000',
-                                 'weapons': {}, 'adversaries': {}}
-        player['frag_stats'] = normal_frag_stats
-        
-        if player['name'] in processed_flag_losses:
-            flag_frag_stats = processed_flag_losses[player['name']]
-        else:
-            flag_frag_stats = {'frags': 0, 'deaths': 0, 'ratio': '0.000'}
-            flag_frag_stats = {'frags': 0, 'deaths': 0, 'ratio': '0.000',
-                               'weapons': {}, 'adversaries': {}}
-        player['flag_frag_stats'] = flag_frag_stats
     stats['players'] = dict([(x['name'], x) \
                             for x in compute_player_totals(stats['players'])])
-    # _log_data('Map', stats['map'])
-    # if 'teams' in stats:
-        # _log_data('Teams', stats['teams'])
-    # _log_data('Players', stats['players'])
     return stats
 

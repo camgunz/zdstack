@@ -1,32 +1,27 @@
-$def with (server, info, depth, index=None, stats=None)
+$def with (server, info, baseurl, index=None, stats=None)
 <div class="statlist">
     <h3 class="centered">Statistics</h3>
     <table>
         <tr>
             $if index == 0:
                 <td>&gt;</td>
+                <td>$server['map']['number']: $server['map']['name']</td>
             $else:
                 <td></td>
-            <td>
-                <a href="$depth/$server['url_name']/0/">
-                    $server['map']['number']: $server['map']['name']
-                </a>
-            </td>
+                <td><a href="../$server['map']['index']/">$server['map']['number']: $server['map']['name']</a></td>
         </tr>
         $if server['remembered_stats']:
             $for map in server['remembered_stats']:
                 <tr>
                     $if index == map['index']:
                         <td>&gt;</td>
+                        <td>$map['number']: $map['name']</td>
                     $else:
                         <td></td>
-                    <td>
-                        <a href="$depth/$server['url_name']/$map['index']/">
-                            $map['number']: $map['name']
-                        </a>
-                    </td>
+                        <td><a href="../$map['index']/">$map['number']: $map['name']</a></td>
                 </tr>
     </table>
+    $:info
 </div>
 $if stats:
     <div class="mapstats">
@@ -123,43 +118,31 @@ $if stats:
                 <tbody>
                     $for player in stats['players']:
                         <tr>
-                            <td>
-                                <a href="$depth/$server['url_name']/$index/$stats['players'][player]['name']">
-                                    $stats['players'][player]['name']
-                                </a>
-                            </td>
+                            <td><a href="$baseurl/$server['url_name']/$index/$stats['players'][player]['name']/">$stats['players'][player]['name']</a></td>
                             $if server['type'] == 'ctf' or server['type'] == 'teamdm':
                                 $if 'color' in stats['players'][player]:
                                     <td>$stats['players'][player]['color']</td>
                                 $else:
                                     <td class="centered">...</td>
-                            <td class="centered">
-                                $stats['players'][player]['frag_stats']['frags']
-                            </td>
-                            <td class="centered">
-                                $stats['players'][player]['frag_stats']['deaths']
-                            </td>
+                            <td class="centered">$stats['players'][player]['total_frags']</td>
+                            <td class="centered">$stats['players'][player]['total_deaths']</td>
                             $if server['type'] == 'ctf':
                                 <td class="centered">$stats['players'][player]['flag_caps']</td>
                                 <td class="centered">$stats['players'][player]['flag_touches']</td>
                                 <td class="centered">$stats['players'][player]['flag_picks']</td>
-                                <td class="centered">
-                                    $stats['players'][player]['flag_frag_stats']['deaths']
-                                </td>
-                                <td class="centered">
-                                    $stats['players'][player]['flag_frag_stats']['frags']
-                                </td>
-                                </td>
+                                <td class="centered">$stats['players'][player]['total_flag_losses']</td>
+                                <td class="centered">$stats['players'][player]['total_flag_drops']</td>
                                 <td class="centered">$stats['players'][player]['flag_returns']</td>
                                 <td class="right">$stats['players'][player]['flag_ratio']</td>
                                 <td class="right">$stats['players'][player]['return_ratio']</td>
-                            <td class="right">$stats['players'][player]['frag_stats']['ratio']</td>
+                            <td class="right">$stats['players'][player]['ratio']</td>
                         </tr>
                 </tbody>
             </table>
         $else:
             <table><tr><th>No Players</th></tr></table>
     </div>
+<!--
 <div class="infopanel">
-    $:info
 </div>
+-->

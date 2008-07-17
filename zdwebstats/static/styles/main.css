@@ -1,64 +1,199 @@
 body {
-    padding: 0;
-    margin: 0;
-    text-align: center;
-    /* background: #000 url('/images/sonicyouth.jpg') fixed no-repeat top center; */
-    /* background: #000 url('/images/toon-trashed.jpg') fixed no-repeat top center; */
-    background: #000 url('/images/Trash.jpg') fixed no-repeat top center;
-    font-family: monospace;
-    font-style: bold;
-    font-size: x-large;
-    color: #000;
+    font-family: sans-serif;
+    color: white;
+    background-color: black;
+    /* background: #000 url('/images/Old%20Trash.jpg') fixed no-repeat top center; */
+    font-size: .75em;
+}
+
+a {
+    color: white;
+}
+
+a:visited {
+    color: white;
 }
 
 a img {
     border: 0;
 }
 
-#contents {
-    margin-top: 0px;
-    margin-bottom: 10px;
-    margin-right:auto;
-    margin-left:auto;
-    width: 770px;
-    padding: 10px;
-    padding-top: 0px;
-    text-align: left;
-}
-
-p#header {
-    position: relative;
-    width: auto;
-    float: right;
-    font-family: sans-serif;
-    top: -5px;
-    /* top: 5px; */
-    /* text-align: right; */
-}
-
-p#desc {
-    position: relative;
-    text-align: center;
-    margin-top: 50px;
-}
-
 .centered {
     text-align: center;
 }
 
-div.vert-middle span,img,a,p {
-    vertical-align: middle;
+.left {
+    text-align: left;
 }
 
-a {
-    text-decoration: none;
+.right {
+    text-align: right;
+}
+
+.indented {
+    margin-left: 1em;
+}
+
+.black {
     color: black;
-    font-style: bold;
-    font-size: x-large;
+}
+
+.white {
+    color: white;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+ul.unstyled {
+    list-style-type: none;
+}
+
+.nolinebreak {
+    white-space: nowrap;
+}
+
+table {
+    border-spacing: .25em 0em;
+    border-collapse: collapse;
+    width: auto;
+}
+
+thead {
+    margin-top:1em;
+}
+
+tbody {
+    margin-bottom: 1em;
+}
+
+td,th {
+    padding-left: .5em;
+    padding-right: .5em;
+    padding-bottom: .25em;
+}
+
+th {
+    white-space: nowrap;
+}
+
+td.serveroption {
+    font-weight: bold;
+    white-space: nowrap;
+    /* text-align: right; */
 }
 
 table.sortable th a {
     text-decoration: none;
-    color: #000;
+    color: white;
 }
 
+table.stats {
+    /* font-size: .9em; */
+    margin-top: .5em;
+    margin-bottom: .5em;
+    border-spacing: .125em;
+    width: auto;
+}
+
+table.playerstats {
+    font-size: 1em;
+}
+
+div.adversarialstats {
+    left: auto;
+    right: auto;
+    width: auto;
+    /*
+    float: right;
+    left: 100px;
+    */
+}
+
+div.weaponstats {
+    left: auto;
+    right: auto;
+    width: auto;
+    /*
+    float: left;
+    right: 100px;
+    */
+}
+
+div#line {
+    border: 1px solid white;
+    margin-bottom: 1em;
+}
+
+div.infopanel {
+    border: 1px solid white;
+    width: 70%;
+    /* min-height: 22em; */
+}
+
+table#servers {
+    border-spacing: 1em 0em;
+}
+
+table.server {
+    width: auto;
+}
+
+tr.servertop {
+    margin-top: 1em;
+}
+
+td.serverbottom {
+    margin-bottom: 1em;
+}
+
+div.statlist {
+    float: right;
+    left: 0;
+    clear: both;
+    width: 250px;
+    width: 25%;
+    max-width: 250px;
+    border: 1px solid white;
+    margin: 1em;
+    padding: 1em;
+    padding-top: 0em;
+}
+
+div.mapstats {
+    width: 100%;
+    margin-top: .5em;
+    padding: .25em;
+    border-left: 1px solid white;
+    /*
+    border-right: 1px solid white;
+    border: 1px solid white;
+    min-height: 50em;
+    */
+}
+
+div#content {
+    margin-right: auto;
+    margin-left: auto;
+    /* min-height: 544px;
+    width: 1020px;
+    padding: .75em;
+    background: transparent fixed no-repeat top center;
+    opacity: 0.9;
+    filter:alpha(opacity=90);
+    -moz-opacity:0.9;
+    */
+    padding: 11px;
+    background-color: black;
+    /* background-color: #292915; */
+}
+
+tbody tr.odd {
+    background-color: #151515;
+}
+
+td.numeric,
+th.numeric {
+    text-align: right;
+}

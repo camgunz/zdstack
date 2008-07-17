@@ -1,46 +1,46 @@
 $def with (player)
+    <hr />
     <h3 class="centered">$player['name']</h3>
     <div class="weaponstats">
-        <table class="playerstats sortable autostripe">
-            <caption>Weapon Stats</caption>
+        <table class="playerstats rowstyle-odd sortable-onload-1">
             <thead>
                 <tr>
-                    <th>Weapon</th>
-                    <th>Frags</th>
-                    <th>Deaths</th>
-                    <th>%</th>
+                    <th class="sortable fd-column-0">Weapon</th>
+                    <th class="sortable fd-column-1 favour-reverse">Frags</th>
+                    <th class="sortable fd-column-2">Deaths</th>
+                    <th class="sortable fd-column-3">%</th>
                 </tr>
             </thead>
             <tbody>
-                $for weapon in player['frag_stats']['weapons']:
+                $for weapon in player['weapons']:
                     <tr>
                         <td>$weapon</td>
-                        <td class="centered">$player['frag_stats']['weapons'][weapon]['frags']</td>
-                        <td class="centered">$player['frag_stats']['weapons'][weapon]['deaths']</td>
-                        <td class="right">$player['frag_stats']['weapons'][weapon]['ratio']</td>
+                        <td class="centered">$player['weapons'][weapon]['frags']</td>
+                        <td class="centered">$player['weapons'][weapon]['deaths']</td>
+                        <td class="right">$player['weapons'][weapon]['ratio']</td>
                     </tr>
             </tbody>
         </table>
     </div>
+    <br />
     <div class="adversarialstats">
-        <table class="playerstats sortable autostripe">
-            <caption>Adversarial Stats</caption>
+        <table class="playerstats rowstyle-odd sortable-onload-1">
             <thead>
                 <tr>
-                    <th>Player</th>
-                    <th>Frags</th>
-                    <th>Deaths</th>
-                    <th>%</th>
+                    <th class="sortable fd-column-0">Player</th>
+                    <th class="sortable fd-column-1 favour-reverse">Frags</th>
+                    <th class="sortable fd-column-2">Deaths</th>
+                    <th class="sortable fd-column-3">%</th>
                 </tr>
             </thead>
             <tbody>
-                $for adversary in player['frag_stats']['adversaries']:
+                $for adversary in player['adversaries']:
                     <tr>
                         <td>$adversary</td>
-                        <td class="centered">$player['frag_stats']['adversaries'][adversary]['frags']</td>
-                        <td class="centered">$player['frag_stats']['adversaries'][adversary]['deaths']</td>
-                        <td class="right">$player['frag_stats']['adversaries'][adversary]['ratio']</td>
-                </tr>
+                        <td class="centered">$player['adversaries'][adversary]['frags']</td>
+                        <td class="centered">$player['adversaries'][adversary]['deaths']</td>
+                        <td class="right">$player['adversaries'][adversary]['ratio']</td>
+                    </tr>
             </tbody>
         </table>
     </div>

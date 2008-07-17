@@ -1,7 +1,4 @@
 
-import pprint
-from pyfileutils import append_file
-
 __all__ = ['process_frags', 'get_player_totals', 'extract_frags', 'get_totals']
 
 def uniqify(x):
@@ -19,117 +16,6 @@ def get_ratio(n, d):
         r = t % ((float(n) / float(d)) * 100.0)
     return r
 
-def _log(s):
-    append_file('===\n%s\n===\n' % (s), 'stattransform.log', overwrite=True)
-
-def _log_data(description, data):
-    _log('%s:\n%s' % (description, pprint.pformat(data)))
-
-class Player:
-    def __init__(self, name):
-        self.name = name
-        self.adversaries = set()
-        self.weapons = set()
-        self.total_frags = 0
-        self.total_deaths = 0
-        self.player_frags = {}
-        self.weapon_frags = {}
-        self.player_weapon_frags = {}
-        self.player_deaths = {}
-        self.weapon_deaths = {}
-        self.player_weapon_deaths = {}
-
-    def add_adversary(self, adversary):
-        self.adversaries.add(adversary)
-        for a in self.adversaries:
-            if a not in self.player_frags:
-                self.player_frags[a] = 0
-            if a not in self.player_deaths:
-                self.player_deaths[a] = 0
-            if a not in self.player_weapon_frags:
-                self.player_weapon_frags[a] = {}.fromkeys(self.weapons, 0)
-            if a not in self.player_weapon_deaths:
-                self.player_weapon_deaths[a] = {}.fromkeys(self.weapons, 0)
-
-    def add_weapon(self, weapon):
-        self.weapons.add(weapon)
-        for weapon in self.weapons:
-            if weapon not in self.weapon_frags:
-                self.weapon_frags[weapon] = 0
-            if weapon not in self.weapon_deaths:
-                self.weapon_deaths[weapon] = 0
-            for player in self.player_weapon_frags:
-                if weapon not in self.player_weapon_frags[player]:
-                    self.player_weapon_frags[player][weapon] = 0
-            for player in self.player_weapon_deaths:
-                if weapon not in self.player_weapon_deaths[player]:
-                    self.player_weapon_deaths[player][weapon] = 0
-
-    def add_frag(self, fraggee, weapon):
-        self.total_frags += 1
-        if not weapon in self.weapons:
-            self.add_weapon(weapon)
-        if not fraggee in self.adversaries:
-            self.add_adversary(fraggee)
-        self.weapon_frags[weapon] += 1
-        self.player_frags[fraggee] += 1
-        self.player_weapon_frags[fraggee][weapon] += 1
-
-    def add_death(self, fragger, weapon):
-        self.total_deaths += 1
-        if not weapon in self.weapons:
-            self.add_weapon(weapon)
-        if not fragger in self.adversaries:
-            self.add_adversary(fragger)
-        self.weapon_deaths[weapon] += 1
-        self.player_deaths[fragger] += 1
-        self.player_weapon_deaths[fragger][weapon] += 1
-
-    def get_dict(self):
-        d = {'adversaries': {}.fromkeys(self.adversaries),
-             'weapons': {}.fromkeys(self.weapons),
-             'frags': self.total_frags,
-             'deaths': self.total_deaths,
-             'ratio': get_ratio(self.total_frags, self.total_deaths)}
-        for a in d['adversaries']:
-            d['adversaries'][a] = {'frags': self.player_frags[a],
-                                   'deaths': self.player_deaths[a],
-                                   'ratio': get_ratio(self.player_frags[a],
-                                                      self.player_deaths[a])}
-        for weapon in d['weapons']:
-            d['weapons'][weapon] = \
-                                {'frags': self.weapon_frags[weapon],
-                                 'deaths': self.weapon_deaths[weapon],
-                                 'ratio': get_ratio(self.weapon_frags[weapon],
-                                                    self.weapon_deaths[weapon])}
-            for adversary in d['adversaries']:
-                if weapon not in d['adversaries'][adversary]:
-                    d['adversaries'][adversary][weapon] = {}
-                    total_frags = self.player_weapon_frags[adversary][weapon]
-                    total_deaths = self.player_weapon_deaths[adversary][weapon]
-                    ratio = get_ratio(total_frags, total_deaths)
-                    d['adversaries'][adversary][weapon]['frags'] = total_frags
-                    d['adversaries'][adversary][weapon]['deaths'] = total_deaths
-                    d['adversaries'][adversary][weapon]['ratio'] = ratio
-        return d
-
-def process_frags(frags):
-    players = {}
-    for frag in frags:
-        if frag['fragger'] not in players:
-            players[frag['fragger']] = Player(frag['fragger'])
-        if frag['fraggee'] not in players:
-            players[frag['fraggee']] = Player(frag['fraggee'])
-        
-    for frag in frags:
-        weapon, fragger, fraggee = (frag['weapon'], frag['fragger'],
-                                    frag['fraggee'])
-        if fragger != fraggee: # no suicides!
-            players[fragger].add_frag(fraggee, weapon)
-        players[fraggee].add_death(fragger, weapon)
-    out = dict([(x.name, x.get_dict()) for x in players.values()])
-    return out
-
 def get_player_totals(player):
     player['flag_ratio'] = None
     player['pick_ratio'] = None
@@ -137,12 +23,12 @@ def get_player_totals(player):
     if 'flag_caps' in player and 'flag_touches' in player:
         player['flag_ratio'] = get_ratio(player['flag_caps'],
                                          player['flag_touches'])
-    if 'flag_picks' in player and 'deaths' in player['flag_frag_stats']:
+    if 'flag_picks' in player:
         player['pick_ratio'] = get_ratio(player['flag_picks'],
-                                         player['flag_frag_stats']['deaths'])
-    if 'flag_returns' in player and 'frags' in player['flag_frag_stats']:
+                                         player['total_flag_losses'])
+    if 'flag_returns' in player:
         player['return_ratio'] = get_ratio(player['flag_returns'],
-                                           player['flag_frag_stats']['frags'])
+                                           player['total_flag_drops'])
     return player
 
 def get_totals(stats):

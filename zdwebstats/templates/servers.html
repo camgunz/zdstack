@@ -15,7 +15,7 @@ $if servers:
             $for server in servers:
                 <tr>
                     <td class="nolinebreak">
-                        <a href="./$server['url_name']/0/">$server['name']</a>
+                        <a href="./$server['url_name']/">$server['name']</a>
                     </td>
                     $if not server['max_players']:
                         <td class="centered">$server['players'] / 16</td>
@@ -25,7 +25,11 @@ $if servers:
                         </td>
                     <td class="centered">$server['nice_type']</td>
                     <td class=>$server['joined_wads']</td>
-                    <td class="nolinebreak">$server['map']['name'] :: Map$server['map']['number']</td>
+                    <td class="nolinebreak">
+                        <a href="./$server['url_name']/0/">
+                          $server['map']['name'] :: Map$server['map']['number']
+                        </a>
+                    </td>
                     <td class="centered">
                         <a href="zds://$server_ip:$server['port']">
                             $server['port']
