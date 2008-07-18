@@ -8,7 +8,7 @@ $def with (server, info, baseurl, index=None, stats=None)
                 <td>$server['map']['number']: $server['map']['name']</td>
             $else:
                 <td></td>
-                <td><a href="../$server['map']['index']/">$server['map']['number']: $server['map']['name']</a></td>
+                <td><a href="$baseurl/$server['name']/$server['map']['index']/">$server['map']['number']: $server['map']['name']</a></td>
         </tr>
         $if server['remembered_stats']:
             $for map in server['remembered_stats']:
@@ -18,7 +18,7 @@ $def with (server, info, baseurl, index=None, stats=None)
                         <td>$map['number']: $map['name']</td>
                     $else:
                         <td></td>
-                        <td><a href="../$map['index']/">$map['number']: $map['name']</a></td>
+                        <td><a href="$baseurl/$server['name']/$map['index']/">$map['number']: $map['name']</a></td>
                 </tr>
     </table>
     $:info
