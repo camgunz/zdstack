@@ -144,22 +144,22 @@ class LogFile:
             if self.fobj:
                 self.change_file_lock.acquire()
                 try:
-                    try:
-                        rs, ws, xs = select.select([self.fobj], [], [])
-                    except: # can be raised during interpreter shutdown
-                        continue
+                    rs, ws, xs = select.select([self.fobj], [], [])
                     for r in rs:
                         unprocessed_data += r.read()
                 finally:
                     self.change_file_lock.release()
-                try:
-                    events, unprocessed_data = \
-                                        self.parse(unprocessed_data)
-                except Exception, e:
-                    # raise # for debugging
-                    tb = traceback.format_exc()
-                    ed = {'error': e, 'traceback': tb}
-                    events = [LogEvent(datetime.now(), 'error', ed)]
+                if unprocessed_data:
+                    try:
+                        events, unprocessed_data = \
+                                            self.parse(unprocessed_data)
+                    except Exception, e:
+                        # raise # for debugging
+                        tb = traceback.format_exc()
+                        ed = {'error': e, 'traceback': tb}
+                        events = [LogEvent(datetime.now(), 'error', ed)]
+                else:
+                    continue
                 for event in events:
                     es = "%s Sending event [%%s]" % (self.filepath)
                     if event.type == 'message':
@@ -182,8 +182,9 @@ class LogFile:
                     for listener in self.listeners:
                         if event.type != 'junk':
                             logging.getLogger('').debug(es % (event.type))
-                        s = "Putting %s in %s"
-                        logging.getLogger('').debug(s % (event.type, listener.name))
+                            s = "Putting %s in %s"
+                            logging.getLogger('').debug(s % (event.type,
+                                                             listener.name))
                         listener.events.put_nowait(event)
             elif self.filepath and os.path.isfile(self.filepath):
                 self.change_file_lock.acquire()

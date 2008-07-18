@@ -52,10 +52,17 @@ class LogParser:
 
         data: a string of log data.
 
-        Returns a deque of split data.
+        Returns a 2-Tuple, (deque of split data, leftovers)
 
         """
-        return deque([x for x in data.splitlines() if x])
+        datalines = [x for x in data.splitlines() if x]
+        if datalines and not data.endswith('\n'):
+            leftovers = datalines[-1]
+            datalines = datalines[:-1]
+        else:
+            leftovers = ''
+        lines = deque(datalines)
+        return (lines, leftovers)
 
 class ConnectionLogParser(LogParser):
 
@@ -66,7 +73,7 @@ class ConnectionLogParser(LogParser):
                  Valid options include 'server' and 'client'.
 
         """
-        self.name = "Connection Log Parser"
+        LogParser.__init__(self, "Connection Log Parser")
 
     def parse(self, data):
         """Parses data into LogEvents.
@@ -76,41 +83,25 @@ class ConnectionLogParser(LogParser):
         Returns a 2-Tuple (list of LogEvents, string of leftover data)
 
         """
-        lines = self.split_data(data)
+        lines, leftovers = self.split_data(data)
         events = []
-        leftovers = []
         while len(lines):
             line = lines.popleft()
             tokens = [x for x in line.split() if x]
             if '\n' in line:
                 raise ValueError("Somehow, there is a newline within a line")
-            d, t, message = tokens[0], tokens[1], ' '.join(tokens[2:])
-            timestamp = ' '.join([d, t])
+            timestamp = ' '.join([tokens[0], tokens[1]])
             time_tup = time.strptime(timestamp, '%Y/%m/%d %H:%M:%S')
             line_dt = datetime(*time_tup[:6])
-            if line.endswith('Connection Log Stopped'):
-                events.append(LogEvent(line_dt, 'log_roll',
-                                       {'log': 'connection'}))
-            elif line.endswith('has connected'):
-                ip_tokens = [x for x in tokens[2:] \
-                                    if x.startswith('(') and x.endswith(')')]
-                if len(ip_tokens) != 1:
-                    es = "Error parsing 'connection' line [%s]"
-                    raise ValueError(es % (line))
-                ip_token = ip_tokens[0]
-                ip = ip_token.strip('()')
-                xi = 0
-                yi = message.rindex(ip_tokens[0]) - 1
-                name = message[xi:yi]
-                events.append(LogEvent(line_dt, 'ip_log',
-                                       {'player': name, 'ip': ip}))
-            elif (len(lines) and data.endswith('\n')) or \
-                 'Connection Log Started' in line or \
-                 'zserv startup' in line: # line is junk
+            parsed_events = self.lineparser.get_event(line_dt, line)
+            if parsed_events:
+                events.extend(parsed_events)
+            elif line.endswith('Connection Log Stopped'):
+                d = {'log': 'connection'}
+                events.append(LogEvent(line_dt, 'log_roll', d))
+            else:
                 events.append(LogEvent(line_dt, 'junk', {'data': line}))
-            else: # line was incomplete
-                leftovers.append(line)
-        return (events, '\n'.join(leftovers))
+        return (events, leftovers)
 
 class GeneralLogParser(LogParser):
 
@@ -132,16 +123,17 @@ class GeneralLogParser(LogParser):
 
         """
         now = datetime.now()
-        lines = self.split_data(data)
+        lines, leftovers = self.split_data(data)
         events = []
-        leftovers = []
         while len(lines):
             line = lines.popleft()
-            if line == 'General logging off':
+            # events.extend(self.lineparser.get_event(now, line))
+            parsed_events = self.lineparser.get_event(now, line)
+            if parsed_events:
+                events.extend(parsed_events)
+            elif line == 'General logging off':
                 events.append(LogEvent(now, 'log_roll', {'log': 'general'}))
-            events.extend(self.lineparser.get_event(now, line))
-            if line.startswith('<') and '>' in line:
-                line_type = 'message'
+            elif line.startswith('<') and '>' in line:
                 ###
                 # There are certain strings that make it impossible to
                 # determine what is a player name and what is a message, for
@@ -168,5 +160,5 @@ class GeneralLogParser(LogParser):
                 events.append(e)
             if not events:
                 events.append(LogEvent(now, 'junk', {'data': line}))
-        return (events, '\n'.join(leftovers))
+        return (events, leftovers)
 

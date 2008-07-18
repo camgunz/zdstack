@@ -1,6 +1,6 @@
 import logging
 
-from base64 import b64decode
+from base64 import b64encode, b64decode
 from ZDStack import get_database
 
 def save_player_ip(player_name, encoded_player_name, player_ip):
@@ -38,7 +38,7 @@ def save_player_ip(player_name, encoded_player_name, player_ip):
         db.update('players', set=[log_ip],
                    where=[lambda r: r['name'] == encoded_player_name])
 
-def get_possible_aliases(name, encoded_name, ip_addresses=[]):
+def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
     """Returns a list of possible player aliases.
 
     name:         a string representing the name of the player to
@@ -50,6 +50,8 @@ def get_possible_aliases(name, encoded_name, ip_addresses=[]):
 
     """
     logging.getLogger('').info('')
+    if encoded_name == '':
+        encoded_name = b64encode(name)
     db = get_database()
     if not db:
         log("PyXSE not found, Player => IP Logging disabled")

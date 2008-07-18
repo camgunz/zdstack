@@ -1,3 +1,5 @@
+import re
+
 class Regexps:
 
     COMMANDS = \
@@ -28,50 +30,60 @@ class Regexps:
                        '13': 'telefuck'}
 
     RCONS = \
-        [(r"^RCON for (.*) is denied!$", 'rcon_denied'),
-         (r"^RCON for (.*) is granted!$", 'rcon_granted'),
-         (r"^(.*) RCON \((.*) \)$", 'rcon_action')]
+        [(r"^RCON for (?P<player>.*) is denied!$", 'rcon_denied'),
+         (r"^RCON for (?P<player>.*) is granted!$", 'rcon_granted'),
+         (r"^(?P<player>.*) RCON \((?P<action>.*) \)$", 'rcon_action')]
 
     WEAPONS = \
-        [(r"^> (.*) chewed on (.*)'s fist.$", 'fist'),
-         (r"^> (.*) was mowed over by (.*)'s chainsaw.$", 'chainsaw'),
-         (r"^> (.*) was tickled by (.*)'s pea shooter.$", 'pistol'),
-         (r"^> (.*) chewed on (.*)'s boomstick.$", 'shotgun'),
-         (r"^> (.*) was mowed down by (.*)'s chaingun.$", 'chaingun'),
-         (r"^> (.*) was splattered by (.*)'s super shotgun.$", 'super shotgun'),
-         (r"^> (.*) rode (.*)'s rocket.$", 'rocket launcher'),
-         (r"^> (.*) was melted by (.*)'s plasma gun.$", 'plasma gun'),
-         (r"^> (.*) couldn't hide from (.*)'s BFG.$", 'bfg'),
-         (r"^> (.*) was splintered by (.*)'s BFG.$", 'bfg'),
-         (r"^> (.*) was telefragged by (.*).$", 'telefrag')]
+        [(r"^> (?P<fraggee>.*) chewed on (?P<fragger>.*)'s fist.$", 'fist'),
+         (r"^> (?P<fraggee>.*) was mowed over by (?P<fragger>.*)'s chainsaw.$", 'chainsaw'),
+         (r"^> (?P<fraggee>.*) was tickled by (?P<fragger>.*)'s pea shooter.$", 'pistol'),
+         (r"^> (?P<fraggee>.*) chewed on (?P<fragger>.*)'s boomstick.$", 'shotgun'),
+         (r"^> (?P<fraggee>.*) was mowed down by (?P<fragger>.*)'s chaingun.$", 'chaingun'),
+         (r"^> (?P<fraggee>.*) was splattered by (?P<fragger>.*)'s super shotgun.$", 'super shotgun'),
+         (r"^> (?P<fraggee>.*) rode (?P<fragger>.*)'s rocket.$", 'rocket launcher'),
+         (r"^> (?P<fraggee>.*) was melted by (?P<fragger>.*)'s plasma gun.$", 'plasma gun'),
+         (r"^> (?P<fraggee>.*) couldn't hide from (?P<fragger>.*)'s BFG.$", 'bfg'),
+         (r"^> (?P<fraggee>.*) was splintered by (?P<fragger>.*)'s BFG.$", 'bfg'),
+         (r"^> (?P<fraggee>.*) was telefragged by (?P<fragger>.*).$", 'telefrag')]
 
     DEATHS = \
-        [(r"^> (.*) should have stood back.$", 'rocket suicide'),
-         (r"^> (.*) mutated.$", 'mutation'),
-         (r"^> (.*) died.$", 'death'),
-         (r"^> (.*) melted.$", 'melting'),
-         (r"^> (.*) killed himself.$", 'suicide'),
-         (r"^> (.*) killed herself.$", 'suicide'),
-         (r"^> (.*) fell too far.$", 'falling'),
-         (r"^> (.*) tried to leave.$", "exiting"),
-         (r"^> (.*) can't swim.$", "drowning"),
-         (r"^> (.*) checks her glasses.$", 'teamkill'),
-         (r"^> (.*) checks his glasses.$", 'teamkill')]
+        [(r"^> (?P<fraggee>.*) should have stood back.$", 'rocket suicide'),
+         (r"^> (?P<fraggee>.*) mutated.$", 'mutation'),
+         (r"^> (?P<fraggee>.*) died.$", 'death'),
+         (r"^> (?P<fraggee>.*) melted.$", 'melting'),
+         (r"^> (?P<fraggee>.*) killed himself.$", 'suicide'),
+         (r"^> (?P<fraggee>.*) killed herself.$", 'suicide'),
+         (r"^> (?P<fraggee>.*) fell too far.$", 'falling'),
+         (r"^> (?P<fraggee>.*) tried to leave.$", "exiting"),
+         (r"^> (?P<fraggee>.*) can't swim.$", "drowning"),
+         (r"^> (?P<fraggee>.*) checks her glasses.$", 'teamkill'),
+         (r"^> (?P<fraggee>.*) checks his glasses.$", 'teamkill')]
 
     JOINS = \
-        [(r"^> (.*) is now on the (Blue|Red|White|Green) team.$", 'team_switch'),
-         (r"^> (.*) joined the game.$", 'game_join'),
-         (r"^> (.*) joined the game on the (Blue|Red|White|Green) team.$",
+        [(r"^> (?P<player>.*) is now on the (?P<team>Blue|Red|White|Green) team.$", 'team_switch'),
+         (r"^> (?P<player>.*) joined the game.$", 'game_join'),
+         (r"^> (?P<player>.*) joined the game on the (?P<team>Blue|Red|White|Green) team.$",
           'team_join')]
 
     FLAGS = \
-        [(r"^> (.*) has taken the (.*) flag", 'flag_touch'),
-         (r"^> (.*) lost the (.*) flag", 'flag_loss'),
-         (r"^> (.*) returned the (.*) flag", 'flag_return'),
-         (r"^> (.*) picked up the (.*) flag", 'flag_pick'),
-         (r"^> (.*) scored for the (.*) team", 'flag_cap')]
+        [(r"^> (?P<player>.*) has taken the (?P<team>.*) flag", 'flag_touch'),
+         (r"^> (?P<player>.*) lost the (?P<team>.*) flag", 'flag_loss'),
+         (r"^> (?P<player>.*) returned the (?P<team>.*) flag", 'flag_return'),
+         (r"^> (?P<player>.*) picked up the (?P<team>.*) flag", 'flag_pick'),
+         (r"^> (?P<player>.*) scored for the (?P<team>.*) team", 'flag_cap')]
 
     CONNECTIONS = \
-        [(r"^> (.*) has connected.$", 'connection'),
-         (r"^> (.*) disconnected$", 'disconnection')]
+        [(r"^> (?P<player>.*) has connected.$", 'connection'),
+         (r"^> (?P<player>.*) disconnected$", 'disconnection'),
+         ("^(?P<timestamp>(?:2|1)\\d{3}(?:-|\\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9]))\\s(?P<player>(?:.*))\\s\\((?P<ip_address>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?![\\d]).*?has.*?connected$", 'ip_log')]
+
+    COMMANDS = [(re.compile(x), y) for x, y in COMMANDS]
+    RCONS = [(re.compile(x), y) for x, y in RCONS]
+    WEAPONS = [(re.compile(x), y) for x, y in WEAPONS]
+    DEATHS = [(re.compile(x), y) for x, y in DEATHS]
+    JOINS = [(re.compile(x), y) for x, y in JOINS]
+    FLAGS = [(re.compile(x), y) for x, y in FLAGS]
+    CONNECTIONS = [(re.compile(x), y) for x, y in CONNECTIONS]
+    ALL = COMMANDS + RCONS + WEAPONS + DEATHS + JOINS + FLAGS + CONNECTIONS
 

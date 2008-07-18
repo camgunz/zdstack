@@ -14,22 +14,22 @@ class LineParser:
         """
         self.regexps = regexps
 
-    def line_to_command_event(self, event_dt, line):
-        """Parses a line into a command event.
+    def generic_line_to_event(self, event_dt, line):
+        """Generically parses a line into an event.
 
         event_dt: a datetime representing the time of the event
         line:     a string representing the line itself.
 
         """
-        for regexp, command in self.regexps.COMMANDS:
+        for regexp, event_type in self.regexps.ALL:
             try:
                 match = re.match(regexp, line)
             except:
-                s = 'Choked on command [%s]' % (command)
+                s = 'Choked on line [%s]' % (line)
                 logging.getLogger('').debug(s)
                 raise
             if match:
-                return LogEvent(event_dt, command, match.groupdict())
+                return LogEvent(event_dt, event_type, match.groupdict(), line)
 
     def line_to_death_event(self, event_dt, line):
         """Parses a line into a death event.
@@ -41,28 +41,23 @@ class LineParser:
         for regexp, weapon in self.regexps.WEAPONS:
             match = re.match(regexp, line)
             if match:
-                d = {'fragger': match.group(2), 'fraggee': match.group(1),
-                     'weapon': weapon}
-                return LogEvent(event_dt, 'frag', d)
+                d = match.groupdict()
+                d['weapon'] = weapon
+                e = LogEvent(event_dt, 'frag', d, line)
+                if not 'fragger' in d:
+                    logging.getLogger('').debug("Returning a frag w/o a fragger")
+                    logging.getLogger('').debug("Line is %s" % (line))
+                return e
         for regexp, death in self.regexps.DEATHS:
             match = re.match(regexp, line)
             if match:
-                d = {'fragger': match.group(1), 'fraggee': match.group(1),
-                     'weapon': death}
-                return LogEvent(event_dt, 'death', d)
-
-    def line_to_connection_event(self, event_dt, line):
-        """Parses a line into a connection event.
-
-        event_dt: a datetime representing the time of the event
-        line:     a string representing the line itself.
-
-        """
-        for regexp, x in self.regexps.CONNECTIONS:
-            match = re.match(regexp, line)
-            if match:
-                d = {'player': match.group(1)}
-                return LogEvent(event_dt, x, d)
+                d = match.groupdict()
+                d.update({'fragger': d['fraggee'], 'weapon': weapon})
+                e = LogEvent(event_dt, 'death', d, line)
+                if not 'fragger' in d:
+                    logging.getLogger('').debug("Returning a death w/o a fragger")
+                    logging.getLogger('').debug("Line is %s" % (line))
+                return e
 
     def line_to_join_event(self, event_dt, line):
         """Parses a line into a join event.
@@ -74,37 +69,10 @@ class LineParser:
         for regexp, join in self.regexps.JOINS:
             match = re.match(regexp, line)
             if match:
-                d = {'player': match.group(1)}
-                if join.startswith('team'):
-                    d['team'] = match.group(2).lower()
-                return LogEvent(event_dt, join, d)
-
-    def line_to_rcon_event(self, event_dt, line):
-        """Parses a line into an rcon event.
-
-        event_dt: a datetime representing the time of the event
-        line:     a string representing the line itself.
-
-        """
-        for regexp, rcon in self.regexps.RCONS:
-            match = re.match(regexp, line)
-            if match:
-                d = {'player': match.group(1)}
-                if rcon == 'rcon_action':
-                    d['action'] = match.group(2)
-                return LogEvent(event_dt, rcon, d)
-
-    def line_to_flag_event(self, event_dt, line):
-        """Parses a line into a flag event.
-
-        event_dt: a datetime representing the time of the event
-        line:     a string representing the line itself.
-
-        """
-        for regexp, flag in self.regexps.FLAGS:
-            match = re.match(regexp, line)
-            if match:
-                return LogEvent(event_dt, flag, {'player': match.group(1)})
+                d = match.groupdict()
+                if 'team' in d:
+                    d['team'] = d['team'].lower()
+                return LogEvent(event_dt, join, d, line)
 
     def line_to_map_event(self, event_dt, line):
         """Parses a line into a map event.
@@ -116,7 +84,7 @@ class LineParser:
         match = re.match('^map(\d\d): (.*)$', line)
         if match:
             d = {'name': match.group(2), 'number': int(match.group(1))}
-            return LogEvent(event_dt, 'map_change', d)
+            return LogEvent(event_dt, 'map_change', d, line)
 
     def get_event(self, event_dt, line):
         """Returns a list of events that a line represents.
@@ -125,14 +93,12 @@ class LineParser:
         line:     a string representing the line itself.
 
         """
-        command_event = self.line_to_command_event(event_dt, line)
-        death_event = self.line_to_death_event(event_dt, line)
-        connection_event = self.line_to_connection_event(event_dt, line)
-        join_event = self.line_to_join_event(event_dt, line)
-        rcon_event = self.line_to_rcon_event(event_dt, line)
-        flag_event = self.line_to_flag_event(event_dt, line)
-        map_event = self.line_to_map_event(event_dt, line)
-        return [x for x in [command_event, death_event, connection_event,
-                            join_event, rcon_event, flag_event, map_event] if x]
-
+        for f in [self.line_to_death_event,
+                  self.line_to_join_event,
+                  self.line_to_map_event,
+                  self.generic_line_to_event]:
+            e = f(event_dt, line)
+            if e:
+                return [e]
+        return []
 

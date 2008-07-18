@@ -50,7 +50,8 @@ class LogListener:
         """
         while self.keep_listening:
             event = self.events.get()
-            logging.getLogger('').debug("Handling event: %s" % (event.type))
+            if event.type != 'junk':
+                logging.getLogger('').debug("Handling event: %s" % (event.type))
             self._handle_event(event)
 
     def _handle_event(self, event):
@@ -187,7 +188,10 @@ class ConnectionLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        self.zserv.log_ip(event.data['player'], event.data['ip'])
+        logging.getLogger('').debug("Logging %s:%s" % (event.data['player'],
+                                                       event.data['ip_address']))
+        print "Logging %s:%s" % (event.data['player'], event.data['ip_address'])
+        self.zserv.log_ip(event.data['player'], event.data['ip_address'])
 
 class GeneralLogListener(ZServLogListener):
 
@@ -294,8 +298,12 @@ class GeneralLogListener(ZServLogListener):
             self.lost_flag = []
         else:
             fragged_runner = False
-        frag = Frag(event.data['fragger'], event.data['fraggee'],
-                    event.data['weapon'], fragged_runner=fragged_runner)
+        try:
+            frag = Frag(event.data['fragger'], event.data['fraggee'],
+                        event.data['weapon'], fragged_runner=fragged_runner)
+        except:
+            print "Broken Frag Event: %r, %s" % (event, event.line)
+            raise
         fraggee.add_death(frag)
         # if self.last_event.type == 'flag_loss':
         #     fraggee.add_flag_loss(frag)
