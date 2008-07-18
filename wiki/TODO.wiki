@@ -12,6 +12,6 @@
 
   * ~~Fix ugly server info stuff in ZDWebStats.  Probably make it so that $SERVER_URL/$SERVER/ displays server info, and $SERVER_URL/$SERVER/$MAP_NUM/ displays what we're used to... necessitating changes in the main page as well (server name goes to server info, map name goes to map stats).~~
 
-  * Test all the server response methods.
+  * ~~Test all the server response methods.~~
 
   * Test on-the-fly config modification.
