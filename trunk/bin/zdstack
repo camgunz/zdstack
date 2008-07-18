@@ -8,9 +8,7 @@ import signal
 
 from pyfileutils import read_file, write_file
 
-from ZDStack import get_configparser
 from ZDStack.Stack import Stack
-from ZDStack.Server import Server
 
 def fork(logfile, pidfile, signal_handler, debug=False):
     if hasattr(os, 'devnull'):

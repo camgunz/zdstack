@@ -133,6 +133,24 @@ class BasePlayer(BaseStatKeeper):
             if weapon not in self.player_weapon_deaths[player]:
                 self.player_weapon_deaths[player][weapon] = 0
 
+    def _should_add_adversary(self, adversary):
+        """Returns True if an adversary should be added to stats.
+
+        adversary: a string representing the name of an adversary to
+                   potentially add
+
+        """
+        return not adversary in self.adversaries
+
+    def _should_add_weapon(self, weapon):
+        """Returns True if an weapon should be added to stats.
+
+        weapon: a string representing the name of an weapon to
+                potentially add
+
+        """
+        return not weapon in self.weapons
+
     def add_frag(self, frag):
         """Adds a frag to frag stats.
 
@@ -141,9 +159,11 @@ class BasePlayer(BaseStatKeeper):
         """
         logging.getLogger('').debug('')
         self.total_frags += 1
-        if not frag.weapon in self.weapons:
+        if self._should_add_weapon(frag.weapon):
             self.add_weapon(frag.weapon)
-        if not frag.fraggee in self.adversaries:
+        if self._should_add_adversary(frag.fragger):
+            self.add_adversary(frag.fragger)
+        if self._should_add_adversary(frag.fraggee):
             self.add_adversary(frag.fraggee)
         self.weapon_frags[frag.weapon] += 1
         self.player_frags[frag.fraggee] += 1
@@ -159,10 +179,12 @@ class BasePlayer(BaseStatKeeper):
         """
         logging.getLogger('').debug('')
         self.total_deaths += 1
-        if not death.weapon in self.weapons:
+        if self._should_add_weapon(death.weapon):
             self.add_weapon(death.weapon)
-        if not death.fragger in self.adversaries:
+        if self._should_add_adversary(death.fragger):
             self.add_adversary(death.fragger)
+        if self._should_add_adversary(death.fraggee):
+            self.add_adversary(death.fraggee)
         self.weapon_deaths[death.weapon] += 1
         self.player_deaths[death.fragger] += 1
         self.player_weapon_deaths[death.fragger][death.weapon] += 1

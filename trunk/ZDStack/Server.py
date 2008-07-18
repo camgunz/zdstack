@@ -8,7 +8,8 @@ import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, get_configparser, set_debugging, log
+from ZDStack import HOSTNAME, get_configfile, set_configfile, \
+                    load_configparser, get_configparser, set_debugging, log
 from ZDStack.XMLRPCServer import XMLRPCServer
 from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
 
@@ -16,18 +17,16 @@ class Server:
 
     """Server represents a daemonized process serving network requests."""
 
-    def __init__(self, config_parser, debugging=False):
+    def __init__(self, config_file=None, debugging=False):
         """Initializes a Server instance.
 
-        config_parser: a ZSConfigParser instance containing
-                       configuration options and values.
-        debugging:     a boolean, whether or not debugging is enabled.
+        config_file: a string representing the full path to a
+                     configuration file
+        debugging:   a boolean, whether or not debugging is enabled
 
         """
         set_debugging(debugging)
-        self.config = config_parser
-        self.config_file = config_parser.filename
-        self.load_config()
+        self.initialize_config(config_file)
         os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
@@ -37,11 +36,29 @@ class Server:
         signal.signal(signal.SIGTERM, self.handle_signal)
         signal.signal(signal.SIGHUP, self.handle_signal)
 
+    def initialize_config(self, config_file=None, reload=False):
+        """Initializes the server configuration:
+
+        config_file: a string representing the full path to a
+                     configuration file
+        reload:      a boolean, whether or not the configuration is
+                     being reloaded
+
+        """
+        logging.getLogger('').debug('')
+        if not config_file:
+            self.config_file = get_configfile()
+        else:
+            self.config_file = config_file
+            set_configfile(config_file)
+        self.config = get_configparser()
+        self.load_config(reload=reload)
+
     def load_config(self, reload=False):
         """Loads the config.
 
         reload: a boolean, whether or not the configuration is being
-                reloaded.
+                reloaded
 
         """
         logging.getLogger('').debug('')

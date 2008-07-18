@@ -15,6 +15,8 @@ class CTFStatKeeper(TeamStatKeeper):
         """Initializes CTFStatKeeper's stats."""
         self.flag_drops = Listable()
         self.flag_losses = Listable()
+        self.total_flag_drops = 0
+        self.total_flag_losses = 0
         self.flag_touches = 0
         self.flag_returns = 0
         self.flag_picks = 0
@@ -50,6 +52,7 @@ class CTFStatKeeper(TeamStatKeeper):
         """
         logging.getLogger('').info('')
         self.flag_drops.append(flag_drop)
+        self.total_flag_drops += 1
         if self.stat_container:
             self.stat_container.add_flag_drop(flag_drop)
         self.set_has_flag(False)
@@ -77,6 +80,7 @@ class CTFStatKeeper(TeamStatKeeper):
         """
         logging.getLogger('').info('')
         self.flag_losses.append(flag_loss)
+        self.total_flag_drops += 1
         if self.stat_container:
             self.stat_container.add_flag_loss(flag_loss)
         self.set_has_flag(False)

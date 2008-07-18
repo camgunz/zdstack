@@ -27,6 +27,7 @@ __all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE',
            'set_debugging', 'log']
 
 HOSTNAME = __hostnames[0]
+CONFIGFILE = None
 CONFIGPARSER = None
 ZSERV_EXE = None
 DATABASE = None
@@ -42,19 +43,9 @@ logging.basicConfig(level=logging.DEBUG,
                     datefmt=DATEFMT,
                     filename='/dev/null')
 
-def get_configparser(config_file=None, reload=False):
-    global CONFIGPARSER
-    if reload or (CONFIGPARSER is None):
-        CONFIGPARSER = load_configparser(config_file)
-    return CONFIGPARSER
-
-def load_configparser(config_file=None):
-    if config_file is not None:
-        config_file = resolve_file(config_file)
-        if not os.path.isfile(config_file):
-            es = "Configuration file [%s] not found"
-            raise ValueError(es % (config_file))
-    else:
+def get_configfile():
+    global CONFIGFILE
+    if not CONFIGFILE:
         possible_config_files = ['./zdstackrc', './zdstack.ini',
                                  '~/.zdstackrc', '~/.zdstack.ini',
                                  '~/.zdstack/zdstackrc',
@@ -66,13 +57,32 @@ def load_configparser(config_file=None):
                         [resolve_file(x) for x in possible_config_files]
         if not [y for y in possible_config_files if os.path.isfile(y)]:
             raise ValueError("Could not find a valid configuration file")
-        config_file = possible_config_files[0]
-    cp = CP(config_file, allow_duplicate_sections=False)
+        CONFIGFILE = possible_config_files[0]
+    return CONFIGFILE
+
+get_configfile()
+
+def set_configfile(config_file):
+    global CONFIGFILE
+    config_file = resolve_file(config_file)
+    if not os.path.isfile(config_file):
+        es = "Configuration file [%s] not found"
+        raise ValueError(es % (config_file))
+    CONFIGFILE = config_file
+
+def load_configparser():
+    cp = CP(CONFIGFILE, allow_duplicate_sections=False)
     for section in cp.sections():
         cp.set(section, 'name', section)
     return cp
 
-def get_zserv_exe(config_file=None):
+def get_configparser(reload=False):
+    global CONFIGPARSER
+    if CONFIGPARSER is None or reload:
+        CONFIGPARSER = load_configparser()
+    return CONFIGPARSER
+
+def get_zserv_exe():
     global CONFIGPARSER
     global ZSERV_EXE
     if ZSERV_EXE is None:

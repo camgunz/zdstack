@@ -76,6 +76,8 @@ class CTFPlayer(TeamPlayer, CTFStatKeeper):
             self.player_weapon_flag_drops[frag.fraggee][frag.weapon] += 1
             self.player_flag_drops[frag.fraggee] += 1
             self.weapon_flag_drops[frag.weapon] += 1
+            if frag.fraggee != self.name: # no suicide flag drops
+                self.total_flag_drops += 1
 
     def add_death(self, frag):
         TeamPlayer.add_death(self, frag)
@@ -83,6 +85,7 @@ class CTFPlayer(TeamPlayer, CTFStatKeeper):
             self.player_weapon_flag_losses[frag.fraggee][frag.weapon] += 1
             self.player_flag_losses[frag.fragger] += 1
             self.weapon_flag_losses[frag.weapon] += 1
+            self.total_flag_losses += 1
 
     def export_summary(self):
         """Exports a summary of this CTFPlayer's stats."""

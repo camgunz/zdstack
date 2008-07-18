@@ -3,9 +3,9 @@ import logging
 
 from datetime import datetime
 from threading import Lock
-from cStringIO import StringIO
+from StringIO import StringIO
 
-from ZDStack import get_configparser, log, CONFIGPARSER
+from ZDStack import get_configfile, get_configparser, log
 from ZDStack.Utils import yes
 from ZDStack.Server import Server
 from ZDStack.ZServDepot import get_zserv_class
@@ -33,11 +33,10 @@ class Stack(Server):
         debugging:   a boolean, whether or not debugging is enabled
 
         """
-        self.config_file = config_file
         self.spawn_lock = Lock()
         self.zservs = {}
         self.start_time = datetime.now()
-        Server.__init__(self, get_configparser(config_file), debugging)
+        Server.__init__(self, config_file, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
@@ -301,7 +300,9 @@ class Stack(Server):
         for o, v in cp.items(zserv_name):
             main_cp.set(zserv_name, o, v)
         main_cp.save()
-        self._get_zserv(zserv_name).reload_config()
+        self.initialize_config(get_configfile(), reload=True)
+        zs_config = dict(self.config.items(zserv_name))
+        self._get_zserv(zserv_name).reload_config(zs_config)
 
     def get_player(self, zserv_name, player_name):
         """Returns a marshallable representation of a Player.

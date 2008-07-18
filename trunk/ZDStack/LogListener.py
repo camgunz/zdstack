@@ -402,6 +402,7 @@ class GeneralLogListener(ZServLogListener):
             log(es % (event.data['player']))
             return
         runner.set_has_flag(False)
+        self.lost_flag.append(runner.name)
 
     def handle_flag_cap_event(self, event):
         """Handles a flag_cap event.
