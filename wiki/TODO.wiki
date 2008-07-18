@@ -1,6 +1,6 @@
 ﻿#summary Todo list for the current release of ZDStack
 
-  * Test the Player=>IP Database
+  * Fix flag losses not percolating up to Teams and Maps
 
   * Write some standard plugins for inclusion
     * A robust anti-teamkill plugin
