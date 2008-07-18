@@ -1,17 +1,14 @@
 ﻿#summary Todo list for the current release of ZDStack
 
-  * ~~Test new frag representation.~~
+  * Test the Player=>IP Database
 
-  * ~~Generate !PyDoc stuff for plugin authors.~~
-
-  * ~~Augment setup.py to install the sample config file in the proper location (i.e., if root install in /etc/zdstack, otherwise install in ~/.zdstack).~~
-
-  * ~~Add a README file, and an INSTALL file.~~
-
-  * ~~Add base_url option to zdwebstatsrc and make sure the URL structuring of ZDWebStats works OK (i.e., at the root and at an arbitrary relative location).~~
-
-  * ~~Fix ugly server info stuff in ZDWebStats.  Probably make it so that $SERVER_URL/$SERVER/ displays server info, and $SERVER_URL/$SERVER/$MAP_NUM/ displays what we're used to... necessitating changes in the main page as well (server name goes to server info, map name goes to map stats).~~
-
-  * ~~Test all the server response methods.~~
-
-  * Test on-the-fly config modification.
+  * Write some standard plugins for inclusion
+    * A robust anti-teamkill plugin
+    * An anti-foul/racist/hateful language plugin
+    * A "fair teams" plugin
+      * Can't join the winning team unless they're down a player
+      * Can't join a team when it would put them up 2 players
+    * An anti-teamswitch plugin
+      * If a player has switched teams > 2 times and (switches - 1) have occurred within 1 minute of a flag score, kick that player
+    * A map voting plugin
+    * A kick voting plugin
