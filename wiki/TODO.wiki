@@ -5,9 +5,8 @@
   * Write some standard plugins for inclusion
     * ~~unique players only~~
     * ~~clean language~~
-    * robust anti-teamkill
-    * map voting
-    * kick voting
+    * ~~robust anti-teamkill~~
+    * ~~map/kick/reset voting~~
     * fair teams
       * Can't join the winning team unless they're down a player
       * Can't join a team when it would put them up 2 players
