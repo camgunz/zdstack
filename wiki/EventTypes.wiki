@@ -1,0 +1,117 @@
+#summary List of event types
+
+=Command Events=
+
+_Command events are events that occur in response to a command.  Typically the information from a command event is returned to the issuer of the command, although there isn't always information to return._
+
+unknown_command
+
+addban_command
+
+addbot_command
+
+banlist_command
+
+clearmaplist_command
+
+get_command
+
+kick_command
+
+killban_command
+
+maplist_command
+
+players_command
+
+removebots_command
+
+resetscores_command
+
+say_command
+
+set_command
+
+wads_command
+
+=Game Events=
+
+_Game events occur in game and are usually used for statistics, however, plugins can also use them to respond to in-game events._
+
+rcon_denied
+
+rcon_granted
+
+rcon_action
+
+frag
+
+death
+
+team_switch
+
+game_join
+
+team_join
+
+flag_touch
+
+flag_loss
+
+flag_return
+
+flag_pick
+
+flag_cap
+
+connection
+
+disconnection
+
+ip_log
+
+=Weapons=
+
+_Every frag has an associated weapon.  If an event's type is `frag` or `death`, the event's `data` dict will have a `weapon` key with one of these values.  Note that non-standard weapons, such as the rail gun and custom guns from the Counterstrike WAD, are not included in this list and in fact are not recognized as frag events._
+
+fist
+
+chainsaw
+
+pistol
+
+shotgun
+
+chaingun
+
+super shotgun
+
+rocket launcher
+
+plasma gun
+
+bfg
+
+telefrag
+
+=Deaths=
+
+_Not every death has a fragger, however.  In this case, the event_type will be `death` and the `weapon` key will be set to one of these values._
+
+rocket suicide
+
+mutation
+
+death
+
+melting
+
+suicide
+
+falling
+
+exiting
+
+drowning
+
+teamkill
