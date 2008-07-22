@@ -167,9 +167,9 @@ class GeneralZServStatsMixin:
         logging.getLogger('').info("player: [%s]" % (player_name))
         ###
         # It's possible for players to have the same name, so that this
-        # function will do nothing.  There's absolutely nothing we can do
-        # about this, stats are just fucked for those players.  Basically, the
-        # first player in line gets all the action.  In a way, it's funny
+        # function will do nothing.  There's a plugin to prevent this, but if
+        # it's not loaded, stats are just fucked for those players.  Basically,
+        # the first player in line gets all the action.  In a way, it's funny
         # because a group of people could all join a server under the same
         # name, and blow up stats for a certain player.
         ###
@@ -186,6 +186,7 @@ class GeneralZServStatsMixin:
             if player.name in self.disconnected_players:
                 del self.disconnected_players[player.name]
             self.players[player.name].disconnected = False
+        self.update_player_numbers_and_ips()
 
     def remove_player(self, player_name):
         """Disconnects a player.
@@ -198,6 +199,7 @@ class GeneralZServStatsMixin:
         if player_name in self.players:
             self.disconnected_players[player_name] = player
             self.players[player_name].disconnected = True
+        self.update_player_numbers_and_ips()
 
     def get_player(self, name):
         """Returns a Player instance.
@@ -237,6 +239,48 @@ class GeneralZServStatsMixin:
             logging.getLogger('').debug("Possible: [%s]" % (ppn))
         return messenger
 
+    def get_player_ip_address(self, player_name):
+        """Returns a player's IP address.
+        
+        player_name: a string representing the name of the player
+                     whose IP address is to be returned
+
+        """
+        d = [x for x in self.zplayers() if x['player_name'] == player_name]
+        if not d:
+            raise ValueError("Player [%s] not found" % (player_name))
+        return d[0]['player_ip']
+
+    def get_player_number(self, player_name):
+        """Returns a player's number.
+        
+        player_name: a string representing the name of the player
+                     whose number is to be returned
+        
+        This number is the same as the number indicated by the zserv
+        'players' command, useful for kicking and not much else.
+
+        """
+        d = [x for x in self.zplayers() if x['player_name'] == player_name]
+        if not d:
+            raise ValueError("Player [%s] not found" % (player_name))
+        return d[0]['player_num']
+
+    def update_all_player_numbers_and_ips(self):
+        """Sets player numbers and IP addresses.
+
+        This method needs to be run upon every connection and
+        disconnection if numbers are to remain in sync.
+
+        """
+        for d in self.zplayers():
+            try:
+                p = self.get_player(d['player_name'])
+            except ValueError:
+                continue
+            p.number = d['player_num']
+            p.ip = d['player_ip']
+
     def handle_message(self, message, messenger):
         """Handles a message.
 
@@ -245,23 +289,8 @@ class GeneralZServStatsMixin:
 
         """
         ###
-        # I think the way this will work is we will check the messenger's
-        # homogenized name against some list of messagers and regexp pairs.
-        # Then, we can take a specific action like "kick" or "say".  So,
-        # something like:
-        #
-        # mionicd: "^no$" kick
-        #
-        ###
-        logging.getLogger('').debug('')
-        if messenger is None:
-            s = "Received a message but none of the players existed"
-            logging.getLogger('').info(s)
-        else:
-            s = "Received a message [%s] from player [%s]"
-            logging.getLogger('').info(s % (message, messenger.name))
-        ###
-        # Here we would do the lookup
+        # This is handled by plugins now, someday I'll fully remove the
+        # references to this.
         ###
         pass
 
@@ -315,6 +344,19 @@ class GeneralZServStatsMixin:
         logging.getLogger('').debug('')
         return self.send_to_zserv('addban %s %s' % (ip_address, reason),
                                   'addban_command')
+
+    def zaddtimedban(self, duration, ip_address, reason='rofl'):
+        """Adds a ban with an expiration.
+
+        duration:   an integer representing how many minutes the ban
+                    should last
+        ip_address: a string representing the IP address to ban
+        reason:     a string representing the reason for the ban
+
+        """
+        self.zaddban(ip_address, reason)
+        seconds = duration * 60
+        Timer(seconds, self.zkillban, [ip_address]).start()
 
     def zaddbot(self, bot_name):
         """Adds a bot.
