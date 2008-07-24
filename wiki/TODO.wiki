@@ -7,8 +7,8 @@
     * ~~clean language~~
     * ~~robust anti-teamkill~~
     * ~~map/kick/reset voting~~
-    * fair teams
-      * Can't join the winning team unless they're down a player
-      * Can't join a team when it would put them up 2 players
+    * ~~fair teams~~
+      * ~~Can't join the winning team unless they're down a player~~
+      * ~~Can't join a team when it would put them up 2 players~~
     * anti-teamswitch
-      * If a player has switched teams > 2 times and (switches - 1) have occurred within 1 minute of a flag score, kick that player
+      * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
