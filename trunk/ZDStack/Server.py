@@ -46,11 +46,9 @@ class Server:
 
         """
         logging.getLogger('').debug('')
-        if not config_file:
-            self.config_file = get_configfile()
-        else:
-            self.config_file = config_file
+        if config_file:
             set_configfile(config_file)
+        self.config_file = get_configfile()
         self.config = get_configparser()
         self.load_config(reload=reload)
 
