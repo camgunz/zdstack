@@ -2,16 +2,16 @@
 #labels Featured
 
 =Overview=
-Using ZDStack is fairly straight-forward, it is done with 2 programs, `zdstackctl` and `zservctl`.  A web-interface via ZDWebStats is planned, but not started yet.
+Using ZDStack is fairly straight-forward, it is done with 2 programs, `zdstack` and `zservctl`.  A web-interface via ZDWebStats is planned, but not started yet.
 
-=zdstackctl=
+=zdstack=
 
-`zdstackctl` manages the ZDStack process as a whole.  You can start/stop/restart ZDStack using this.
+`zdstack` manages the ZDStack process as a whole.  You can start/stop/restart ZDStack using this.
 
 {{{
-Usage: zdstackctl [ start | stop | restart ] -c [ config_file ]
+Usage: zdstack [ start | stop | restart ] -c [ config_file ]
 }}}
-Use of `-c` is optional; `zdstackctl` actually looks in lots of standard places for a configuration file, so most of the time you won't have to specify this.
+Use of `-c` is optional; `zdstack` actually looks in lots of standard places for a configuration file, so most of the time you won't have to specify this.
 
 =zservctl=
 
@@ -32,7 +32,7 @@ It's important to note that `zservctl reload-config` must be run after making ch
 
 =zdstackrc=
 
-`zdstackrc` contains server configuration information.  `zdstackctl` and `zservctl` look for this file in the following locations (in order):
+`zdstackrc` contains server configuration information.  `zdstack` and `zservctl` look for this file in the following locations (in order):
 
   * ./zdstackrc
   * ./zdstack.ini
