@@ -20,3 +20,5 @@ Should you decide to use Player => IP mapping, you will need:
   * Python 2.5 or greater ([http://www.python.org])
   * PyXSE 0.4 or greater ([http://pyxse.googlecode.com])
   * pyfileutils 0.8.2 or greater ([http://pyfileutils.googlecode.com])
+
+ZDStack offers the option to use either JSON or XML as the RPC transport format.  Using XML requires no extra libraries, XML parsing is built into the Python standard library.  Using JSON, however, requires the `simplejson` package.  The easiest way to obtain simplejson is to run `easy_install simplejson` at the command-prompt.   If you don't have the `easy_install` utility, visit the [http://peak.telecommunity.com/DevCenter/EasyInstall EasyInstall] webpage and follow the instructions there.
