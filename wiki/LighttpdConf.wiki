@@ -4,7 +4,7 @@
 
 These installation instructions assume that your document root is /var/www/html.  Other potential document roots are /srv/www, /www, and /var/www by itself.  Adjust the instructions accordingly.
 
-Grab the ZDWebStats bundle from svn (svn co http://zdstack.googlecode.com/svn/zdwebstats)
+Grab the ZDWebStats bundle from svn (svn co http://zdstack.googlecode.com/svn/zdwebstats) or download the Release Candidate
 
 Place the zdwebstats folder in /var/www (mv zdwebstats /var/www)
 
