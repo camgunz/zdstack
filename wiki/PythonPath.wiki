@@ -22,7 +22,7 @@ When you log out, your environment is reset, so any variables you may have set a
   * CSH rc file: `~/.cshrc`
   * TCSH rc file: `~/.tcshrc`
 
-For example, in BASH, add the line `export PYTHONPATH=~/ZDStack/lib/python2.4/site-packages/ZDStack` to ~/.bashrc.
+For example, in BASH, add the line `export PYTHONPATH=~/ZDStack/lib/python2.4/site-packages/ZDStack` to `~/.bashrc`.
 
 =Possible Differences/Miscellaneous=
 
