@@ -36,7 +36,7 @@ else:
     cp = get_configparser(opts['-c'])
 if 'zdstack_port' not in cp.defaults():
     print_usage("Option 'zdstack_port' not found in configuration file")
-server = SP('http://%s:%d' % (HOSTNAME, cp.defaults()['zdstack_port']))
+server = SP('http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port']))
 if action in ('start', 'stop', 'restart'):
     if not '-n' in opts:
         print_usage("Must specify a ZServ instance")
