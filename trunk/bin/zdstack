@@ -76,7 +76,7 @@ def stop(config_file=None):
 
 def restart(config_file):
     stop(config_file)
-    time.sleep(1)
+    time.sleep(5)
     start(config_file)
 
 actions = ('start', 'stop', 'restart', 'debug')
