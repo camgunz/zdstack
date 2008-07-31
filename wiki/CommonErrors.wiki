@@ -1,0 +1,19 @@
+#summary Solutions to Common Errors
+
+*Traceback (most recent call last):*
+
+*File "./zdstack", line 11, in <module>*
+
+*from ZDStack.Stack import Stack*
+
+*!ImportError: No module named ZDStack.Stack*
+
+This means that the ZDStack Python library cannot be found.  Python uses the environment variable `PYTHONPATH` to determine where to look (besides the default locations) for Python libraries, in this case, `ZDStack.Stack`.  To fix this, add the location of the ZDStack Python library location to `PYTHONPATH` (instructions at PythonPath).
+
+*Error: Could not find option 'XXX' in the configuration*
+
+Most likely you are using an old configuration file and the new version of ZDStack is looking for configuration options that have since been added.  You can either manually add these options as ZDStack complains or you can transplant your configuration into the `zdstack.ini-example` file in the `doc/` subdirectory of the package.
+
+*address in use*
+
+If this message is appearing in the `ZDStack.log` file, it means that the socket ZDStack listens for RPC requests on is still open.  This will happen if ZDStack is stopped abruptly or, in rare cases, restarted too quickly.  If it does occur, stop ZDStack, stop all zserv processes (`killall -9 zserv`) and wait a while.  If that's too ambiguous, you can run `netstat -anp | grep <port>`, where `<port>` is the port number you've configured ZDStack to listen on (default is 8080).  When nothing shows up after that command, you can start ZDStack again.
