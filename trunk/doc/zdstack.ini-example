@@ -113,6 +113,9 @@ teamdm_max_teams = 2
 ;;; Default per-game-mode number of players per team
 ctf_max_players_per_team = 4
 teamdm_max_players_per_team = 2
+;;; Default per-game-mode fraglimit
+duel_fraglimit = 50
+ffa_fraglimit = 50
 
 [Map01]
 type = duel
