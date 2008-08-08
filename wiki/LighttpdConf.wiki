@@ -46,7 +46,7 @@ fastcgi.server = (
 
 url.rewrite-once = (
   "^/favicon.ico$" => "/static/favicon.ico",
-  "^/servers/static/(.*)$" => "/static/$1",
+  "^/servers/static/(.*)$" => "/$1",
   "^/servers/(.*)$" => "/servers/zdwebstats.py/$1"
 )
 
