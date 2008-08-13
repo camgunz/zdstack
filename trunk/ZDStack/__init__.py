@@ -55,7 +55,9 @@ def get_configfile():
                                  '/etc/zdstack/zdstack.ini']
         possible_config_files = \
                         [resolve_file(x) for x in possible_config_files]
-        if not [y for y in possible_config_files if os.path.isfile(y)]:
+        possible_config_files = \
+                        [x for x in possible_config_files if os.path.isfile(x)]
+        if not possible_config_files:
             raise ValueError("Could not find a valid configuration file")
         CONFIGFILE = possible_config_files[0]
     return CONFIGFILE
