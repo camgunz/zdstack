@@ -1,7 +1,6 @@
 ﻿#summary Todo list for the current release of ZDStack
 
-  * Test on TT (after this weekend... IDL)
-
+  
   * Write some standard plugins for inclusion
     * ~~unique players only~~
     * ~~clean language~~
@@ -12,5 +11,8 @@
       * ~~Can't join a team when it would put them up 2 players~~
     * anti-teamswitch
       * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
+    * sql-export
+
+  * Test plugins on TT-beta
 
   * Update the Wiki pages for the RPC methods and data-types.
