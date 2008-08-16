@@ -94,8 +94,7 @@ class Server:
     def reload_config(self):
         """Reloads the configuration."""
         logging.getLogger('').debug('')
-        self.config = get_configparser(reload=True,
-                                       config_file=self.config_file)
+        self.config = get_configparser(reload=True)
         self.load_config(reload=True)
 
     def startup(self):
