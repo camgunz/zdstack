@@ -1,0 +1,23 @@
+0.10 RC2 ---
+  Added make_release.sh script for easy packaging
+  Fixed "Expected int, got string" error when using zservctl
+  Added support for JSON-RPC to zservctl
+  Fixed error when reloading configuration
+  Removed unnecessary complexities in the config_file logic
+  Added default Dual and FFA fraglimits in the example config
+  Increased the restart sleep amount to give the server enough time to shutdown
+
+0.10 RC1 ---
+  Added JSON-RPC as an RPC protocol option
+  Added plugin system
+  Changed the internal representation of Frags and Deaths, less load on
+    frontends this way
+  Added LICENSE, README, INSTALL and CHANGES files
+  Changed license to MIT license
+  Added PyDoc documentation for Plugin authors
+  Added numerous RPC methods other that the basic "send_to_zserv()" method,
+    for easier API usage
+  Renamed zdstackctl to zdstack
+
+0.9 ---
+  Initial public release
