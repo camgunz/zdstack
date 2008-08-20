@@ -24,9 +24,10 @@ class BasePlayer(BaseStatKeeper):
         """
         logging.getLogger('').debug('name: [%s]' % (name))
         BaseStatKeeper.__init__(self)
-        self.name = name
         self.zserv = zserv
+        self.name = name
         self.ip = ip
+        self.number = None
         self.tag, self.player_name = parse_player_name(self.name)
         self.homogenized_name = homogenize(self.name)
         self.escaped_name = html_escape(self.name)
@@ -54,6 +55,18 @@ class BasePlayer(BaseStatKeeper):
         # TODO:
         #   - Add latency/packet-loss tracking
         ###
+
+    def __ne__(self, x):
+        try:
+            return not (self.name == x.name and self.ip == x.ip)
+        except NameError:
+            return True
+
+    def __eq__(self, x):
+        try:
+            return not (self.name == x.name and self.ip == x.ip)
+        except NameError:
+            return False
 
     def exportables(self):
         """Returns a list of strings representing exportable values."""

@@ -225,9 +225,10 @@ class Stack(Server):
         """
         logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
-        if player_name not in zserv.players:
+        players = [x for x in zserv.players if x.name == player_name]
+        if not players:
             raise ValueError("Player [%s] not found" % (player_name))
-        return zserv.players[player_name]
+        return players[0]
 
     def _get_team(self, zserv_name, team_color):
         """Returns a Team instance.

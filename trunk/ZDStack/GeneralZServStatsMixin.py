@@ -88,8 +88,8 @@ class GeneralZServStatsMixin:
         """Initializes a ZServ's stats."""
         logging.getLogger('').debug('')
         self.map = None
-        self.players = Dictable()
-        self.disconnected_players = Dictable()
+        self.players = Listable()
+        self.disconnected_players = Listable()
         self.should_remember = False
 
     def start_collecting_general_stats(self):
@@ -176,18 +176,19 @@ class GeneralZServStatsMixin:
         # name, and blow up stats for a certain player.
         ###
         player = self.player_class(player_name, self)
-        if player.name not in self.players:
+        if player not in self.players:
             s = "players pre-add: [%s]"
-            logging.getLogger('').info(s % (self.players))
-            self.players[player.name] = player
+            # logging.getLogger('').info(s % (self.players))
+            self.players.append(player)
             s = "players post-add: [%s]"
-            logging.getLogger('').info(s % (self.players))
+            # logging.getLogger('').info(s % (self.players))
         else:
             s = "[%s] already exists"
-            logging.getLogger('').info(s % (player_name))
-            if player.name in self.disconnected_players:
-                del self.disconnected_players[player.name]
-            self.players[player.name].disconnected = False
+            # logging.getLogger('').info(s % (player_name))
+            if player in self.disconnected_players:
+                player_index = self.disconnected_players.index(player)
+                del self.disconnected_players[player_index]
+            player.disconnected = False
         self.update_player_numbers_and_ips()
 
     def remove_player(self, player_name):
@@ -198,9 +199,10 @@ class GeneralZServStatsMixin:
         """
         logging.getLogger('').debug('')
         player = self.player_class(player_name, self)
-        if player_name in self.players:
-            self.disconnected_players[player_name] = player
-            self.players[player_name].disconnected = True
+        player.disconnected = True
+        if player in self.players:
+            if player not in self.disconnected_players:
+                self.disconnected_players.append(player)
         self.update_player_numbers_and_ips()
 
     def get_player(self, name):
@@ -210,10 +212,11 @@ class GeneralZServStatsMixin:
 
         """
         logging.getLogger('').debug('')
-        if name not in self.players:
-            # Maybe we should make custom exceptions like PlayerNotFoundError
-            raise ValueError("Player [%s] not found" % (name))
-        return self.players[name]
+        for player in self.players:
+            if player.name == name:
+                return player
+        # Maybe we should make custom exceptions like PlayerNotFoundError
+        raise ValueError("Player [%s] not found" % (name))
 
     def distill_player(self, possible_player_names):
         """Discerns the most likely existing player.
@@ -229,12 +232,13 @@ class GeneralZServStatsMixin:
 
         """
         messenger = None
+        names = [x.name for x in self.players]
         for player_name in possible_player_names:
-            if player_name in self.players:
-                messenger = self.players[player_name]
+            if player_name in names:
+                messenger = self.get_player(player_name)
                 break
         if not messenger:
-            player_names = ', '.join(self.players.keys())
+            player_names = ', '.join(names)
             ppn = ', '.join(possible_player_names)
             logging.getLogger('').debug("No player could be distilled")
             logging.getLogger('').debug("Players: [%s]" % (player_names))
@@ -268,7 +272,7 @@ class GeneralZServStatsMixin:
             raise ValueError("Player [%s] not found" % (player_name))
         return d[0]['player_num']
 
-    def update_all_player_numbers_and_ips(self):
+    def update_player_numbers_and_ips(self):
         """Sets player numbers and IP addresses.
 
         This method needs to be run upon every connection and
@@ -306,13 +310,12 @@ class GeneralZServStatsMixin:
         logging.getLogger('').debug('')
         self.save_current_general_stats()
         self.map = self.map_class(map_number, map_name)
-        for player_name, player in self.players.items():
-            if player_name in self.disconnected_players:
-                del self.players[player_name]
-            else:
-                player.initialize()
-                player.set_map(self.map)
-        self.disconnected_players = Dictable()
+        self.players = [x for x in self.players \
+                            if x not in self.disconnected_players]
+        for player in self.players:
+            player.initialize()
+            player.set_map(self.map)
+        self.disconnected_players = Listable()
 
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
