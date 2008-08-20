@@ -38,12 +38,32 @@ if 'zdstack_port' not in cp.defaults():
 if not 'rpc_protocol' in cp.defaults():
     raise Exception("Could not find option 'rpc_protocol' in config")
 if cp.defaults()['rpc_protocol'].lower() in ('json', 'jsonrpc', 'json-rpc'):
-    from jsonrpc import ServiceProxy as SP
+    from jsonrpc import ServiceProxy as BaseProxy
 elif cp.defaults()['rpc_protocol'].lower() in ('xml', 'xmlrpc', 'xml-rpc'):
-    from xmlrpclib import ServerProxy as SP
+    from xmlrpclib import ServerProxy as BaseProxy
 else:
     raise Exception("Invalid RPC Type: [%s]" % (cp.defaults()['rpc_protocol']))
-server = SP('http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port']))
+
+class SafeWrapper(object):
+
+    address = 'http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port'])
+
+    def __init__(self, baseproxy):
+        self.baseproxy = baseproxy(self.address)
+
+    def __getattr__(self, name):
+        if name == 'baseproxy':
+            return self.baseproxy
+        else:
+            def f(*args, **kwargs):
+                m = eval('self.baseproxy.%s' % (name))
+                try:
+                    return m(*args, **kwargs)
+                except Exception, e:
+                    print >> sys.stderr, "\nError: %s\n" % (e.error)
+
+server = SafeWrapper(BaseProxy)
+
 if action in ('start', 'stop', 'restart'):
     if not '-n' in opts:
         print_usage("Must specify a ZServ instance")
