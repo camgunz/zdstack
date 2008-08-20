@@ -385,6 +385,7 @@ class BaseZServ:
             out = True
             try:
                 os.kill(self.pid, signum)
+                self.pid = None
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
                 log(es % (e))
