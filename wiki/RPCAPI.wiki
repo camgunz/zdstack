@@ -1,24 +1,48 @@
-#summary RPC Methods and Description
+﻿#summary RPC Methods and Description
 
+= ZDStack Action Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
 || start_zserv() || {{{start_zserv(zserv_name)}}} || True on Success || yes || yes ||
+|| stop_zserv() || {{{stop_zserv(zserv_name)}}} || True on Success || yes || yes ||
+|| restart_zserv() || {{{restart_zserv(zserv_name)}}} || True on Success || yes || yes ||
 || start_all_zservs() || {{{start_all_zservs()}}} || True on Success || yes || partially ||
-|| stop_zserv() || {{{stop_zserv(zserv_name)}}} || True on Success || yes || partially ||
 || stop_all_zservs() || {{{stop_all_zservs()}}} || True on Success || yes || partially ||
-|| restart_zserv() || {{{restart_zserv(zserv_name)}}} || True on Success || yes || partially ||
 || restart_all_zservs() || {{{restart_all_zservs()}}} || True on Success || yes || partially ||
-|| get_uptime() || {{{get_uptime(zserv_name)}}} || seconds as an int || yes || no ||
+|| reload_config() || {{{reload_config()}}} || True on Success || yes || yes ||
+
+= ZDStack Info Methods =
+|| Method || Usage || Return Value || Implemented || Tested ||
 || get_zserv() || {{{get_zserv(zserv_name)}}} || a ZservDict || yes || yes ||
-|| get_all_zservs() || {{{get_all_zservs()}}} || a list of ZservDict || yes || yes ||
+|| get_all_zservs() || {{{get_all_zservs()}}} || a list of ZservDict instances || yes || yes ||
 || list_zserv_names() || {{{list_zserv_names()}}} || a list of zserv names as strings || yes || yes ||
-|| get_current_map() || {{{get_current_map(zserv_name)}}} || a MapDict || yes || yes ||
-|| get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict || yes || partially ||
-|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDict instances || yes || yes ||
-|| get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict || yes || partially ||
-|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDict instances || yes || yes ||
-|| list_player_names() || {{{list_player_names(zserv_name)}}} || a list of player names as strings || yes || partially ||
-|| get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict || yes || yes ||
+
+= ZServ Action Methods =
+|| Method || Usage || Return Value || Implemented || Tested ||
+|| set_zserv_config() || {{{set_zserv_config(zserv_name), config_data}}} || True on Success || yes || partially ||
+|| addban() || {{{addban(zserv_name, ip_address, reason)}}} || True on Success || yes || partially ||
+|| addbot() || {{{addbot(zserv_name, bot_name)}}} || True on Success || yes || partially ||
+|| addmap() || {{{addmap(zserv_name, map_number)}}} || True on Success || yes || partially ||
+|| clearmaplist() || {{{clearmaplist(zserv_name) || True on Success || yes || no ||
+|| kick() || {{{kick(zserv_name, player_number, reason) || True on Success || yes || partially ||
+|| killban() || {{{killban(zserv_name, ip_address)}}} || True on Success || yes || partially ||
+|| map() || {{{map(map_number)}}} || True on Success || yes || partially ||
+|| removebots() || {{{removebots(zserv_name)}}} || True on Success || yes || partially ||
+|| resetscores() || {{{resetscores(zserv_name)}}} || True on Success || yes || partially ||
+|| say() || {{{say(zserv_name, message)}}} || True on Success || yes || partially ||
+|| set() || {{{set(zserv_name, var_name, var_value)}}} || True on Success || yes || partially ||
+|| toggle() || {{{toggle(zserv_name, var_name)}}} || True on Success || yes || partially ||
+|| unset() || {{{unset(zserv_name, var_name)}}} || True on Success || yes || partially ||
+|| send_to_zserv() || {{{send_to_zserv(zserv_name, message}}} || None || yes || yes ||
+
+= ZServ Info Methods =
+|| Method || Usage || Return Value || Implemented || Tested ||
+|| get_uptime() || {{{get_uptime(zserv_name)}}} || seconds as an int || yes || no ||
 || get_status() || {{{get_status(zserv_name)}}} || ZServ status as a string, either 'Stopped' or 'Running' || yes || no ||
-|| reload_config() || {{{reload_config(zserv_name)}}} || True on success || yes || partially ||
-|| reload_all_configs() || {{{reload_all_configs()}}} || True on success || yes || partially ||
-|| send_to_zserv() || {{{send_to_zserv(zserv_name, message, return_lines=40)}}} || a list of General log lines as strings || partially || partially ||
+|| get_zserv_config() || {{{get_zserv_config(zserv_name)}}} || a String representing the ZServ's configuration || yes || yes ||
+|| list_player_names() || {{{list_player_names(zserv_name)}}} || a list of player names as strings || yes || yes ||
+|| get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict || yes || yes ||
+|| get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict || yes || yes ||
+|| get_current_map() || {{{get_current_map(zserv_name)}}} || a MapDict || yes || yes ||
+|| get_all_players() || {{{get_all_players(zserv_name)}}} || a list of PlayerDict instances || yes || yes ||
+|| get_all_teams() || {{{get_all_teams(zserv_name)}}} || a list of TeamDict instances || yes || yes ||
+|| get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict || yes || yes ||
