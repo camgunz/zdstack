@@ -20,15 +20,18 @@ Plugins are actually Python source files, each containing one or more functions 
     {{{
     [DEFAULT]
     plugin_dir: <full path to whatever the plugin folder is>
-    load_plugins: <comma-separated list of plugin names to load>
+    load_plugins: yes
+    plugins: <comma-separated list of plugin names to load>
     }}}
   # Alternately, you can configure which servers load which plugins:
     {{{
     [Greatest Coop (teamkill limit, rated PG)]
-    load_plugins: ban_teamkiller,clean_language
+    load_plugins: yes
+    plugins: ban_teamkiller,clean_language
 
     [Adult Swim CTF]
-    load_plugins: raunchy_commentator
+    load_plugins: yes
+    plugins: raunchy_commentator
     }}}
 
 = Plugin Development =
