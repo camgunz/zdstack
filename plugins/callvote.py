@@ -1,5 +1,5 @@
 import time
-import datetimei
+import datetime
 from threading import Timer, Thread
 
 ###
@@ -44,7 +44,7 @@ def callvote(event, zserv):
             elif player.vote is None:
                 missing_votes = True
         _yes_votes = float(CV_ZSERVS[zserv.name]['yes_votes'])
-        _players = float(CV_ZSERVS[zserv.name]['players']
+        _players = float(CV_ZSERVS[zserv.name]['players'])
         return (_yes_votes / _players, missing_votes)
 
     def _announce_vote():
