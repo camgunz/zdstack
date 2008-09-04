@@ -11,13 +11,16 @@ def fair_teams(event, zserv):
     if not zserv.type in ('teamdm', 'ctf'):
         return
     player = zserv.get_player(event.data['player'])
-    if max_teams = 2:
+    if max_teams == 1:
+        colors = ('red',)
+        spec_colors = ('blue', 'green', 'white')
+    elif max_teams == 2:
         colors = ('red', 'blue')
         spec_colors = ('green', 'white')
-    elif max_teams = 3:
+    elif max_teams == 3:
         colors = ('red', 'blue', 'green')
         spec_colors = ('white')
-    elif max_teams = 4:
+    else:
         colors = ('red', 'blue', 'green', 'white')
     def _teams_are_unbalanced():
         d = {}
