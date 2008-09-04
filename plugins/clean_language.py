@@ -25,4 +25,5 @@ def clean_language(event, zserv):
             else:
                 s = "%s, this is a clean language server."
                 s += "  %d more violations and you will be kicked."
-                zserv.zsay(s % (p.name, BAD_LANGUAGE_LIMIT - p.bad_language))
+                zserv.zsay(s % (messenger.name,
+                                BAD_LANGUAGE_LIMIT - messenger.bad_language))
