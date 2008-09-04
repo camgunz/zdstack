@@ -43,7 +43,7 @@ def callvote(event, zserv):
                 CV_ZSERVS[zserv.name]['yes_votes'] += 1
             elif player.vote is None:
                 missing_votes = True
-        return (float(CV_ZSERVS[zserv.name]['yes_votes'] += 1) / \
+        return (float(CV_ZSERVS[zserv.name]['yes_votes'] + 1) / \
                 float(CV_ZSERVS[zserv.name]['players'] = 0, missing_votes))
 
     def _announce_vote():
