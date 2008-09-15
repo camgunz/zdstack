@@ -64,7 +64,7 @@ There's a couple of things to be aware of here:
 
   `ban_teamkillers` the function is picked up as the plugin, you can name the '.py' file anything you like.
 
-  All functions inside a plugin '.py' file are imported ("function" being defined as "given a member "x", inspect.isfunction(x) returns True"), but other members are not.  I might create a `plugin` decorator for this, so that global functions can exist and not be imported as plugins... and so that callable classes can be used as well.
+  All functions inside a plugin '.py' file are imported ("function" being defined as "given a member "x", inspect.isfunction(x) returns True"), but other members are not.  I might create a `plugin` decorator for this, so that global functions can exist and not be imported as plugins... and so that callable classes can be used as well.  If you take a look at some of the example plugins from SVN, you'll see how most of them have the main plugin function that contains functions inside of it.  It's ugly but it's the way of things right now.
 
   The concurrency system in ZDStack isn't always straightforward... and there are what appear to be race conditions in the code that aren't.  That said, keep in mind two things:
     # Plugins are generally running in a threaded environment, where server requests can be made of a ZServ at any time.  So be careful what you monkeypatch and modify.
