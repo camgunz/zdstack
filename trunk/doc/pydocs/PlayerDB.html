@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>PlayerDB</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/PlayerDB.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/PlayerDB.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/PlayerDB.py">/media/disk-1/data/zdstack/trunk/ZDStack/PlayerDB.py</a></font></td></tr></table>
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -25,7 +25,7 @@
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-get_possible_aliases"><strong>get_possible_aliases</strong></a>(name, encoded_name, ip_addresses<font color="#909090">=[]</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;possible&nbsp;player&nbsp;aliases.<br>
+<td width="100%"><dl><dt><a name="-get_possible_aliases"><strong>get_possible_aliases</strong></a>(name, encoded_name<font color="#909090">=''</font>, ip_addresses<font color="#909090">=[]</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;possible&nbsp;player&nbsp;aliases.<br>
 &nbsp;<br>
 name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player&nbsp;to<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;return&nbsp;aliases&nbsp;for<br>
@@ -33,11 +33,9 @@ encoded_name&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;base64&nbs
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;player&nbsp;to&nbsp;to&nbsp;return&nbsp;aliases&nbsp;for<br>
 ip_addresses:&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;the&nbsp;known&nbsp;IP<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;addresses&nbsp;of&nbsp;the&nbsp;player&nbsp;ot&nbsp;return&nbsp;aliases&nbsp;for</tt></dd></dl>
- <dl><dt><a name="-save_player_ip"><strong>save_player_ip</strong></a>(player_name, encoded_player_name, player_ip)</dt><dd><tt>Saves&nbsp;a&nbsp;player&nbsp;IP&nbsp;address&nbsp;in&nbsp;the&nbsp;database.<br>
+ <dl><dt><a name="-save_player_ip"><strong>save_player_ip</strong></a>(player_name, player_ip)</dt><dd><tt>Saves&nbsp;a&nbsp;player&nbsp;IP&nbsp;address&nbsp;in&nbsp;the&nbsp;database.<br>
 &nbsp;<br>
 player_name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player<br>
-encoded_player_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;base64&nbsp;encoded&nbsp;name<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;the&nbsp;player<br>
 player_ip:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;IP&nbsp;address&nbsp;of&nbsp;the<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;player</tt></dd></dl>
 </td></tr></table>

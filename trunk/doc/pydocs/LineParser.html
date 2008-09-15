@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>LineParser</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/LineParser.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/LineParser.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/LineParser.py">/media/disk-1/data/zdstack/trunk/ZDStack/LineParser.py</a></font></td></tr></table>
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -43,27 +43,17 @@
 &nbsp;<br>
 regexps:&nbsp;a&nbsp;class&nbsp;whose&nbsp;member&nbsp;regexps&nbsp;map&nbsp;to&nbsp;event&nbsp;types</tt></dd></dl>
 
+<dl><dt><a name="LineParser-generic_line_to_event"><strong>generic_line_to_event</strong></a>(self, event_dt, line)</dt><dd><tt>Generically&nbsp;parses&nbsp;a&nbsp;line&nbsp;into&nbsp;an&nbsp;event.<br>
+&nbsp;<br>
+event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
+
 <dl><dt><a name="LineParser-get_event"><strong>get_event</strong></a>(self, event_dt, line)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;events&nbsp;that&nbsp;a&nbsp;line&nbsp;represents.<br>
 &nbsp;<br>
 event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
 line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
 
-<dl><dt><a name="LineParser-line_to_command_event"><strong>line_to_command_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;a&nbsp;command&nbsp;event.<br>
-&nbsp;<br>
-event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
-line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
-
-<dl><dt><a name="LineParser-line_to_connection_event"><strong>line_to_connection_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;a&nbsp;connection&nbsp;event.<br>
-&nbsp;<br>
-event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
-line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
-
 <dl><dt><a name="LineParser-line_to_death_event"><strong>line_to_death_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;a&nbsp;death&nbsp;event.<br>
-&nbsp;<br>
-event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
-line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
-
-<dl><dt><a name="LineParser-line_to_flag_event"><strong>line_to_flag_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;a&nbsp;flag&nbsp;event.<br>
 &nbsp;<br>
 event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
 line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
@@ -74,11 +64,6 @@ event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp
 line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
 
 <dl><dt><a name="LineParser-line_to_map_event"><strong>line_to_map_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;a&nbsp;map&nbsp;event.<br>
-&nbsp;<br>
-event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
-line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>
-
-<dl><dt><a name="LineParser-line_to_rcon_event"><strong>line_to_rcon_event</strong></a>(self, event_dt, line)</dt><dd><tt>Parses&nbsp;a&nbsp;line&nbsp;into&nbsp;an&nbsp;rcon&nbsp;event.<br>
 &nbsp;<br>
 event_dt:&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;of&nbsp;the&nbsp;event<br>
 line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;itself.</tt></dd></dl>

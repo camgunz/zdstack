@@ -4,7 +4,7 @@ if [ ! $1 ]; then
   echo
   echo "Usage: `basename $0` [ version ]"
   echo
-  exit -1
+  exit 1
 fi
 
 RELEASE_DIR="zdstack-$1"
@@ -14,6 +14,12 @@ chmod 777 $RELEASE_DIR -R 2> /dev/null; rm -rf $RELEASE_DIR
 mkdir -p $RELEASE_DIR/bin $RELEASE_DIR/doc/pydocs $RELEASE_DIR/ZDStack
 
 cp bin/zdstack bin/zservctl $RELEASE_DIR/bin/
+CURDIR=`pwd`
+cd doc/pydocs/
+for x in `find ../../ZDStack/ -name '*.py'`; do
+  pydoc -w $x
+done
+cd "$CURDIR"
 cp doc/pydocs/*.html  $RELEASE_DIR/doc/pydocs/
 cp doc/zdstack.ini-example $RELEASE_DIR/doc/
 cp ZDStack/*.py $RELEASE_DIR/ZDStack/

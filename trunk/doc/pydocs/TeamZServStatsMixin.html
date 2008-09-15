@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>TeamZServStatsMixin</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/TeamZServStatsMixin.py">/home/cagunyon/Desktop/Projects/zdstack-0.10/ZDStack/TeamZServStatsMixin.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/TeamZServStatsMixin.py">/media/disk-1/data/zdstack/trunk/ZDStack/TeamZServStatsMixin.py</a></font></td></tr></table>
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -70,9 +70,10 @@ color:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the
 
 <hr>
 Methods inherited from <a href="ZDStack.GeneralZServStatsMixin.html#GeneralZServStatsMixin">ZDStack.GeneralZServStatsMixin.GeneralZServStatsMixin</a>:<br>
-<dl><dt><a name="TeamZServStatsMixin-add_player"><strong>add_player</strong></a>(self, player_name)</dt><dd><tt>Adds&nbsp;a&nbsp;player&nbsp;to&nbsp;self.<strong>players</strong><br>
+<dl><dt><a name="TeamZServStatsMixin-add_player"><strong>add_player</strong></a>(self, ip_address, port)</dt><dd><tt>Adds&nbsp;a&nbsp;player&nbsp;to&nbsp;self.<strong>players</strong><br>
 &nbsp;<br>
-player_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;player's&nbsp;name</tt></dd></dl>
+ip_address:&nbsp;a&nbsp;string&nbsp;representing&nbsp;a&nbsp;player's&nbsp;IP&nbsp;address<br>
+port:&nbsp;a&nbsp;string&nbsp;representing&nbsp;a&nbsp;player's&nbsp;port</tt></dd></dl>
 
 <dl><dt><a name="TeamZServStatsMixin-distill_player"><strong>distill_player</strong></a>(self, possible_player_names)</dt><dd><tt>Discerns&nbsp;the&nbsp;most&nbsp;likely&nbsp;existing&nbsp;player.<br>
 &nbsp;<br>
@@ -87,9 +88,28 @@ that's&nbsp;the&nbsp;primary&nbsp;one.</tt></dd></dl>
 
 <dl><dt><a name="TeamZServStatsMixin-get_general_log_filename"><strong>get_general_log_filename</strong></a>(self, roll<font color="#909090">=False</font>)</dt><dd><tt>Generates&nbsp;the&nbsp;general&nbsp;log&nbsp;filename.</tt></dd></dl>
 
-<dl><dt><a name="TeamZServStatsMixin-get_player"><strong>get_player</strong></a>(self, name)</dt><dd><tt>Returns&nbsp;a&nbsp;Player&nbsp;instance.<br>
+<dl><dt><a name="TeamZServStatsMixin-get_player"><strong>get_player</strong></a>(self, name<font color="#909090">=None</font>, ip_address_and_port<font color="#909090">=None</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;Player&nbsp;instance.<br>
 &nbsp;<br>
-name:&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player&nbsp;to&nbsp;return</tt></dd></dl>
+name:&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player&nbsp;to&nbsp;return<br>
+ip_address_and_port:&nbsp;A&nbsp;2-Tuple&nbsp;(ip_address,&nbsp;port),&nbsp;both&nbsp;strings<br>
+&nbsp;<br>
+Either&nbsp;name&nbsp;or&nbsp;ip_address_and_port&nbsp;is&nbsp;optional,&nbsp;but&nbsp;at&nbsp;least<br>
+one&nbsp;must&nbsp;be&nbsp;given.&nbsp;&nbsp;Note&nbsp;that&nbsp;only&nbsp;giving&nbsp;name&nbsp;can&nbsp;potentially<br>
+return&nbsp;the&nbsp;wrong&nbsp;player,&nbsp;as&nbsp;multiple&nbsp;players&nbsp;can&nbsp;have&nbsp;the&nbsp;same<br>
+name.</tt></dd></dl>
+
+<dl><dt><a name="TeamZServStatsMixin-get_player_ip_address"><strong>get_player_ip_address</strong></a>(self, player_name)</dt><dd><tt>Returns&nbsp;a&nbsp;player's&nbsp;IP&nbsp;address.<br>
+&nbsp;<br>
+player_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;whose&nbsp;IP&nbsp;address&nbsp;is&nbsp;to&nbsp;be&nbsp;returned</tt></dd></dl>
+
+<dl><dt><a name="TeamZServStatsMixin-get_player_number"><strong>get_player_number</strong></a>(self, player_name)</dt><dd><tt>Returns&nbsp;a&nbsp;player's&nbsp;number.<br>
+&nbsp;<br>
+player_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;whose&nbsp;number&nbsp;is&nbsp;to&nbsp;be&nbsp;returned<br>
+&nbsp;<br>
+This&nbsp;number&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;the&nbsp;number&nbsp;indicated&nbsp;by&nbsp;the&nbsp;zserv<br>
+'players'&nbsp;command,&nbsp;useful&nbsp;for&nbsp;kicking&nbsp;and&nbsp;not&nbsp;much&nbsp;else.</tt></dd></dl>
 
 <dl><dt><a name="TeamZServStatsMixin-handle_message"><strong>handle_message</strong></a>(self, message, messenger)</dt><dd><tt>Handles&nbsp;a&nbsp;message.<br>
 &nbsp;<br>
@@ -129,6 +149,11 @@ roll:&nbsp;&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;given,&nbsp;does&nbsp;th
 
 <dl><dt><a name="TeamZServStatsMixin-stop_collecting_general_stats"><strong>stop_collecting_general_stats</strong></a>(self)</dt><dd><tt>Stops&nbsp;collecting&nbsp;statistics.</tt></dd></dl>
 
+<dl><dt><a name="TeamZServStatsMixin-update_player_numbers_and_ips"><strong>update_player_numbers_and_ips</strong></a>(self)</dt><dd><tt>Sets&nbsp;player&nbsp;numbers&nbsp;and&nbsp;IP&nbsp;addresses.<br>
+&nbsp;<br>
+This&nbsp;method&nbsp;needs&nbsp;to&nbsp;be&nbsp;run&nbsp;upon&nbsp;every&nbsp;connection&nbsp;and<br>
+disconnection&nbsp;if&nbsp;numbers&nbsp;and&nbsp;names&nbsp;are&nbsp;to&nbsp;remain&nbsp;in&nbsp;sync.</tt></dd></dl>
+
 <dl><dt><a name="TeamZServStatsMixin-zaddban"><strong>zaddban</strong></a>(self, ip_address, reason<font color="#909090">='rofl'</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;ban.<br>
 &nbsp;<br>
 ip_address:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;IP&nbsp;address&nbsp;to&nbsp;ban<br>
@@ -141,6 +166,13 @@ bot_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;t
 <dl><dt><a name="TeamZServStatsMixin-zaddmap"><strong>zaddmap</strong></a>(self, map_number)</dt><dd><tt>Adds&nbsp;a&nbsp;map&nbsp;to&nbsp;the&nbsp;maplist.<br>
 &nbsp;<br>
 map_number:&nbsp;an&nbsp;int&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;map&nbsp;to&nbsp;add</tt></dd></dl>
+
+<dl><dt><a name="TeamZServStatsMixin-zaddtimedban"><strong>zaddtimedban</strong></a>(self, duration, ip_address, reason<font color="#909090">='rofl'</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;ban&nbsp;with&nbsp;an&nbsp;expiration.<br>
+&nbsp;<br>
+duration:&nbsp;&nbsp;&nbsp;an&nbsp;integer&nbsp;representing&nbsp;how&nbsp;many&nbsp;minutes&nbsp;the&nbsp;ban<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;should&nbsp;last<br>
+ip_address:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;IP&nbsp;address&nbsp;to&nbsp;ban<br>
+reason:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;reason&nbsp;for&nbsp;the&nbsp;ban</tt></dd></dl>
 
 <dl><dt><a name="TeamZServStatsMixin-zclearmaplist"><strong>zclearmaplist</strong></a>(self)</dt><dd><tt>Clears&nbsp;the&nbsp;maplist.</tt></dd></dl>
 
