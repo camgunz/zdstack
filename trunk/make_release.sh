@@ -10,6 +10,7 @@ fi
 RELEASE_DIR="ZDStack-$1"
 
 rm -f $RELEASE_DIR.tar.bz2
+rm -f *.tar.bz2
 chmod 777 $RELEASE_DIR -R 2> /dev/null; rm -rf $RELEASE_DIR
 mkdir -p $RELEASE_DIR/bin $RELEASE_DIR/doc/pydocs $RELEASE_DIR/ZDStack
 
