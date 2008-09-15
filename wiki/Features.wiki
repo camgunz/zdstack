@@ -7,6 +7,7 @@
 || Event processing, for PlayerStatistics and ServerResponse || 100% || Done! ||
 || PlayerIdentity (IP-based) database || 100% || Done! ||
 || XML/JSON-RPC interface || 100% || Done! ||
+|| Full [http://code.google.com/p/zdstack/wiki/Plugins Plugin] framework || 100% || Done! ||
 || ConnectionQualityStatistics || 0% || We get player IP addresses, but I haven't setup the "ping player, get results" framework yet.  That's a whole other Module in and of itself... maybe this should be a plugin? ||
 || CSV Stat Export || 0% || Not started. ||
 || Client Log Parsing || 20% || Some of the basic implementation is there, but it's currently inaccessible. ||
