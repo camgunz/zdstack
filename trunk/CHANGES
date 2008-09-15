@@ -1,3 +1,9 @@
+0.10 RC4 ---
+  Inadvertently included the 0.10-RC2 tarball in the 0.10-RC3 tarball, removed
+
+0.10 RC3 ---
+  Typo in zservctl, fixed.
+
 0.10 RC2 ---
   Added make_release.sh script for easy packaging
   Fixed "Expected int, got string" error when using zservctl
@@ -6,6 +12,9 @@
   Removed unnecessary complexities in the config_file logic
   Added default Dual and FFA fraglimits in the example config
   Increased the restart sleep amount to give the server enough time to shutdown
+  Modified stats to hold player instances in a Listable so that players with
+    the same name can exist if their IP addresses and ports are different
+  Fixed design problem with zservctl
 
 0.10 RC1 ---
   Added JSON-RPC as an RPC protocol option

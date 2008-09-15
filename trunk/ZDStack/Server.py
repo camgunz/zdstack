@@ -10,8 +10,6 @@ from pyfileutils import read_file, write_file, append_file, delete_file
 
 from ZDStack import HOSTNAME, get_configfile, set_configfile, \
                     load_configparser, get_configparser, set_debugging, log
-from ZDStack.XMLRPCServer import XMLRPCServer
-from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 class Server:
 
@@ -76,8 +74,10 @@ class Server:
             es = "Could not find option 'rpc_protocol' in the configuration"
             raise ValueError(es)
         if self.defaults['rpc_protocol'].lower() in ('jsonrpc', 'json-rpc'):
+            from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
             self.rpc_class = SimpleJSONRPCServer
         elif self.defaults['rpc_protocol'].lower() in ('xmlrpc', 'xml-rpc'):
+            from ZDStack.XMLRPCServer import XMLRPCServer
             self.rpc_class = XMLRPCServer
         else:
             es = "RPC Protocol [%s] not supported"
