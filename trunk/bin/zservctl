@@ -51,7 +51,7 @@ proxy = BaseProxy(address)
 # I'm not a huge fan of eval, but it's so easy I can't resist.
 #
 
-def server(method_name, *args=[]):
+def server(method_name, *args):
     try:
         return eval("proxy." + method_name + "(*args)")
     except Exception, e:
