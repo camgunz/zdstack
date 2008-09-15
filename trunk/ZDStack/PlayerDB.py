@@ -3,16 +3,15 @@ import logging
 from base64 import b64encode, b64decode
 from ZDStack import get_database
 
-def save_player_ip(player_name, encoded_player_name, player_ip):
+def save_player_ip(player_name, player_ip):
     """Saves a player IP address in the database.
 
     player_name:         a string representing the name of the player
-    encoded_player_name: a string representing the base64 encoded name
-                         of the player
     player_ip:           a string representing the IP address of the
                          player
 
     """
+    encoded_player_name = b64encode(player_name)
     logging.getLogger('').info("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
     db = get_database()
     if not db:
@@ -69,7 +68,7 @@ def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
             addresses.add(address)
     else:
         es = "Found new player [%s], encoded: [%s], all names: [%s]"
-        nl = ', '.join([x['name'] for x in db.select('players')])
+        nl = ', '.join([x['name'] for x in db.select('players') if x['name']])
         logging.getLogger('').info(es % (name, encoded_name, nl))
     number_of_addresses = len(addresses)
     if number_of_addresses:
@@ -92,5 +91,5 @@ def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
                 for address in r['addresses'].split(','):
                     addresses.add(address)
                 names.add(r['name'])
-    return sorted([b64decode(x) for x in list(names)])
+    return sorted([b64decode(x) for x in list(names) if x])
 

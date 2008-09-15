@@ -337,7 +337,8 @@ class Stack(Server):
         logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
-        return self._get_zserv(zserv_name).players.keys()
+        players = self._get_zserv(zserv_name).players
+        return [x.name for x in players if x.name]
 
     def get_team(self, zserv_name, team_color):
         """Returns a marshallable representation of a team.

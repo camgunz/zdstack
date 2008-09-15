@@ -5,16 +5,17 @@ class TeamPlayer(BasePlayer, TeamStatKeeper):
 
     """TeamPlayer represents a Player in a team game."""
 
-    def __init__(self, name, zserv, ip=None):
+    def __init__(self, zserv, ip_address, port, name=None):
         """Initializes a TeamPlayer.
 
-        name:  a string representing the name of the player
-        zserv: a ZServ instance
-        ip:    optional, a string representing the IP address of the
-               player.
+        zserv:      a ZServ instance
+        ip_address: a string representing the IP address of the player
+        port:       a string representing the port of the player
+        name:       optional, a string representing the name of the
+                    player
 
         """
-        BasePlayer.__init__(self, name, zserv, ip)
+        BasePlayer.__init__(self, zserv, ip_address, port, name)
         TeamStatKeeper.__init__(self)
         self.color = None
 

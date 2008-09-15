@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 
 import sys
 import getopt
@@ -44,45 +44,49 @@ elif cp.defaults()['rpc_protocol'].lower() in ('xml', 'xmlrpc', 'xml-rpc'):
 else:
     raise Exception("Invalid RPC Type: [%s]" % (cp.defaults()['rpc_protocol']))
 
-class SafeWrapper(object):
+address = 'http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port'])
+proxy = BaseProxy(address)
 
-    address = 'http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port'])
+#
+# I'm not a huge fan of eval, but it's so easy I can't resist.
+#
 
-    def __init__(self, baseproxy):
-        self.baseproxy = baseproxy(self.address)
-
-    def __getattr__(self, name):
-        if name == 'baseproxy':
-            return self.baseproxy
+def server(method_name, *args=[]):
+    try:
+        return eval("proxy." + method_name + "(*args)")
+    except Exception, e:
+        if not hasattr(e, 'traceback') and not hasattr(e, 'error'):
+            raise
         else:
-            def f(*args, **kwargs):
-                m = eval('self.baseproxy.%s' % (name))
+            if hasattr(e, 'error'):
                 try:
-                    return m(*args, **kwargs)
-                except Exception, e:
-                    print >> sys.stderr, "\nError: %s\n" % (e.error)
-
-server = SafeWrapper(BaseProxy)
+                    print >> sys.stderr, "\n%s: %s\n" % (e.error['name'],
+                                                         e.error['message'])
+                    if 'traceback' in e.error:
+                        print >> sys.stderr, e.error['traceback']
+                except:
+                    raise e
+            else:
+                raise
 
 if action in ('start', 'stop', 'restart'):
     if not '-n' in opts:
         print_usage("Must specify a ZServ instance")
-    zserv_name = opts['-n']
     if action == 'start':
-        server.start_zserv(zserv_name)
+        server('start_zserv', *[opts['-n']])
     elif action == 'stop':
-        server.stop_zserv(zserv_name)
+        server('stop_zserv', *[opts['-n']])
     elif action == 'restart':
-        server.restart_zserv(zserv_name)
+        server('restart_zserv', *[opts['-n']])
 else:
     if '-n' in opts:
         print_usage("Action [%s] does not take a ZServ instance" % (action))
     if action == 'start-all':
-        server.start_all_zservs()
+        server('start_all_zservs')
     elif action == 'stop-all':
-        server.stop_all_zservs()
+        server('stop_all_zservs')
     elif action == 'restart-all':
-        server.restart_all_zservs()
+        server('restart_all_zservs')
     elif action == 'reload-config':
-        server.reload_config()
+        server('reload_config')
 

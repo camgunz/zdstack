@@ -229,6 +229,8 @@ class GeneralLogListener(ZServLogListener):
                                                 self.handle_connection_event
         self.event_types_to_handlers['disconnection'] = \
                                                 self.handle_disconnection_event
+        self.event_types_to_handlers['player_lookup'] = \
+                                                self.handle_player_lookup_event
         self.event_types_to_handlers['game_join'] = self.handle_game_join_event
         self.event_types_to_handlers['team_join'] = self.handle_game_join_event
         self.lost_flag = []
@@ -239,7 +241,15 @@ class GeneralLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        self.zserv.add_player(event.data['player'])
+        self.zserv.add_player(event.data['ip_address'], event.data['port'])
+
+    def handle_player_lookup_event(self, event):
+        """Handles a player_lookup event.
+
+        event: a LogEvent instance.
+
+        """
+        self.zserv.update_player_numbers_and_ips()
 
     def handle_log_roll_event(self, event):
         """Handles a log_roll event.

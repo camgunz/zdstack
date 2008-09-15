@@ -15,7 +15,7 @@ class Regexps:
          (r"^(?P<player_ip>(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) unbanned.$", 'killban_command'),
          (r"^No such ban$", 'killban_command'),
          (r"^(?P<sequence_number>\d\d\d|\d\d|\d)\. (?P<map_number>.*)$", 'maplist_command'),
-         (r'^(?P<player_num>\d\d|\d):\s*(?P<player_name>.*)\s\((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d))', 'players_command'),
+         (r'^(?P<player_num>\d\d|\d):\s*(?P<player_name>.*)\s\((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)):(?P<player_port>\d\d\d\d\d|\d\d\d\d|\d\d\d|\d\d|\d)', 'players_command'),
          (r"^Removed all bots.$", 'removebots_command'),
          (r"^> === ALL SCORES RESET BY SERVER ADMIN ===$", 'resetscores_command'),
          (r"^\] CONSOLE \[ (?P<message>.*)$", 'say_command'),
@@ -74,9 +74,10 @@ class Regexps:
          (r"^> (?P<player>.*) scored for the (?P<team>.*) team", 'flag_cap')]
 
     CONNECTIONS = \
-        [(r"^> (?P<player>.*) has connected.$", 'connection'),
+        [(r"^(?P<ip_address>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?![\d]).*?(?P<port>\d+) connection",
+          'connection'),
          (r"^> (?P<player>.*) disconnected$", 'disconnection'),
-         ("^(?P<timestamp>(?:2|1)\\d{3}(?:-|\\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9]))\\s(?P<player>(?:.*))\\s\\((?P<ip_address>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?![\\d]).*?has.*?connected$", 'ip_log')]
+         (r"^> (?P<player_name>.*) has connected.$", "player_lookup")]
 
     COMMANDS = [(re.compile(x), y) for x, y in COMMANDS]
     RCONS = [(re.compile(x), y) for x, y in RCONS]

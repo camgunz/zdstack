@@ -1,3 +1,4 @@
+import sys
 import time
 import os.path
 import logging
@@ -68,7 +69,7 @@ class GeneralZServStatsMixin:
             d['map'] = e
             return d
         def add_remembered_slots(d):
-            d['remembered_stats'] = []
+            d['remembered_stats'] = Listable()
             counter = 0
             for rm in reversed(self.remembered_stats):
                 counter += 1
@@ -160,35 +161,37 @@ class GeneralZServStatsMixin:
         stats = self.stats_class(*self.dump_stats())
         self.remembered_stats.append(stats)
 
-    def add_player(self, player_name):
+    def add_player(self, ip_address, port):
         """Adds a player to self.players
 
-        player_name: a string representing the player's name
+        ip_address: a string representing a player's IP address
+        port: a string representing a player's port
 
         """
-        logging.getLogger('').info("player: [%s]" % (player_name))
+        s = "Adding player: [%s:%s]" % (ip_address, port)
+        logging.getLogger('').info(s)
+        self.update_player_numbers_and_ips()
+        time.sleep(.2)
         ###
-        # It's possible for players to have the same name, so that this
-        # function will do nothing.  There's a plugin to prevent this, but if
-        # it's not loaded, stats are just fucked for those players.  Basically,
-        # the first player in line gets all the action.  In a way, it's funny
-        # because a group of people could all join a server under the same
-        # name, and blow up stats for a certain player.
-        ###
-        player = self.player_class(player_name, self)
-        if player not in self.players:
-            s = "players pre-add: [%s]"
-            # logging.getLogger('').info(s % (self.players))
-            self.players.append(player)
-            s = "players post-add: [%s]"
-            # logging.getLogger('').info(s % (self.players))
+        # Players are uniquely identified by the combination of the IP address
+        # and port number, but identity is about as far as that uniqueness
+        # goes.  If players have the same name, there's no reliable way to tell
+        # who fragged whom and with what.
+        blah_list = [(p.name, p.ip) for p in self.players]
+        player = self.player_class(self, ip_address, port)
+        if (player.name, player.ip) in blah_list:
+            if player not in self.players:
+                ###
+                # A player has reconnected
+                dp = Listable()
+                for p in self.disconnected_players:
+                    if (p.name, p.ip) != (player.name, player.ip):
+                        dp.append(p)
+                player.disconnected = False
         else:
-            s = "[%s] already exists"
-            # logging.getLogger('').info(s % (player_name))
-            if player in self.disconnected_players:
-                player_index = self.disconnected_players.index(player)
-                del self.disconnected_players[player_index]
-            player.disconnected = False
+            ###
+            # A player is connecting for the first time
+            self.players.append(player)
         self.update_player_numbers_and_ips()
 
     def remove_player(self, player_name):
@@ -198,25 +201,49 @@ class GeneralZServStatsMixin:
         
         """
         logging.getLogger('').debug('')
-        player = self.player_class(player_name, self)
+        player = self.get_player(name=player_name)
         player.disconnected = True
+        player.playing = False
         if player in self.players:
             if player not in self.disconnected_players:
                 self.disconnected_players.append(player)
         self.update_player_numbers_and_ips()
 
-    def get_player(self, name):
+    def get_player(self, name=None, ip_address_and_port=None):
         """Returns a Player instance.
 
         name: the name of the player to return
+        ip_address_and_port: A 2-Tuple (ip_address, port), both strings
+
+        Either name or ip_address_and_port is optional, but at least
+        one must be given.  Note that only giving name can potentially
+        return the wrong player, as multiple players can have the same
+        name.
 
         """
         logging.getLogger('').debug('')
+        if ip_address_and_port:
+            ip_address, port = ip_address_and_port
+        else:
+            ip_address, port = (None, None)
+        if name and ip_address:
+            cf = lambda x: x.name == name and \
+                           x.ip == ip_address and \
+                           x.port == port
+        elif name:
+            cf = lambda x: x.name == name
+        elif ip_address:
+            cf = lambda x: x.ip == ip_address and x.port == port
+        else:
+            raise ValueError("One of name or ip_address_and_port is required")
         for player in self.players:
-            if player.name == name:
+            if cf(player):
                 return player
         # Maybe we should make custom exceptions like PlayerNotFoundError
-        raise ValueError("Player [%s] not found" % (name))
+        if name:
+            raise ValueError("Player [%s] not found" % (name))
+        else:
+            raise ValueError("Address [%s:%s] not found" % ip_address_and_port)
 
     def distill_player(self, possible_player_names):
         """Discerns the most likely existing player.
@@ -276,16 +303,24 @@ class GeneralZServStatsMixin:
         """Sets player numbers and IP addresses.
 
         This method needs to be run upon every connection and
-        disconnection if numbers are to remain in sync.
+        disconnection if numbers and names are to remain in sync.
 
         """
         for d in self.zplayers():
             try:
-                p = self.get_player(d['player_name'])
-            except ValueError:
+                p = self.get_player(ip_address_and_port=(d['player_ip'],
+                                                         d['player_port']))
+            except ValueError, e:
+                print >> sys.stderr, "ValueError in upnai: %s" % (e)
                 continue
+            except Exception, e:
+                es = "Error updating player #s and IPs: %s"
+                print >> sys.stderr, es % (e)
+                continue
+            p.set_name(d['player_name'])
             p.number = d['player_num']
-            p.ip = d['player_ip']
+            print >> sys.stderr, "Set name %s to address %s:%s" % (p.name, p.ip, p.port)
+            print >> sys.stderr, "Set number %s to address %s:%s" % (p.number, p.ip, p.port)
 
     def handle_message(self, message, messenger):
         """Handles a message.
@@ -312,6 +347,7 @@ class GeneralZServStatsMixin:
         self.map = self.map_class(map_number, map_name)
         self.players = [x for x in self.players \
                             if x not in self.disconnected_players]
+        self.players = Listable(self.players)
         for player in self.players:
             player.initialize()
             player.set_map(self.map)

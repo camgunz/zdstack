@@ -52,7 +52,7 @@ class LineParser:
             match = re.match(regexp, line)
             if match:
                 d = match.groupdict()
-                d.update({'fragger': d['fraggee'], 'weapon': weapon})
+                d.update({'fragger': d['fraggee'], 'weapon': death})
                 e = LogEvent(event_dt, 'death', d, line)
                 if not 'fragger' in d:
                     logging.getLogger('').debug("Returning a death w/o a fragger")

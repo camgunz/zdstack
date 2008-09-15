@@ -1,8 +1,6 @@
 import os.path
 import logging
 
-from base64 import b64encode
-
 from ZDStack.Utils import get_logfile_suffix
 from ZDStack.LogFile import LogFile
 from ZDStack.PlayerDB import save_player_ip
@@ -68,5 +66,5 @@ class ConnectionZServStatsMixin:
 
         """
         logging.getLogger('').info('')
-        save_player_ip(player_name, b64encode(player_name), player_ip)
+        save_player_ip(player_name, player_ip)
 
