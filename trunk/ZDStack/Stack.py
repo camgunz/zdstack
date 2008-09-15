@@ -44,7 +44,7 @@ class Stack(Server):
 
     def check_all_zserv_configs(self):
         """Ensures that all ZServ configuration sections are correct."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         for section in self.config.sections():
             self.check_zserv_config(dict(self.config.items(section)))
 
@@ -54,7 +54,7 @@ class Stack(Server):
         A dict containing ZServ configuration options and values.
         
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         if not 'type' in zserv_config:
             es = "Could not determine type of server [%s]"
             raise ValueError(es % (section))
@@ -65,7 +65,7 @@ class Stack(Server):
 
     def load_zservs(self):
         """Instantiates all configured ZServs."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         for zserv_name in self.config.sections():
             zs_config = dict(self.config.items(zserv_name))
             if zserv_name in self.zservs:
@@ -89,7 +89,7 @@ class Stack(Server):
                 reloaded.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.config = get_configparser(self.config_file)
         self.raw_config = RCP(self.config_file, allow_duplicate_sections=False)
         for section in self.raw_config.sections():
@@ -131,7 +131,7 @@ class Stack(Server):
         password: a string representing the user's password
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return username == self.username and password == self.password
 
     def start_zserv(self, zserv_name):
@@ -140,7 +140,7 @@ class Stack(Server):
         zserv_name: a string representing the name of a ZServ to start
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         if self.zservs[zserv_name].pid is not None:
@@ -153,7 +153,7 @@ class Stack(Server):
         zserv_name: a string representing the name of a ZServ to stop
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         if self.zservs[zserv_name].pid is None:
@@ -167,38 +167,38 @@ class Stack(Server):
                     restart
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.stop_zserv(zserv_name)
         time.sleep(1)
         self.start_zserv(zserv_name)
 
     def start_all_zservs(self):
         """Starts all ZServs."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         for zserv_name in self.zservs:
             self.start_zserv(zserv_name)
 
     def stop_all_zservs(self):
         """Stops all ZServs."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         for zserv in [z for z in self.zservs.values() if z.pid is not None]:
             zserv.stop()
 
     def restart_all_zservs(self):
         """Restars all ZServs."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         for zserv in [z for z in self.zservs.values() if z.pid is not None]:
             zserv.restart()
 
     def start(self):
         """Starts this Stack."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.start_all_zservs()
         return True
 
     def stop(self):
         """Stops this Stack."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.stop_all_zservs()
         return True
 
@@ -209,7 +209,7 @@ class Stack(Server):
                     return
         
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         return self.zservs[zserv_name]
@@ -223,7 +223,7 @@ class Stack(Server):
                      return
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         players = [x for x in zserv.players if x.name == player_name]
         if not players:
@@ -252,17 +252,17 @@ class Stack(Server):
         zserv_name: the name of the ZServ to get
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).export()
 
     def get_all_zservs(self):
         """Returns all ZServs in marshallable representations."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return [self.get_zserv(x) for x in self.zservs]
 
     def list_zserv_names(self):
         """Returns a list of ZServ names."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self.zservs.keys()
 
     def _items_to_section(self, name, items):
@@ -281,7 +281,7 @@ class Stack(Server):
         zserv_name: a string representing the ZServ's name
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self._get_zserv(zserv_name)
         return self._items_to_section(zserv_name,
                                       self.raw_config.items(zserv_name))
@@ -293,7 +293,7 @@ class Stack(Server):
         data:       a string representing the new configuration data
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         cp = RCP()
         sio = StringIO(data)
         cp.readfp(sio)
@@ -314,7 +314,7 @@ class Stack(Server):
                      return
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_player(zserv_name, player_name).export()
 
     def get_all_players(self, zserv_name):
@@ -324,7 +324,7 @@ class Stack(Server):
                     from which to retrieve the players
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).players.export()
 
     def list_player_names(self, zserv_name):
@@ -334,7 +334,7 @@ class Stack(Server):
                     from which to retrieve the names
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         if zserv_name not in self.zservs:
             raise ValueError("ZServ [%s] not found" % (zserv_name))
         players = self._get_zserv(zserv_name).players
@@ -349,7 +349,7 @@ class Stack(Server):
                     retrieve
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_team(zserv_name, team_color).export()
 
     def get_all_teams(self, zserv_name):
@@ -359,7 +359,7 @@ class Stack(Server):
                     which to retrieve the teams
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self._get_zserv(zserv_name)
         return self.zservs[zserv_name].teams.export()
 
@@ -370,7 +370,7 @@ class Stack(Server):
                     which to retrieve the map
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         if zserv.map:
             return zserv.map.export()
@@ -394,7 +394,7 @@ class Stack(Server):
         get_current_map() for that.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         zserv = self._get_zserv(zserv_name)
         slots = zserv.memory_slots
         if back > slots:
@@ -408,7 +408,7 @@ class Stack(Server):
                     which to retrieve the stats
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).remembered_stats.export()
 
     def send_to_zserv(self, zserv_name, message):
@@ -419,7 +419,7 @@ class Stack(Server):
         message:    a string, the message to send
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).send_to_zserv(message)
 
     def addban(self, zserv_name, ip_address, reason='rofl'):
@@ -431,7 +431,7 @@ class Stack(Server):
         reason:     a string representing the reason for the ban
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddban(ip_address, reason)
 
     def addbot(self, zserv_name, bot_name=None):
@@ -442,7 +442,7 @@ class Stack(Server):
         bot_name:   a string representing the name of the bot to add
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddbot(bot_name)
 
     def addmap(self, zserv_name, map_number):
@@ -453,7 +453,7 @@ class Stack(Server):
         map_number: a string representing the number of the map to add
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zaddmap(map_number)
 
     def clearmaplist(self, zserv_name):
@@ -463,7 +463,7 @@ class Stack(Server):
                     maplist is to be cleared
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zclearmaplist()
 
     def get(self, zserv_name, variable_name):
@@ -475,7 +475,7 @@ class Stack(Server):
                        whose value is to be retrieved
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zget(variable_name)
 
     def kick(self, zserv_name, player_number, reason='rofl'):
@@ -488,7 +488,7 @@ class Stack(Server):
         reason:        a string representing the reason for the kick
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zkick(player_number, reason)
 
     def killban(self, zserv_name, ip_address):
@@ -500,7 +500,7 @@ class Stack(Server):
                     ban for
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zkillban(ip_address)
 
     def map(self, zserv_name, map_number):
@@ -512,7 +512,7 @@ class Stack(Server):
                     change to
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zmap(map_number)
 
     def maplist(self, zserv_name):
@@ -525,7 +525,7 @@ class Stack(Server):
         in the maplist.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zmaplist()
 
     def players(self, zserv_name):
@@ -538,7 +538,7 @@ class Stack(Server):
         IP address of all players.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zplayers()
 
     def removebots(self, zserv_name):
@@ -548,7 +548,7 @@ class Stack(Server):
                     remove the bots from
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zremovebots()
 
     def resetscores(self, zserv_name):
@@ -558,7 +558,7 @@ class Stack(Server):
                     reset the scores for
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zresetscores()
 
     def say(self, zserv_name, message):
@@ -569,7 +569,7 @@ class Stack(Server):
         message:    a string, the message to send
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zsay(message)
 
     def set(self, zserv_name, variable_name, variable_value):
@@ -582,7 +582,7 @@ class Stack(Server):
                         variable
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zset(variable_name, variable_value)
 
     def toggle(self, zserv_name, boolean_variable):
@@ -593,7 +593,7 @@ class Stack(Server):
                           boolean variable to toggle on or off
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).ztoggle(boolean_variable)
 
     def unset(self, zserv_name, variable_name):
@@ -604,7 +604,7 @@ class Stack(Server):
         variable_name: the name of the variable to unset
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zunset(variable_name)
 
     def wads(self, zserv_name):
@@ -617,12 +617,12 @@ class Stack(Server):
         WADs.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         return self._get_zserv(zserv_name).zwads()
 
     def register_functions(self):
         """Registers RPC functions."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         Server.register_functions(self)
         self.rpc_server.register_function(self.start_zserv)
         self.rpc_server.register_function(self.stop_zserv)

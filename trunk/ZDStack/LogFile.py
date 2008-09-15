@@ -96,7 +96,7 @@ class LogFile:
         lockup the response mechanism.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.command_lock.acquire()
         try:
             while self.event_to_watch_for is not None:
@@ -109,7 +109,7 @@ class LogFile:
 
     def get_response(self):
         """Returns the list of saved response events."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         output = []
         self.response_finished.wait(2)
         self.response_finished.clear()

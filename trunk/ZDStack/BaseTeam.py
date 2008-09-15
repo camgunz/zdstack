@@ -12,7 +12,7 @@ class BaseTeam(TeamStatKeeper):
         color: a string representing this team's color.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         TeamStatKeeper.__init__(self)
         self.name = color
         self.color = color
@@ -27,7 +27,7 @@ class BaseTeam(TeamStatKeeper):
         map: a Map instance.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.map = map
         self.stat_container = map
 

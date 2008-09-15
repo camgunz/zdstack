@@ -26,7 +26,7 @@ class BaseStatKeeper(Dictable):
 
     def initialize(self):
         """Initializes BaseStatKeeper's stats."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.adversaries = set()
         self.weapons = set()
         self.total_frags = 0
@@ -53,7 +53,7 @@ class BaseStatKeeper(Dictable):
         adversary: a string representing the name of an adversary.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.adversaries.add(adversary)
         for a in self.adversaries:
             self._add_adversary(a)
@@ -82,7 +82,7 @@ class BaseStatKeeper(Dictable):
         weapon: a string representing the name of the weapon.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.weapons.add(weapon)
         for weapon in self.weapons:
             self._add_weapon(weapon)
@@ -131,7 +131,7 @@ class BaseStatKeeper(Dictable):
         frag: a Frag instance.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.total_frags += 1
         if self._should_add_weapon(frag.weapon):
             self.add_weapon(frag.weapon)
@@ -151,7 +151,7 @@ class BaseStatKeeper(Dictable):
         death: a Frag instance.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.total_deaths += 1
         if self._should_add_weapon(death.weapon):
             self.add_weapon(death.weapon)

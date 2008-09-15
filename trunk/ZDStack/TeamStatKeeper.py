@@ -13,13 +13,13 @@ class TeamStatKeeper(BaseStatKeeper):
         stat_container: an instance or subclass of BaseStatKeeper
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         BaseStatKeeper.__init__(self, stat_container)
         self.set_team(stat_container)
 
     def initialize(self):
         """Initializes TeamStatKeeper's stats."""
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         self.map = None
         BaseStatKeeper.initialize(self)
 
@@ -35,7 +35,7 @@ class TeamStatKeeper(BaseStatKeeper):
         map: a Map instance.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         # self._log_items('pre-set_map')
         self.map = map
         if self.team is None:
@@ -54,7 +54,7 @@ class TeamStatKeeper(BaseStatKeeper):
         team: a Team instance.
 
         """
-        logging.getLogger('').debug('')
+        # logging.getLogger('').debug('')
         # self._log_items('pre-set_team')
         self.team = team
         if self.team is not None:
