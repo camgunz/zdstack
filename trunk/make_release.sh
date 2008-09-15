@@ -7,7 +7,7 @@ if [ ! $1 ]; then
   exit 1
 fi
 
-RELEASE_DIR="zdstack-$1"
+RELEASE_DIR="ZDStack-$1"
 
 rm -f $RELEASE_DIR.tar.bz2
 chmod 777 $RELEASE_DIR -R 2> /dev/null; rm -rf $RELEASE_DIR
