@@ -49,6 +49,7 @@ class LogFile:
 
     def start(self):
         """Starts logging events."""
+        logging.debug("%s starting" % (self.filepath))
         self.keep_logging = True
         self.logging_thread = \
             start_thread(self.log, '%s logging thread' % (self.filepath))
@@ -142,6 +143,7 @@ class LogFile:
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
             events = []
             if self.fobj:
+                logging.debug("Fobj was true")
                 self.change_file_lock.acquire()
                 try:
                     rs, ws, xs = select.select([self.fobj], [], [])
@@ -185,13 +187,16 @@ class LogFile:
                             s = "Putting %s in %s"
                             logging.getLogger('').debug(s % (event.type,
                                                              listener.name))
+                            logging.debug(s % (event.type, listener.name))
                         listener.events.put_nowait(event)
             elif self.filepath and os.path.isfile(self.filepath):
+                logging.debug("Creating Fobj")
                 self.change_file_lock.acquire()
                 try:
                     self.fobj = open(self.filepath)
                 finally:
                     self.change_file_lock.release()
             else:
+                logging.debug("No Fobj")
                 logging.getLogger('').debug("%s: No fobj" % (self.filepath))
 

@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 import urllib
 import socket
@@ -41,7 +42,8 @@ DATEFMT = '%Y/%m/%d %H:%M:%S'
 logging.basicConfig(level=logging.DEBUG,
                     format='[%(asctime)s] %(levelname)-8s %(message)s',
                     datefmt=DATEFMT,
-                    filename='/dev/null')
+                    # filename='/dev/null')
+                    stream=sys.stdout)
 
 def get_configfile():
     global CONFIGFILE
