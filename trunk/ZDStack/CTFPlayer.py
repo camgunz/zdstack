@@ -6,7 +6,7 @@ class CTFPlayer(TeamPlayer, CTFStatKeeper):
 
     """CTFPlayer represents a Capture the Flag player."""
 
-    def __init__(self, zserv, ip_address, port, name=None):
+    def __init__(self, zserv, ip_address, port, name=None, log_ip=True):
         """Initializes a CTFPlayer instance.
 
         zserv:      a ZServ instance
@@ -14,9 +14,11 @@ class CTFPlayer(TeamPlayer, CTFStatKeeper):
         port:       a string representing the port of the player
         name:       optional, a string representing the name of the
                     player
+        log_ip:     if True, will log this Player's IP.  True by
+                    default.
 
         """
-        TeamPlayer.__init__(self, zserv, ip_address, port, name)
+        TeamPlayer.__init__(self, zserv, ip_address, port, name, log_ip)
         CTFStatKeeper.__init__(self)
 
     def initialize(self):

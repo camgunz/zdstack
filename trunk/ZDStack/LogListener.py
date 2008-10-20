@@ -108,11 +108,6 @@ class ZServLogListener(LogListener):
         event: a LogEvent instance.
 
         """
-        """Handles a log_roll event.
-
-        event: a LogEvent instance.
-
-        """
         self.zserv.roll_log(event.data['log'])
 
     def handle_error_event(self, event):
@@ -241,7 +236,9 @@ class GeneralLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        # self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        logging.debug("Connection Event: %s" % (str(event.data)))
+        self.zserv.add_player(event.data['player_name'])
 
     def handle_player_lookup_event(self, event):
         """Handles a player_lookup event.

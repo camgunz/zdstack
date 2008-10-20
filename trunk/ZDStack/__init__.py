@@ -5,11 +5,11 @@ import time
 import urllib
 import socket
 import logging
+import logging.handlers
 
 from datetime import datetime, timedelta
 from threading import Thread
 from cStringIO import StringIO
-from logging.handlers import TimedRotatingFileHandler
 
 from pyfileutils import read_file, append_file
 
@@ -24,8 +24,7 @@ if not __hostnames:
 __all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE',
            'DEBUGGING', 'LOGGER', 'TRACER', 'PLUGINS', 'DATEFMT', 'get_logger',
            'load_configparser', 'get_configparser', 'get_zserv_exe',
-           'get_database', 'get_logfile', 'get_plugins', 'get_tracer',
-           'set_debugging', 'log']
+           'get_database', 'get_plugins', 'set_debugging', 'log']
 
 HOSTNAME = __hostnames[0]
 CONFIGFILE = None
@@ -34,16 +33,13 @@ ZSERV_EXE = None
 DATABASE = None
 LOGFILE = None
 DEBUGGING = None
-LOGGER = None
-TRACER = None
 PLUGINS = None
-DATEFMT = '%Y/%m/%d %H:%M:%S'
+DATEFMT = '%Y-%m-%d %H:%M:%S'
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(asctime)s] %(levelname)-8s %(message)s',
-                    datefmt=DATEFMT,
-                    # filename='/dev/null')
-                    stream=sys.stdout)
+class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
+    def emit(self, record):
+        logging.handlers.TimedRotatingFileHandler.emit(self, record)
+        print >> sys.stderr, record.getMessage().strip()
 
 def get_configfile():
     global CONFIGFILE
@@ -144,53 +140,47 @@ def get_plugins(plugins='all', config_file=None):
         PLUGINS = get_plugins(plugin_dir)
     return [x for x in PLUGINS if plugins == 'all' or x.__name__ in plugins]
 
-def get_logfile(config_file=None):
+def get_logfile(log_file=None, config_file=None):
     global CONFIGPARSER
     global LOGFILE
     if LOGFILE is None:
-        if CONFIGPARSER is None:
-            get_configparser(config_file)
-        LOGFILE = os.path.join(CONFIGPARSER.defaults()['rootfolder'],
-                               'ZDStack.log')
+        if log_file:
+            LOGFILE = log_file
+        else:
+            if CONFIGPARSER is None:
+                get_configparser(config_file)
+            rootfolder = get_configparser().defaults()['rootfolder']
+            LOGFILE = os.path.join(rootfolder, 'ZDStack.log')
     return LOGFILE
 
-def _get_trfh(level, log_string, config_file=None):
+def set_debugging(debugging, log_file=None, config_file=None):
     global LOGFILE
-    global LOGGER
-    if LOGGER is None:
-        if LOGFILE is None:
-            get_logfile(config_file)
-    logger = TimedRotatingFileHandler(LOGFILE, when='midnight', backupCount=4)
-    formatter = logging.Formatter(fmt=log_string, datefmt=DATEFMT)
-    # logger.setLevel(level)
-    logger.setLevel(logging.DEBUG)
-    logger.setFormatter(formatter)
-    return logger
-
-def get_logger(config_file=None):
-    global LOGGER
-    if LOGGER is None:
-        format='[%(asctime)s] %(levelname)-8s %(message)s'
-        LOGGER = _get_trfh(logging.INFO, format, config_file)
-    return LOGGER
-
-def get_tracer(config_file=None):
-    global TRACER
-    if TRACER is None:
-        format='[%(asctime)s] %(filename)s:%(module)s:%(lineno)d %(message)s'
-        TRACER = _get_trfh(logging.DEBUG, format, config_file)
-    return TRACER
-
-def set_debugging(debugging):
     global DEBUGGING
-    DEBUGGING = debugging
+    if LOGFILE is None:
+        get_logfile(log_file, config_file)
     if debugging:
-        logging.getLogger('').removeHandler(get_logger())
-        logging.getLogger('').addHandler(get_tracer())
+        __log_level = logging.DEBUG
+        __log_format = '[%(asctime)s] '
+        __log_format += '%(filename)-14s - %(module)-14s - %(funcName)-16s '
+        __log_format += '- %(lineno)-4d: '
+        __log_format += '%(levelname)-8s %(message)s'
+        __handler_class = DebugTRFH
+        DEBUGGING = True
     else:
-        logging.getLogger('').removeHandler(get_tracer())
-        logging.getLogger('').addHandler(get_logger())
+        __log_level = logging.INFO
+        __log_format = '[%(asctime)s] '
+        __log_format += '%(levelname)-8s %(message)s'
+        __handler_class = logging.handlers.TimedRotatingFileHandler
+        DEBUGGING = False
+    formatter = logging.Formatter(__log_format, DATEFMT)
+    handler = __handler_class(LOGFILE, when='midnight', backupCount=4)
+    handler.setFormatter(formatter)
+    logging.RootLogger.root.addHandler(handler)
+    logging.RootLogger.root.setLevel(__log_level)
+    handler.setLevel(__log_level)
+
+set_debugging(False)
 
 def log(s):
-    logging.getLogger('').info(s)
+    logging.info(s)
 

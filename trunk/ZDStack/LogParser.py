@@ -9,22 +9,36 @@ from ZDStack.LogEvent import LogEvent
 from ZDStack.LineParser import LineParser
 from ZDStack.ClientRegexps import Regexps as ClientRegexps
 from ZDStack.ServerRegexps import Regexps as ServerRegexps
+from ZDStack.FakeClientRegexps import Regexps as FakeClientRegexps
+from ZDStack.FakeServerRegexps import Regexps as FakeServerRegexps
 
 class LogParser:
 
-    def __init__(self, name, logtype='server'):
+    def __init__(self, name, logtype='server', fake=False):
         """Initializes a LogParser.
 
         name:    a string representing the name of this LogParser.
         logtype: a string representing the type of log to parse.
                  Valid options include 'server' and 'client'.
+        fake:    an optional boolean, whether or not this parser is
+                 parsing for a fake ZServ.
 
         """
         self.name = name
         if logtype == 'server':
-            self.lineparser = LineParser(ServerRegexps)
+            if fake:
+                logging.debug("Loading FakeServerRegexps")
+                self.lineparser = LineParser(FakeServerRegexps)
+            else:
+                logging.debug("Loading ServerRegexps")
+                self.lineparser = LineParser(ServerRegexps)
         elif logtype == 'client':
-            self.lineparser = LineParser(ClientRegexps)
+            if fake:
+                logging.debug("Loading FakeClientRegexps")
+                self.lineparser = LineParser(FakeClientRegexps)
+            else:
+                logging.debug("Loading ClientRegexps")
+                self.lineparser = LineParser(ClientRegexps)
         else:
             raise ValueError("Unsupported log type [%s]" % (logtype))
 
@@ -66,14 +80,16 @@ class LogParser:
 
 class ConnectionLogParser(LogParser):
 
-    def __init__(self, log_type='server'):
+    def __init__(self, log_type='server', fake=False):
         """Initializes a ConnectionLogParser.
 
         logtype: a string representing the type of log to parse.
                  Valid options include 'server' and 'client'.
+        fake:    an optional boolean, whether or not this parser is
+                 parsing for a fake ZServ.
 
         """
-        LogParser.__init__(self, "Connection Log Parser")
+        LogParser.__init__(self, "Connection Log Parser", fake=fake)
 
     def parse(self, data):
         """Parses data into LogEvents.
@@ -105,14 +121,16 @@ class ConnectionLogParser(LogParser):
 
 class GeneralLogParser(LogParser):
 
-    def __init__(self, log_type='server'):
+    def __init__(self, log_type='server', fake=False):
         """Initializes a GeneralLogParser.
 
         logtype: a string representing the type of log to parse.
                  Valid options include 'server' and 'client'.
+        fake:    an optional boolean, whether or not this parser is
+                 parsing for a fake ZServ.
 
         """
-        LogParser.__init__(self, "General Log Parser")
+        LogParser.__init__(self, "General Log Parser", fake=fake)
 
     def parse(self, data):
         """Parses data into LogEvents.

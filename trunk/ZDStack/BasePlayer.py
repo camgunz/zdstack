@@ -13,7 +13,7 @@ class BasePlayer(BaseStatKeeper):
 
     """Base Player class, holds stats and info for a player."""
 
-    def __init__(self, zserv, ip_address, port, name=None):
+    def __init__(self, zserv, ip_address, port, name=None, log_ip=True):
         """Initializes a BasePlayer.
 
         zserv:      a ZServ instance
@@ -21,6 +21,8 @@ class BasePlayer(BaseStatKeeper):
         port:       a string representing the port of the player
         name:       optional, a string representing the name of the
                     player
+        log_ip:     if True, will log this Player's IP.  True by
+                    default.
 
         """
         logging.getLogger('').debug('name: [%s]' % (name))
@@ -30,6 +32,7 @@ class BasePlayer(BaseStatKeeper):
         self.port = port
         self.number = None
         self.name = ''
+        self.log_ip = log_ip
         self.tag = None
         self.player_name = ''
         self.homogenized_name = ''
@@ -78,7 +81,8 @@ class BasePlayer(BaseStatKeeper):
             self.homogenized_tag = homogenize(self.tag)
             self.escaped_tag = html_escape(self.tag)
             self.escaped_homogenized_tag = html_escape(homogenize(self.tag))
-        save_player_ip(self.name, self.ip)
+        if self.log_ip:
+            save_player_ip(self.name, self.ip)
 
     def __ne__(self, x):
         try:
@@ -104,8 +108,11 @@ class BasePlayer(BaseStatKeeper):
               (('zserv' in self and x[1] != self.zserv) or \
                ('zserv' not in self)):
                 out.append(x)
-        possible_aliases = \
-                get_possible_aliases(self.name, self.encoded_name, [self.ip])
+        if self.log_ip:
+            possible_aliases = \
+                    get_possible_aliases(self.name, self.encoded_name, [self.ip])
+        else:
+            possible_aliases = None
         if possible_aliases:
             out.append(('possible_player_aliases', Listable(possible_aliases)))
         else:

@@ -8,7 +8,7 @@ from subprocess import Popen, PIPE
 
 from pyfileutils import write_file
 
-from ZDStack import HOSTNAME, log
+from ZDStack import HOSTNAME
 from ZDStack.Utils import yes, no
 from ZDStack.Dictable import Dictable
 
@@ -349,7 +349,7 @@ class BaseZServ:
             os.chdir(self.homedir)
             for func, args, kwargs in self.pre_spawn_funcs:
                 func(*args, **kwargs)
-            log("Spawning [%s]" % (' '.join(self.cmd)))
+            logging.info("Spawning [%s]" % (' '.join(self.cmd)))
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.devnull,
                                bufsize=0, close_fds=True)
             self.send_to_zserv('players') # keeps the process from CPU spinning
@@ -388,7 +388,7 @@ class BaseZServ:
                 self.pid = None
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
-                log(es % (e))
+                logging.info(es % (e))
                 out = es % (e)
         return out
 

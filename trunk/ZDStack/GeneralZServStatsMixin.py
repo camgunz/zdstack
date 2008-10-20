@@ -267,9 +267,9 @@ class GeneralZServStatsMixin:
         if not messenger:
             player_names = ', '.join(names)
             ppn = ', '.join(possible_player_names)
-            logging.getLogger('').debug("No player could be distilled")
-            logging.getLogger('').debug("Players: [%s]" % (player_names))
-            logging.getLogger('').debug("Possible: [%s]" % (ppn))
+            # logging.getLogger('').debug("No player could be distilled")
+            # logging.getLogger('').debug("Players: [%s]" % (player_names))
+            # logging.getLogger('').debug("Possible: [%s]" % (ppn))
         return messenger
 
     def get_player_ip_address(self, player_name):

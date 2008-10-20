@@ -1,6 +1,5 @@
 import logging
 
-from ZDStack import log
 from ZDStack.BaseStatKeeper import BaseStatKeeper
 
 class TeamStatKeeper(BaseStatKeeper):
