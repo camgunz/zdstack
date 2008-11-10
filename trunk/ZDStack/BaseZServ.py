@@ -116,6 +116,8 @@ class BaseZServ:
                     self.configfile, '-clog', '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
+        if 'ip' in config:
+            self.cmd.extend(['-ip', str(config['ip'])])
         ### other mandatory stuff
         ### admin stuff
         self.rcon_enabled = None
