@@ -129,6 +129,13 @@ class BaseZServ:
         self.spam_limit = None
         self.speed_check = None
         self.restart_empty_map = None
+        ### voting stuff
+        self.vote_limit = None
+        self.vote_timeout = None
+        self.vote_reset = None
+        self.vote_map = None
+        self.vote_map_percent = None
+        self.vote_map_skip = None
         ### advertise stuff
         self.admin_email = None
         self.advertise = None
@@ -174,6 +181,24 @@ class BaseZServ:
             self.speed_check = True
         if is_yes('restart_empty_map'):
             self.restart_empty_map = True
+        ### Load voting stuff
+        if is_valid('vote_limit'):
+            self.vote_limit = int(config['vote_limit'])
+        if is_valid('vote_timeout'):
+            self.vote_timeout = int(config['vote_timeout'])
+        if is_yes('vote_reset'):
+            self.vote_reset = True
+        if is_yes('vote_map'):
+            self.vote_map = True
+            if is_yes('vote_map_percent'):
+                pc = float(config['vote_map_percent'])
+                if pc < 1:
+                    pc = int(pc * 100)
+                else:
+                    pc = int(pc)
+                self.vote_map_percent = pc
+            if is_yes('vote_map_skip'):
+                self.vote_map_skip = int(config['vote_map_skip'])
         ### Load advertise stuff
         if is_valid('admin_email'):
             self.admin_email = config['admin_email']
@@ -275,6 +300,18 @@ class BaseZServ:
             template += 'set speed_check "1"\n'
         else:
             template += 'set speed_check "0"\n'
+        if self.vote_limit:
+            template += 'set sv_vote_limit "%d"\n' % (self.vote_limit)
+        if self.vote_timeout:
+            template += 'set sv_vote_timeout "%d"\n' % (self.vote_timeout)
+        if self.vote_reset:
+            template += 'set sv_vote_reset "1"\n'
+        if self.vote_map:
+            template += 'set sv_vote_map "1"\n'
+        if self.vote_map_percent:
+            template += 'set sv_vote_map_percent "%d"\n' % (self.vote_map_percent)
+        if self.map_skip:
+            template += 'set sv_map_skip "%d"\n' % (self.map_skip)
         if self.restart_empty_map:
             template += 'set restartemptymap "1"\n'
         if self.maps:
