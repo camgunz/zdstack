@@ -34,7 +34,7 @@ class LogListener:
         logging.getLogger('').info('')
         self.keep_listening = False
         # self.listener_thread.join()
-        self.listener_thread = None
+        # self.listener_thread = None
 
     def __str__(self):
         return "<%s: %s>" % (self.classname, self.name)

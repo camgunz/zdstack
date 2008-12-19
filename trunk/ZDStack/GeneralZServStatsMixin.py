@@ -56,6 +56,7 @@ class GeneralZServStatsMixin:
         self.memory_slots = memory_slots
         self.remembered_stats = Listable()
         self.initialize_general_stats()
+        self.initialize_general_log()
         def add_players(d):
             d['players'] = len(self.players) - len(self.disconnected_players)
             return d
@@ -93,8 +94,7 @@ class GeneralZServStatsMixin:
         self.disconnected_players = Listable()
         self.should_remember = False
 
-    def start_collecting_general_stats(self):
-        """Starts collecting statistics."""
+    def initialize_general_log(self):
         # logging.getLogger('').debug('')
         self.initialize_general_stats()
         general_log_parser = GeneralLogParser(log_type=self.log_type)
@@ -109,10 +109,14 @@ class GeneralZServStatsMixin:
             logging.getLogger('').debug("Not adding PLL to listeners")
             self.general_log.listeners = [self.general_log_listener]
         logging.getLogger('').debug("Listeners: [%s]" % (self.general_log.listeners))
-        for listener in self.general_log.listeners:
-            logging.getLogger('').debug("Starting %s" % (listener))
-            listener.start()
         self.set_general_log_filename()
+        self.logfiles.append(self.general_log)
+
+    def start_collecting_general_stats(self):
+        """Starts collecting statistics."""
+        self.initialize_general_stats()
+        for listener in self.general_log.listeners:
+            listener.start()
         self.general_log.start()
 
     def stop_collecting_general_stats(self):

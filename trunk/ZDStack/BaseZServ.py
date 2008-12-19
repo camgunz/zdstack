@@ -53,6 +53,7 @@ class BaseZServ:
         self.reload_config(config)
         self.zserv = None
         self.pid = None
+        self.logfiles = []
         self.pre_spawn_funcs = []
         self.post_spawn_funcs = []
         self.extra_exportables_funcs = []
@@ -406,6 +407,11 @@ class BaseZServ:
         """Starts the zserv process, restarting it if it crashes."""
         logging.getLogger('').info('')
         self.pid = None
+        for logfile in self.logfiles:
+            for listener in logfile.listeners:
+                logging.getLogger('').debug("Starting %s" % (listener))
+                listener.start()
+            logfile.start()
         self.keep_spawning = True
         self.spawn_zserv()
         self.watch_zserv()
@@ -419,6 +425,12 @@ class BaseZServ:
         """
         logging.getLogger('').info('')
         self.keep_spawning = False
+        for logfile in self.logfiles:
+            logfile.stop() # should kill all logfile logging threads
+            for listener in logfile.listeners:
+                logging.getLogger('').debug("Stopping %s" % (listener))
+                listener.stop() # should kill all listener threads
+
         out = True
         if self.pid is not None:
             out = True
