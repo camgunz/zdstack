@@ -96,7 +96,7 @@ class BaseZServ:
             raise ValueError(es % (self.name, config['waddir']))
         if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
             es = "%s: Could not find IWAD %s"
-            raise ValueError(es % (config['iwad']))
+            raise ValueError(es % (self.name, config['iwad']))
         self.wads = []
         if 'wads' in config and config['wads']:
             wads = [x.strip() for x in config['wads'].split(',')]
