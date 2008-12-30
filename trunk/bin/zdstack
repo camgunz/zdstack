@@ -25,13 +25,16 @@ def fork(logfile, pidfile, signal_handler, debug=False):
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    if not debug:
-        si = open(stdin, 'r')
-        so = open(logfile, 'a+')
-        se = open(logfile, 'a+', 0)
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
+    # if not debug:
+    ###
+    # Next six lines are normally disabled when debugging
+    ###
+    si = open(stdin, 'r')
+    so = open(logfile, 'a+')
+    se = open(logfile, 'a+', 0)
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    os.dup2(se.fileno(), sys.stderr.fileno())
 
 def print_usage(msg=None):
     if msg:

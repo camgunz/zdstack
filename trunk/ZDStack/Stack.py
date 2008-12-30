@@ -5,7 +5,7 @@ from datetime import datetime
 from threading import Lock
 from StringIO import StringIO
 
-from ZDStack import get_configfile, get_configparser, log
+from ZDStack import get_configfile, get_configparser
 from ZDStack.Utils import yes
 from ZDStack.Server import Server
 from ZDStack.ZServDepot import get_zserv_class
@@ -69,7 +69,7 @@ class Stack(Server):
         for zserv_name in self.config.sections():
             zs_config = dict(self.config.items(zserv_name))
             if zserv_name in self.zservs:
-                log("Reloading Config for [%s]" % (zserv_name))
+                logging.info("Reloading Config for [%s]" % (zserv_name))
                 self.zservs[zserv_name].reload_config(zs_config)
             else:
                 game_mode = zs_config['type'].lower()
@@ -79,7 +79,7 @@ class Stack(Server):
                 zs_class = get_zserv_class(game_mode, memory_slots,
                                            log_ips, load_plugins)
                 zs = zs_class(zserv_name, zs_config, self)
-                # log("Adding zserv [%s]" % (zserv_name))
+                # logging.debug("Adding zserv [%s]" % (zserv_name))
                 self.zservs[zserv_name] = zs
 
     def load_config(self, reload=False):
@@ -109,12 +109,13 @@ class Stack(Server):
         if method in self.methods_requiring_authentication:
             if not self.authenticate(params[0], params[1]):
                 s = "Authentication for method [%s] by user [%s] failed"
-                log(s % (method, params[0]))
+                logging.info(s % (method, params[0]))
                 raise AuthenticationError(params[0], method)
             s = "Authenticated user [%s] for method [%s]"
-            log(s % (params[0], method))
+            logging.info(s % (params[0], method))
         else:
-            log("Method [%s] did not require authentication" % (method))
+            s = "Method [%s] did not require authentication"
+            logging.info(s % (method))
         try:
             func = getattr(self, method)
             if not type(func) == type(get_configparser):

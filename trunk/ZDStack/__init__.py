@@ -181,6 +181,3 @@ def set_debugging(debugging, log_file=None, config_file=None):
 
 set_debugging(False)
 
-def log(s):
-    logging.info(s)
-

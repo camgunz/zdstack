@@ -45,10 +45,6 @@ class BaseZServ:
         self.zdstack = zdstack
         self.dn_fobj = open('/dev/null', 'r+')
         self.devnull = self.dn_fobj.fileno()
-        self.homedir = os.path.join(self.zdstack.homedir, self.name)
-        if not os.path.isdir(self.homedir):
-            os.mkdir(self.homedir)
-        self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.keep_spawning = False
         self.reload_config(config)
         self.zserv = None
@@ -82,7 +78,8 @@ class BaseZServ:
             return x in config and yes(config[x])
         ### mandatory stuff
         mandatory_options = \
-                    ('iwad', 'waddir', 'iwaddir', 'port', 'maps_to_remember')
+            ('iwad', 'waddir', 'iwaddir', 'port', 'maps_to_remember',
+             'zservfolder')
         for mandatory_option in mandatory_options:
             if mandatory_option not in config:
                 es = "%s: Could not find option '%s' in configuration"
@@ -97,6 +94,12 @@ class BaseZServ:
         if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
             es = "%s: Could not find IWAD %s"
             raise ValueError(es % (self.name, config['iwad']))
+        if not os.path.isdir(config['zservfolder']):
+            try:
+                os.mkdir(config['zservfolder'])
+            except Exception, e:
+                es = "%s: ZServ Server folder %s is not valid: %s"
+                raise ValueError(es % (self.name, config['zservfolder'], e))
         self.wads = []
         if 'wads' in config and config['wads']:
             wads = [x.strip() for x in config['wads'].split(',')]
@@ -106,18 +109,25 @@ class BaseZServ:
                     es = "%s: WAD [%s] not found"
                     raise ValueError(es % (self.name, wad))
             self.wads = wads
+        self.homedir = os.path.join(config['zservfolder'], self.name)
+        if not os.path.isdir(self.homedir):
+            os.mkdir(self.homedir)
         self.iwaddir = config['iwaddir']
         self.waddir = config['waddir']
         self.base_iwad = config['iwad']
         self.iwad = os.path.join(self.iwaddir, self.base_iwad)
         self.port = int(config['port'])
         self.maps_to_remember = int(config['maps_to_remember'])
+        self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad',
                     self.iwad, '-port', str(self.port), '-cfg',
                     self.configfile, '-clog', '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
-        if 'ip' in config:
+        if 'ip' in config and config['ip']:
+            ###
+            # Should add IP address format checking here
+            ###
             self.cmd.extend(['-ip', str(config['ip'])])
         ### other mandatory stuff
         ### admin stuff
@@ -265,7 +275,7 @@ class BaseZServ:
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
     def get_configuration(self):
-        logging.getLogger('').info('')
+        # logging.getLogger('').info('')
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
         template += 'set log_disposition "0"\n'
@@ -311,8 +321,8 @@ class BaseZServ:
             template += 'set sv_vote_map "1"\n'
         if self.vote_map_percent:
             template += 'set sv_vote_map_percent "%d"\n' % (self.vote_map_percent)
-        if self.map_skip:
-            template += 'set sv_map_skip "%d"\n' % (self.map_skip)
+        if self.vote_map_skip:
+            template += 'set sv_map_skip "%d"\n' % (self.vote_map_skip)
         if self.restart_empty_map:
             template += 'set restartemptymap "1"\n'
         if self.maps:

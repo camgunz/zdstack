@@ -1,4 +1,3 @@
-from ZDStack import log
 from DocXMLRPCServer import DocXMLRPCServer, DocXMLRPCRequestHandler
 
 class XMLRPCServer(DocXMLRPCServer):
@@ -14,7 +13,7 @@ This is the documentation for the ZDStack XML-RPC API.  For more information, vi
 http://zdstack.googlecode.com.""")
 
     def log_message(self, format, *args):
-        log("%s - - [%s] %s\n" % (self.address_string(),
-                                  self.log_date_time_string(),
-                                  format % args))
+        logging.info("%s - - [%s] %s\n" % (self.address_string(),
+                                           self.log_date_time_string(),
+                                           format % args))
 

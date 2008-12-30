@@ -7,7 +7,6 @@ import traceback
 from datetime import datetime
 from threading import Lock, Event
 
-from ZDStack import log
 from ZDStack.Utils import start_thread
 from ZDStack.LogEvent import LogEvent
 
@@ -68,7 +67,7 @@ class LogFile:
                      the new logfile
 
         """
-        # log("Received new filepath [%s]" % (self.filepath))
+        # logging.debug("Received new filepath [%s]" % (self.filepath))
         self.change_file_lock.acquire()
         try:
             self.filepath = filepath
@@ -143,7 +142,7 @@ class LogFile:
             time.sleep(.05) # higher resolutions burn up CPU unnecessarily
             events = []
             if self.fobj:
-                logging.debug("Fobj was true")
+                # logging.debug("Fobj was true")
                 self.change_file_lock.acquire()
                 try:
                     rs, ws, xs = select.select([self.fobj], [], [])

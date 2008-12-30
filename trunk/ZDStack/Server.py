@@ -9,7 +9,7 @@ from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
 from ZDStack import HOSTNAME, get_configfile, set_configfile, \
-                    load_configparser, get_configparser, set_debugging, log
+                    load_configparser, get_configparser, set_debugging
 
 class Server:
 
@@ -117,7 +117,7 @@ class Server:
         try:
             delete_file(self.pidfile)
         except OSError, e:
-            log("Error removing PID file %s: [%s]" % (self.pidfile, e))
+            logging.info("Error removing PID file %s: [%s]" % (self.pidfile, e))
         sys.exit(0)
 
     def start(self):

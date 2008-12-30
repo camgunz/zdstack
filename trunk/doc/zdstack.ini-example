@@ -3,26 +3,31 @@
 username = admin
 ;;; The corresponding password
 password = pacman2000
-;;; The root folder under which all zserv processes will create their folders
-rootfolder = /var/zdstack
-;;; The path to the zserv executable
-zserv_exe = /usr/local/bin/zserv
+;;; The IP address to report to the master server.  Remove option to have
+;;; zserv autodetect.
+; ip = 127.0.0.1
 ;;; The port on which ZDStack should listen
 zdstack_port = 8080
 ;;; The RPC protocol to use, either xml-rpc or json-rpc
 rpc_protocol = xml-rpc
-;;; The folder in which to create the Player => IP Database
-database_folder = /var/zdstack/database
 ;;; Whether or not to enable Player IP logging
 enable_ip_logging = yes
 ;;; Whether or not to load plugins
 load_plugins = yes
+;;; The root folder under which ZDStack will work
+rootfolder = /var/zdstack
+;;; The folder under which all zserv processes will create their folders
+zservfolder = %(rootfolder)s/servers
+;;; The path to the zserv executable
+zserv_exe = %(rootfolder)s/bin/zserv
+;;; The folder in which to create the Player => IP Database
+database_folder = $(rootfolder)s/database
 ;;; Directory containing plugins
 plugin_dir = %(rootfolder)s/plugins
 ;;; The full, absolute path to the IWADs, but not the WADs
-iwaddir = /var/zdstack/iWADs
+iwaddir = %(rootfolder)s/iWADs
 ;;; The full, absolute path to the WADs, but not IWADs
-waddir = /var/zdstack/WADs
+waddir = %(rootfolder)s/WADs
 ;;; The name of the IWAD to use
 iwad = doom2.wad
 ;;; The number of maps to remember statistics for
@@ -61,8 +66,8 @@ spam_limit = 10
 optional_wads = zvox2.wad
 ;;; Gravity value
 gravity = 800
-;;; Air control value (0 is OS, 0.00390625 is NS, and the default)
-air_control = 0.00390625
+;;; Air control value (0 is OS and the default, 0.00390625 is NS)
+air_control = 0
 ;;; How many seconds a player can remain dead before being removed from play
 death_limit = 30
 ;;; Kick players who exceed the speed limit
@@ -148,6 +153,7 @@ type = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
 port = 10670
 maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
+advertise = no
 requires_password = yes
 server_password = privaterulez
 rcon_password = privatercon

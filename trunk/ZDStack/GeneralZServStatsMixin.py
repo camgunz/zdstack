@@ -5,7 +5,6 @@ import logging
 
 from threading import Timer
 
-from ZDStack import log
 from ZDStack.Utils import get_logfile_suffix
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable

@@ -55,7 +55,7 @@ def get_zserv_class(game_mode, memory_slots, log_ips=False, load_plugins=False):
     """
     if game_mode not in game_mode_dict:
         raise ValueError("Invalid game mode [%s]" % (game_mode))
-    zs_class, mixin_class = gmd[game_mode]
+    zs_class, mixin_class = game_mode_dict[game_mode]
     s = "Got ZS [%s], MIXIN [%s] for game_mode [%s]"
     logging.getLogger('').info(s % (zs_class, mixin_class, game_mode))
     class stats_mixin(mixin_class):
