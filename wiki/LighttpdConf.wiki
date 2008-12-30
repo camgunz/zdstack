@@ -68,3 +68,17 @@ base_url = /
 ;;; Use this if you want to access ZDWebStats somewhere else, say, "/servers"
 base_url = /servers
 }}}
+
+= zdwebstats.py =
+
+In order for lighttpd to spawn the zdwebstats.py app, the top line might need to be changed to point to your python executable.  For most people, the default
+
+{{{
+#!/usr/bin/env python
+}}}
+
+should work OK.  For others, they might need to use something like
+
+{{{
+#!/usr/local/bin/python
+}}}
