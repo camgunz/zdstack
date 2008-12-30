@@ -21,7 +21,7 @@ zservfolder = %(rootfolder)s/servers
 ;;; The path to the zserv executable
 zserv_exe = %(rootfolder)s/bin/zserv
 ;;; The folder in which to create the Player => IP Database
-database_folder = $(rootfolder)s/database
+database_folder = %(rootfolder)s/database
 ;;; Directory containing plugins
 plugin_dir = %(rootfolder)s/plugins
 ;;; The full, absolute path to the IWADs, but not the WADs

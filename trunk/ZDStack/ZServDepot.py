@@ -9,37 +9,12 @@ from ZDStack.TeamZServStatsMixin import TeamZServStatsMixin
 from ZDStack.CTFTeamZServStatsMixin import CTFTeamZServStatsMixin
 from ZDStack.GeneralZServStatsMixin import GeneralZServStatsMixin
 from ZDStack.ConnectionZServStatsMixin import ConnectionZServStatsMixin as CZSM
-from ZDStack.FakeZServ import FakeZServ
-from ZDStack.FakeTeamDMZServ import FakeTeamDMZServ
-from ZDStack.FakeCTFZServ import FakeCTFZServ
 
 game_mode_dict = {'coop': (CoopZServ, GeneralZServStatsMixin),
                   'duel': (DuelZServ, GeneralZServStatsMixin),
                   'ffa': (FFAZServ, GeneralZServStatsMixin),
                   'teamdm': (TeamDMZServ, TeamZServStatsMixin),
                   'ctf': (CTFZServ, CTFTeamZServStatsMixin)}
-
-def get_fake_zserv_class(game_mode, memory_slots, log_type):
-    """Returns a Fake ZServclass.
-
-    game_mode:    A string representing the game mode, valid options
-                  are in game_mode_dict.keys().
-    log_type:     The type of log to be parsed, either 'server' or
-                  'client'.
-
-    """
-    if game_mode in ('coop', 'duel', 'ffa'):
-        zs_class = FakeZServ
-    elif game_mode == 'teamdm':
-        zs_class = FakeTeamDMZServ
-    elif game_mode == 'ctf':
-        zs_class = FakeCTFZServ
-    else:
-        raise ValueError("Invalid game mode [%s]" % (game_mode))
-    class StatsEnabledZServ(zs_class):
-        def __init__(self):
-            zs_class.__init__(self, log_type=log_type)
-    return StatsEnabledZServ
 
 def get_zserv_class(game_mode, memory_slots, log_ips=False, load_plugins=False):
     """Returns a ZServ class.
