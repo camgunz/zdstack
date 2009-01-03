@@ -32,7 +32,7 @@ class TeamZServ(DMZServ):
         config: a dict of configuration options and values
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         def is_valid(x):
             return x in config and config[x]
         DMZServ.load_config(self, config)
@@ -64,7 +64,7 @@ class TeamZServ(DMZServ):
 
     def get_configuration(self):
         """Returns a string of configuration data."""
-        logging.getLogger('').info('')
+        logging.debug('')
         template = DMZServ.get_configuration(self) + 'set teamplay "1"\n'
         if self.max_teams:
             template += 'set maxteams "%s"\n' % (self.max_teams)

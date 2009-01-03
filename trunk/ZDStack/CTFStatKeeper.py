@@ -92,14 +92,14 @@ class CTFStatKeeper(TeamStatKeeper):
                   the flag or not.
         
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.has_flag = has_flag
         if self.stat_container:
             self.stat_container.set_has_flag(has_flag)
 
     def add_flag_touch(self):
         """Adds a flag touch to flag stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.flag_touches += 1
         if self.stat_container:
             self.stat_container.add_flag_touch()
@@ -111,7 +111,7 @@ class CTFStatKeeper(TeamStatKeeper):
         flag_drop: a Frag instance.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.total_flag_drops += 1
         if self.stat_container:
             self.stat_container.add_flag_drop(flag_drop)
@@ -119,7 +119,7 @@ class CTFStatKeeper(TeamStatKeeper):
 
     def add_flag_pick(self):
         """Adds a flag pick to flag stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.flag_picks += 1
         if self.stat_container:
             self.stat_container.add_flag_pick()
@@ -127,7 +127,7 @@ class CTFStatKeeper(TeamStatKeeper):
 
     def add_flag_return(self):
         """Adds a flag return to flag stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.flag_returns += 1
         if self.stat_container:
             self.stat_container.add_flag_return()
@@ -138,7 +138,7 @@ class CTFStatKeeper(TeamStatKeeper):
         flag_loss: a Frag instance.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.total_flag_losses += 1
         if self.stat_container:
             self.stat_container.add_flag_loss(flag_loss)
@@ -146,7 +146,7 @@ class CTFStatKeeper(TeamStatKeeper):
 
     def add_flag_cap(self):
         """Adds a flag cap to flag stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.flag_caps += 1
         if self.stat_container:
             self.stat_container.add_flag_cap()

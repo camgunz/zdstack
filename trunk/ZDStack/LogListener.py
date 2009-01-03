@@ -24,14 +24,14 @@ class LogListener:
 
     def start(self):
         """Starts listening."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.keep_listening = True
         self.listener_thread = start_thread(self.handle_event,
                                             "%s listener thread" % self.name)
 
     def stop(self):
         """Stops listening."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.keep_listening = False
         # self.listener_thread.join()
         # self.listener_thread = None

@@ -165,7 +165,7 @@ class FakeZServ(GeneralZServStatsMixin):
 
     def export(self):
         """Returns a dict of ZServ configuration information."""
-        logging.getLogger('').info('')
+        logging.debug('')
         d = {'stats_should_go_here': 'whoo stats!'}
         for func, args, kwargs in self.extra_exportables_funcs:
             d = func(*([d] + args), **kwargs)

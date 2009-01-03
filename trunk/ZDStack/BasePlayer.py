@@ -25,7 +25,7 @@ class BasePlayer(BaseStatKeeper):
                     default.
 
         """
-        logging.getLogger('').debug('name: [%s]' % (name))
+        logging.debug('name: [%s]' % (name))
         BaseStatKeeper.__init__(self)
         self.zserv = zserv
         self.ip = ip_address
@@ -98,7 +98,7 @@ class BasePlayer(BaseStatKeeper):
 
     def exportables(self):
         """Returns a list of strings representing exportable values."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         out = []
         for x in BaseStatKeeper.exportables(self):
             if x[0] != 'map' and \
@@ -125,7 +125,7 @@ class BasePlayer(BaseStatKeeper):
         map: a Map instance to set.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.map = map
         self.stat_container = self.map
 

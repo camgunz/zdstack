@@ -48,7 +48,7 @@ def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
                   addresses of the player ot return aliases for
 
     """
-    logging.getLogger('').info('')
+    logging.debug('')
     if encoded_name == '':
         encoded_name = b64encode(name)
     db = get_database()

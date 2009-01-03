@@ -21,7 +21,7 @@ class CTFZServ(TeamZServ):
 
     def get_configuration(self):
         """Returns a string of configuration data."""
-        logging.getLogger('').info('')
+        logging.debug('')
         configuration = TeamZServ.get_configuration(self)
         configuration += 'set ctf "1"\n'
         return configuration

@@ -25,7 +25,7 @@ class DMZServ(BaseZServ):
         config: a dict of configuration options and values.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         def is_valid(x):
             return x in config and config[x]
         BaseZServ.load_config(self, config)
@@ -37,6 +37,6 @@ class DMZServ(BaseZServ):
 
     def get_configuration(self):
         """Returns a string of configuration data."""
-        logging.getLogger('').info('')
+        logging.debug('')
         return BaseZServ.get_configuration(self) + 'set deathmatch "1"\n'
 

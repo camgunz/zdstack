@@ -60,7 +60,7 @@ class BaseZServ:
         config: a dict of configuration options and values.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.load_config(config)
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
@@ -71,7 +71,7 @@ class BaseZServ:
         config: a dict of configuration options and values.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
@@ -275,7 +275,7 @@ class BaseZServ:
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
     def get_configuration(self):
-        # logging.getLogger('').info('')
+        # logging.debug('')
         # TODO: add support for "add_mapnum_to_hostname"
         template = 'set cfg_activated "1"\n'
         template += 'set log_disposition "0"\n'
@@ -377,7 +377,7 @@ class BaseZServ:
             return
         x = self.zserv.poll()
         if x:
-            logging.getLogger('').info('Poll: %s' % (x))
+            logging.info('Poll: %s' % (x))
             for func, args, kwargs in self.post_spawn_funcs:
                 func(*args, **kwargs)
             self.clean_up_after_zserv()
@@ -392,7 +392,7 @@ class BaseZServ:
         self.zserv.
         
         """
-        logging.getLogger('').info('Acquiring spawn lock [%s]' % (self.name))
+        logging.info('Acquiring spawn lock [%s]' % (self.name))
         self.zdstack.spawn_lock.acquire()
         try:
             curdir = os.getcwd()
@@ -410,16 +410,16 @@ class BaseZServ:
 
     def clean_up_after_zserv(self):
         """Cleans up after the zserv process exits."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.pid = None
 
     def start(self):
         """Starts the zserv process, restarting it if it crashes."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.pid = None
         for logfile in self.logfiles:
             for listener in logfile.listeners:
-                logging.getLogger('').debug("Starting %s" % (listener))
+                logging.debug("Starting %s" % (listener))
                 listener.start()
             logfile.start()
         self.keep_spawning = True
@@ -433,12 +433,12 @@ class BaseZServ:
                 zserv process.  15 (TERM) by default.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.keep_spawning = False
         for logfile in self.logfiles:
             logfile.stop() # should kill all logfile logging threads
             for listener in logfile.listeners:
-                logging.getLogger('').debug("Stopping %s" % (listener))
+                logging.debug("Stopping %s" % (listener))
                 listener.stop() # should kill all listener threads
 
         out = True
@@ -460,13 +460,13 @@ class BaseZServ:
                 zserv process.  15 (TERM) by default.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         self.stop(signum)
         self.start()
 
     def export(self):
         """Returns a dict of ZServ configuration information."""
-        logging.getLogger('').info('')
+        logging.debug('')
         d = {'name': self.name,
              'type': self.type,
              'port': self.port,

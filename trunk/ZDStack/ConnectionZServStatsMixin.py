@@ -17,11 +17,11 @@ class ConnectionZServStatsMixin:
         f2 = (self.stop_collecting_connection_stats, [], {})
         self.pre_spawn_funcs.append(f1)
         self.post_spawn_funcs.append(f2)
-        logging.getLogger('').info('Added IP Log Mixin')
+        logging.info('Added IP Log Mixin')
 
     def start_collecting_connection_stats(self):
         """Starts collecting connection stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         connection_log_parser = ConnectionLogParser()
         self.connection_log = LogFile('connection', connection_log_parser, self)
         self.connection_log_listener = ConnectionLogListener(self)
@@ -32,13 +32,13 @@ class ConnectionZServStatsMixin:
 
     def stop_collecting_connection_stats(self):
         """Stops collecting connection stats."""
-        logging.getLogger('').info('')
+        logging.debug('')
         self.connection_log.stop()
         self.connection_log_listener.stop()
 
     def get_connection_log_filename(self, roll=False):
         """Generates the connection log filename."""
-        logging.getLogger('').info('')
+        logging.debug('')
         return os.path.join(self.homedir, 'conn' + get_logfile_suffix(roll))
 
     def set_connection_log_filename(self, roll=False):
@@ -53,7 +53,7 @@ class ConnectionZServStatsMixin:
                and the ZServ's LogFile will seek to the end of its
                file (if it exists).
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         connection_log_filename = self.get_connection_log_filename(roll=roll)
         self.connection_log.set_filepath(connection_log_filename,
                                          seek_to_end=not roll)
@@ -65,6 +65,6 @@ class ConnectionZServStatsMixin:
         player_ip:   a string representing the player's IP address.
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         save_player_ip(player_name, player_ip)
 

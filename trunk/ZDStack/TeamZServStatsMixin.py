@@ -36,7 +36,7 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
 
     def initialize_general_stats(self):
         """Initializes stats from the general log."""
-        logging.getLogger('').info('')
+        logging.debug('')
         GeneralZServStatsMixin.initialize_general_stats(self)
         self.red_team = self.team_class('red')
         self.blue_team = self.team_class('blue')
@@ -49,7 +49,7 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
 
     def dump_stats(self):
         """Returns a list of dumped stats from all StatKeepers."""
-        logging.getLogger('').info('')
+        logging.debug('')
         return [self.map.export(), self.red_team.export(),
                 self.blue_team.export(), self.green_team.export(),
                 self.white_team.export(), self.players.export()]
@@ -60,7 +60,7 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
         color: a string representing the color of the Team to return
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         if color not in self.teams:
             # Maybe we should make custom exceptions like TeamNotFoundError
             raise ValueError("%s team not found" % (color.capitalize()))
@@ -73,7 +73,7 @@ class TeamZServStatsMixin(GeneralZServStatsMixin):
         map_name:   a string representing the name of the new map
 
         """
-        logging.getLogger('').info('')
+        logging.debug('')
         GeneralZServStatsMixin.change_map(self, map_number, map_name)
         for team in self.teams.values():
             team.initialize()
