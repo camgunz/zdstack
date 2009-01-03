@@ -90,7 +90,7 @@ class FakeZServ(GeneralZServStatsMixin):
         name.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if ip_address_and_port:
             ip_address, port = ip_address_and_port
         else:

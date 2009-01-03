@@ -12,11 +12,11 @@ def save_player_ip(player_name, player_ip):
 
     """
     encoded_player_name = b64encode(player_name)
-    logging.getLogger('').info("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
+    logging.info("[%s, %s, %s]" % (player_name, encoded_player_name, player_ip))
     db = get_database()
     if not db:
         es = "PyXSE not found, Player => IP matching unavailable"
-        logging.getLogger('').info(es)
+        logging.info(es)
         return
     rs = db.select('players',
                    where=[lambda r: r['name'] == encoded_player_name])
@@ -69,7 +69,7 @@ def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
     else:
         es = "Found new player [%s], encoded: [%s], all names: [%s]"
         nl = ', '.join([x['name'] for x in db.select('players') if x['name']])
-        logging.getLogger('').info(es % (name, encoded_name, nl))
+        logging.info(es % (name, encoded_name, nl))
     number_of_addresses = len(addresses)
     if number_of_addresses:
         rs = db.select('players', where=[get_ip_match_func(addresses)])

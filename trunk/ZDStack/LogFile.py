@@ -96,7 +96,7 @@ class LogFile:
         lockup the response mechanism.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.command_lock.acquire()
         try:
             while self.event_to_watch_for is not None:
@@ -109,7 +109,7 @@ class LogFile:
 
     def get_response(self):
         """Returns the list of saved response events."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         output = []
         self.response_finished.wait(2)
         self.response_finished.clear()
@@ -169,7 +169,7 @@ class LogFile:
                         player = self.zserv.distill_player(ppn)
                         if not player:
                             s = "Received a message from a non-existent player"
-                            logging.getLogger('').info(s)
+                            logging.info(s)
                             continue
                         message = c.replace(player.name, '', 1)[3:]
                         d = {'message': message, 'messenger': player}
@@ -182,9 +182,9 @@ class LogFile:
                             # notify watch_for_response that we're done
                     for listener in self.listeners:
                         if event.type != 'junk':
-                            logging.getLogger('').debug(es % (event.type))
+                            logging.debug(es % (event.type))
                             s = "Putting %s in %s"
-                            logging.getLogger('').debug(s % (event.type,
+                            logging.debug(s % (event.type,
                                                              listener.name))
                             logging.debug(s % (event.type, listener.name))
                         listener.events.put_nowait(event)
@@ -197,5 +197,5 @@ class LogFile:
                     self.change_file_lock.release()
             else:
                 logging.debug("No Fobj")
-                logging.getLogger('').debug("%s: No fobj" % (self.filepath))
+                logging.debug("%s: No fobj" % (self.filepath))
 

@@ -43,7 +43,7 @@ class Server:
                      being reloaded
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if not config_file:
             self.config_file = get_configfile()
         else:
@@ -59,7 +59,7 @@ class Server:
                 reloaded
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.defaults = self.config.defaults()
         if 'rootfolder' in self.defaults:
             rootfolder = self.defaults['rootfolder']
@@ -93,13 +93,13 @@ class Server:
 
     def reload_config(self):
         """Reloads the configuration."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.config = get_configparser(reload=True)
         self.load_config(reload=True)
 
     def startup(self):
         """Starts the server up."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.rpc_server = self.rpc_class((HOSTNAME, self.port))
         self.register_functions()
         self.keep_serving = True
@@ -111,7 +111,7 @@ class Server:
 
     def shutdown(self, signum=15):
         """Shuts the server down."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.stop()
         self.keep_serving = False
         try:
@@ -122,24 +122,24 @@ class Server:
 
     def start(self):
         """Starts serving requests."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         raise NotImplementedError()
 
     def stop(self):
         """Stops serving requests."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         raise NotImplementedError()
 
     def restart(self):
         """Restarts the server."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.stop()
         self.start()
         return True
 
     def handle_signal(self, signum, frame):
         """Handles a signal."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if signum == signal.SIGHUP:
             self.reload_config()
         else:
@@ -147,7 +147,7 @@ class Server:
 
     def register_functions(self):
         """Registers public XML-RPC functions."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.rpc_server.register_function(self.get_status)
         self.rpc_server.register_function(self.get_logfile)
         self.rpc_server.register_function(self.reload_config)
@@ -157,11 +157,11 @@ class Server:
 
     def get_status(self):
         """Returns the current status of the server."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.status
 
     def get_logfile(self):
         """Returns the contents of this server's logfile."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return read_file(logfile)
 

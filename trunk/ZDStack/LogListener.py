@@ -51,7 +51,7 @@ class LogListener:
         while self.keep_listening:
             event = self.events.get()
             if event.type != 'junk':
-                logging.getLogger('').debug("Handling event: %s" % (event.type))
+                logging.debug("Handling event: %s" % (event.type))
             self._handle_event(event)
 
     def _handle_event(self, event):
@@ -117,7 +117,7 @@ class ZServLogListener(LogListener):
 
         """
         logging.info("Event error: %s" % (event.data['error']))
-        logging.getLogger('').info("Event traceback: \n%s\n" % (event.data['traceback']))
+        logging.info("Event traceback: \n%s\n" % (event.data['traceback']))
 
     def handle_unhandled_event(self, event):
         """Handles an unhandled event.
@@ -141,7 +141,7 @@ class PluginLogListener(ZServLogListener):
         plugins = get_plugins()
         self.plugins = [x for x in plugins if x.__name__ in enabled_plugins]
         for p in self.plugins:
-            logging.getLogger('').debug("PLL Loaded Plugin [%s]" % (p.__name__))
+            logging.debug("PLL Loaded Plugin [%s]" % (p.__name__))
 
     def _handle_event(self, event):
         """Handles an event.
@@ -150,13 +150,13 @@ class PluginLogListener(ZServLogListener):
 
         """
         for plugin in self.plugins:
-            logging.getLogger('').debug("Running plugin: %s" % (plugin.__name__))
+            logging.debug("Running plugin: %s" % (plugin.__name__))
             try:
                 plugin(event, self.zserv)
             except Exception, e:
                 raise
                 es = "Exception in plugin %s: [%s]"
-                logging.getLogger('').info(es % (plugin.__name__, e))
+                logging.info(es % (plugin.__name__, e))
 
 class ConnectionLogListener(ZServLogListener):
 
@@ -183,7 +183,7 @@ class ConnectionLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        logging.getLogger('').debug("Logging %s:%s" % (event.data['player'],
+        logging.debug("Logging %s:%s" % (event.data['player'],
                                                        event.data['ip_address']))
         print "Logging %s:%s" % (event.data['player'], event.data['ip_address'])
         self.zserv.log_ip(event.data['player'], event.data['ip_address'])

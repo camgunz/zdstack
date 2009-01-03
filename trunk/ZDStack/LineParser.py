@@ -26,7 +26,7 @@ class LineParser:
                 match = re.match(regexp, line)
             except:
                 s = 'Choked on line [%s]' % (line)
-                logging.getLogger('').debug(s)
+                logging.debug(s)
                 raise
             if match:
                 return LogEvent(event_dt, event_type, match.groupdict(), line)
@@ -45,8 +45,8 @@ class LineParser:
                 d['weapon'] = weapon
                 e = LogEvent(event_dt, 'frag', d, line)
                 if not 'fragger' in d:
-                    logging.getLogger('').debug("Returning a frag w/o a fragger")
-                    logging.getLogger('').debug("Line is %s" % (line))
+                    logging.debug("Returning a frag w/o a fragger")
+                    logging.debug("Line is %s" % (line))
                 return e
         for regexp, death in self.regexps.DEATHS:
             match = re.match(regexp, line)
@@ -55,8 +55,8 @@ class LineParser:
                 d.update({'fragger': d['fraggee'], 'weapon': death})
                 e = LogEvent(event_dt, 'death', d, line)
                 if not 'fragger' in d:
-                    logging.getLogger('').debug("Returning a death w/o a fragger")
-                    logging.getLogger('').debug("Line is %s" % (line))
+                    logging.debug("Returning a death w/o a fragger")
+                    logging.debug("Line is %s" % (line))
                 return e
 
     def line_to_join_event(self, event_dt, line):

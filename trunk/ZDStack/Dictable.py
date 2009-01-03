@@ -14,7 +14,7 @@ class Dictable(dict):
         try:
             return self[key]
         except KeyError, e:
-            logging.getLogger('').debug("Items: %s" % (self.items()))
+            logging.debug("Items: %s" % (self.items()))
             raise AttributeError, e
 
     def __setattr__(self, key, value): 

@@ -41,15 +41,15 @@ class GeneralZServStatsMixin:
         self.stats_class = stats_class
         self.load_plugins = load_plugins
         if self.load_plugins and 'plugins' in self.config:
-            logging.getLogger('').info("Loading plugins")
+            logging.info("Loading plugins")
             plugins = [x.strip() for x in self.config['plugins'].split(',')]
             self.plugins = plugins
             for plugin in self.plugins:
-                logging.getLogger('').info("Loaded plugin [%s]" % (plugin))
+                logging.info("Loaded plugin [%s]" % (plugin))
         else:
-            logging.getLogger('').info("Not loading plugins")
-            logging.getLogger('').debug("Load plugins: [%s]" % (load_plugins))
-            logging.getLogger('').debug("Plugins: [%s]" % ('plugins' in self.config))
+            logging.info("Not loading plugins")
+            logging.debug("Load plugins: [%s]" % (load_plugins))
+            logging.debug("Plugins: [%s]" % ('plugins' in self.config))
             self.plugins = None
         self.log_type = log_type
         self.memory_slots = memory_slots
@@ -83,31 +83,31 @@ class GeneralZServStatsMixin:
         self.extra_exportables_funcs.append((add_players, [], {}))
         self.extra_exportables_funcs.append((add_map, [], {}))
         self.extra_exportables_funcs.append((add_remembered_slots, [], {}))
-        logging.getLogger('').info('Added Stats Mixin')
+        logging.info('Added Stats Mixin')
 
     def initialize_general_stats(self):
         """Initializes a ZServ's stats."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.map = None
         self.players = Listable()
         self.disconnected_players = Listable()
         self.should_remember = False
 
     def initialize_general_log(self):
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.initialize_general_stats()
         general_log_parser = GeneralLogParser(log_type=self.log_type)
         self.general_log = LogFile('general', general_log_parser, self)
         self.general_log_listener = GeneralLogListener(self)
         if self.load_plugins and self.plugins:
-            logging.getLogger('').debug("Adding PLL to listeners")
+            logging.debug("Adding PLL to listeners")
             self.plugin_log_listener = PluginLogListener(self, self.plugins)
             self.general_log.listeners = [self.general_log_listener,
                                           self.plugin_log_listener]
         else:
-            logging.getLogger('').debug("Not adding PLL to listeners")
+            logging.debug("Not adding PLL to listeners")
             self.general_log.listeners = [self.general_log_listener]
-        logging.getLogger('').debug("Listeners: [%s]" % (self.general_log.listeners))
+        logging.debug("Listeners: [%s]" % (self.general_log.listeners))
         self.set_general_log_filename()
         self.logfiles.append(self.general_log)
 
@@ -120,14 +120,14 @@ class GeneralZServStatsMixin:
 
     def stop_collecting_general_stats(self):
         """Stops collecting statistics."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.general_log.stop()
         for listener in self.general_log.listeners:
             listener.stop()
 
     def get_general_log_filename(self, roll=False):
         """Generates the general log filename."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return os.path.join(self.homedir, 'gen' + get_logfile_suffix())
 
     def set_general_log_filename(self, roll=False):
@@ -142,22 +142,22 @@ class GeneralZServStatsMixin:
                and the ZServ's LogFile will seek to the end of its
                file (if it exists).
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         general_log_filename = self.get_general_log_filename(roll=roll)
         self.general_log.set_filepath(general_log_filename,
                                       seek_to_end=not roll)
 
     def dump_stats(self):
         """Returns a list of exported stats."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return [self.map.export(), self.players.export()]
 
     def save_current_general_stats(self):
         """Saves stats for the current or most recent game."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if not (self.should_remember and self.map):
             return
-        logging.getLogger('').debug('Saving stats')
+        logging.debug('Saving stats')
         self.should_remember = False
         if len(self.remembered_stats) == self.memory_slots:
             self.remembered_stats = Listable(self.remembered_stats[1:])
@@ -172,7 +172,7 @@ class GeneralZServStatsMixin:
 
         """
         s = "Adding player: [%s:%s]" % (ip_address, port)
-        logging.getLogger('').info(s)
+        logging.info(s)
         self.update_player_numbers_and_ips()
         time.sleep(.2)
         ###
@@ -203,7 +203,7 @@ class GeneralZServStatsMixin:
         player_name: the name of the player to disconnect
         
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         player = self.get_player(name=player_name)
         player.disconnected = True
         player.playing = False
@@ -224,7 +224,7 @@ class GeneralZServStatsMixin:
         name.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if ip_address_and_port:
             ip_address, port = ip_address_and_port
         else:
@@ -270,9 +270,9 @@ class GeneralZServStatsMixin:
         if not messenger:
             player_names = ', '.join(names)
             ppn = ', '.join(possible_player_names)
-            # logging.getLogger('').debug("No player could be distilled")
-            # logging.getLogger('').debug("Players: [%s]" % (player_names))
-            # logging.getLogger('').debug("Possible: [%s]" % (ppn))
+            # logging.debug("No player could be distilled")
+            # logging.debug("Players: [%s]" % (player_names))
+            # logging.debug("Possible: [%s]" % (ppn))
         return messenger
 
     def get_player_ip_address(self, player_name):
@@ -345,7 +345,7 @@ class GeneralZServStatsMixin:
         map_name:   a string representing the name of the new map
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         self.save_current_general_stats()
         self.map = self.map_class(map_number, map_name)
         self.players = [x for x in self.players \
@@ -370,7 +370,7 @@ class GeneralZServStatsMixin:
         This method returns a list of events returned in response.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         if event_response_type is not None:
             self.general_log.watch_for_response(event_response_type)
         self.zserv.stdin.write(message.strip('\n') + '\n')
@@ -385,7 +385,7 @@ class GeneralZServStatsMixin:
         reason:     a string representing the reason for the ban
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('addban %s %s' % (ip_address, reason),
                                   'addban_command')
 
@@ -408,7 +408,7 @@ class GeneralZServStatsMixin:
         bot_name: a string representing the name of the bot to add.
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('addbot %s' % (bot_name), 'addbot_command')
 
     def zaddmap(self, map_number):
@@ -417,12 +417,12 @@ class GeneralZServStatsMixin:
         map_number: an int representing the name of the map to add
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('addmap %s' % (map_number))
 
     def zclearmaplist(self):
         """Clears the maplist."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('clearmaplist')
 
     def zget(self, variable_name):
@@ -432,7 +432,7 @@ class GeneralZServStatsMixin:
                        to get
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('get %s', 'get_command')
 
     def zkick(self, player_number, reason='rofl'):
@@ -443,7 +443,7 @@ class GeneralZServStatsMixin:
         reason:        a string representing the reason for the kick
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('kick %s %s' % (player_number, reason))
 
     def zkillban(self, ip_address):
@@ -452,7 +452,7 @@ class GeneralZServStatsMixin:
         ip_address: a string representing the IP address to un-ban
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('killban %s' % (ip_address))
 
     def zmap(self, map_number):
@@ -462,7 +462,7 @@ class GeneralZServStatsMixin:
                     change to
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('map %s' % (map_number))
 
     def zmaplist(self):
@@ -472,22 +472,22 @@ class GeneralZServStatsMixin:
         the maplist.  An example of one of these strings is: "map01".
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('maplist', 'maplist_command')
 
     def zplayers(self):
         """Returns a list of players in the server."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('players', 'players_command')
 
     def zremovebots(self):
         """Removes all bots."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('removebots')
 
     def zresetscores(self):
         """Resets all scores."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('resetscores')
 
     def zsay(self, message):
@@ -496,7 +496,7 @@ class GeneralZServStatsMixin:
         message: a string representing the message to send.
         
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('say %s' % (message))
 
     def zset(self, variable_name, variable_value):
@@ -508,7 +508,7 @@ class GeneralZServStatsMixin:
                         variable to
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         s = 'set "%s" "%s"' % (variable_name, variable_value)
         return self.send_to_zserv(s)
 
@@ -519,7 +519,7 @@ class GeneralZServStatsMixin:
                           boolean variable to toggle
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('toggle %s' % (boolean_variable))
 
     def zunset(self, variable_name):
@@ -529,11 +529,11 @@ class GeneralZServStatsMixin:
                        to unset
 
         """
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('unset %s' % (variable_name))
 
     def zwads(self):
         """Returns a list of the wads in use."""
-        # logging.getLogger('').debug('')
+        # logging.debug('')
         return self.send_to_zserv('wads', 'wads_command')
 
