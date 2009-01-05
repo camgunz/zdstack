@@ -69,7 +69,7 @@ def get_possible_aliases(name, encoded_name='', ip_addresses=[]):
     else:
         es = "Found new player [%s], encoded: [%s], all names: [%s]"
         nl = ', '.join([x['name'] for x in db.select('players') if x['name']])
-        logging.info(es % (name, encoded_name, nl))
+        logging.debug(es % (name, encoded_name, nl))
     number_of_addresses = len(addresses)
     if number_of_addresses:
         rs = db.select('players', where=[get_ip_match_func(addresses)])
