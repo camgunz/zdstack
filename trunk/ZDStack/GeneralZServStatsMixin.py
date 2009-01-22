@@ -254,14 +254,23 @@ class GeneralZServStatsMixin:
                     player = self.player_class(self, z_full[1], z_full[2],
                                                z_full[0])
                     self._add_player(player, acquire_lock=False)
+                    logging.info("Added new player [%s]" % (player.name))
             for p_full in players_list:
                 if p_full not in zplayers_list: # found a ghost player
-                    player = self.get_player(name=p_full[0])
+                    player = self.get_player(name=p_full[0],
+                                             ip_address_and_port=p_full[1:])
+                    logging.info("Removed player [%s]" % (p_full[0]))
                     self._remove_player(player, acquire_lock=False)
             for z_full_num in zplayers_list_plus_numbers:
                 for p in self.players:
                     if (p.name, p.ip, p.port) == z_full_num[1:]:
-                        p.number = z_full_num[0]
+                        if p.number != z_full_num[0]:
+                            if p.name.endswith('s'):
+                                es = "Set %s' number to %s"
+                            else:
+                                es = "Set %s's number to %s"
+                            logging.info(es % (p_full[0], z_full_num[0]))
+                            p.number = z_full_num[0]
 
     def add_player(self, ip_address, port):
         """Adds a player to self.players
