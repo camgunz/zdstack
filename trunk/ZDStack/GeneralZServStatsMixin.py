@@ -251,7 +251,8 @@ class GeneralZServStatsMixin:
             players_list = [(p.name, p.ip, p.port) for p in self.players]
             for z_full in zplayers_list:
                 if z_full not in players_list: # found a missing player
-                    player = self.player_class(self, z_full[1], z_full[2])
+                    player = self.player_class(self, z_full[1], z_full[2],
+                                               z_full[0])
                     self._add_player(player, acquire_lock=False)
             for p_full in players_list:
                 if p_full not in zplayers_list: # found a ghost player
