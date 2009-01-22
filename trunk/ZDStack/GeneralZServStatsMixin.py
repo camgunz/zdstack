@@ -184,23 +184,29 @@ class GeneralZServStatsMixin:
             for p in self.players:
                 full_list.append((p.name, p.ip, p.port))
                 name_list.append((p.name, p.ip))
-            if p_full not in full_list: # otherwise we don't do anything
-                if p_name not in name_list: # totally new connection
-                    self.players.append(player)
-                else: # player reconnected w/ new port
-                    ###
-                    # Recreate self.disconnected_players without this player
-                    # Find this player in self.players and:
-                    #   set .port to new port
-                    #   set .disconnected to False
-                    ###
-                    dp = Listable([x for x in self.disconnected_players \
-                                                if (x.name, x.ip) != p_name])
-                    self.disconnected_players = dp
-                    for p in self.players:
-                        if (p.name, p.ip) == p_name:
-                            p.port = player.port
-                            p.disconnected = False
+            if p_name in name_list:
+                ###
+                # Player reconnected
+                #
+                # Recreate self.disconnected_players without this player
+                # Find this player in self.players and:
+                #   set .port to new port
+                #   set .disconnected to False
+                ###
+                logging.debug("Player [%s] has reconnected" % (p_name[0]))
+                dp = Listable([x for x in self.disconnected_players \
+                                            if (x.name, x.ip) != p_name])
+                self.disconnected_players = dp
+                for p in self.players:
+                    if (p.name, p.ip) == p_name:
+                        p.port = player.port
+                        p.disconnected = False
+            else:
+                ###
+                # Totally new connection
+                ###
+                logging.debug("Found totally new player [%s]" % (p_name[0]))
+                self.players.append(player)
         if acquire_lock:
             with self._players_lock:
                 blah()
@@ -239,27 +245,51 @@ class GeneralZServStatsMixin:
         with self._players_lock:
             if sleep:
                 time.sleep(sleep)
+            players_list = []
+            disconnected_players_list = []
             zplayers_list = []
             zplayers_list_plus_numbers = []
+            for p in self.players:
+                if not p.name:
+                    ###
+                    # Skip players w/ blank names
+                    ###
+                    continue
+                players_list.append((p.name, p.ip, p.port))
+            for dp in self.disconnected_players:
+                if not dp.name:
+                    ###
+                    # Skip players w/ blank names
+                    ###
+                    continue
+                disconnected_players_list.append((dp.name, dp.ip, dp.port))
             for d in zplayers:
+                if not d['player_name']:
+                    ###
+                    # Skip players w/ blank names
+                    ###
+                    continue
                 zplayers_list.append((d['player_name'], d['player_ip'],
                                       d['player_port']))
                 zplayers_list_plus_numbers.append((d['player_num'],
                                                    d['player_name'],
                                                    d['player_ip'],
                                                    d['player_port']))
-            players_list = [(p.name, p.ip, p.port) for p in self.players]
             for z_full in zplayers_list:
-                if z_full not in players_list: # found a missing player
+                if z_full not in players_list or \
+                   z_full in disconnected_players_list:
+                    ###
+                    # found a missing or reconnected player
+                    ###
                     player = self.player_class(self, z_full[1], z_full[2],
                                                z_full[0])
                     self._add_player(player, acquire_lock=False)
-                    logging.info("Added new player [%s]" % (player.name))
+                    logging.debug("Added new player [%s]" % (player.name))
             for p_full in players_list:
                 if p_full not in zplayers_list: # found a ghost player
                     player = self.get_player(name=p_full[0],
                                              ip_address_and_port=p_full[1:])
-                    logging.info("Removed player [%s]" % (p_full[0]))
+                    logging.debug("Removed player [%s]" % (p_full[0]))
                     self._remove_player(player, acquire_lock=False)
             for z_full_num in zplayers_list_plus_numbers:
                 for p in self.players:
@@ -269,7 +299,7 @@ class GeneralZServStatsMixin:
                                 es = "Set %s' number to %s"
                             else:
                                 es = "Set %s's number to %s"
-                            logging.info(es % (p_full[0], z_full_num[0]))
+                            logging.debug(es % (p.name, z_full_num[0]))
                             p.number = z_full_num[0]
 
     def add_player(self, ip_address, port):
@@ -280,7 +310,7 @@ class GeneralZServStatsMixin:
 
         """
         s = "Adding player: [%s:%s]" % (ip_address, port)
-        logging.info(s)
+        logging.debug(s)
         self.update_player_numbers_and_ips()
         time.sleep(.2)
         ###
@@ -316,17 +346,15 @@ class GeneralZServStatsMixin:
 
         """
         # logging.debug('')
-        if ip_address_and_port:
+        if name and ip_address_and_port:
             ip_address, port = ip_address_and_port
-        else:
-            ip_address, port = (None, None)
-        if name and ip_address:
             cf = lambda x: x.name == name and \
                            x.ip == ip_address and \
                            x.port == port
         elif name:
             cf = lambda x: x.name == name
-        elif ip_address:
+        elif ip_address_and_port:
+            ip_address, port = ip_address_and_port
             cf = lambda x: x.ip == ip_address and x.port == port
         else:
             raise ValueError("One of name or ip_address_and_port is required")
@@ -352,8 +380,8 @@ class GeneralZServStatsMixin:
                                                          d['player_port']))
             except PlayerNotFoundError, pnfe:
                 es = "Players out of sync, %s at %s:%s not found"
-                logging.info(es % (d['player_name'], d['player_ip'],
-                                   d['player_port']))
+                logging.debug(es % (d['player_name'], d['player_ip'],
+                                    d['player_port']))
                 continue
             except ValueError, e:
                 print >> sys.stderr, "ValueError in upnai: %s" % (e)
@@ -381,18 +409,16 @@ class GeneralZServStatsMixin:
 
         """
         messenger = None
-        names = [x.name for x in self.players]
-        for player_name in possible_player_names:
-            if player_name in names:
-                messenger = self.get_player(player_name)
-                break
-        if not messenger:
-            self.sync_players()
+        def blah():
             names = [x.name for x in self.players]
             for player_name in possible_player_names:
                 if player_name in names:
-                    messenger = self.get_player(player_name)
+                    messenger = self.get_player(name=player_name)
                     break
+        blah()
+        if not messenger:
+            self.sync_players()
+            blah()
         if not messenger:
             player_names = ', '.join(names)
             ppn = ', '.join(possible_player_names)
