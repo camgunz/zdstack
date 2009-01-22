@@ -419,9 +419,9 @@ class GeneralZServStatsMixin:
         if not messenger:
             self.sync_players()
             blah()
-        if not messenger:
-            player_names = ', '.join(names)
-            ppn = ', '.join(possible_player_names)
+        # if not messenger:
+            # player_names = ', '.join(names)
+            # ppn = ', '.join(possible_player_names)
             # logging.debug("No player could be distilled")
             # logging.debug("Players: [%s]" % (player_names))
             # logging.debug("Possible: [%s]" % (ppn))

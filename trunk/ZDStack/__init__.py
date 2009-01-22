@@ -45,7 +45,10 @@ class PlayerNotFoundError(Exception):
             raise ValueError(es)
         self.name = name
         self.ip_address_and_port = ip_address_and_port
-        self.ip_address, self.port = self.ip_address_and_port
+        if self.ip_address_and_port:
+            self.ip_address, self.port = self.ip_address_and_port
+        else:
+            self.ip_address, self.port = (None, None)
         if name:
             Exception.__init__(self, "Player [%s] not found" % (name))
         else:
