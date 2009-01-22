@@ -224,8 +224,8 @@ class GeneralZServStatsMixin:
         if acquire_lock:
             with self._players_lock:
                 blah()
-            else:
-                blah()
+        else:
+            blah()
 
     def sync_players(self, sleep=None):
         """Ensures that self.players matches up with self.zplayers().
@@ -251,7 +251,7 @@ class GeneralZServStatsMixin:
             players_list = [(p.name, p.ip, p.port) for p in self.players]
             for z_full in zplayers_list:
                 if z_full not in players_list: # found a missing player
-                    player = self.player_class(self, ip_address, port)
+                    player = self.player_class(self, z_full[1], z_full[2])
                     self._add_player(player, acquire_lock=False)
             for p_full in players_list:
                 if p_full not in zplayers_list: # found a ghost player
