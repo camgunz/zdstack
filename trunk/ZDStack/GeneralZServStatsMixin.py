@@ -1,10 +1,13 @@
+from __future__ import with_statement
+
 import sys
 import time
 import os.path
 import logging
 
-from threading import Timer
+from threading import Timer, Lock
 
+from ZDStack import PlayerNotFoundError
 from ZDStack.Utils import get_logfile_suffix
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
@@ -36,6 +39,7 @@ class GeneralZServStatsMixin:
                       options are "server" and "client"
 
         """
+        self._players_lock = Lock()
         self.map_class = map_class
         self.player_class = player_class
         self.stats_class = stats_class
@@ -164,6 +168,100 @@ class GeneralZServStatsMixin:
         stats = self.stats_class(*self.dump_stats())
         self.remembered_stats.append(stats)
 
+    def _add_player(self, player, acquire_lock=True):
+        """Adds a player to self.players - threadsafe.
+
+        player:       a Player instance
+        acquire_lock: if True, will acquire self._players_lock before
+                      taking any action; True by default
+
+        """
+        def blah():
+            full_list = []
+            name_list = []
+            p_full = (player.name, player.ip, player.port)
+            p_name = (player.name, player.ip)
+            for p in self.players:
+                full_list.append((p.name, p.ip, p.port))
+                name_list.append((p.name, p.ip))
+            if p_full not in full_list: # otherwise we don't do anything
+                if p_name not in name_list: # totally new connection
+                    self.players.append(player)
+                else: # player reconnected w/ new port
+                    ###
+                    # Recreate self.disconnected_players without this player
+                    # Find this player in self.players and:
+                    #   set .port to new port
+                    #   set .disconnected to False
+                    ###
+                    dp = Listable([x for x in self.disconnected_players \
+                                                if (x.name, x.ip) != p_name])
+                    self.disconnected_players = dp
+                    for p in self.players:
+                        if (p.name, p.ip) == p_name:
+                            p.port = player.port
+                            p.disconnected = False
+        if acquire_lock:
+            with self._players_lock:
+                blah()
+        else:
+            blah()
+
+    def _remove_player(self, player, acquire_lock=True):
+        """Disconnects a player - threadsafe.
+
+        player:       a Player instance
+        acquire_lock: if True, will acquire self._players_lock before
+                      taking any action; True by default
+
+        """
+        def blah():
+            player.playing = False
+            player.disconnected = True
+            if player in self.players and \
+               player not in self.disconnected_players:
+                self.disconnected_players.append(player)
+        if acquire_lock:
+            with self._players_lock:
+                blah()
+            else:
+                blah()
+
+    def sync_players(self, sleep=None):
+        """Ensures that self.players matches up with self.zplayers().
+        
+        sleep: a float representing how much time to sleep between
+               acquiring the _players_lock and creating the list of
+               players; default to not sleeping at all (None)
+               
+        """
+        zplayers = self.zplayers()
+        with self._players_lock:
+            if sleep:
+                time.sleep(sleep)
+            zplayers_list = []
+            zplayers_list_plus_numbers = []
+            for d in zplayers:
+                zplayers_list.append((d['player_name'], d['player_ip'],
+                                      d['player_port']))
+                zplayers_list_plus_numbers.append((d['player_num'],
+                                                   d['player_name'],
+                                                   d['player_ip'],
+                                                   d['player_port']))
+            players_list = [(p.name, p.ip, p.port) for p in self.players]
+            for z_full in zplayers_list:
+                if z_full not in players_list: # found a missing player
+                    player = self.player_class(self, ip_address, port)
+                    self._add_player(player, acquire_lock=False)
+            for p_full in players_list:
+                if p_full not in zplayers_list: # found a ghost player
+                    player = self.get_player(name=p_full[0])
+                    self._remove_player(player, acquire_lock=False)
+            for z_full_num in zplayers_list_plus_numbers:
+                for p in self.players:
+                    if (p.name, p.ip, p.port) == z_full_num[1:]:
+                        p.number = z_full_num[0]
+
     def add_player(self, ip_address, port):
         """Adds a player to self.players
 
@@ -180,21 +278,8 @@ class GeneralZServStatsMixin:
         # and port number, but identity is about as far as that uniqueness
         # goes.  If players have the same name, there's no reliable way to tell
         # who fragged whom and with what.
-        blah_list = [(p.name, p.ip) for p in self.players]
         player = self.player_class(self, ip_address, port)
-        if (player.name, player.ip) in blah_list:
-            if player not in self.players:
-                ###
-                # A player has reconnected
-                dp = Listable()
-                for p in self.disconnected_players:
-                    if (p.name, p.ip) != (player.name, player.ip):
-                        dp.append(p)
-                player.disconnected = False
-        else:
-            ###
-            # A player is connecting for the first time
-            self.players.append(player)
+        self._add_player(player)
         self.update_player_numbers_and_ips()
 
     def remove_player(self, player_name):
@@ -205,11 +290,7 @@ class GeneralZServStatsMixin:
         """
         # logging.debug('')
         player = self.get_player(name=player_name)
-        player.disconnected = True
-        player.playing = False
-        if player in self.players:
-            if player not in self.disconnected_players:
-                self.disconnected_players.append(player)
+        self._remove_player(player)
         self.update_player_numbers_and_ips()
 
     def get_player(self, name=None, ip_address_and_port=None):
@@ -242,11 +323,39 @@ class GeneralZServStatsMixin:
         for player in self.players:
             if cf(player):
                 return player
-        # Maybe we should make custom exceptions like PlayerNotFoundError
-        if name:
-            raise ValueError("Player [%s] not found" % (name))
-        else:
-            raise ValueError("Address [%s:%s] not found" % ip_address_and_port)
+        self.sync_players()
+        for player in self.players:
+            if cf(player):
+                return player
+        raise PlayerNotFoundError(name, ip_address_and_port)
+
+    def update_player_numbers_and_ips(self):
+        """Sets player numbers and IP addresses.
+
+        This method needs to be run upon every connection and
+        disconnection if numbers and names are to remain in sync.
+
+        """
+        for d in self.zplayers():
+            try:
+                p = self.get_player(ip_address_and_port=(d['player_ip'],
+                                                         d['player_port']))
+            except PlayerNotFoundError, pnfe:
+                es = "Players out of sync, %s at %s:%s not found"
+                logging.info(es % (d['player_name'], d['player_ip'],
+                                   d['player_port']))
+                continue
+            except ValueError, e:
+                print >> sys.stderr, "ValueError in upnai: %s" % (e)
+                continue
+            except Exception, e:
+                es = "Error updating player #s and IPs: %s"
+                print >> sys.stderr, es % (e)
+                continue
+            p.set_name(d['player_name'])
+            p.number = d['player_num']
+            print >> sys.stderr, "Set name %s to address %s:%s" % (p.name, p.ip, p.port)
+            print >> sys.stderr, "Set number %s to address %s:%s" % (p.number, p.ip, p.port)
 
     def distill_player(self, possible_player_names):
         """Discerns the most likely existing player.
@@ -267,6 +376,13 @@ class GeneralZServStatsMixin:
             if player_name in names:
                 messenger = self.get_player(player_name)
                 break
+        if not messenger:
+            self.sync_players()
+            names = [x.name for x in self.players]
+            for player_name in possible_player_names:
+                if player_name in names:
+                    messenger = self.get_player(player_name)
+                    break
         if not messenger:
             player_names = ', '.join(names)
             ppn = ', '.join(possible_player_names)
@@ -301,29 +417,6 @@ class GeneralZServStatsMixin:
         if not d:
             raise ValueError("Player [%s] not found" % (player_name))
         return d[0]['player_num']
-
-    def update_player_numbers_and_ips(self):
-        """Sets player numbers and IP addresses.
-
-        This method needs to be run upon every connection and
-        disconnection if numbers and names are to remain in sync.
-
-        """
-        for d in self.zplayers():
-            try:
-                p = self.get_player(ip_address_and_port=(d['player_ip'],
-                                                         d['player_port']))
-            except ValueError, e:
-                print >> sys.stderr, "ValueError in upnai: %s" % (e)
-                continue
-            except Exception, e:
-                es = "Error updating player #s and IPs: %s"
-                print >> sys.stderr, es % (e)
-                continue
-            p.set_name(d['player_name'])
-            p.number = d['player_num']
-            print >> sys.stderr, "Set name %s to address %s:%s" % (p.name, p.ip, p.port)
-            print >> sys.stderr, "Set number %s to address %s:%s" % (p.number, p.ip, p.port)
 
     def handle_message(self, message, messenger):
         """Handles a message.

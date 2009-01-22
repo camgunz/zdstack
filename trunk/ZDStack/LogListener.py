@@ -238,7 +238,8 @@ class GeneralLogListener(ZServLogListener):
         """
         logging.debug("Connection Event: %s" % (str(event.data)))
         # self.zserv.add_player(event.data['player_name'])
-        self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        # self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        self.zserv.sync_players(sleep=1.0)
 
     def handle_player_lookup_event(self, event):
         """Handles a player_lookup event.
@@ -262,7 +263,8 @@ class GeneralLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        self.zserv.remove_player(event.data['player'])
+        # self.zserv.remove_player(event.data['player'])
+        self.zserv.sync_players(sleep=1.0)
 
     def handle_game_join_event(self, event):
         """Handles a game_join event.

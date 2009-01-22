@@ -36,6 +36,22 @@ DEBUGGING = None
 PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
 
+class PlayerNotFoundError(Exception):
+
+    def __init__(self, name=None, ip_address_and_port=None):
+        if not name and not ip_address_and_port:
+            es = "PlayerNotFoundError requires either a name or an"
+            es += "('ip_address', port)"
+            raise ValueError(es)
+        self.name = name
+        self.ip_address_and_port = ip_address_and_port
+        self.ip_address, self.port = self.ip_address_and_port
+        if name:
+            Exception.__init__(self, "Player [%s] not found" % (name))
+        else:
+            es = "Player Address [%s:%s] not found"
+            Exception.__init__(self, es % ip_address_and_port)
+
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
