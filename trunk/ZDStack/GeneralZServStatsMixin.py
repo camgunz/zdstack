@@ -40,6 +40,7 @@ class GeneralZServStatsMixin:
 
         """
         self._players_lock = Lock()
+        self._zserv_stdin_lock = Lock()
         self.map_class = map_class
         self.player_class = player_class
         self.stats_class = stats_class
@@ -502,12 +503,9 @@ class GeneralZServStatsMixin:
         # logging.debug('')
         if event_response_type is not None:
             self.general_log.watch_for_response(event_response_type)
-        try:
+        with self._zserv_stdin_lock:
             self.zserv.stdin.write(message.strip('\n') + '\n')
             self.zserv.stdin.flush()
-        except IOError:
-            logging.info("IOError writing to zserv (%s) process" % (self.name))
-            return None
         if event_response_type is not None:
             return self.general_log.get_response()
 
