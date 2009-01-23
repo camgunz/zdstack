@@ -5,15 +5,17 @@
 || system.listMethods() || {{{system.listMethods()}}} || list of strings representing supported methods || yes || no ||
 || system.methodHelp() || {{{ system.methodHelp(method_name)}}} || help as a string || yes || yes ||
 
+
 = ZDStack Action Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
 || start() || {{{start()}}} || True on success || yes || no ||
 || stop() || {{{stop()}}} || True on success || yes || no ||
-|| restart()  || {{{restart()}}} || True on success || yes || no ||
+|| restart() || {{{restart()}}} || True on success || yes || no ||
 || start_all_zservs() || {{{start_all_zservs()}}} || True on success || yes || no ||
 || stop_all_zservs() || {{{stop_all_zservs()}}} || True on success || yes || no ||
 || restart_all_zservs() || {{{restart_all_zservs()}}} || True on success || yes || no ||
 || reload_config() || {{{reload_config()}}} || True on success || yes || yes ||
+
 
 = ZDStack Info Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
@@ -21,7 +23,8 @@
 || get_status() || {{{get_status()}}} || a string representing the status of the server || yes || no ||
 || list_zserv_names() || {{{list_zserv_names()}}} || a list of strings representing the names of all zservs || yes || yes ||
 || get_all_zservs() || {{{get_all_zservs()}}} || a list of ZServDict objects || yes || yes ||
-    
+
+
 = ZServ Action Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
 || addban() || {{{addban(zserv_name, ip_address, reason='rofl')}}} || True on success || yes || no ||
@@ -43,6 +46,7 @@
 || toggle() || {{{toggle(zserv_name, boolean_variable)}}} || True on success || yes || no ||
 || unset() || {{{unset(zserv_name, variable_name)}}} || True on success || yes || no ||
 
+
 = ZServ Info Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
 || get() || {{{get(zserv_name, variable_name)}}} || a string representing the variable's value || yes || no ||
@@ -58,5 +62,4 @@
 || list_player_names() || {{{list_player_names(zserv_name)}}} || a list of strings representing player names || yes || no ||
 || maplist() || {{{maplist(zserv_name)}}} || a list of strings representing the numbers of the maps in the maplist || yes || no ||
 || players() || {{{players(zserv_name)}}} || a list of strings representing the number, name, and IP address of players || yes || yes ||
-|| wads() || {{{wads(zserv_name)}}} || a list of strings representing the names of the used !WADs || yes || no ||
-
+|| wads() || {{{wads(zserv_name)}}} || a list of strings representing the names of the used WADs || yes || no ||
