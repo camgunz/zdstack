@@ -22,7 +22,7 @@
 || get_logfile() || {{{get_logfile()}}} || a string representing the contents of the server's logfile || yes || yes ||
 || get_status() || {{{get_status()}}} || a string representing the status of the server || yes || no ||
 || list_zserv_names() || {{{list_zserv_names()}}} || a list of strings representing the names of all zservs || yes || yes ||
-|| get_all_zservs() || {{{get_all_zservs()}}} || a list of ZServDict objects || yes || yes ||
+|| get_all_zservs() || {{{get_all_zservs()}}} || a list of [http://http://code.google.com/p/zdstack/wiki/ZServDict ZServDict] objects || yes || yes ||
 
 
 = ZServ Action Methods =
@@ -57,8 +57,8 @@
 || get_player() || {{{get_player(zserv_name, player_name)}}} || a PlayerDict || yes || no ||
 || get_remembered_stats() || {{{get_remembered_stats(zserv_name, back=1)}}} || a StatDict || yes || yes ||
 || get_team() || {{{get_team(zserv_name, team_color)}}} || a TeamDict || yes || no ||
-|| get_zserv() || {{{get_zserv(zserv_name)}}} || a ZServDict || yes || yes ||
-|| get_zserv_config() || {{{get_zserv_config(zserv_name)}}} || a string representing the zserv's config || yes || no ||
+|| get_zserv() || {{{get_zserv(zserv_name)}}} || a [http://http://code.google.com/p/zdstack/wiki/ZServDict ZServDict] || yes || yes ||
+|| get_zserv_config() || {{{get_zserv_config(zserv_name)}}} || a string representing the ZServ's config || yes || no ||
 || list_player_names() || {{{list_player_names(zserv_name)}}} || a list of strings representing player names || yes || no ||
 || maplist() || {{{maplist(zserv_name)}}} || a list of strings representing the numbers of the maps in the maplist || yes || no ||
 || players() || {{{players(zserv_name)}}} || a list of strings representing the number, name, and IP address of players || yes || yes ||
