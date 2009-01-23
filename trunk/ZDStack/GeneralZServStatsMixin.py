@@ -409,22 +409,22 @@ class GeneralZServStatsMixin:
 
         """
         messenger = None
+        names = [x.name for x in self.players]
         def blah():
-            names = [x.name for x in self.players]
             for player_name in possible_player_names:
                 if player_name in names:
-                    messenger = self.get_player(name=player_name)
-                    break
-        blah()
+                    return self.get_player(name=player_name)
+        messenger = blah()
         if not messenger:
             self.sync_players()
-            blah()
+            names = [x.name for x in self.players]
+            messenger = blah()
         # if not messenger:
-            # player_names = ', '.join(names)
-            # ppn = ', '.join(possible_player_names)
-            # logging.debug("No player could be distilled")
-            # logging.debug("Players: [%s]" % (player_names))
-            # logging.debug("Possible: [%s]" % (ppn))
+        #     player_names = ', '.join(names)
+        #     ppn = ', '.join(possible_player_names)
+        #     logging.info("No player could be distilled")
+        #     logging.info("Players: [%s]" % (player_names))
+        #     logging.info("Possible: [%s]" % (ppn))
         return messenger
 
     def get_player_ip_address(self, player_name):
@@ -502,8 +502,12 @@ class GeneralZServStatsMixin:
         # logging.debug('')
         if event_response_type is not None:
             self.general_log.watch_for_response(event_response_type)
-        self.zserv.stdin.write(message.strip('\n') + '\n')
-        self.zserv.stdin.flush()
+        try:
+            self.zserv.stdin.write(message.strip('\n') + '\n')
+            self.zserv.stdin.flush()
+        except IOError:
+            logging.info("IOError writing to zserv (%s) process" % (self.name))
+            return None
         if event_response_type is not None:
             return self.general_log.get_response()
 
