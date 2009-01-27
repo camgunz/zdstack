@@ -11,13 +11,12 @@ ZDStack requires:
 
   * zserv ([http://www.zdaemon.org])
     * In order to run fully, a file called an IWAD is needed.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.), and the awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
-  * Python 2.4 or greater ([http://www.python.org])
+  * Python 2.5 or greater ([http://www.python.org])
   * pyfileutils 0.7 or greater ([http://pyfileutils.googlecode.com])
     * pyfileutils 0.8 and up requires Python 2.5
 
 Should you decide to use Player => IP mapping, you will need:
 
-  * Python 2.5 or greater ([http://www.python.org])
   * PyXSE 0.4 or greater ([http://pyxse.googlecode.com])
   * pyfileutils 0.8.2 or greater ([http://pyfileutils.googlecode.com])
 
