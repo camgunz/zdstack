@@ -9,8 +9,8 @@ from ZDStack.LogEvent import LogEvent
 from ZDStack.LineParser import LineParser
 from ZDStack.ClientRegexps import Regexps as ClientRegexps
 from ZDStack.ServerRegexps import Regexps as ServerRegexps
-from ZDStack.FakeClientRegexps import Regexps as FakeClientRegexps
-from ZDStack.FakeServerRegexps import Regexps as FakeServerRegexps
+# from ZDStack.FakeClientRegexps import Regexps as FakeClientRegexps
+# from ZDStack.FakeServerRegexps import Regexps as FakeServerRegexps
 
 class LogParser:
 
@@ -26,19 +26,11 @@ class LogParser:
         """
         self.name = name
         if logtype == 'server':
-            if fake:
-                logging.debug("Loading FakeServerRegexps")
-                self.lineparser = LineParser(FakeServerRegexps)
-            else:
-                logging.debug("Loading ServerRegexps")
-                self.lineparser = LineParser(ServerRegexps)
+            logging.debug("Loading ServerRegexps")
+            self.lineparser = LineParser(ServerRegexps)
         elif logtype == 'client':
-            if fake:
-                logging.debug("Loading FakeClientRegexps")
-                self.lineparser = LineParser(FakeClientRegexps)
-            else:
-                logging.debug("Loading ClientRegexps")
-                self.lineparser = LineParser(ClientRegexps)
+            logging.debug("Loading ClientRegexps")
+            self.lineparser = LineParser(ClientRegexps)
         else:
             raise ValueError("Unsupported log type [%s]" % (logtype))
 
