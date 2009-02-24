@@ -8,6 +8,6 @@ setup(name='ZDStack',
       author='Charlie Gunyon',
       author_email='charles.gunyon@gmail.com',
       url='http://zdstack.googlecode.com/',
-      scripts=['bin/zdstack', 'bin/zservctl'],
+      scripts=['bin/zdstack', 'bin/zservctl', 'bin/fakezserv', 'bin/zdrpc'],
       packages=['ZDStack'],
      )

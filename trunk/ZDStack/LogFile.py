@@ -173,7 +173,7 @@ class LogFile:
                             continue
                         message = c.replace(player.name, '', 1)[3:]
                         d = {'message': message, 'messenger': player}
-                        event = LogEvent(event.dt, 'message', d)
+                        event = LogEvent(event.dt, 'message', d, event.line)
                     if self.event_to_watch_for:
                         if event.type == self.event_to_watch_for:
                             self.response_events.append(event)

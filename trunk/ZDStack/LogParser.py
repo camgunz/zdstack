@@ -81,7 +81,7 @@ class ConnectionLogParser(LogParser):
                  parsing for a fake ZServ.
 
         """
-        LogParser.__init__(self, "Connection Log Parser", fake=fake)
+        LogParser.__init__(self, "Connection Log Parser", log_type, fake=fake)
 
     def parse(self, data):
         """Parses data into LogEvents.
@@ -122,7 +122,7 @@ class GeneralLogParser(LogParser):
                  parsing for a fake ZServ.
 
         """
-        LogParser.__init__(self, "General Log Parser", fake=fake)
+        LogParser.__init__(self, "General Log Parser", log_type, fake=fake)
 
     def parse(self, data):
         """Parses data into LogEvents.
@@ -137,12 +137,14 @@ class GeneralLogParser(LogParser):
         events = []
         while len(lines):
             line = lines.popleft()
+            logging.debug("Parsing line [%s]" % (line))
             # events.extend(self.lineparser.get_event(now, line))
             parsed_events = self.lineparser.get_event(now, line)
             if parsed_events:
                 events.extend(parsed_events)
             elif line == 'General logging off':
-                events.append(LogEvent(now, 'log_roll', {'log': 'general'}))
+                d = {'log': 'general'}
+                events.append(LogEvent(now, 'log_roll', d, line))
             elif line.startswith('<') and '>' in line:
                 ###
                 # There are certain strings that make it impossible to
@@ -156,8 +158,8 @@ class GeneralLogParser(LogParser):
                 # w/e they want.
                 #
                 # So, basically what we do is create a list of possible player
-                # names that will be passed to # the server.  The first one that
-                # matches (this test is done within the server # itself) is used.
+                # names that will be passed to the server.  The first one that
+                # matches (this test is done within the server itself) is used.
                 # Just a case of dealing with crazy user input.
                 ###
                 tokens = line.split('>')
@@ -166,9 +168,16 @@ class GeneralLogParser(LogParser):
                     possible_player_names.append('>'.join(tokens[:x])[1:])
                 line_data = {'contents': line,
                              'possible_player_names': possible_player_names}
-                e = LogEvent(now, 'message', line_data)
+                e = LogEvent(now, 'message', line_data, line)
                 events.append(e)
             if not events:
-                events.append(LogEvent(now, 'junk', {'data': line}))
+                events.append(LogEvent(now, 'junk', {'data': line}, line))
         return (events, leftovers)
+
+class FakeZServLogParser(GeneralLogParser):
+
+    def __init__(self):
+        GeneralLogParser.__init__(self, log_type='server', fake=True)
+        self.name = 'Fake Log Parser'
+
 

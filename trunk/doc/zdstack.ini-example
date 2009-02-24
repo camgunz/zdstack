@@ -4,14 +4,16 @@ username = admin
 ;;; The corresponding password
 password = pacman2000
 ;;; The IP address to report to the master server.  Remove option to have
-;;; zserv autodetect.
+;;;   zserv autodetect.
 ; ip = 127.0.0.1
 ;;; The port on which ZDStack should listen
 zdstack_port = 8080
 ;;; The RPC protocol to use, either xml-rpc or json-rpc
 rpc_protocol = xml-rpc
 ;;; Whether or not to enable Player IP logging
-enable_ip_logging = yes
+;;;   Note that this is disabled in ZDStack 0.10, even if this option is
+;;;   enabled
+;enable_ip_logging = no
 ;;; Whether or not to load plugins
 load_plugins = yes
 ;;; The root folder under which ZDStack will work
@@ -39,7 +41,7 @@ admin_email = zdstack@zdstack.com
 ;;; The site where WADs can be downloaded
 website = http://zdstack.com/wads
 ;;; The message to display upon connecting to a server
-motd = %(hostname)s<br><br>Statistics for this server provided by ZDStack
+motd = %(hostname)s<br><br>This server is managed by ZDStack
 ;;; The default timeout for all servers
 timelimit = 0
 ;;; How many flags can be scored before one team wins (applies to CTF only)
@@ -53,10 +55,16 @@ teamdamage = 0
 ;;; Enable RCON
 enable_rcon = yes
 ;;; The default RCON password for all servers
+;;;   If this is not given or blank, RCON will not be enabled
 rcon_password = zdstackrcon
+;;; Limited RCON passwords and permissions
+;;;   Up to rcon_password_9 and rcon_commands_9 can be configured
+rcon_password_1 = zdstacklevel1
+rcon_commands_1 = mapskipto players
 ;;; Enable server password
 requires_password = no
 ;;; The default password for all passworded servers
+;;;   If this is not given or blank, the server password will not be enabled
 server_password = zdstackpassword
 ;;; Number of seconds in which spamming can occur
 spam_window = 10
@@ -64,6 +72,8 @@ spam_window = 10
 spam_limit = 10
 ;;; Optional WADs, used if the player has them, separated by ','
 optional_wads = zvox2.wad
+;;; Groups of equivalent WADs
+alternate_wads = doom2.wad=freedm062.wad=freedoom062.wad zvox2.wad=zvox4.wad
 ;;; Gravity value
 gravity = 800
 ;;; Air control value (0 is OS and the default, 0.00390625 is NS)
@@ -75,18 +85,27 @@ speed_check = 0
 ;;; Restart a map if no players are in the server
 restart_empty_map = 0
 ;;; How many "players" must be in server, spawning bots to make up the 
-;;; difference
+;;;   difference
 min_players = 0
 ;;; Remove bots as soon as a second human player joins
 remove_bots_when_humans = yes
 ;;; Whether to add the map number to the advertised hostname
+;;;   Note: this is currently unsupported
 add_mapnum_to_hostname = no
 ;;; Whether to enable overtime
+;;;   Note, overtime is the default on ZDaemon servers.  If you disable overtime
+;;;   here, it will only be disabled for the maps you configure.  If you change
+;;;   the map to a map not included in the configured maplist, overtime will be
+;;;   enabled.
 overtime = no
-;;; Skill level
+;;; Skill level, 0 - 4
 skill = 4
 ;;; Teamdamage Factor
 teamdamage = 0
+;;; Whether or not missiles teleport through teleporters
+telemissiles = no
+;;; Whether or not players can see spectator messages
+specs_dont_disturb_players = no
 ;;; Default WADs
 wads =
 ;;; Default per-game-mode DMFLAGS

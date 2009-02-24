@@ -66,5 +66,10 @@ class ConnectionZServStatsMixin:
 
         """
         logging.debug('')
-        save_player_ip(player_name, player_ip)
+        ###
+        # Player -> IP mapping is disabled until PyXSE is replaced with
+        # SQLite
+        ###
+        # save_player_ip(player_name, player_ip)
+        pass
 

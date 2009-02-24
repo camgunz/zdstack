@@ -84,6 +84,7 @@ class LogListener:
         return
         # raise Exception("Unhandled event: %s" % (event)) # for debugging
 
+
 class ZServLogListener(LogListener):
 
     classname = 'ZServLogListener'
@@ -129,6 +130,8 @@ class ZServLogListener(LogListener):
 
 class PluginLogListener(ZServLogListener):
 
+    classname = 'PluginLogListener'
+
     def __init__(self, zserv, enabled_plugins):
         """Initializes a PluginLogListener.
 
@@ -160,6 +163,8 @@ class PluginLogListener(ZServLogListener):
 
 class ConnectionLogListener(ZServLogListener):
 
+    classname = 'ConnectionLogListener'
+
     def __init__(self, zserv):
         """Initializes a ConnectionLogListener.
 
@@ -189,6 +194,8 @@ class ConnectionLogListener(ZServLogListener):
         self.zserv.log_ip(event.data['player'], event.data['ip_address'])
 
 class GeneralLogListener(ZServLogListener):
+
+    classname = 'GeneralLogListener'
 
     def __init__(self, zserv):
         """Initializes a GeneralLogListener.
@@ -471,4 +478,72 @@ class GeneralLogListener(ZServLogListener):
 
         """
         self.zserv.change_map(event.data['number'], event.data['name'])
+
+class FakeZServLogListener(GeneralLogListener):
+
+    classname = 'FakeZServLogListener'
+
+    def __init__(self, zserv):
+        """Initializes a FakeZServLogListener.
+
+        zserv: a ZServ instance.
+
+        """
+        GeneralLogListener.__init__(self, zserv)
+        for x in self.event_types_to_handlers:
+            if x == 'map_change':
+                self.event_types_to_handlers['map_change'] = \
+                                                        self.handle_map_change
+            elif x == 'connection':
+                self.event_types_to_handlers['connection'] = \
+                                                        self.handle_connection
+            elif x == 'disconnection':
+                self.event_types_to_handlers['disconnection'] = \
+                                                    self.handle_disconnection
+            elif x == 'player_lookup':
+                self.event_types_to_handlers['player_lookup'] = \
+                                                self.handle_player_lookup_event
+            elif x == 'players_command':
+                self.event_types_to_handlers['players_command'] = \
+                                            self.handle_players_command_event
+            else:
+                sf = lambda x: self.zserv.send_line(x.line)
+                self.event_types_to_handlers[x] = sf
+
+
+    def handle_map_change(self, event):
+        dl = \
+"======================================================================"
+        self.zserv.players = []
+        self.zserv.send_line(dl)
+        self.zserv.send_line('map%s: %s' % (str(event.data['number']).zfill(2),
+                                            event.data['name']))
+        self.zserv.send_line(dl)
+
+    def handle_connection(self, event):
+        self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        self.zserv.send_line(event.line)
+
+    def handle_disconnection(self, event):
+        self.zserv.remove_player(event.data['player'])
+        self.zserv.send_line(event.line)
+
+    def handle_player_lookup_event(self, event):
+        self.zserv.set_player_name(event.data['player_name'])
+        self.zserv.send_line(event.line)
+
+    def handle_players_command_event(self, event):
+        self.zserv.update_player(event.data['player_ip'],
+                                 event.data['player_port'],
+                                 event.data['player_num'],
+                                 event.data['player_name'])
+        self.zserv.send_players()
+
+    def handle_unhandled_event(self, event):
+        """Handles an unhandled event.
+
+        event: a LogEvent instance.
+
+        """
+        self.zserv.send_line(event.line)
 

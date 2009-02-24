@@ -128,6 +128,25 @@ class BaseZServ:
             ###
             # Should add IP address format checking here
             ###
+            ip = str(config['ip'])
+            tokens = ip.split('.')
+            if not len(tokens) == 4:
+                raise ValueError("Malformed IP Address")
+            try:
+                int_tokens = [int(t) for t in tokens]
+            except:
+                raise ValueError("Malformed IP Address")
+            for t in int_tokens:
+                if t < 0 or t > 255:
+                    raise ValueError("Malformed IP Address")
+            if tokens[3] == 0 or tokens[3] == 255:
+                es = "Cannot advertise a broadcast IP address to master"
+                raise ValueError(es)
+            if tokens[0] == 10 or \
+               (tokens[0] == 172 and tokens[1] in range(16, 32)) or \
+               (tokens[0] == 192 and tokens[1] == 168):
+                 es = "Cannot advertise a private IP address to master"
+                 raise ValueError(es)
             self.cmd.extend(['-ip', str(config['ip'])])
         ### other mandatory stuff
         ### admin stuff
@@ -140,6 +159,24 @@ class BaseZServ:
         self.spam_limit = None
         self.speed_check = None
         self.restart_empty_map = None
+        self.rcon_password_1 = None
+        self.rcon_commands_1 = None
+        self.rcon_password_2 = None
+        self.rcon_commands_2 = None
+        self.rcon_password_3 = None
+        self.rcon_commands_3 = None
+        self.rcon_password_4 = None
+        self.rcon_commands_4 = None
+        self.rcon_password_5 = None
+        self.rcon_commands_5 = None
+        self.rcon_password_6 = None
+        self.rcon_commands_6 = None
+        self.rcon_password_7 = None
+        self.rcon_commands_7 = None
+        self.rcon_password_8 = None
+        self.rcon_commands_8 = None
+        self.rcon_password_9 = None
+        self.rcon_commands_9 = None
         ### voting stuff
         self.vote_limit = None
         self.vote_timeout = None
@@ -147,6 +184,8 @@ class BaseZServ:
         self.vote_map = None
         self.vote_map_percent = None
         self.vote_map_skip = None
+        self.vote_map_kick = None
+        self.vote_kick_percent = None
         ### advertise stuff
         self.admin_email = None
         self.advertise = None
@@ -155,16 +194,19 @@ class BaseZServ:
         self.motd = None
         self.add_mapnum_to_hostname = None
         ### config stuff
-            ### game-mode-agnostic stuff
+        ## game-mode-agnostic stuff
         self.remove_bots_when_humans = None
         self.maps = None
         self.optional_wads = None
+        self.alternate_wads = None
         self.overtime = None
         self.skill = None
         self.gravity = None
         self.air_control = None
+        self.telemissiles = None
+        self.specs_dont_disturb_players = None
         self.min_players = None
-            ### game-mode-specific stuff
+        ## game-mode-specific stuff
         self.dmflags = None
         self.dmflags2 = None
         self.max_clients = None
@@ -176,10 +218,37 @@ class BaseZServ:
         ### Load admin stuff
         if is_yes('enable_rcon'):
             self.rcon_enabled = True
+            if is_valid('rcon_password'):
+                self.rcon_password = config['rcon_password']
+                if is_valid('rcon_password_1') and is_valid('rcon_commands_1'):
+                    self.rcon_password_1 = config['rcon_password_1']
+                    self.rcon_commands_1 = config['rcon_commands_1'].split()
+                if is_valid('rcon_password_2') and is_valid('rcon_commands_2'):
+                    self.rcon_password_2 = config['rcon_password_2']
+                    self.rcon_commands_2 = config['rcon_commands_2'].split()
+                if is_valid('rcon_password_3') and is_valid('rcon_commands_3'):
+                    self.rcon_password_3 = config['rcon_password_3']
+                    self.rcon_commands_3 = config['rcon_commands_3'].split()
+                if is_valid('rcon_password_4') and is_valid('rcon_commands_4'):
+                    self.rcon_password_4 = config['rcon_password_4']
+                    self.rcon_commands_4 = config['rcon_commands_4'].split()
+                if is_valid('rcon_password_5') and is_valid('rcon_commands_5'):
+                    self.rcon_password_5 = config['rcon_password_5']
+                    self.rcon_commands_5 = config['rcon_commands_5'].split()
+                if is_valid('rcon_password_6') and is_valid('rcon_commands_6'):
+                    self.rcon_password_6 = config['rcon_password_6']
+                    self.rcon_commands_6 = config['rcon_commands_6'].split()
+                if is_valid('rcon_password_7') and is_valid('rcon_commands_7'):
+                    self.rcon_password_7 = config['rcon_password_7']
+                    self.rcon_commands_7 = config['rcon_commands_7'].split()
+                if is_valid('rcon_password_8') and is_valid('rcon_commands_8'):
+                    self.rcon_password_8 = config['rcon_password_8']
+                    self.rcon_commands_8 = config['rcon_commands_8'].split()
+                if is_valid('rcon_password_9') and is_valid('rcon_commands_9'):
+                    self.rcon_password_9 = config['rcon_password_9']
+                    self.rcon_commands_9 = config['rcon_commands_9'].split()
         if is_yes('requires_password'):
             self.requires_password = True
-        if self.rcon_enabled and is_valid('rcon_password'):
-            self.rcon_password = config['rcon_password']
         if self.requires_password and is_valid('server_password'):
             self.server_password = config['server_password']
         if is_valid('deathlimit'):
@@ -201,15 +270,17 @@ class BaseZServ:
             self.vote_reset = True
         if is_yes('vote_map'):
             self.vote_map = True
-            if is_yes('vote_map_percent'):
-                pc = float(config['vote_map_percent'])
+            if is_valid('vote_map_percent'):
+                pc = Decimal(config['vote_map_percent'])
                 if pc < 1:
-                    pc = int(pc * 100)
-                else:
-                    pc = int(pc)
+                    pc = pc * Decimal(100)
                 self.vote_map_percent = pc
             if is_yes('vote_map_skip'):
                 self.vote_map_skip = int(config['vote_map_skip'])
+        if is_yes('vote_map_kick'):
+            self.vote_map_kick = True
+            if is_valid('vote_kick_percent'):
+                self.vote_kick_percent = Decimal(config['vote_kick_percent'])
         ### Load advertise stuff
         if is_valid('admin_email'):
             self.admin_email = config['admin_email']
@@ -231,6 +302,9 @@ class BaseZServ:
         if is_valid('optional_wads'):
             self.optional_wads = \
                 [x.strip() for x in config['optional_wads'].split(',') if x]
+        if is_valid('alternate_wads'):
+            alt_wads = config['alternate_wads'].split()
+            self.alternate_wads = [x.split('=') for x in alt_wads]
         if is_yes('overtime'):
             self.overtime = True
         if is_valid('skill'):
@@ -239,6 +313,10 @@ class BaseZServ:
             self.gravity = int(config['gravity'])
         if is_valid('air_control'):
             self.air_control = Decimal(config['air_control'])
+        if is_yes('telemissiles'):
+            self.telemissiles = True
+        if is_yes('specs_dont_disturb_players'):
+            self.specs_dont_disturb_players = True
         if is_valid('min_players'):
             self.min_players = int(config['min_players'])
         if is_valid('dmflags'):
@@ -323,6 +401,41 @@ class BaseZServ:
             template += 'set sv_vote_map_percent "%d"\n' % (self.vote_map_percent)
         if self.vote_map_skip:
             template += 'set sv_map_skip "%d"\n' % (self.vote_map_skip)
+        if self.vote_map_kick:
+            template += 'set sv_vote_kick = "%d"\n' % (self.vote_map_kick)
+        if self.vote_kick_percent:
+            template += 'set sv_vote_kick_percent = "%d"\n' % (self.vote_kick_percent)
+        if self.rcon_password_1 and self.rcon_commands_1:
+            template += 'set rcon_pwd_1 "%s"\n' % (self.rcon_password_1)
+            template += 'set rcon_cmds_1 "%s"\n' % (' '.join(self.rcon_commands_1))
+        if self.rcon_password_2 and self.rcon_commands_2:
+            template += 'set rcon_pwd_2 "%s"\n' % (self.rcon_password_2)
+            template += 'set rcon_cmds_2 "%s"\n' % (' '.join(self.rcon_commands_2))
+        if self.rcon_password_3 and self.rcon_commands_3:
+            template += 'set rcon_pwd_3 "%s"\n' % (self.rcon_password_3)
+            template += 'set rcon_cmds_3 "%s"\n' % (' '.join(self.rcon_commands_3))
+        if self.rcon_password_4 and self.rcon_commands_4:
+            template += 'set rcon_pwd_4 "%s"\n' % (self.rcon_password_4)
+            template += 'set rcon_cmds_4 "%s"\n' % (' '.join(self.rcon_commands_4))
+        if self.rcon_password_5 and self.rcon_commands_5:
+            template += 'set rcon_pwd_5 "%s"\n' % (self.rcon_password_5)
+            template += 'set rcon_cmds_5 "%s"\n' % (' '.join(self.rcon_commands_5))
+        if self.rcon_password_6 and self.rcon_commands_6:
+            template += 'set rcon_pwd_6 "%s"\n' % (self.rcon_password_6)
+            template += 'set rcon_cmds_6 "%s"\n' % (' '.join(self.rcon_commands_6))
+        if self.rcon_password_7 and self.rcon_commands_7:
+            template += 'set rcon_pwd_7 "%s"\n' % (self.rcon_password_7)
+            template += 'set rcon_cmds_7 "%s"\n' % (' '.join(self.rcon_commands_7))
+        if self.rcon_password_8 and self.rcon_commands_8:
+            template += 'set rcon_pwd_8 "%s"\n' % (self.rcon_password_8)
+            template += 'set rcon_cmds_8 "%s"\n' % (' '.join(self.rcon_commands_8))
+        if self.rcon_password_9 and self.rcon_commands_9:
+            template += 'set rcon_pwd_9 "%s"\n' % (self.rcon_password_9)
+            template += 'set rcon_cmds_9 "%s"\n' % (' '.join(self.rcon_commands_9))
+        if self.telemissiles:
+            template += 'set sv_telemissiles "1"\n'
+        if self.specs_dont_disturb_players:
+            template += 'set specs_dont_disturb_players "1"\n'
         if self.restart_empty_map:
             template += 'set restartemptymap "1"\n'
         if self.maps:
@@ -331,6 +444,9 @@ class BaseZServ:
         if self.optional_wads:
             optional_wads = ' '.join(self.optional_wads)
             template += optional_wads.join(['set optional_wads "', '"\n'])
+        if self.alternate_wads:
+            alt_wads = ' '.join(['='.join(x) for x in self.alternate_wads])
+            template += 'setaltwads "%s"\n' % (alt_wads)
         if self.overtime:
             for map in self.maps:
                 template += 'add_cvaroverride %s overtime 1\n' % (map)

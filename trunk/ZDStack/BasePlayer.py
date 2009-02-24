@@ -82,7 +82,12 @@ class BasePlayer(BaseStatKeeper):
             self.escaped_tag = html_escape(self.tag)
             self.escaped_homogenized_tag = html_escape(homogenize(self.tag))
         if self.log_ip:
-            save_player_ip(self.name, self.ip)
+            ###
+            # Player => IP mapping is disabled until PyXSE is replaced with
+            # SQLite
+            ###
+            # save_player_ip(self.name, self.ip)
+            pass
 
     def __ne__(self, x):
         try:
@@ -109,14 +114,20 @@ class BasePlayer(BaseStatKeeper):
                ('zserv' not in self)):
                 out.append(x)
         if self.log_ip:
-            possible_aliases = \
-                    get_possible_aliases(self.name, self.encoded_name, [self.ip])
+            ###
+            # Player => IP mapping is disabled until PyXSE is replaced with
+            # SQLite
+            ###
+            # possible_aliases = get_possible_aliases(self.name,
+            #                                         self.encoded_name,
+            #                                         [self.ip])
+            possible_aliases = []
         else:
-            possible_aliases = None
+            possible_aliases = []
         if possible_aliases:
             out.append(('possible_player_aliases', Listable(possible_aliases)))
         else:
-            out.append(('possible_player_aliases', None))
+            out.append(('possible_player_aliases', []))
         return out
 
     def set_map(self, map):
