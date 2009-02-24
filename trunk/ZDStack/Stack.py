@@ -80,7 +80,13 @@ class Stack(Server):
             else:
                 game_mode = zs_config['type'].lower()
                 memory_slots = int(zs_config['maps_to_remember'])
-                log_ips = yes(zs_config['enable_ip_logging'])
+                ###
+                # IP Logging is disabled until SQLite support is added
+                #
+                # log_ips = yes(zs_config['enable_ip_logging'])
+                #
+                ###
+                log_ips = False
                 load_plugins = yes(zs_config['load_plugins'])
                 zs_class = get_zserv_class(game_mode, memory_slots,
                                            log_ips, load_plugins)
@@ -88,7 +94,7 @@ class Stack(Server):
                 # logging.debug("Adding zserv [%s]" % (zserv_name))
                 self.zservs[zserv_name] = zs
 
-    def load_config(self, reload=False):
+    def load_config(self, config, reload=False):
         """Loads the configuration.
 
         reload: a boolean, whether or not the configuration is being
@@ -96,7 +102,6 @@ class Stack(Server):
 
         """
         # logging.debug('')
-        config = get_configparser(self.config_file)
         raw_config = RCP(self.config_file, allow_duplicate_sections=False)
         for section in raw_config.sections():
             raw_config.set(section, 'name', section)

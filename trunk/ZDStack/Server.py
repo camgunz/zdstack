@@ -44,11 +44,9 @@ class Server:
 
         """
         # logging.debug('')
-        if not config_file:
-            self.config_file = get_configfile()
-        else:
-            self.config_file = config_file
+        if config_file:
             set_configfile(config_file)
+        self.config_file = get_configfile()
         self.load_config(get_configparser(), reload=reload)
 
     def load_config(self, config, reload=False):
