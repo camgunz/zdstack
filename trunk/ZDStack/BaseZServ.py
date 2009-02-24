@@ -45,6 +45,7 @@ class BaseZServ:
         self.dn_fobj = open('/dev/null', 'r+')
         self.devnull = self.dn_fobj.fileno()
         self.keep_spawning = False
+        self.already_watching = False
         self.reload_config(config)
         self.zserv = None
         self.pid = None
@@ -539,7 +540,9 @@ class BaseZServ:
             logfile.start()
         self.keep_spawning = True
         self.spawn_zserv()
-        self.watch_zserv()
+        if not self.already_watching:
+            self.already_watching = True
+            self.watch_zserv()
 
     def stop(self, signum=15):
         """Stops the zserv process.
