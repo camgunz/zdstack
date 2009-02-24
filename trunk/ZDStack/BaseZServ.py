@@ -29,7 +29,6 @@ class BaseZServ:
     # TODO: add locks, specifically in RPC-accessible methods and
     #       around the data structures they use.
 
-
     def __init__(self, name, type, config, zdstack):
         """Initializes a BaseZServ instance.
 
@@ -493,7 +492,7 @@ class BaseZServ:
             return
         x = self.zserv.poll()
         if x:
-            logging.info('Poll: %s' % (x))
+            logging.debug('Poll: %s' % (x))
             for func, args, kwargs in self.post_spawn_funcs:
                 func(*args, **kwargs)
             self.clean_up_after_zserv()
