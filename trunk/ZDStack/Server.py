@@ -49,10 +49,9 @@ class Server:
         else:
             self.config_file = config_file
             set_configfile(config_file)
-        self.config = get_configparser()
-        self.load_config(reload=reload)
+        self.load_config(get_configparser(), reload=reload)
 
-    def load_config(self, reload=False):
+    def load_config(self, config, reload=False):
         """Loads the config.
 
         reload: a boolean, whether or not the configuration is being
@@ -60,42 +59,53 @@ class Server:
 
         """
         # logging.debug('')
-        self.defaults = self.config.defaults()
-        if 'rootfolder' in self.defaults:
-            rootfolder = self.defaults['rootfolder']
+        ###
+        # TODO:
+        #   Split this up in to check_config and load_config methods.
+        ###
+        defaults = config.defaults()
+        if 'rootfolder' in defaults:
+            rootfolder = defaults['rootfolder']
         else:
             rootfolder = tempfile.gettempdir()
         if not os.path.isdir(rootfolder):
             raise ValueError("Root folder [%s] does not exist" % (rootfolder))
-        if not 'zdstack_port' in self.defaults:
+        if not 'zdstack_port' in defaults:
             es = "Could not find option 'zdstack_port' in the configuration"
             raise ValueError(es)
-        if not 'rpc_protocol' in self.defaults:
+        if not 'rpc_protocol' in defaults:
             es = "Could not find option 'rpc_protocol' in the configuration"
             raise ValueError(es)
-        if self.defaults['rpc_protocol'].lower() in ('jsonrpc', 'json-rpc'):
+        if defaults['rpc_protocol'].lower() in ('jsonrpc', 'json-rpc'):
             from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
-            self.rpc_class = SimpleJSONRPCServer
-        elif self.defaults['rpc_protocol'].lower() in ('xmlrpc', 'xml-rpc'):
+            rpc_class = SimpleJSONRPCServer
+        elif defaults['rpc_protocol'].lower() in ('xmlrpc', 'xml-rpc'):
             from ZDStack.XMLRPCServer import XMLRPCServer
-            self.rpc_class = XMLRPCServer
+            rpc_class = XMLRPCServer
         else:
             es = "RPC Protocol [%s] not supported"
-            raise ValueError(es % (self.defaults['rpc_protocol']))
-        if 'rpc_hostname' in self.defaults:
-            self.hostname = self.defaults['xmlrpc_hostname']
+            raise ValueError(es % (defaults['rpc_protocol']))
+        if 'rpc_hostname' in defaults:
+            hostname = defaults['xmlrpc_hostname']
         else:
-            self.hostname = HOSTNAME
-        self.port = int(self.defaults['zdstack_port'])
-        self.homedir = rootfolder
-        self.logfile = os.path.join(self.homedir, 'ZDStack.log')
-        self.pidfile = os.path.join(self.homedir, 'ZDStack.pid')
+            hostname = HOSTNAME
+        port = int(defaults['zdstack_port'])
+        homedir = rootfolder
+        logfile = os.path.join(homedir, 'ZDStack.log')
+        pidfile = os.path.join(homedir, 'ZDStack.pid')
+        self.config = config
+        self.defaults = defaults
+        self.rpc_class = rpc_class
+        self.hostname = hostname
+        self.port = port
+        self.homedir = homedir
+        self.logfile = logfile
+        self.pidfile = pidfile
 
     def reload_config(self):
         """Reloads the configuration."""
         # logging.debug('')
-        self.config = get_configparser(reload=True)
-        self.load_config(reload=True)
+        self.load_config(get_configparser(reload=True), reload=True)
 
     def startup(self):
         """Starts the server up."""

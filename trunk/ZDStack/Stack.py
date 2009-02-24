@@ -42,11 +42,17 @@ class Stack(Server):
         self.methods_requiring_authentication.append('start_all_zservs')
         self.methods_requiring_authentication.append('stop_all_zservs')
 
-    def check_all_zserv_configs(self):
+    def check_all_zserv_configs(self, config):
         """Ensures that all ZServ configuration sections are correct."""
         # logging.debug('')
-        for section in self.config.sections():
-            self.check_zserv_config(dict(self.config.items(section)))
+        sections = config.sections()
+        for section in sections:
+            self.check_zserv_config(dict(config.items(section)))
+        for zserv_name in self.zservs:
+            if not zserv_name in sections \
+               and self.zservs[zserv_name].pid is None:
+                es = "Cannot remove running zserv [%s] from the config."
+                raise Exception(es % (zserv_name))
 
     def check_zserv_config(self, zserv_config):
         """Ensures that a ZServ configuration section is correct.
@@ -90,12 +96,14 @@ class Stack(Server):
 
         """
         # logging.debug('')
-        self.config = get_configparser(self.config_file)
-        self.raw_config = RCP(self.config_file, allow_duplicate_sections=False)
-        for section in self.raw_config.sections():
-            self.raw_config.set(section, 'name', section)
-        Server.load_config(self, reload)
-        self.check_all_zserv_configs()
+        config = get_configparser(self.config_file)
+        raw_config = RCP(self.config_file, allow_duplicate_sections=False)
+        for section in raw_config.sections():
+            raw_config.set(section, 'name', section)
+        self.check_all_zserv_configs(config)
+        Server.load_config(self, config, reload)
+        self.config = config
+        self.raw_config = raw_config
         try:
             self.username = self.config.defaults()['username']
             self.password = self.config.defaults()['password']
