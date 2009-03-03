@@ -1,7 +1,7 @@
 ﻿#summary Structure of the ZServ Dict
 
 {{{
-{'admin_email': 'nostarcast@yahoo.com',
+{'admin_email': 'xxxx@yahoo.com',
  'advertise': True,
  'air_control': '0',
  'deathlimit': None,
