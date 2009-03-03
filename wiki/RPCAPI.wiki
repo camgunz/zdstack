@@ -8,9 +8,9 @@
 
 = ZDStack Action Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
-|| start() || {{{start()}}} || True on success || yes || no ||
-|| stop() || {{{stop()}}} || True on success || yes || no ||
-|| restart() || {{{restart()}}} || True on success || yes || no ||
+|| start() || {{{start()}}} || True on success || yes || yes ||
+|| stop() || {{{stop()}}} || True on success || yes || yes ||
+|| restart() || {{{restart()}}} || True on success || yes || yes ||
 || start_all_zservs() || {{{start_all_zservs()}}} || True on success || yes || no ||
 || stop_all_zservs() || {{{stop_all_zservs()}}} || True on success || yes || no ||
 || restart_all_zservs() || {{{restart_all_zservs()}}} || True on success || yes || no ||
@@ -19,7 +19,7 @@
 
 = ZDStack Info Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
-|| get_logfile() || {{{get_logfile()}}} || a string representing the contents of the server's logfile || yes || yes ||
+|| get_logfile() || {{{get_logfile()}}} || a string representing the contents of the server's logfile || yes || no ||
 || get_status() || {{{get_status()}}} || a string representing the status of the server || yes || no ||
 || list_zserv_names() || {{{list_zserv_names()}}} || a list of strings representing the names of all zservs || yes || yes ||
 || get_all_zservs() || {{{get_all_zservs()}}} || a list of [http://http://code.google.com/p/zdstack/wiki/ZServDict ZServDict] objects || yes || yes ||
