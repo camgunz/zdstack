@@ -160,7 +160,7 @@ class GeneralZServStatsMixin:
     def save_current_general_stats(self):
         """Saves stats for the current or most recent game."""
         # logging.debug('')
-        if not (self.should_remember and self.map):
+        if not (self.should_remember and self.map and self.memory_slots):
             return
         logging.debug('Saving stats')
         self.should_remember = False
