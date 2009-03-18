@@ -84,7 +84,7 @@ class Server:
             es = "RPC Protocol [%s] not supported"
             raise ValueError(es % (defaults['rpc_protocol']))
         if 'rpc_hostname' in defaults:
-            hostname = defaults['xmlrpc_hostname']
+            hostname = defaults['rpc_hostname']
         else:
             hostname = HOSTNAME
         port = int(defaults['zdstack_port'])

@@ -16,17 +16,18 @@ from pyfileutils import read_file, append_file
 from ZDStack.Utils import resolve_file
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 
-__host, __aliases, __addresses = socket.gethostbyaddr(socket.gethostname())
-__hostnames = [x for x in [__host] + __aliases if '.' in x]
-if not __hostnames:
-    raise Exception("Could not obtain the Fully Qualified Hostname")
+__all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'CONFIGFILE',
+           'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE', 'DEBUGGING'
+           'PLUGINS', 'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION',
+           'PlayerNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
+           'get_engine', 'get_metadata', 'get_session', 'get_configfile',
+           'set_configfile', 'load_configparser', 'get_configparser',
+           'get_plugins', 'get_logfile', 'set_debugging', 'log']
 
-__all__ = ['HOSTNAME', 'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE',
-           'DEBUGGING', 'LOGGER', 'TRACER', 'PLUGINS', 'DATEFMT', 'get_logger',
-           'load_configparser', 'get_configparser', 'get_zserv_exe',
-           'get_database', 'get_plugins', 'set_debugging', 'log']
-
-HOSTNAME = __hostnames[0]
+SUPPORTED_ENGINE_TYPES = ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql',
+                          'firebird')
+HOSTNAME = None
+LOOPBACK = None
 CONFIGFILE = None
 CONFIGPARSER = None
 ZSERV_EXE = None
@@ -35,6 +36,15 @@ LOGFILE = None
 DEBUGGING = None
 PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
+DB_ENGINE = None
+DB_METADATA = None
+DB_SESSION = None
+
+###
+# I'm deciding to only have 1 DB engine, and to make all zservs use it.  I
+# suppose I could allow each zserv to have its own engine but that seems a
+# little ridiculous.
+###
 
 class PlayerNotFoundError(Exception):
 
@@ -59,6 +69,137 @@ class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
         print >> sys.stderr, record.getMessage().strip()
+
+def get_hostname():
+    global HOSTNAME
+    if not HOSTNAME:
+        try:
+            __host, __aliases = socket.gethostbyaddr(socket.gethostname())[:-1]
+        except socket.gaierror, e:
+            es = """\
+Could not obtain this machine's fully qualified hostname.  On *NIX machines,
+please add a line similar to the following to /etc/hosts:
+
+216.34.181.45 darkstar
+
+Where '216.34.181.45' is replaced by the IP address of the interface ZDStack
+should listen on, and 'darkstar' is replaced by the hostname of your machine
+(usually found in /etc/HOSTNAME, /etc/hostname, or running the 'hostname'
+command).
+
+Error code/message was: %s, %s"""
+            raise Exception(es % e.args)
+        __hostnames = [x for x in [__host] + __aliases if '.' in x]
+        if not __hostnames:
+            es = """\
+Could not obtain this machine's fully qualified hostname.  On *NIX machines,
+please add a line similar to the following to /etc/hosts:
+
+216.34.181.45 darkstar
+
+Where '216.34.181.45' is replaced by the IP address of the interface ZDStack
+should listen on, and 'darkstar' is replaced by the hostname of your machine
+(usually found in /etc/HOSTNAME, /etc/hostname, or running the 'hostname'
+command).
+
+"""
+            raise Exception(es)
+        HOSTNAME = __hostnames[0]
+    return HOSTNAME
+
+def get_loopback():
+    global LOOPBACK
+    if not LOOPBACK:
+        try:
+            LOOPBACK = socket.gethostbyname(socket.gethostname())
+        except socket.gaierror, e:
+            es = """\
+Could not obtain this machine's loopback address.  On *NIX machines, please add
+a line similar to the following to /etc/hosts:
+
+127.0.0.1 darkstar
+
+Where '127.0.0.1' is replaced by the IP address of the loopback interface, and
+'darkstar' is replaced by the hostname of your machine (usually found in
+/etc/HOSTNAME, /etc/hostname, or running the 'hostname' command)
+
+Error code/message was: %s, %s"""
+            raise Exception(es % e.args)
+    return LOOPBACK
+
+def get_engine():
+    ###
+    # At this point, we are assuming that stats have been enabled.
+    ###
+    global __ENGINE
+    if not __ENGINE:
+        db_driver = get_configparser().defaults()['database_engine'].lower()
+        if db_driver not in SUPPORTED_ENGINE_TYPES:
+            raise ValueError("DB engine %s is not supported" % (db_driver))
+        if db_driver == 'sqlite':
+            if 'database_name' not in get_configparser().defaults():
+                db_name = ':memory:'
+            else:
+                db_name = get_configparser().defaults()['database_name']
+            if not db_name:
+                db_name = ':memory:'
+            if db_name == ':memory:':
+                db_str = 'sqlite://:memory:'
+            else:
+                db_name = os.path.abspath(db_name) # just to be sure
+                if not os.path.isfile(db_name):
+                    raise ValueError("SQLite DB file %s not found" % (db_name))
+                db_str = 'sqlite:///%s' % (db_name)
+        else:
+            db_host = get_configparser().defaults()['database_host']
+            if port in get_configparser().defaults():
+                db_port = get_configparser().defaults()['port']
+                if db_port:
+                    try:
+                        db_port = int(db_port)
+                    except:
+                        es = "Invalid port number format %s"
+                        raise ValueError(es % (db_port))
+                db_temp = '%%s://%%s:%%s@%%s:%d/%%s' % (db_port)
+                if db_driver == 'mysql' and db_host == 'localhost':
+                    db_host = get_loopback()
+            else:
+                db_port = None
+                db_temp = '%s://%s:%s@%s/%s'
+            if db_driver == 'mysql':
+                ###
+                # MySQL's handing of Unicode is apparently a little dumb,
+                # so we use SQLAlchemy's.
+                ###
+                db_temp += '?charset=utf8&use_unicode=0'
+            db_user = get_configparser().defaults()['database_user']
+            db_pass = get_configparser().defaults()['database_password']
+            db_str = db_temp % (db_driver, db_user, db_pass, db_host, db_name)
+        from sqlalchemy import create_engine
+        if db_driver == 'mysql':
+            ###
+            # We need to recycle connections every hour or so to avoid MySQL's
+            # idle connection timeouts.
+            ###
+            __ENGINE = create_engine(db_str, pool_recycle=3600)
+        else:
+            __ENGINE = create_engine(db_str)
+    return __ENGINE
+
+def get_metadata():
+    global DB_METADATA
+    if not DB_METADATA:
+        from sqlalchemy import MetaData
+        DB_METADATA = MetaData()
+        DB_METADATA.bind = get_engine()
+    return DB_METADATA
+
+def get_session():
+    global DB_SESSION
+    if not DB_SESSION:
+        from sqlalchemy.orm import sessionmaker
+        DB_SESSION = sessionmaker(bind=get_engine())
+    return DB_SESSION
 
 def get_configfile():
     global CONFIGFILE
@@ -117,31 +258,6 @@ def get_zserv_exe():
                 raise ValueError("Could not execute zserv")
         ZSERV_EXE = zserv_exe
     return ZSERV_EXE
-
-def get_database(config_file=None):
-    global CONFIGPARSER
-    global DATABASE
-    if DATABASE is None and 'database_folder' in CONFIGPARSER.defaults():
-        if CONFIGPARSER is None:
-            get_configparser(config_file)
-        database_folder = CONFIGPARSER.defaults()['database_folder']
-        if not os.path.isdir(database_folder):
-            try:
-                os.mkdir(database_folder)
-            except OSError:
-                es = "Database folder [%s] not found"
-                raise ValueError(es % (database_folder))
-        try:
-            from PyXSE.Database import Database, TableNotFoundError
-            DATABASE = Database(database_folder)
-        except ImportError, e:
-            return None
-        try:
-            DATABASE.get_table('players')
-        except TableNotFoundError:
-            DATABASE.create_table('players', ['name', 'addresses'],
-                                             ['str', 'str'], ['name'])
-    return DATABASE
 
 def get_plugins(plugins='all', config_file=None):
     global CONFIGPARSER
