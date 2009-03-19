@@ -132,17 +132,15 @@ class PluginLogListener(ZServLogListener):
 
     classname = 'PluginLogListener'
 
-    def __init__(self, zserv, enabled_plugins):
+    def __init__(self, zserv):
         """Initializes a PluginLogListener.
 
-        zserv:           a ZServ instance
-        enabled_plugins: a list of strings representing the names of
-                         all enabled plugins
+        zserv: a ZServ instance
 
         """
         ZServLogListener.__init__(self, 'Plugin Log Listener', zserv)
         plugins = get_plugins()
-        self.plugins = [x for x in plugins if x.__name__ in enabled_plugins]
+        self.plugins = [x for x in plugins if x.__name__ in self.zserv.plugins]
         for p in self.plugins:
             logging.debug("PLL Loaded Plugin [%s]" % (p.__name__))
 

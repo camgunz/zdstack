@@ -10,12 +10,6 @@ password = pacman2000
 zdstack_port = 8080
 ;;; The RPC protocol to use, either xml-rpc or json-rpc
 rpc_protocol = xml-rpc
-;;; Whether or not to enable Player IP logging
-;;;   Note that this is disabled in ZDStack 0.10, even if this option is
-;;;   enabled
-;enable_ip_logging = no
-;;; Whether or not to load plugins
-load_plugins = yes
 ;;; The root folder under which ZDStack will work
 rootfolder = /var/zdstack
 ;;; The folder under which all zserv processes will create their folders
@@ -32,7 +26,15 @@ iwaddir = %(rootfolder)s/iWADs
 waddir = %(rootfolder)s/WADs
 ;;; The name of the IWAD to use
 iwad = doom2.wad
-;;; The number of maps to remember statistics for
+;;; Whether or not to parse events from the output of zserv processes.  This
+;;; is required for plugins and stats.
+enable_events = no
+;;; Whether or not to enable stats.  Some plugins may require this.
+enable_stats = no
+;;; Whether or not to enable plugins.  Plugins are entirely optional.
+enable_plugins = no
+;;; The number of maps to remember statistics for.  If stats are disabled, this
+;;; does nothing.
 maps_to_remember = 7
 ;;; The message to display in the server selector (like ZLauncher or IDE)
 hostname = ZDStack Server %(name)s %(type)s
@@ -80,7 +82,7 @@ gravity = 800
 air_control = 0
 ;;; How many seconds a player can remain dead before being removed from play
 death_limit = 30
-;;; Kick players who exceed the speed limit
+;;; Whether or not players who exceed the speed limit will be kicked
 speed_check = 0
 ;;; Restart a map if no players are in the server
 restart_empty_map = 0

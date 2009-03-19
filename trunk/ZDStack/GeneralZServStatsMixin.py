@@ -5,10 +5,8 @@ import time
 import os.path
 import logging
 
-from threading import Timer, Lock
-
 from ZDStack import PlayerNotFoundError
-from ZDStack.Utils import get_logfile_suffix
+from ZDStack.Utils import yes
 from ZDStack.LogFile import LogFile
 from ZDStack.Dictable import Dictable
 from ZDStack.Listable import Listable
@@ -23,151 +21,8 @@ class GeneralZServStatsMixin:
 
     """GeneralZServStatsMixin adds statistics to a ZServ."""
 
-    def __init__(self, memory_slots, player_class=BasePlayer,
-                                     map_class=BaseMap,
-                                     stats_class=BaseStats,
-                                     load_plugins=False,
-                                     log_type='server'):
-        """Initializes a GeneralZServStatsMixin.
-
-        memory_slots: an int representing the # of maps to remember
-        player_class: the player class to use
-        map_class:    the map class to use
-        stats_class:  the stats class to use
-        load_plugins: a boolean that, if True, will load plugins
-        log_type:     specifies which type of log to parse, valid
-                      options are "server" and "client"
-
-        """
-        self._players_lock = Lock()
-        self._zserv_stdin_lock = Lock()
-        self.map_class = map_class
-        self.player_class = player_class
-        self.stats_class = stats_class
-        self.load_plugins = load_plugins
-        if self.load_plugins and 'plugins' in self.config:
-            logging.info("Loading plugins")
-            plugins = [x.strip() for x in self.config['plugins'].split(',')]
-            self.plugins = plugins
-            for plugin in self.plugins:
-                logging.info("Loaded plugin [%s]" % (plugin))
-        else:
-            logging.info("Not loading plugins")
-            logging.debug("Load plugins: [%s]" % (load_plugins))
-            logging.debug("Plugins: [%s]" % ('plugins' in self.config))
-            self.plugins = None
-        self.log_type = log_type
-        self.memory_slots = memory_slots
-        self.remembered_stats = Listable()
-        self.initialize_general_stats()
-        self.initialize_general_log()
-        def add_players(d):
-            d['players'] = len(self.players) - len(self.disconnected_players)
-            return d
-        def add_map(d):
-            if not self.map:
-                e = {'name': '', 'number': '',
-                     'index': 0}
-            else:
-                e = {'name': self.map.name, 'number': self.map.number,
-                     'index': 0}
-            d['map'] = e
-            return d
-        def add_remembered_slots(d):
-            d['remembered_stats'] = Listable()
-            counter = 0
-            for rm in reversed(self.remembered_stats):
-                counter += 1
-                e = {'name': rm.name, 'number': rm.number, 'index': counter}
-                d['remembered_stats'].append(e)
-            return d
-        f1 = (self.start_collecting_general_stats, [], {})
-        f2 = (self.stop_collecting_general_stats, [], {})
-        self.pre_spawn_funcs.append(f1)
-        self.post_spawn_funcs.append(f2)
-        self.extra_exportables_funcs.append((add_players, [], {}))
-        self.extra_exportables_funcs.append((add_map, [], {}))
-        self.extra_exportables_funcs.append((add_remembered_slots, [], {}))
-        logging.info('Added Stats Mixin')
-
-    def initialize_general_stats(self):
-        """Initializes a ZServ's stats."""
-        # logging.debug('')
-        self.map = None
-        self.players = Listable()
-        self.disconnected_players = Listable()
-        self.should_remember = False
-
-    def initialize_general_log(self):
-        # logging.debug('')
-        self.initialize_general_stats()
-        general_log_parser = GeneralLogParser(log_type=self.log_type)
-        self.general_log = LogFile('general', general_log_parser, self)
-        self.general_log_listener = GeneralLogListener(self)
-        if self.load_plugins and self.plugins:
-            logging.debug("Adding PLL to listeners")
-            self.plugin_log_listener = PluginLogListener(self, self.plugins)
-            self.general_log.listeners = [self.general_log_listener,
-                                          self.plugin_log_listener]
-        else:
-            logging.debug("Not adding PLL to listeners")
-            self.general_log.listeners = [self.general_log_listener]
-        logging.debug("Listeners: [%s]" % (self.general_log.listeners))
-        self.set_general_log_filename()
-        self.logfiles.append(self.general_log)
-
-    def start_collecting_general_stats(self):
-        """Starts collecting statistics."""
-        self.initialize_general_stats()
-        for listener in self.general_log.listeners:
-            listener.start()
-        self.general_log.start()
-
-    def stop_collecting_general_stats(self):
-        """Stops collecting statistics."""
-        # logging.debug('')
-        self.general_log.stop()
-        for listener in self.general_log.listeners:
-            listener.stop()
-
-    def get_general_log_filename(self, roll=False):
-        """Generates the general log filename."""
-        # logging.debug('')
-        return os.path.join(self.homedir, 'gen' + get_logfile_suffix())
-
-    def set_general_log_filename(self, roll=False):
-        """Sets the general log filename.
-
-        roll:  a boolean that, if given, does the following:
-                - If the time is 11pm, generates a logfile name for
-                  the upcoming day.
-                - Does not seek to the end of a file before parsing it
-                  for events (if it exists).
-               Otherwise, the name generated is for the current day,
-               and the ZServ's LogFile will seek to the end of its
-               file (if it exists).
-        """
-        # logging.debug('')
-        general_log_filename = self.get_general_log_filename(roll=roll)
-        self.general_log.set_filepath(general_log_filename,
-                                      seek_to_end=not roll)
-
-    def dump_stats(self):
-        """Returns a list of exported stats."""
-        # logging.debug('')
-        return [self.map.export(), self.players.export()]
-
-    def save_current_general_stats(self):
-        """Saves stats for the current or most recent game."""
-        # logging.debug('')
-        if not (self.should_remember and self.map and self.memory_slots):
-            return
-        logging.debug('Saving stats')
-        self.should_remember = False
-        if len(self.remembered_stats) == self.memory_slots:
-            self.remembered_stats = Listable(self.remembered_stats[1:])
-        stats = self.stats_class(*self.dump_stats())
-        self.remembered_stats.append(stats)
+    def __init__(self, config):
+        """Initializes a GeneralZServStatsMixin."""
 
     def _add_player(self, player, acquire_lock=True):
         """Adds a player to self.players - threadsafe.
@@ -476,7 +331,6 @@ class GeneralZServStatsMixin:
 
         """
         # logging.debug('')
-        self.save_current_general_stats()
         self.map = self.map_class(map_number, map_name)
         self.players = [x for x in self.players \
                             if x not in self.disconnected_players]
@@ -494,20 +348,29 @@ class GeneralZServStatsMixin:
                              wait for in response
 
         When using this method, keep the following in mind:
-            - Your message should not contain newlines.
-            - If event_response_type is None, no response is returned
+            - Your message cannot contain newlines.
+            - If event_response_type is None, no response will be
+              returned
 
         This method returns a list of events returned in response.
 
         """
         # logging.debug('')
-        if event_response_type is not None:
-            self.general_log.watch_for_response(event_response_type)
+        if '\n' in message or '\r' in message:
+            es = "Message cannot contain newlines or carriage returns"
+            raise ValueError(es)
         with self._zserv_stdin_lock:
-            self.zserv.stdin.write(message.strip('\n') + '\n')
+            ###
+            # zserv's STDIN is (obviously) not threadsafe, so we need to ensure
+            # that access to it is limited to 1 thread at a time, which is both
+            # writing to it, and waiting for responses from its STDOUT.
+            ###
+            if event_response_type is not None:
+                self.general_log.watch_for_response(event_response_type)
+            self.zserv.stdin.write(message + '\n')
             self.zserv.stdin.flush()
-        if event_response_type is not None:
-            return self.general_log.get_response()
+            if event_response_type is not None:
+                return self.general_log.get_response()
 
     def zaddban(self, ip_address, reason='rofl'):
         """Adds a ban.

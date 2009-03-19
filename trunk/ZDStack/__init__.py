@@ -7,6 +7,7 @@ import socket
 import logging
 import logging.handlers
 
+from decimal import Decimal
 from datetime import datetime, timedelta
 from threading import Thread
 from cStringIO import StringIO
@@ -19,10 +20,11 @@ from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'CONFIGFILE',
            'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE', 'DEBUGGING'
            'PLUGINS', 'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION',
-           'PlayerNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
-           'get_engine', 'get_metadata', 'get_session', 'get_configfile',
-           'set_configfile', 'load_configparser', 'get_configparser',
-           'get_plugins', 'get_logfile', 'set_debugging', 'log']
+           'TICK', 'PlayerNotFoundError', 'DebugTRFH', 'get_hostname',
+           'get_loopback', 'get_engine', 'get_metadata', 'get_session',
+           'get_configfile', 'set_configfile', 'load_configparser',
+           'get_configparser', 'get_plugins', 'get_logfile', 'set_debugging',
+           'log']
 
 SUPPORTED_ENGINE_TYPES = ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql',
                           'firebird')
@@ -39,6 +41,7 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 DB_ENGINE = None
 DB_METADATA = None
 DB_SESSION = None
+TICK = Decimal(0.027)
 
 ###
 # I'm deciding to only have 1 DB engine, and to make all zservs use it.  I

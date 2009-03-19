@@ -4,10 +4,23 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 def yes(x):
-    return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely')
+    return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely',
+                         "can't live without it", 'god yes', 'jesus christ yes',
+                         'jesus yes', 'fuck yes', 'fuck yeah', 'shit yes',
+                         'shit yeah', 'obviously',
+                         'i would probably kill myself without this')
 
 def no(x):
-    return x.lower() in ('n', 'no', 'f', 'false', '0', 'off', 'never')
+    return x.lower() in ('n', 'no', 'f', 'false', '0', 'off', 'never', 'god no',
+                         'jesus no', 'jesus christ no',
+                         'jesus are you joking?',
+                         'jesus are you kidding?',
+                         'jesus are you serious?',
+                         'jesus christ are you joking?',
+                         'jesus christ are you kidding?',
+                         'jesus christ are you serious?',
+                         'fuck no', 'shit no', 'oh man not a chance'
+                    'i would probably kill myself if i had to put up with this')
 
 def timedelta_in_seconds(x):
     """Returns the value of a time delta in seconds as an int."""
