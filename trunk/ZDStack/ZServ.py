@@ -27,11 +27,11 @@ CTF_TYPES = ('ctf', 'capture the flag', 'capture-the-flag')
 DM_TYPES = DUEL_TYPES + FFA_TYPES + TEAMDM_TYPES + CTF_TYPES
 TEAM_TYPES = TEAMDM_TYPES + CTF_TYPES
 
-class BaseZServ:
+class ZServ:
 
-    """BaseZServ represents the base ZServ class.
+    """ZServ represents a ZServ.
 
-    BaseZServ does the following:
+    ZServ does the following:
 
       * Handles configuration of the zserv process
       * Provides control over the zserv process
@@ -45,7 +45,7 @@ class BaseZServ:
     #       around the data structures they use.
 
     def __init__(self, name, type, config, zdstack):
-        """Initializes a BaseZServ instance.
+        """Initializes a ZServ instance.
 
         name:    a string representing the name of this ZServ.
         type:    the game-mode of this ZServ, like 'ctf', 'ffa', etc.
@@ -91,8 +91,8 @@ class BaseZServ:
     ###
     # I have to say that I'm very close to pulling all the config stuff out
     # into separate classes.  Over 400 lines of code is more than 30% of
-    # BaseZServ, and it's not even the main point of the class.  I will do it
-    # in a later commit I think.
+    # ZServ, and it's not even the main point of the class.  I will do it in a
+    # later commit I think.
     #
     # TODO: Move all config stuff into separate classes.
     #
