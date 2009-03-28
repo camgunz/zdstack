@@ -50,7 +50,7 @@ class Stack(Server):
             self.check_zserv_config(dict(config.items(section)))
         for zserv_name in self.zservs:
             if not zserv_name in sections \
-               and self.zservs[zserv_name].pid is None:
+               and self.zservs[zserv_name].pid is not None:
                 es = "Cannot remove running zserv [%s] from the config."
                 raise Exception(es % (zserv_name))
 
