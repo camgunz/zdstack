@@ -1,0 +1,388 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module Stack</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>Stack</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/Stack.py">/media/disk-1/data/zdstack/trunk/ZDStack/Stack.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ZDStack.Server.html#Server">ZDStack.Server.Server</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="Stack.html#Stack">Stack</a>
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="exceptions.html#Exception">exceptions.Exception</a>(<a href="exceptions.html#BaseException">exceptions.BaseException</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="Stack.html#AuthenticationError">AuthenticationError</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="AuthenticationError">class <strong>AuthenticationError</strong></a>(<a href="exceptions.html#Exception">exceptions.Exception</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="Stack.html#AuthenticationError">AuthenticationError</a></dd>
+<dd><a href="exceptions.html#Exception">exceptions.Exception</a></dd>
+<dd><a href="exceptions.html#BaseException">exceptions.BaseException</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="AuthenticationError-__init__"><strong>__init__</strong></a>(self, username, method)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes inherited from <a href="exceptions.html#Exception">exceptions.Exception</a>:<br>
+<dl><dt><strong>__new__</strong> = &lt;built-in method __new__ of type object at 0x81419c0&gt;<dd><tt>T.<a href="#AuthenticationError-__new__">__new__</a>(S,&nbsp;...)&nbsp;-&gt;&nbsp;a&nbsp;new&nbsp;object&nbsp;with&nbsp;type&nbsp;S,&nbsp;a&nbsp;subtype&nbsp;of&nbsp;T</tt></dl>
+
+<hr>
+Methods inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><a name="AuthenticationError-__delattr__"><strong>__delattr__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__delattr__">__delattr__</a>('name')&nbsp;&lt;==&gt;&nbsp;del&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__getattribute__"><strong>__getattribute__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__getattribute__">__getattribute__</a>('name')&nbsp;&lt;==&gt;&nbsp;x.name</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__reduce__"><strong>__reduce__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="AuthenticationError-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__setattr__"><strong>__setattr__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__setattr__">__setattr__</a>('name',&nbsp;value)&nbsp;&lt;==&gt;&nbsp;x.name&nbsp;=&nbsp;value</tt></dd></dl>
+
+<dl><dt><a name="AuthenticationError-__setstate__"><strong>__setstate__</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="AuthenticationError-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#AuthenticationError-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="exceptions.html#BaseException">exceptions.BaseException</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+</dl>
+<dl><dt><strong>args</strong></dt>
+</dl>
+<dl><dt><strong>message</strong></dt>
+<dd><tt>exception&nbsp;message</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Stack">class <strong>Stack</strong></a>(<a href="ZDStack.Server.html#Server">ZDStack.Server.Server</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Stack-__init__"><strong>__init__</strong></a>(self, config_file<font color="#909090">=None</font>, debugging<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#Stack">Stack</a>&nbsp;instance.<br>
+&nbsp;<br>
+config_file:&nbsp;optional,&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;path&nbsp;to&nbsp;a<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;configuration&nbsp;file.&nbsp;&nbsp;If&nbsp;not&nbsp;given,&nbsp;looks&nbsp;for&nbsp;a<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;configuration&nbsp;file&nbsp;in&nbsp;a&nbsp;predefined&nbsp;list&nbsp;of<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;locations.<br>
+debugging:&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;debugging&nbsp;is&nbsp;enabled</tt></dd></dl>
+
+<dl><dt><a name="Stack-addban"><strong>addban</strong></a>(self, zserv_name, ip_address, reason<font color="#909090">='rofl'</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;ban.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to&nbsp;add<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;ban&nbsp;to<br>
+ip_address:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;IP&nbsp;address&nbsp;to&nbsp;ban<br>
+reason:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;reason&nbsp;for&nbsp;the&nbsp;ban</tt></dd></dl>
+
+<dl><dt><a name="Stack-addbot"><strong>addbot</strong></a>(self, zserv_name, bot_name<font color="#909090">=None</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;bot.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to&nbsp;add<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;bot&nbsp;to<br>
+bot_name:&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;bot&nbsp;to&nbsp;add</tt></dd></dl>
+
+<dl><dt><a name="Stack-addmap"><strong>addmap</strong></a>(self, zserv_name, map_number)</dt><dd><tt>Adds&nbsp;a&nbsp;map&nbsp;to&nbsp;the&nbsp;maplist.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to&nbsp;add<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;map&nbsp;to<br>
+map_number:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;number&nbsp;of&nbsp;the&nbsp;map&nbsp;to&nbsp;add</tt></dd></dl>
+
+<dl><dt><a name="Stack-authenticate"><strong>authenticate</strong></a>(self, username, password)</dt><dd><tt>Returns&nbsp;True&nbsp;if&nbsp;a&nbsp;user&nbsp;authenticates&nbsp;successfully.<br>
+&nbsp;<br>
+username:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;user's&nbsp;username<br>
+password:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;user's&nbsp;password</tt></dd></dl>
+
+<dl><dt><a name="Stack-check_all_zserv_configs"><strong>check_all_zserv_configs</strong></a>(self)</dt><dd><tt>Ensures&nbsp;that&nbsp;all&nbsp;ZServ&nbsp;configuration&nbsp;sections&nbsp;are&nbsp;correct.</tt></dd></dl>
+
+<dl><dt><a name="Stack-check_zserv_config"><strong>check_zserv_config</strong></a>(self, zserv_config)</dt><dd><tt>Ensures&nbsp;that&nbsp;a&nbsp;ZServ&nbsp;configuration&nbsp;section&nbsp;is&nbsp;correct.<br>
+&nbsp;<br>
+A&nbsp;dict&nbsp;containing&nbsp;ZServ&nbsp;configuration&nbsp;options&nbsp;and&nbsp;values.</tt></dd></dl>
+
+<dl><dt><a name="Stack-clearmaplist"><strong>clearmaplist</strong></a>(self, zserv_name)</dt><dd><tt>Clears&nbsp;the&nbsp;maplist.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;whose<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;maplist&nbsp;is&nbsp;to&nbsp;be&nbsp;cleared</tt></dd></dl>
+
+<dl><dt><a name="Stack-get"><strong>get</strong></a>(self, zserv_name, variable_name)</dt><dd><tt>Gets&nbsp;the&nbsp;value&nbsp;of&nbsp;a&nbsp;variable.<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;retrieve&nbsp;the&nbsp;variable&nbsp;value&nbsp;from<br>
+variable_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;variable<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;whose&nbsp;value&nbsp;is&nbsp;to&nbsp;be&nbsp;retrieved</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_all_players"><strong>get_all_players</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;marshallable&nbsp;representations&nbsp;of&nbsp;players.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;players</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_all_remembered_stats"><strong>get_all_remembered_stats</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;marshallable&nbsp;representations&nbsp;of&nbsp;all&nbsp;stats.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;stats</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_all_teams"><strong>get_all_teams</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;marshallable&nbsp;representations&nbsp;of&nbsp;all&nbsp;teams.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;teams</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_all_zservs"><strong>get_all_zservs</strong></a>(self)</dt><dd><tt>Returns&nbsp;all&nbsp;ZServs&nbsp;in&nbsp;marshallable&nbsp;representations.</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_current_map"><strong>get_current_map</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;marshallable&nbsp;representation&nbsp;of&nbsp;the&nbsp;current&nbsp;map.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;map</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_player"><strong>get_player</strong></a>(self, zserv_name, player_name)</dt><dd><tt>Returns&nbsp;a&nbsp;marshallable&nbsp;representation&nbsp;of&nbsp;a&nbsp;Player.<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;in<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;look&nbsp;for&nbsp;the&nbsp;player<br>
+player_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;Player&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_remembered_stats"><strong>get_remembered_stats</strong></a>(self, zserv_name, back<font color="#909090">=1</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;marshallable&nbsp;representation&nbsp;map&nbsp;stats.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;stats<br>
+back:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;map&nbsp;to&nbsp;retrieve,&nbsp;starts&nbsp;at/defaults&nbsp;to&nbsp;1<br>
+&nbsp;<br>
+Note&nbsp;that&nbsp;remembered&nbsp;stats&nbsp;are&nbsp;held&nbsp;in&nbsp;a&nbsp;list&nbsp;ordered&nbsp;from<br>
+least&nbsp;to&nbsp;most&nbsp;recent,&nbsp;i.e.:<br>
+&nbsp;<br>
+&nbsp;&nbsp;[map01,&nbsp;map02,&nbsp;map03,&nbsp;map04,&nbsp;map07]<br>
+&nbsp;<br>
+So&nbsp;a&nbsp;back&nbsp;value&nbsp;of&nbsp;1&nbsp;retrieves&nbsp;map07,&nbsp;2&nbsp;retrieves&nbsp;map04,&nbsp;etc.<br>
+Also,&nbsp;the&nbsp;current&nbsp;map&nbsp;is&nbsp;not&nbsp;held&nbsp;in&nbsp;this&nbsp;list,&nbsp;use<br>
+<a href="#Stack-get_current_map">get_current_map</a>()&nbsp;for&nbsp;that.</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_team"><strong>get_team</strong></a>(self, zserv_name, team_color)</dt><dd><tt>Returns&nbsp;a&nbsp;marshallable&nbsp;representation&nbsp;of&nbsp;a&nbsp;team.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;team<br>
+team_color:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;team&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;retrieve</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_zserv"><strong>get_zserv</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;an&nbsp;marshallable&nbsp;representation&nbsp;of&nbsp;a&nbsp;ZServ.<br>
+&nbsp;<br>
+zserv_name:&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to&nbsp;get</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_zserv_config"><strong>get_zserv_config</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;ZServ's&nbsp;configuration&nbsp;as&nbsp;a&nbsp;string.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;ZServ's&nbsp;name</tt></dd></dl>
+
+<dl><dt><a name="Stack-kick"><strong>kick</strong></a>(self, zserv_name, player_number, reason<font color="#909090">='rofl'</font>)</dt><dd><tt>Kicks&nbsp;a&nbsp;player&nbsp;from&nbsp;the&nbsp;zserv.<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kick&nbsp;the&nbsp;player&nbsp;from<br>
+player_number:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;number&nbsp;of&nbsp;the&nbsp;player<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;kick<br>
+reason:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;reason&nbsp;for&nbsp;the&nbsp;kick</tt></dd></dl>
+
+<dl><dt><a name="Stack-killban"><strong>killban</strong></a>(self, zserv_name, ip_address)</dt><dd><tt>Removes&nbsp;a&nbsp;ban.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remove&nbsp;the&nbsp;ban&nbsp;from<br>
+ip_address:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;IP&nbsp;address&nbsp;to&nbsp;remove&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ban&nbsp;for</tt></dd></dl>
+
+<dl><dt><a name="Stack-list_player_names"><strong>list_player_names</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;player&nbsp;names.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from&nbsp;which&nbsp;to&nbsp;retrieve&nbsp;the&nbsp;names</tt></dd></dl>
+
+<dl><dt><a name="Stack-list_zserv_names"><strong>list_zserv_names</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;ZServ&nbsp;names.</tt></dd></dl>
+
+<dl><dt><a name="Stack-load_config"><strong>load_config</strong></a>(self, reload<font color="#909090">=False</font>)</dt><dd><tt>Loads&nbsp;the&nbsp;configuration.<br>
+&nbsp;<br>
+reload:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configuration&nbsp;is&nbsp;being<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reloaded.</tt></dd></dl>
+
+<dl><dt><a name="Stack-load_zservs"><strong>load_zservs</strong></a>(self)</dt><dd><tt>Instantiates&nbsp;all&nbsp;configured&nbsp;ZServs.</tt></dd></dl>
+
+<dl><dt><a name="Stack-map"><strong>map</strong></a>(self, zserv_name, map_number)</dt><dd><tt>Changes&nbsp;the&nbsp;current&nbsp;map.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;change&nbsp;the&nbsp;map&nbsp;on<br>
+map_number:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;number&nbsp;of&nbsp;the&nbsp;map&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;change&nbsp;to</tt></dd></dl>
+
+<dl><dt><a name="Stack-maplist"><strong>maplist</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;the&nbsp;maplist.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;retrieve&nbsp;the&nbsp;maplist&nbsp;for<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;the&nbsp;numbers&nbsp;of&nbsp;the&nbsp;maps<br>
+in&nbsp;the&nbsp;maplist.</tt></dd></dl>
+
+<dl><dt><a name="Stack-players"><strong>players</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;players&nbsp;and&nbsp;their&nbsp;info.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;list&nbsp;the&nbsp;players&nbsp;for<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;the&nbsp;number,&nbsp;name,&nbsp;and<br>
+IP&nbsp;address&nbsp;of&nbsp;all&nbsp;players.</tt></dd></dl>
+
+<dl><dt><a name="Stack-register_functions"><strong>register_functions</strong></a>(self)</dt><dd><tt>Registers&nbsp;RPC&nbsp;functions.</tt></dd></dl>
+
+<dl><dt><a name="Stack-removebots"><strong>removebots</strong></a>(self, zserv_name)</dt><dd><tt>Removes&nbsp;all&nbsp;bots.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remove&nbsp;the&nbsp;bots&nbsp;from</tt></dd></dl>
+
+<dl><dt><a name="Stack-resetscores"><strong>resetscores</strong></a>(self, zserv_name)</dt><dd><tt>Resets&nbsp;all&nbsp;scores.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reset&nbsp;the&nbsp;scores&nbsp;for</tt></dd></dl>
+
+<dl><dt><a name="Stack-restart_all_zservs"><strong>restart_all_zservs</strong></a>(self)</dt><dd><tt>Restars&nbsp;all&nbsp;ZServs.</tt></dd></dl>
+
+<dl><dt><a name="Stack-restart_zserv"><strong>restart_zserv</strong></a>(self, zserv_name)</dt><dd><tt>Restarts&nbsp;a&nbsp;ZServ.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;restart</tt></dd></dl>
+
+<dl><dt><a name="Stack-say"><strong>say</strong></a>(self, zserv_name, message)</dt><dd><tt>Sends&nbsp;a&nbsp;message&nbsp;from&nbsp;"]&nbsp;CONSOLE&nbsp;[".<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send&nbsp;the&nbsp;message&nbsp;to<br>
+message:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string,&nbsp;the&nbsp;message&nbsp;to&nbsp;send</tt></dd></dl>
+
+<dl><dt><a name="Stack-send_to_zserv"><strong>send_to_zserv</strong></a>(self, zserv_name, message)</dt><dd><tt>Sends&nbsp;a&nbsp;command&nbsp;to&nbsp;a&nbsp;running&nbsp;zserv&nbsp;process.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send&nbsp;the&nbsp;message&nbsp;to<br>
+message:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string,&nbsp;the&nbsp;message&nbsp;to&nbsp;send</tt></dd></dl>
+
+<dl><dt><a name="Stack-set"><strong>set</strong></a>(self, zserv_name, variable_name, variable_value)</dt><dd><tt>Sets&nbsp;the&nbsp;value&nbsp;of&nbsp;a&nbsp;variable<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ<br>
+variable_name:&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;variable<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;set<br>
+variable_value:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;new&nbsp;value&nbsp;of&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable</tt></dd></dl>
+
+<dl><dt><a name="Stack-set_zserv_config"><strong>set_zserv_config</strong></a>(self, zserv_name, data)</dt><dd><tt>Sets&nbsp;a&nbsp;ZServ's&nbsp;config.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;ZServ's&nbsp;name<br>
+data:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;new&nbsp;configuration&nbsp;data</tt></dd></dl>
+
+<dl><dt><a name="Stack-start"><strong>start</strong></a>(self)</dt><dd><tt>Starts&nbsp;this&nbsp;<a href="#Stack">Stack</a>.</tt></dd></dl>
+
+<dl><dt><a name="Stack-start_all_zservs"><strong>start_all_zservs</strong></a>(self)</dt><dd><tt>Starts&nbsp;all&nbsp;ZServs.</tt></dd></dl>
+
+<dl><dt><a name="Stack-start_zserv"><strong>start_zserv</strong></a>(self, zserv_name)</dt><dd><tt>Starts&nbsp;a&nbsp;ZServ.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;ZServ&nbsp;to&nbsp;start</tt></dd></dl>
+
+<dl><dt><a name="Stack-stop"><strong>stop</strong></a>(self)</dt><dd><tt>Stops&nbsp;this&nbsp;<a href="#Stack">Stack</a>.</tt></dd></dl>
+
+<dl><dt><a name="Stack-stop_all_zservs"><strong>stop_all_zservs</strong></a>(self)</dt><dd><tt>Stops&nbsp;all&nbsp;ZServs.</tt></dd></dl>
+
+<dl><dt><a name="Stack-stop_zserv"><strong>stop_zserv</strong></a>(self, zserv_name)</dt><dd><tt>Stops&nbsp;a&nbsp;ZServ.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;ZServ&nbsp;to&nbsp;stop</tt></dd></dl>
+
+<dl><dt><a name="Stack-toggle"><strong>toggle</strong></a>(self, zserv_name, boolean_variable)</dt><dd><tt>Toggles&nbsp;a&nbsp;boolean&nbsp;option.<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ<br>
+boolean_variable:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean&nbsp;variable&nbsp;to&nbsp;toggle&nbsp;on&nbsp;or&nbsp;off</tt></dd></dl>
+
+<dl><dt><a name="Stack-unset"><strong>unset</strong></a>(self, zserv_name, variable_name)</dt><dd><tt>Unsets&nbsp;a&nbsp;variable&nbsp;(removes&nbsp;it).<br>
+&nbsp;<br>
+zserv_name:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remove&nbsp;the&nbsp;variable&nbsp;from<br>
+variable_name:&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;variable&nbsp;to&nbsp;unset</tt></dd></dl>
+
+<dl><dt><a name="Stack-wads"><strong>wads</strong></a>(self, zserv_name)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;the&nbsp;used&nbsp;WADs.<br>
+&nbsp;<br>
+zserv_name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;ZServ&nbsp;to&nbsp;add<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;bot&nbsp;to<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;the&nbsp;names&nbsp;of&nbsp;the&nbsp;used<br>
+WADs.</tt></dd></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>methods_requiring_authentication</strong> = []</dl>
+
+<hr>
+Methods inherited from <a href="ZDStack.Server.html#Server">ZDStack.Server.Server</a>:<br>
+<dl><dt><a name="Stack-get_logfile"><strong>get_logfile</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;contents&nbsp;of&nbsp;this&nbsp;server's&nbsp;logfile.</tt></dd></dl>
+
+<dl><dt><a name="Stack-get_status"><strong>get_status</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;current&nbsp;status&nbsp;of&nbsp;the&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="Stack-handle_signal"><strong>handle_signal</strong></a>(self, signum, frame)</dt><dd><tt>Handles&nbsp;a&nbsp;signal.</tt></dd></dl>
+
+<dl><dt><a name="Stack-initialize_config"><strong>initialize_config</strong></a>(self, config_file<font color="#909090">=None</font>, reload<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;the&nbsp;server&nbsp;configuration:<br>
+&nbsp;<br>
+config_file:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;full&nbsp;path&nbsp;to&nbsp;a<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;configuration&nbsp;file<br>
+reload:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configuration&nbsp;is<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being&nbsp;reloaded</tt></dd></dl>
+
+<dl><dt><a name="Stack-reload_config"><strong>reload_config</strong></a>(self)</dt><dd><tt>Reloads&nbsp;the&nbsp;configuration.</tt></dd></dl>
+
+<dl><dt><a name="Stack-restart"><strong>restart</strong></a>(self)</dt><dd><tt>Restarts&nbsp;the&nbsp;server.</tt></dd></dl>
+
+<dl><dt><a name="Stack-shutdown"><strong>shutdown</strong></a>(self, signum<font color="#909090">=15</font>)</dt><dd><tt>Shuts&nbsp;the&nbsp;server&nbsp;down.</tt></dd></dl>
+
+<dl><dt><a name="Stack-startup"><strong>startup</strong></a>(self)</dt><dd><tt>Starts&nbsp;the&nbsp;server&nbsp;up.</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-Lock"><strong>Lock</strong></a> = allocate_lock(...)</dt><dd><tt>allocate_lock()&nbsp;-&gt;&nbsp;lock&nbsp;object<br>
+(allocate()&nbsp;is&nbsp;an&nbsp;obsolete&nbsp;synonym)<br>
+&nbsp;<br>
+Create&nbsp;a&nbsp;new&nbsp;lock&nbsp;object.&nbsp;&nbsp;See&nbsp;LockType.__doc__&nbsp;for&nbsp;information&nbsp;about&nbsp;locks.</tt></dd></dl>
+</td></tr></table>
+</body></html>

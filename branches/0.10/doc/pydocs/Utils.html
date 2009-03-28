@@ -1,0 +1,65 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module Utils</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>Utils</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/Utils.py">/media/disk-1/data/zdstack/trunk/ZDStack/Utils.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="os.html">os</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-get_logfile_suffix"><strong>get_logfile_suffix</strong></a>(roll<font color="#909090">=False</font>)</dt><dd><tt>Returns&nbsp;today's&nbsp;logfile&nbsp;suffix.<br>
+&nbsp;<br>
+roll:&nbsp;&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;given,&nbsp;does&nbsp;the&nbsp;following:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;If&nbsp;the&nbsp;time&nbsp;is&nbsp;11pm,&nbsp;generates&nbsp;a&nbsp;logfile&nbsp;name&nbsp;for&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;upcoming&nbsp;day.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Otherwise,&nbsp;the&nbsp;name&nbsp;generated&nbsp;is&nbsp;for&nbsp;the&nbsp;current&nbsp;day.</tt></dd></dl>
+ <dl><dt><a name="-get_ratio"><strong>get_ratio</strong></a>(n, d)</dt><dd><tt>Returns&nbsp;a&nbsp;ratio&nbsp;as&nbsp;a&nbsp;string&nbsp;percentage.<br>
+&nbsp;<br>
+n:&nbsp;numerator<br>
+d:&nbsp;denominator</tt></dd></dl>
+ <dl><dt><a name="-homogenize"><strong>homogenize</strong></a>(s)</dt><dd><tt>Homogenizes&nbsp;a&nbsp;string.<br>
+&nbsp;<br>
+s:&nbsp;a&nbsp;string&nbsp;to&nbsp;homogenize</tt></dd></dl>
+ <dl><dt><a name="-html_escape"><strong>html_escape</strong></a>(s)</dt><dd><tt>Escapes&nbsp;HTML.<br>
+&nbsp;<br>
+s:&nbsp;a&nbsp;string&nbsp;representing&nbsp;a&nbsp;string&nbsp;to&nbsp;escape<br>
+&nbsp;<br>
+This&nbsp;function&nbsp;is&nbsp;basically&nbsp;ripped&nbsp;from&nbsp;web.py,&nbsp;with&nbsp;any&nbsp;luck,<br>
+the&nbsp;MIT&nbsp;and&nbsp;BSD&nbsp;licenses&nbsp;are&nbsp;compatible...&nbsp;:)&nbsp;&nbsp;I&nbsp;don't&nbsp;think<br>
+Mr.&nbsp;Swartz&nbsp;would&nbsp;have&nbsp;a&nbsp;cow,&nbsp;tho.</tt></dd></dl>
+ <dl><dt><a name="-no"><strong>no</strong></a>(x)</dt></dl>
+ <dl><dt><a name="-parse_player_name"><strong>parse_player_name</strong></a>(name)</dt><dd><tt>Parses&nbsp;a&nbsp;player's&nbsp;name&nbsp;into&nbsp;a&nbsp;tag&nbsp;and&nbsp;a&nbsp;base&nbsp;player&nbsp;name.<br>
+&nbsp;<br>
+name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;player&nbsp;name&nbsp;to&nbsp;parse</tt></dd></dl>
+ <dl><dt><a name="-resolve_file"><strong>resolve_file</strong></a>(f)</dt><dd><tt>Returns&nbsp;the&nbsp;expanded,&nbsp;absolute&nbsp;path&nbsp;of&nbsp;a&nbsp;given&nbsp;file/folder.<br>
+&nbsp;<br>
+f:&nbsp;a&nbsp;path&nbsp;to&nbsp;expand.<br>
+&nbsp;<br>
+TODO:&nbsp;rename&nbsp;this&nbsp;resolve_path</tt></dd></dl>
+ <dl><dt><a name="-start_thread"><strong>start_thread</strong></a>(target, name<font color="#909090">=None</font>, daemonic<font color="#909090">=True</font>)</dt><dd><tt>Starts&nbsp;a&nbsp;thread.<br>
+&nbsp;<br>
+name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;to&nbsp;give&nbsp;to&nbsp;the&nbsp;new&nbsp;thread<br>
+daemonic:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;thread&nbsp;is&nbsp;daemonic.&nbsp;&nbsp;True<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;by&nbsp;default</tt></dd></dl>
+ <dl><dt><a name="-timedelta_in_seconds"><strong>timedelta_in_seconds</strong></a>(x)</dt><dd><tt>Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;a&nbsp;time&nbsp;delta&nbsp;in&nbsp;seconds&nbsp;as&nbsp;an&nbsp;int.</tt></dd></dl>
+ <dl><dt><a name="-yes"><strong>yes</strong></a>(x)</dt></dl>
+</td></tr></table>
+</body></html>

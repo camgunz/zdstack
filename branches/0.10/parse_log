@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+
+import os
+import re
+import sys
+import datetime
+
+from ZDStack.LogEvent import LogEvent
+from ZDStack.LineParser import LineParser
+
+from pyfileutils import read_file
+
+now = datetime.datetime.now()
+
+def print_usage(msg=None):
+    if msg:
+        print '\n' + msg
+    script_name = os.path.basename(sys.argv[0])
+    print >> sys.stderr, """\nUsage: %s [ type ]\n 
+Valid types are 'client' and 'server'.\n\n%s reads from STDIN
+""" % (script_name, script_name)
+    sys.exit(-1)
+
+if len(sys.argv) > 2:
+    print_usage("Too many arguments")
+elif len(sys.argv) < 2:
+    print_usage("Insufficient arguments")
+logtype = sys.argv[1]
+if logtype == 'client':
+    from ZDStack.FakeClientRegexps import Regexps
+elif logtype == 'server':
+    from ZDStack.FakeServerRegexps import Regexps
+else:
+    print_usage("Unsupported log type %s" % (logtype))
+parser = LineParser(Regexps)
+valid_event_types = ('frag', 'death', 'flag_touch', 'flag_loss', 'flag_return',
+                     'map_change', 'flag_pick', 'flag_cap', 'disconnection', 'team_join')
+
+def get_opposite_team(team):
+    if team == 'blue':
+        return 'red'
+    else:
+        return 'blue'
+
+class Frag:
+
+    def __init__(self, round, fragger, fraggee, weapon,
+                       fragger_is_runner=False,
+                       fragged_runner=False,
+                       red_flag_out=False,
+                       blue_flag_out=False,
+                       red_score=0,
+                       blue_score=0):
+        self.round = round
+        self.fragger = fragger
+        self.fraggee = fraggee
+        self.weapon = weapon
+        self.fragger_is_runner = fragger_is_runner
+        self.fragged_runner = fragged_runner
+        self.red_flag_out = red_flag_out
+        self.blue_flag_out = blue_flag_out
+        self.red_score = red_score
+        self.blue_score = blue_score
+
+    def __str__(self):
+        s = '<Frag: %s fragged %s with %s | Score: %d-%d | Round: %d | Flags: %s-%s>'
+        if self.fragger_is_runner:
+            fragger = self.fragger + ' (runner)'
+        else:
+            fragger = self.fragger
+        if self.fragged_runner:
+            fraggee = self.fraggee + ' (runner)'
+        else:
+            fraggee = self.fraggee
+        d = (fragger, fraggee, self.weapon, self.red_score, self.blue_score,
+             self.round, self.red_flag_out, self.blue_flag_out)
+        return s % d
+
+    def __repr__(self):
+        return str(self)
+
+class FlagTouch:
+
+    def __init__(self, round, runner, flag_color, was_picked=False,
+                       resulted_in_score=False, home_flag_out=False,
+                       red_score=0, blue_score=0):
+        self.round = round
+        self.runner = runner
+        self.flag_color = flag_color
+        self.was_picked = was_picked
+        self.resulted_in_score = resulted_in_score
+        self.home_flag_out = home_flag_out
+        self.red_score = red_score
+        self.blue_score = blue_score
+
+    def __str__(self):
+        s = '<FlagTouch'
+        if self.was_picked or self.resulted_in_score:
+            s += ' ('
+            if self.was_picked and self.resulted_in_score:
+                s += 'pick, resulted in score)'
+            elif self.was_picked:
+                s += 'pick)'
+            elif self.resulted_in_score:
+                s += 'resulted in score)'
+        s += ': %s | Score: %d-%d | Round: %d | Home Flag Out: %s>'
+        return s % (self.runner, self.red_score, self.blue_score, self.round,
+                    self.home_flag_out)
+
+    def __repr__(self):
+        return str(self)
+
+def events():
+    round = 0
+    stats = []
+    scores = []
+    flag_dropped = False
+    score = {'red': 0, 'blue': 0}
+    teams = {'red': [], 'blue': []}
+    flag_touches = {'red': None, 'blue': None}
+    def get_player_team(player):
+        x = [y for y in teams if player in teams[y]]
+        assert len(x) == 1
+        return x[0]
+    for line in sys.stdin.read().splitlines():
+        line = line.rstrip()
+        for event in parser.get_event(now, line):
+            if event.type not in valid_event_types:
+                continue
+            if event.type == 'map_change':
+                round += 1
+                scores.append(score)
+                flag_dropped = False
+                score = {'red': 0, 'blue': 0}
+                teams = {'red': [], 'blue': []}
+                flag_touches = {'red': None, 'blue': None}
+                continue
+            if event.type == 'flag_loss':
+                flag_dropped = True
+                flag_touches[event.data['team'].lower()] = None
+                continue
+            if event.type == 'team_join':
+                players = teams[event.data['team'].lower()]
+                player = event.data['player']
+                if player not in players:
+                    players.append(player)
+                continue
+            if event.type in ('flag_touch', 'flag_pick'):
+                runner_team = get_player_team(event.data['player'])
+                if flag_touches[runner_team]:
+                    home_flag_out = True
+                else:
+                    home_flag_out = False
+                touch = FlagTouch(round, event.data['player'],
+                                  runner_team, event.type=='flag_pick',
+                                  home_flag_out=home_flag_out,
+                                  red_score=score['red'],
+                                  blue_score=score['blue'])
+                flag_touches[event.data['team'].lower()] = touch
+                stats.append(touch)
+            elif event.type == 'flag_cap':
+                score[event.data['team'].lower()] += 1
+                scored_on = get_opposite_team(event.data['team'].lower())
+                flag_touches[scored_on].resulted_in_score = True
+                flag_touches[scored_on] = None
+            if event.type in ('frag', 'death'):
+                if flag_dropped:
+                    fragged_runner = True
+                    flag_dropped = False
+                else:
+                    fragged_runner = False
+                runners = [ft.runner for ft in flag_touches.values() if ft]
+                fragger_is_runner = event.data['fragger'] in runners
+                red_flag_out = blue_flag_out = False
+                fragger_team = get_player_team(event.data['fragger'])
+                fraggee_team = get_player_team(event.data['fraggee'])
+                if flag_touches['red'] or fraggee_team == 'red':
+                    red_flag_out = True
+                if flag_touches['blue'] or fraggee_team == 'blue':
+                    blue_flag_out = True
+                frag = Frag(round, event.data['fragger'],
+                            event.data['fraggee'], event.data['weapon'],
+                            fragger_is_runner, fragged_runner, red_flag_out,
+                            blue_flag_out, score['red'], score['blue'])
+                stats.append(frag)
+    return (stats, scores)
+
+if __name__ == "__main__":
+    stats, scores = events()
+    for stat in stats:
+        print stat
+    round = 0
+    for score in scores:
+        round += 1
+        print "Round %d: Red: %d | Blue: %d" % (round, score['red'], score['blue'])

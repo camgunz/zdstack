@@ -1,0 +1,198 @@
+#!/usr/bin/env python -u
+
+from __future__ import with_statement
+
+import os
+import sys
+import time
+import signal
+import datetime
+import threading
+
+from decimal import Decimal
+
+from ZDStack.LogEvent import LogEvent
+from ZDStack.LogParser import GeneralLogParser
+from ZDStack.LogListener import FakeZServLogListener
+
+from pyfileutils import write_file, append_file
+
+TICK = Decimal('0.028571429')
+DEBUG = True
+
+class FakePlayer:
+
+    def __init__(self, ip_address, port, number=None, name=None):
+        self.ip_address = ip_address
+        self.port = port
+        self.number = number
+        self.name = name
+
+    def __ge__(self, fp):
+        return self.number > fp.number
+
+    def __le__(self, fp):
+        return self.number < fp.number
+
+class FakeZServ:
+
+    def __init__(self, input_log_file):
+        self.shutting_down = False
+        self.flushed = False
+        self.input_log_file = input_log_file
+        self.__input_log_fobj = open(input_log_file, 'rb')
+        self.unprocessed_data = ''
+        self.general_log_filename = self.get_general_log_filename()
+        self.connection_log_filename = self.get_connection_log_filename()
+        self.debug_log_filename = self.get_debug_log_filename()
+        self.output_lock = threading.Lock()
+        self.players_lock = threading.Lock()
+        self.players = []
+        self.parse = GeneralLogParser(log_type='server', fake=True) # tricky!
+        self.listener = FakeZServLogListener(self)
+        threading.Thread(target=self.receive_commands).start()
+
+    def get_general_log_filename(self):
+        return datetime.date.today().strftime('gen-%Y%m%d.log')
+
+    def get_connection_log_filename(self):
+        return datetime.date.today().strftime('conn-%Y%m%d.log')
+
+    def get_debug_log_filename(self):
+        return 'debug.log'
+
+    def handle_signal(self, frame, signum):
+        self.shutting_down = True
+        self.listener.stop()
+        sys.exit(0)
+
+    def receive_commands(self):
+        while not self.shutting_down:
+            line = sys.stdin.readline()
+            if line.strip() == 'players':
+                self.send_players()
+
+    def distill_player(self, possible_player_names):
+        self.send_debug_line('distill_player')
+        blah = [(x.name, x) for x in self.players]
+        for ppn in possible_player_names:
+            for name, player in blah:
+                if ppn == name:
+                    return player
+
+    def start(self):
+        self.listener.start()
+        write_file('', self.connection_log_filename, overwrite=True)
+        write_file('', self.general_log_filename, overwrite=True)
+        events = []
+        while 1:
+            # self.send_debug_line('top of start')
+            line = self.__input_log_fobj.readline()
+            self.unprocessed_data += line
+            if line:
+                self.send_debug_line("Parsing line [%s]" % (line))
+            if self.unprocessed_data:
+                events, self.unprocessed_data = \
+                                            self.parse(self.unprocessed_data)
+                for event in events:
+                    s = "Line: [%s], Event: [%s]" % (event.line, event)
+                    self.send_debug_line(s)
+                    if event.type == 'message':
+                        ppn = event.data['possible_player_names']
+                        c = event.data['contents']
+                        player = self.distill_player(ppn)
+                        if not player:
+                            es = "Received a message from a non-existent player"
+                            es += ',ppn: [%s]'
+                            # d = ', '.join(event.data['possible_player_names'])
+                            # print >> sys.stderr, es % (d)
+                            continue 
+                        message = c.replace(player.name, '', 1)[3:]
+                        d = {'message': message, 'messenger': player}
+                        event = LogEvent(event.dt, 'message', d, event.line)
+                    if event.type != 'junk':
+                        self.listener.events.put_nowait(event)
+            ###
+            # Sleeping for a whole tick assumes the previous processing took
+            # absolutely no time at all... which is never going to happen of
+            # course.  This is really just to keep from burning up CPU and
+            # Disk I/O.
+            ###
+            elif not self.flushed:
+                sys.stdout.flush()
+                sys.stderr.flush()
+            time.sleep(TICK)
+
+    def send_debug_line(self, line):
+        if DEBUG:
+            print 'DEBUG: ' + line
+            append_file('DEBUG:' + line + '\n', self.debug_log_filename)
+            
+    def send_line(self, line):
+        with self.output_lock:
+            append_file(line + '\n', self.general_log_filename)
+
+    def add_player(self, ip_address, port):
+        self.send_debug_line('add_player')
+        with self.players_lock:
+            x = [(ip_address, port) for p in self.players]
+            if (ip_address, port) not in x:
+                self.players.append(FakePlayer(ip_address, port, len(x)))
+            self.players.sort()
+
+    def set_player_name(self, name):
+        self.send_debug_line('set_player_name')
+        for p in sorted(self.players):
+            if not p.name:
+                p.name = name
+                break
+
+    def update_player(ip_address, port, num, name):
+        self.send_debug_line('update_player')
+        with self.players_lock:
+            for player in self.players:
+                if player.ip_address == ip_address and player.port == port:
+                    player.name = name
+
+    def remove_player(self, name):
+        with self.players_lock:
+            new = []
+            found = False
+            for p in sorted(self.players):
+                if found:
+                    new.append(p)
+                elif p.name == name:
+                    found = True
+            self.players = new
+
+    def send_players(self):
+        self.send_debug_line('send_players')
+        counter = 0
+        s = "%s:  %s (%s:%s) (Frags: 0) (Deaths: 0) (Time: 0)"
+        with self.output_lock:
+            with self.players_lock:
+                for player in sorted(self.players):
+                    t = (player.number, player.name, player.ip_address,
+                         player.port)
+                    self.send_line(s % t)
+                    counter += 1
+            print "%s players" % (counter)
+
+def print_usage():
+    script_name = os.path.basename(sys.argv[0])
+    print >> sys.stderr, "\nUsage: %s [ input_log_file ]\n" % (script_name)
+    sys.exit(1)
+
+if __name__ == "__main__":
+    numargs = len(sys.argv)
+    if numargs == 2:
+        input_log_file = os.path.abspath(os.path.expanduser(sys.argv[1]))
+    else:
+        input_log_file = '/home/cagunyon/ZDStack/bin/gen-20080608.log'
+    if not os.path.isfile(input_log_file):
+        print_usage()
+    zs = FakeZServ(input_log_file)
+    for s in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
+        signal.signal(s, zs.handle_signal)
+    zs.start()
+

@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+import sys
+import getopt
+import pprint
+
+from ZDStack import get_configparser, HOSTNAME
+
+def print_usage(msg=None):
+    if msg:
+        print >> sys.stderr, "\nError: %s" % (msg)
+    print >> sys.stderr, """\nzdrpc\n
+Usage:
+    zdrpc -m [ rpc_method_name ] -a [ args ]
+
+    args are separated by commas, for example:
+
+        zdrpc -m get_config -a "Great CTF"
+        zdrpc -m addban -a "Great CTF","12.226.97.20","rofl"
+"""
+    sys.exit(-1)
+
+try:
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'm:a:c:', [])
+except getopt.GetoptError, ge:
+    print_usage(ge)
+if len(opts) not in (1, 2, 3):
+    print_usage("Invalid number of arguments")
+opts = dict(opts)
+if not '-c' in opts:
+    cp = get_configparser(None)
+else:
+    cp = get_configparser(opts['-c'])
+if 'zdstack_port' not in cp.defaults():
+    print_usage("Option 'zdstack_port' not found in configuration file")
+if not 'rpc_protocol' in cp.defaults():
+    raise Exception("Could not find option 'rpc_protocol' in config")
+if cp.defaults()['rpc_protocol'].lower() in ('json', 'jsonrpc', 'json-rpc'):
+    from jsonrpc import ServiceProxy as BaseProxy
+elif cp.defaults()['rpc_protocol'].lower() in ('xml', 'xmlrpc', 'xml-rpc'):
+    from xmlrpclib import ServerProxy as BaseProxy
+else:
+    raise Exception("Invalid RPC Type: [%s]" % (cp.defaults()['rpc_protocol']))
+
+address = 'http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port'])
+proxy = BaseProxy(address)
+
+###
+# I'm not a huge fan of eval, but it's so easy I can't resist.
+###
+
+def server(method_name, *args):
+    try:
+        return eval("proxy." + method_name + "(*args)")
+    except Exception, e:
+        if not hasattr(e, 'traceback') and not hasattr(e, 'error'):
+            raise
+        else:
+            if hasattr(e, 'error'):
+                try:
+                    print >> sys.stderr, "\n%s: %s\n" % (e.error['name'],
+                                                         e.error['message'])
+                    if 'traceback' in e.error:
+                        print >> sys.stderr, e.error['traceback']
+                except:
+                    raise e
+            else:
+                raise
+
+if '-a'in opts:
+    args = [x for x in opts['-a'].split(',') if x]
+else:
+    args = []
+function_kwarg_str = ', '.join(args)
+call_string = opts['-m'] + "(" + function_kwarg_str + ")"
+print "Running %s" % (call_string)
+pprint.pprint(server(opts['-m'], *args))
+

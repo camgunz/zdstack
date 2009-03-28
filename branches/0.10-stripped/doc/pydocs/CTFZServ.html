@@ -1,0 +1,103 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module CTFZServ</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>CTFZServ</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/CTFZServ.py">/media/disk-1/data/zdstack/trunk/ZDStack/CTFZServ.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ZDStack.TeamZServ.html#TeamZServ">ZDStack.TeamZServ.TeamZServ</a>(<a href="ZDStack.DMZServ.html#DMZServ">ZDStack.DMZServ.DMZServ</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="CTFZServ.html#CTFZServ">CTFZServ</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CTFZServ">class <strong>CTFZServ</strong></a>(<a href="ZDStack.TeamZServ.html#TeamZServ">ZDStack.TeamZServ.TeamZServ</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CTFZServ">CTFZServ</a>&nbsp;represents&nbsp;a&nbsp;ZServ&nbsp;configured&nbsp;for&nbsp;Capture&nbsp;the&nbsp;Flag.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="CTFZServ.html#CTFZServ">CTFZServ</a></dd>
+<dd><a href="ZDStack.TeamZServ.html#TeamZServ">ZDStack.TeamZServ.TeamZServ</a></dd>
+<dd><a href="ZDStack.DMZServ.html#DMZServ">ZDStack.DMZServ.DMZServ</a></dd>
+<dd><a href="ZDStack.BaseZServ.html#BaseZServ">ZDStack.BaseZServ.BaseZServ</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="CTFZServ-__init__"><strong>__init__</strong></a>(self, name, config, zdstack)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#CTFZServ">CTFZServ</a>&nbsp;instance.<br>
+&nbsp;<br>
+name:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;name&nbsp;of&nbsp;this&nbsp;ZServ.<br>
+config:&nbsp;&nbsp;a&nbsp;dict&nbsp;of&nbsp;configuration&nbsp;options&nbsp;and&nbsp;values.<br>
+zdstack:&nbsp;a&nbsp;Stack&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-get_configuration"><strong>get_configuration</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;string&nbsp;of&nbsp;configuration&nbsp;data.</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="ZDStack.TeamZServ.html#TeamZServ">ZDStack.TeamZServ.TeamZServ</a>:<br>
+<dl><dt><a name="CTFZServ-load_config"><strong>load_config</strong></a>(self, config)</dt><dd><tt>Loads&nbsp;the&nbsp;config:<br>
+&nbsp;<br>
+config:&nbsp;a&nbsp;dict&nbsp;of&nbsp;configuration&nbsp;options&nbsp;and&nbsp;values</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="ZDStack.BaseZServ.html#BaseZServ">ZDStack.BaseZServ.BaseZServ</a>:<br>
+<dl><dt><a name="CTFZServ-__str__"><strong>__str__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="CTFZServ-clean_up_after_zserv"><strong>clean_up_after_zserv</strong></a>(self)</dt><dd><tt>Cleans&nbsp;up&nbsp;after&nbsp;the&nbsp;zserv&nbsp;process&nbsp;exits.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-export"><strong>export</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;dict&nbsp;of&nbsp;ZServ&nbsp;configuration&nbsp;information.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-reload_config"><strong>reload_config</strong></a>(self, config)</dt><dd><tt>Reloads&nbsp;the&nbsp;config&nbsp;for&nbsp;the&nbsp;ZServ.<br>
+&nbsp;<br>
+config:&nbsp;a&nbsp;dict&nbsp;of&nbsp;configuration&nbsp;options&nbsp;and&nbsp;values.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-restart"><strong>restart</strong></a>(self, signum<font color="#909090">=15</font>)</dt><dd><tt>Restarts&nbsp;the&nbsp;zserv&nbsp;process,&nbsp;restarting&nbsp;it&nbsp;if&nbsp;it&nbsp;crashes.<br>
+&nbsp;<br>
+signum:&nbsp;an&nbsp;int&nbsp;representing&nbsp;the&nbsp;signal&nbsp;number&nbsp;to&nbsp;send&nbsp;to&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;zserv&nbsp;process.&nbsp;&nbsp;15&nbsp;(TERM)&nbsp;by&nbsp;default.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-spawn_zserv"><strong>spawn_zserv</strong></a>(self)</dt><dd><tt>Starts&nbsp;the&nbsp;zserv&nbsp;process.<br>
+&nbsp;<br>
+This&nbsp;keeps&nbsp;a&nbsp;reference&nbsp;to&nbsp;the&nbsp;running&nbsp;zserv&nbsp;process&nbsp;in<br>
+self.<strong>zserv</strong>.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-start"><strong>start</strong></a>(self)</dt><dd><tt>Starts&nbsp;the&nbsp;zserv&nbsp;process,&nbsp;restarting&nbsp;it&nbsp;if&nbsp;it&nbsp;crashes.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-stop"><strong>stop</strong></a>(self, signum<font color="#909090">=15</font>)</dt><dd><tt>Stops&nbsp;the&nbsp;zserv&nbsp;process.<br>
+&nbsp;<br>
+signum:&nbsp;an&nbsp;int&nbsp;representing&nbsp;the&nbsp;signal&nbsp;number&nbsp;to&nbsp;send&nbsp;to&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;zserv&nbsp;process.&nbsp;&nbsp;15&nbsp;(TERM)&nbsp;by&nbsp;default.</tt></dd></dl>
+
+<dl><dt><a name="CTFZServ-watch_zserv"><strong>watch_zserv</strong></a>(self, set_timer<font color="#909090">=True</font>)</dt><dd><tt>Watches&nbsp;the&nbsp;zserv&nbsp;process,&nbsp;restarting&nbsp;it&nbsp;if&nbsp;it&nbsp;crashes.<br>
+&nbsp;<br>
+set_timer:&nbsp;a&nbsp;Boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;sets&nbsp;a&nbsp;timer&nbsp;to&nbsp;re-run<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this&nbsp;method&nbsp;half&nbsp;a&nbsp;second&nbsp;after&nbsp;completion.&nbsp;&nbsp;True<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;by&nbsp;default.</tt></dd></dl>
+
+</td></tr></table></td></tr></table>
+</body></html>
