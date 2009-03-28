@@ -1,116 +1,582 @@
+;;;
+; Introduction
+;
+;   This is the example ZDStack configuration file.  Previously, documentation
+;   on configuration ZDStack was mostly limited to the ZDStack Wiki and this
+;   file itself, neither of which was comprehensive... to say the least.  I
+;   have added quite a bit of (hopefully) clear and verbose documentation here
+;   in ;   hopes of aiding administrators in their quest to master configuring
+;   multiple ZDaemon servers.  Advanced users can feel free to remove all of
+;   this (in Vim, pressing '}' takes you to the end of the documentation, which
+;   I find quite handy) if they find it's slowing them down.
+;
+; Location
+;
+;   This is the example ZDStack configuration file.  ZDStack will look for this
+;   file in the following locations (in this order):
+;     - ./zdstackrc
+;     - ./zdstack.ini
+;     - ~/.zdstackrc
+;     - ~/.zdstack.ini
+;     - /etc/zdstackrc
+;     - /etc/zdstack.ini
+;     - /etc/zdstack/zdstackrc
+;     - /etc/zdstack/zdstack.ini
+;
+;   For system-wide installations (not recommended), the preferred location is
+;   /etc/zdstack/zdstackrc.  For user-local installations, the preferred
+;   location is ~/.zdstackrc
+;
+;   There are two types of options in this configuration file, value options
+;   and boolean options.  Value options are specific values, such as '8080' and
+;   'xml-rpc'.  In instances where only certain values are valid (for example,
+;   'zdaemon_rpc_protocol'), the values are case-insensitive.  Boolean options
+;    are ;   either 'true' or 'false', and can be specified many different ways:
+;     - on/off
+;     - yes/no or y/n
+;     - true/false or t/f
+;     - others, but this should be enough!
+;
+; Variable Substitution
+;
+;   This configuration file supports a simple, yet powerful form of variable
+;   substitution.   You can define arbitrary values here, for example:
+;
+;     idl_motd = "Welcome to the International Doom League"
+;
+;   And use this value later, either in the DEFAULT section or a server
+;   section:
+;
+;     [International Doom League Week 4 - ZDCTF08 - A]
+;     motd = %(idl_motd)s - Week 4 - ZDCTF08 - Server A
+;
+;   The MOTD for that server then will be:
+;
+;     Welcome to the International Doom League - Week 4 - ZDCTF08 - Server A
+;
+;   You can see this in use in this example configuration file; 'root_folder'
+;   is used internally in ZDStack, but rather it's defined here as a
+;   convenience so that ZDStack's resources are all contained beneath one
+;   folder.  Some users may not want to do this, however, so the use of
+;   'root_folder' is entirely optional.
+;
+;   Variables cannot refer to themselves, however, so you cannot do this:
+;
+;     [DEFAULT]
+;     motd = Server managed by ZDStack
+;
+;     [International Doom League Week 4 - ZDCTF08 - A]
+;     motd = Welcome to the International Doom League<br><br>%(motd)s
+;
+;   In order to accomplish the same thing, you should define some arbitrary
+;   options:
+;
+;     [DEFAULT]
+;     motd = This is the lame default MOTD
+;     zds_motd = Server managed by ZDStack
+;     idl_motd = Welcome to the International Doom League
+;
+;     [International Doom League Week 4 - ZDCTF08 - A]
+;     motd = %(idl_motd)s - Week 4 - ZDCTF08 - A<br><br>%(zds_motd)s
+;
+;   The MOTD for that server will then be:
+;
+;     Welcome to the International Doom League - Week 4 - ZDCTF08 - A
+;                      Server managed by ZDStack
+;
+; Game Mode Defaults
+;
+;   This configuration file will also detect 'game mode specific' defaults.  By
+;   prefixing an option in the DEFAULT section with the game mode, all servers
+;   with that game mode will have that option as their default, instead of the
+;   regular default option.  For example:
+;
+;     dmflags = 201796
+;     ctf_dmflags = 21508
+;
+;   The DMFLAGS for any CTF server will then be 21508, instead of the default
+;   201796 (not that we recommend setting default DMFLAGS).
+;
+;   Even though a user could accomplish nearly the same thing using variable
+;   substitution, this saves unnecessary repetition in the server sections,
+;   which helps to keep the configuration manageable.
+;
+; Sections
+;
+;   A section is defined using brackets, i.e. [ZDDL Duel Server - MAP01].  The
+;   only special section is the DEFAULT section, which defines defaults for all
+;   other sections.  An option/value pair defined in the DEFAULT section is
+;   defined for all sections, but an option/value pair defined in any other
+;   section is defined only for that section, for example:
+;
+;     [DEFAULT]
+;     motd = Server managed by ZDStack
+;     idl_motd = Welcome to the International Doom League
+;     zddl_motd = Welcome to the ZDaemon Duel League
+;
+;     [ZDDL Duel Server - MAP01]
+;     motd = %(zddl_motd)s - DoomII MAP01
+;
+;     [International Doom League Week 4 - ZDCTF08 - A]
+;     motd = %(idl_motd)s - Week 4 - ZDCTF08 - Server A
+;
+;   Server sections, such as [ZDDL Duel Server - MAP01], use their section name
+;   as their internal ZDStack name.  For instance, when you are using RPC
+;   methods and need to refer to a server by its name, you use the name of its
+;   configuration section ('ZDDL Duel Server - MAP01').  This name will not
+;   appear in the any launchers, it is strictly ZDStack only.  ZDStack will
+;   also use this name to create the folder in which the zserv process will
+;   run (and generate logs, if configured to do so).  Thus, it is best to keep
+;   section names short and special-character/space free.  Not because ZDStack
+;   requires this, but mainly for ease of typing.  To use the section name in
+;   variable substitution, simply use %(name)s; the section name is added to
+;   its configuration with the option label 'name' -- you can see how this is
+;   done in the example definition of 'hostname' in the DEFAULT section.
+;   
+;   The individual server's 'hostname' is displayed in launchers, and can be
+;   set to anything the user likes.  ZDStack does not use a server's hostname,
+;   but plugins may.
+;
+; Required Options
+;
+;   Not all options are required, even options that are seemingly necessary
+;   for ZDStack to function (such as database_engine) have reasonable defaults
+;   should they not be defined in the configuration.  That said, ZDStack
+;   requires the following options to be defined globally (in the DEFAULT
+;   section):
+;
+;     - zdstack_username
+;     - zdstack_password
+;     - zdstack_port
+;     - zdstack_rpc_protocol
+;     - zdstack_log_folder
+;     - zdstack_pid_file
+;     - zdstack_zserv_folder
+;     - zdstack_plugin_folder
+;     - zdstack_iwad_folder
+;     - zdstack_wad_folder
+;
+;   Additionally, the following options must be defined in each server section
+;   (you can void defining these for every server by simply definining them in
+;   the DEFAULT section, as you will see from the examples below):
+;
+;     - zserv_exe
+;     - iwad
+;     - mode
+;     - port
+;     - hostname
+;     - admin_email
+;     - website
+;     - motd
+;     - advertise
+;     - skill
+;     - enable_events
+;     - enable_stats
+;     - enable_plugins
+;
+; Global Options vs. Server Options
+;
+;   Options prefixed with a 'zdstack_' are global ZDStack options.  Otherwise
+;   the option can be set both globally in the DEFAULT section, or distinctly
+;   in that server's section.  This allows users to specify zserv binaries,
+;   IWADs, etc.
+;
+; Paths
+;
+;   All paths are resolved with regard to '~' expansion and absoluteness.  For
+;   example, given the paths:
+;
+;     iwad_folder = var/zdstack
+;     wad_folder = ~/wads
+;
+;   ZDStack will expand 'iwad_folder' to '/var/zdstack' (because ZDStack's
+;   current working directory is '/') and wad_folder to
+;   '/home/<username>/wads' (on most systems anyway).  It is usually best to
+;   use absolute paths when setting values, but ZDStack will handle relative
+;   paths and paths using '~' if a user uses them.
+;
+;   All paths are checked for existence and proper access.  ZDStack will give
+;   an error and quit if things are not in order.
+;
+; Registering Config Changes
+;
+;   After making a change to the configuration file, sending SIGHUP to the
+;   ZDStack process will have it reprocess and reload the file... provided
+;   there are no errors.  However, some changes require server process
+;   restarts, which ZDStack will not do automatically.  Additionally, the
+;   options prefixed with 'zdstack_' require a full ZDStack restart to take
+;   effect.  Running the included 'zservctl' script with the 'reload-config'
+;   action ('./zservctl reload-config') simply sends SIGHUP to the running
+;   ZDStack process.
+;
+;   Note: Changing the value of 'zdaemon_pid_file' before stopping ZDStack
+;   prevents the 'zdstack' script from locating the previous PID file, which
+;   in turn prevents it from finding the PID and sending the appropriate
+;   signals to the running ZDStack process.  Change this value after stopping
+;   ZDStack.
+;
+; Databasing
+;
+;   ZDStack version 0.11 removed the dependency on PyXSE and added a
+;   dependency on SQLAlchemy because stores all of its data in a relational
+;   database.  Even if you have disabled stats, SQLAlchemy must still be
+;   installed as ZDStack stores almost all of its per-round state information
+;   in an in-memory SQLite database, which allows most plugins to continue to
+;   function properly.  At the end of each round the in-memory database is
+;   cleared.
+;
+;   One of the benefits of using SQLAlchemy is that it allows for the use of
+;   many relational database backends.  SQLite is the default, and if no
+;   database engine is defined it used as the default.  ZDStack requires Python
+;   2.5 or higher, all of which come with built-in support for SQLite.
+;   SQLite cannot be used reliably on a remote machine however, so if you
+;   intend to host your stats database on a different machine, you will need to
+;   choose a network-accessible relational database, such as PostgreSQL or
+;   MySQL (or even Oracle and MS-SQL!).
+;
+;   For the most common case (1 machine, using SQLite, stats enabled) it is
+;   important to remember to define a database location.  Otherwise ZDStack
+;   will use an in-memory database that will not only grow in size (and RAM
+;   usage) as time goes on, but will be destroyed when ZDStack exits.  If stats
+;   are disabled, the in-memory database will only hold data for 1 round for
+;   each running zserv; at the end of every round the data from that round is
+;   cleared.
+;
+; Addresses & Hostnames
+;
+;   If explicit hostnames or addresses are not given, ZDStack tries to
+;   ascertain them without being too liberal.  Because machines can have many
+;   public-facing interfaces, and these interfaces can in turn be mapped to
+;   many different FQDNs (Fully-Qualified Domain Name), the process is not
+;   simple and further is not 100% accurate.  The best strategy is to use
+;   either an IP address or an FQDN throughout this configuration file.  If
+;   this is impossible or undesirable, ZDStack will try and default to loopback
+;   addresses for its RPC interface.  The zserv binary itself has its own logic
+;   for determining the public address of its host machine, and it can be
+;   explicitly set here using the 'ip' option.
+;
+; Limits on advertised servers
+;
+;   As of this writing, it is known that the ZDaemon administration arbitrarily
+;   limits the amount of advertised zserv binaries a single IP address can run
+;   to around 20, which it can adjust if requested.  If your advertised servers
+;   are not appearing in launchers and you are advertising > 20 servers, please
+;   check with the ZDaemon administration first to make sure you haven't
+;   triggered the "Too Many ZServs/IP" automatic ban.
+;
+; Finally
+;
+;   The end!  Go have some fun!
+;;;
+
 [DEFAULT]
-;;; The username needed to access administrative methods of the ZDStack process
-username = admin
-;;; The corresponding password
-password = pacman2000
-;;; The IP address to report to the master server.  Remove option to have
-;;;   zserv autodetect.
-; ip = 127.0.0.1
-;;; The port on which ZDStack should listen
+;;;
+; The username needed to access administrative methods of the ZDStack process
+;;;
+zdstack_username = admin
+
+;;;
+; The corresponding password
+;;;
+zdstack_password = pacman2000
+
+;;;
+; The port on which ZDStack should listen
+;;;
 zdstack_port = 8080
-;;; The RPC protocol to use, either xml-rpc or json-rpc
-rpc_protocol = xml-rpc
-;;; The root folder under which ZDStack will work
-rootfolder = /var/zdstack
-;;; The folder under which all zserv processes will create their folders
-zservfolder = %(rootfolder)s/servers
-;;; The path to the zserv executable
-zserv_exe = %(rootfolder)s/bin/zserv
-;;; The folder in which to create the Player => IP Database
-database_folder = %(rootfolder)s/database
-;;; Directory containing plugins
-plugin_dir = %(rootfolder)s/plugins
-;;; The full, absolute path to the IWADs, but not the WADs
-iwaddir = %(rootfolder)s/iWADs
-;;; The full, absolute path to the WADs, but not IWADs
-waddir = %(rootfolder)s/WADs
-;;; The name of the IWAD to use
-iwad = doom2.wad
-;;; Whether or not to parse events from the output of zserv processes.  This
-;;; is required for plugins and stats.
+
+;;;
+; The RPC protocol to use, either xml-rpc or json-rpc
+;;;
+zdstack_rpc_protocol = xml-rpc
+
+;;;
+; The address of the host on which to listen for RPC requests.
+;   If not given or invalid, ZDStack will attempt to discover the machine's
+;   loopback address itself, so only local access will be possible... which
+;   may be undesirable.  This applies to the value 'localhost' as well.  Some
+;   alternatives are listed & commented-out below.
+;
+; Note: If you have trouble with host auto-detection, you may have to make some
+;   changes/additions to your /etc/hosts file.
+;;;
+;zdstack_rpc_hostname = 127.0.0.1
+;zdstack_rpc_hostname = 216.34.181.45
+;zdstack_rpc_hostname = slashdot.org
+zdstack_rpc_hostname = localhost
+
+;;;
+; A convenience option/value defined so that other locations may be defined
+;   relative to it.
+;;;
+root_folder = ~/zdstack
+
+;;;
+; The folder in which ZDStack will create its logfile(s).
+;;;
+zdstack_log_folder = %(root_folder)s/log
+
+;;;
+; The location of ZDStack's PID file.
+;;;
+zdstack_pid_file = %(root_folder)s/ZDStack.pid
+
+;;;
+; The folder under which all zserv processes will create their folders.
+;;;
+zdstack_zserv_folder = %(root_folder)s/servers
+
+;;;
+; The database engine to use.  Supported engines are:
+;   - SQLite
+;   - PostgreSQL
+;   - MySQL
+;   - Oracle
+;   - MS-SQL
+;   - Firebird
+;;;
+zdstack_database_engine = sqlite
+
+;;;
+; The name of the database to connect to.  There are a few caveats for SQLite:
+;   - This should be the full path to a file to be used as a database.
+;   - You can use :memory: to use an in-memory database, but this will be
+;       destroyed when ZDStack exits and will increase in size (and obviously
+;       memory usage) until then.  If stats are disabled, however, the
+;       in-memory database will not increase in size as time goes on.
+;   - Leaving this blank or not defining this option causes ZDStack to use an
+;       in-memory database by default.
+;;;
+zdstack_database_name = %(root_folder)s/zdsdbfile.db
+
+;;;
+; The name of the database host to connect to.  Don't use this when using
+;   SQLite.
+;;;
+zdstack_database_host = localhost
+
+;;;
+; The username to use when connecting to the database.
+;;;
+zdstack_database_username = zdstack
+
+;;;
+; The password to use when connecting to the database.
+;;;
+zdstack_database_password = zdstackrox
+
+;;;
+; Directory containing plugins.
+;;;
+zdstack_plugin_folder = %(root_folder)s/plugins
+
+;;;
+; The full, absolute path to the IWADs, but not the WADs.
+;;;
+zdstack_iwad_folder = %(root_folder)s/IWADs
+
+;;;
+; The full, absolute path to the WADs, but not IWADs.
+;;;
+zdstack_wad_folder = %(root_folder)s/WADs
+
+;;;
+; Whether or not to parse events from the output of zserv processes.  This
+;   is required for plugins and stats.
+;;;
 enable_events = no
-;;; Whether or not to enable stats.  Some plugins may require this.
+
+;;;
+; Whether or not to enable stats.  Some plugins may require this.
+;;;
 enable_stats = no
-;;; Whether or not to enable plugins.  Plugins are entirely optional.
+
+;;;
+; Whether or not to enable plugins.  Plugins are entirely optional.
+;;;
 enable_plugins = no
-;;; The number of maps to remember statistics for.  If stats are disabled, this
-;;; does nothing.
-maps_to_remember = 7
-;;; The message to display in the server selector (like ZLauncher or IDE)
+
+;;;
+; The name of the IWAD to use.  Note that 'doom2.wad' is copyrighted by ID
+;   Software and you need to purchase the game in order to host a server that
+;   uses it.
+;;;
+iwad = doom2.wad
+
+;;;
+; The path to the zserv executable.
+;;;
+zserv_exe = %(root_folder)s/bin/zserv
+
+;;;
+; The IP address to report to the master server.  Remove option to have
+;   zserv autodetect.
+;;;
+; ip = 127.0.0.1
+
+;;;
+; The message to display in the server selector (like ZLauncher or IDE)
+;;;
 hostname = ZDStack Server %(name)s %(type)s
-;;; The administrator's e-mail address
+
+;;;
+; The administrator's e-mail address.
+;;;
 admin_email = zdstack@zdstack.com
-;;; The site where WADs can be downloaded
+
+;;;
+; The site where WADs can be downloaded (this address doesn't actually exist!).
+;;;
 website = http://zdstack.com/wads
-;;; The message to display upon connecting to a server
+
+;;;
+; The message to display upon connecting to a server
+;;;
 motd = %(hostname)s<br><br>This server is managed by ZDStack
-;;; The default timeout for all servers
+
+;;;
+; The default timeout for all servers
+;;;
 timelimit = 0
-;;; How many flags can be scored before one team wins (applies to CTF only)
+
+;;;
+; How many flags can be scored before one team wins (applies to CTF only)
+;;;
 ctf_team_score_limit = 5
-;;; How many frags can be scored before one team wins (applies to TeamDM only)
+
+;;;
+; How many frags can be scored before one team wins (applies to TeamDM only)
+;;;
 teamdm_team_score_limit = 5
-;;; Whether or not to advertise
+
+;;;
+; Whether or not to advertise
+;;;
 advertise = yes
-;;; Team Damage factor, 0=off, .5/0.5=half, 1=full
+
+;;;
+; Team Damage factor, 0=off, .5/0.5=half, 1=full
+;;;
 teamdamage = 0
-;;; Enable RCON
-enable_rcon = yes
-;;; The default RCON password for all servers
-;;;   If this is not given or blank, RCON will not be enabled
+
+;;;
+; The default RCON password for all servers
+;   If this is not given or blank, RCON will not be enabled
+;;;
 rcon_password = zdstackrcon
-;;; Limited RCON passwords and permissions
-;;;   Up to rcon_password_9 and rcon_commands_9 can be configured
+
+;;;
+; Limited RCON passwords and permissions
+;   Up to rcon_password_9 and rcon_commands_9 can be configured
+;;;
 rcon_password_1 = zdstacklevel1
 rcon_commands_1 = mapskipto players
-;;; Enable server password
-requires_password = no
-;;; The default password for all passworded servers
-;;;   If this is not given or blank, the server password will not be enabled
+
+;;;
+; The default password for all passworded servers
+;   If this is not given or blank, the server password will not be enabled
+;;;
 server_password = zdstackpassword
-;;; Number of seconds in which spamming can occur
+
+;;;
+; Number of seconds in which spamming can occur
+;;;
 spam_window = 10
-;;; How many messages can occur in the spam window before "spamming" occurs
+
+;;;
+; How many messages can occur in the spam window before "spamming" occurs
+;;;
 spam_limit = 10
-;;; Optional WADs, used if the player has them, separated by ','
+
+;;;
+; Optional WADs, used if the player has them, separated by ','
+;;;
 optional_wads = zvox2.wad
-;;; Groups of equivalent WADs
+
+;;;
+; Groups of equivalent WADs
+;;;
 alternate_wads = doom2.wad=freedm062.wad=freedoom062.wad zvox2.wad=zvox4.wad
-;;; Gravity value
+
+;;;
+; Gravity value
+;;;
 gravity = 800
-;;; Air control value (0 is OS and the default, 0.00390625 is NS)
+
+;;;
+; Air control value (0 is OS and the default, 0.00390625 is NS)
+;;;
 air_control = 0
-;;; How many seconds a player can remain dead before being removed from play
+
+;;;
+; How many seconds a player can remain dead before being removed from play
+;;;
 death_limit = 30
-;;; Whether or not players who exceed the speed limit will be kicked
+
+;;;
+; Whether or not players who exceed the speed limit will be kicked
+;;;
 speed_check = 0
-;;; Restart a map if no players are in the server
+
+;;;
+; Restart a map if no players are in the server
+;;;
 restart_empty_map = 0
-;;; How many "players" must be in server, spawning bots to make up the 
-;;;   difference
+
+;;;
+; How many "players" must be in server, spawning bots to make up the 
+;   difference
+;;;
 min_players = 0
-;;; Remove bots as soon as a second human player joins
+
+;;;
+; Remove bots as soon as a second human player joins
+;;;
 remove_bots_when_humans = yes
-;;; Whether to add the map number to the advertised hostname
-;;;   Note: this is currently unsupported
+
+;;;
+; Whether to add the map number to the advertised hostname
+;   Note: this is currently unsupported
+;;;
 add_mapnum_to_hostname = no
-;;; Whether to enable overtime
-;;;   Note, overtime is the default on ZDaemon servers.  If you disable overtime
-;;;   here, it will only be disabled for the maps you configure.  If you change
-;;;   the map to a map not included in the configured maplist, overtime will be
-;;;   enabled.
+
+;;;
+; Whether to enable overtime
+;   Note: overtime is the default on ZDaemon servers.  If you disable overtime
+;   here, it will only be disabled for the maps you configure.  If you change
+;   the map to a map not included in the configured maplist, overtime will be
+;   enabled.
+;;;
 overtime = no
-;;; Skill level, 0 - 4
+
+;;;
+; Skill level, 0 - 4
+;;;
 skill = 4
-;;; Teamdamage Factor
+
+;;;
+; Teamdamage Factor
+;;;
 teamdamage = 0
-;;; Whether or not missiles teleport through teleporters
+
+;;;
+; Whether or not missiles teleport through teleporters
+;;;
 telemissiles = no
-;;; Whether or not players can see spectator messages
+
+;;;
+; Whether or not players can see spectator messages
+;;;
 specs_dont_disturb_players = no
-;;; Default WADs
+
+;;;
+; Default WADs
+;;;
 wads =
-;;; Default per-game-mode DMFLAGS
+
+;;;
+; Default per-game-mode DMFLAGS
+;;;
 duel_dmflags = 201796
 duel_dmflags2 = 132608
 ffa_dmflags = 201796
@@ -121,56 +587,71 @@ coop_dmflags = 2418692
 coop_dmflags2 = 137198
 teamdm_dmflags = 87300
 teamdm_dmflags2 = 132096
-;;; Default per-game-mode number of players allowed to connect
+
+;;;
+; Default per-game-mode number of players allowed to connect
+;;;
 duel_max_clients = 16
 ffa_max_clients = 16
 ctf_max_clients = 16
 coop_max_clients = 16
 teamdm_max_clients = 16
-;;; Default per-game-mode number of players allowed to play
+
+;;;
+; Default per-game-mode number of players allowed to play
+;;;
 duel_max_players = 2
 ffa_max_players = 16
 ctf_max_players = 8
 coop_max_players = 16
 teamdm_max_players = 4
-;;; Default per-game-mode number of teams
+
+;;;
+; Default per-game-mode number of teams
+;;;
 ctf_max_teams = 2
 teamdm_max_teams = 2
-;;; Default per-game-mode number of players per team
+
+;;;
+; Default per-game-mode number of players per team
+;;;
 ctf_max_players_per_team = 4
 teamdm_max_players_per_team = 2
-;;; Default per-game-mode fraglimit
+
+;;;
+; Default per-game-mode fraglimit
+;;;
 duel_fraglimit = 50
 ffa_fraglimit = 50
 
 [Map01]
-type = duel
+mode = duel
 port = 10666
 maps = map01
 wads = zvox2.wad
 
 [D5M1]
-type = duel
+mode = duel
 wads = dwango5.wad,zvox2.wad
 port = 10667
 maps = map02
 
 [shoot!]
-type = duel
+mode = duel
 wads = shoot!.wad,zvox2.wad
 port = 10668
 maps = map01
 dmflags = 218180
 
 [ZDCTF 1,2,3]
-type = ctf
+mode = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
 port = 10669
 maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
 timelimit = 15
 
 [Private CTF]
-type = ctf
+mode = ctf
 wads = zdctfmp.wad,zdctfmp2.wad,zdctfmp3-.wad,zvox2.wad
 port = 10670
 maps = map01,map02,map03,map04,map07,map08,map09,map11,map12,map13,map15,map16,map18,map19,map21,map25,map26,map27
@@ -181,7 +662,7 @@ rcon_password = privatercon
 timelimit = 15
 
 [Vex TeamDM]
-type = teamdm
+mode = teamdm
 wads = vex-zdaemon.wad, zvox2.wad
 port = 10671
 maps = map01
@@ -189,12 +670,12 @@ teamdamage = 1
 timelimit = 10
 
 [FFA]
-type = ffa
+mode = ffa
 maps = map01,map02,map03,map04,map05
 fraglimit = 50
 
 [Coop]
-type = coop
+mode = coop
 maps = map01,map02,map03,map04,map05
 teamdamage = 1
 timelimit = 0

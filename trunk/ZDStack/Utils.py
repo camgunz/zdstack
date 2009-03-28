@@ -1,3 +1,4 @@
+import sys
 import os.path
 
 from datetime import datetime, timedelta
@@ -54,12 +55,10 @@ def get_logfile_suffix(roll=False):
         today += timedelta(days=1)
     return today.strftime('-%Y%m%d') + '.log'
 
-def resolve_file(f):
+def resolve_path(f):
     """Returns the expanded, absolute path of a given file/folder.
 
     f: a path to expand.
-
-    TODO: rename this resolve_path
 
     """
     return os.path.abspath(os.path.expanduser(f))
@@ -166,4 +165,39 @@ def html_escape(s):
     t = t.replace("'", "&#39;")
     t = t.replace('"', "&quot;")
     return t
+
+###
+# I'm not a huge fan of eval, but it's so easy I can't resist.
+###
+
+def send_proxy_method(proxy, method_name, *args):
+    """Sends an RPC request, returning the result or printing an error.
+
+    proxy:       an RPC proxy instance, either JSON or XML
+    method_name: a string representing the name of the method to
+                 remotely execute.
+    *args:       a *expanded list of arguments to pass to the method
+                 specified by method_name.
+
+    If an error occurs, it will be printed to STDERR.  This is because
+    this method is primarily for use by scripts trying to interact
+    with a running ZDStack.
+
+    """
+    try:
+        return eval("proxy." + method_name + "(*args)")
+    except Exception, e:
+        if not hasattr(e, 'traceback') and not hasattr(e, 'error'):
+            raise
+        else:
+            if hasattr(e, 'error'):
+                try:
+                    print >> sys.stderr, "\n%s: %s\n" % (e.error['name'],
+                                                         e.error['message'])
+                    if 'traceback' in e.error:
+                        print >> sys.stderr, e.error['traceback']
+                except:
+                    raise e
+            else:
+                raise
 

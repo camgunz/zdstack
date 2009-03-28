@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='ZDStack',
-      version='0.10.0',
+      version='0.11.0',
       description='ZDStack zserv ZDaemon Server Wrapper',
       author='Charlie Gunyon',
       author_email='charles.gunyon@gmail.com',

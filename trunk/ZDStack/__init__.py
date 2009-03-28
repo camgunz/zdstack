@@ -14,34 +14,60 @@ from cStringIO import StringIO
 
 from pyfileutils import read_file, append_file
 
-from ZDStack.Utils import resolve_file
+from ZDStack.Utils import resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'CONFIGFILE',
-           'CONFIGPARSER', 'ZSERV_EXE', 'DATABASE', 'LOGFILE', 'DEBUGGING'
-           'PLUGINS', 'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION',
-           'TICK', 'PlayerNotFoundError', 'DebugTRFH', 'get_hostname',
-           'get_loopback', 'get_engine', 'get_metadata', 'get_session',
+           'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS', 'DATEFMT',
+           'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS', 'RPC_CLASS',
+           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'PlayerNotFoundError',
+           'TeamNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
+           'get_engine', 'get_metadata', 'get_session_class', 'get_session',
            'get_configfile', 'set_configfile', 'load_configparser',
-           'get_configparser', 'get_plugins', 'get_logfile', 'set_debugging',
-           'log']
+           'get_configparser', 'get_server_proxy', 'get_plugins',
+           'set_debugging', 'log']
 
-SUPPORTED_ENGINE_TYPES = ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql',
-                          'firebird')
+REQUIRED_GLOBAL_CONFIG_OPTIONS = \
+    ('zdstack_username', 'zdstack_password', 'zdstack_port',
+     'zdstack_rpc_protocol', 'zdstack_log_folder', 'zdstack_pid_file',
+     'zdstack_zserv_folder', 'zdstack_plugin_folder', 'zdstack_iwad_folder',
+     'zdstack_wad_folder')
+
+REQUIRED_SERVER_CONFIG_OPTIONS = \
+    ('zserv_exe', 'iwad', 'enable_events', 'enable_stats', 'enable_plugins',
+     'hostname', 'admin_email', 'website', 'motd', 'advertise', 'skill',
+     'mode', 'port')
+
+REQUIRED_GLOBAL_VALID_FOLDERS = \
+    (('zdstack_log_folder', os.R_OK | os.W_OK | os.X_OK),
+     ('zdstack_zserv_folder', os.R_OK | os.W_OK | os.X_OK),
+     ('zdstack_plugin_folder', os.R_OK | os.X_OK),
+     ('zdstack_iwad_folder', os.R_OK | os.X_OK),
+     ('zdstack_wad_folder', os.R_OK | os.X_OK))
+
+REQUIRED_SERVER_VALID_FILES = \
+    (('zserv_exe', os.R_OK | os.X_OK), ('iwad', os.R_OK))
+
+SUPPORTED_ENGINE_TYPES = \
+    ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql', 'firebird')
+
+SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
+
 HOSTNAME = None
 LOOPBACK = None
 CONFIGFILE = None
 CONFIGPARSER = None
-ZSERV_EXE = None
 DATABASE = None
-LOGFILE = None
 DEBUGGING = None
 PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
 DB_ENGINE = None
 DB_METADATA = None
 DB_SESSION = None
-TICK = Decimal(0.027)
+RPC_CLASS = None
+RPC_PROXY_CLASS = None
+TEAM_COLORS = ('red', 'blue', 'green', 'white')
+TICK = Decimal('0.027')
 
 ###
 # I'm deciding to only have 1 DB engine, and to make all zservs use it.  I
@@ -67,6 +93,11 @@ class PlayerNotFoundError(Exception):
         else:
             es = "Player Address [%s:%s] not found"
             Exception.__init__(self, es % ip_address_and_port)
+
+class TeamNotFoundError(Exception):
+
+    def __init__(self, color):
+        Exception.__init__(self, "%s Team not found" % (color.capitalize()))
 
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
@@ -134,35 +165,31 @@ def get_engine():
     ###
     # At this point, we are assuming that stats have been enabled.
     ###
-    global __ENGINE
-    if not __ENGINE:
-        db_driver = get_configparser().defaults()['database_engine'].lower()
+    global DB_ENGINE
+    if not DB_ENGINE:
+        d = get_configparser().defaults()
+        db_driver = d.get('zdstack_database_engine', 'sqlite').lower()
         if db_driver not in SUPPORTED_ENGINE_TYPES:
             raise ValueError("DB engine %s is not supported" % (db_driver))
         if db_driver == 'sqlite':
-            if 'database_name' not in get_configparser().defaults():
-                db_name = ':memory:'
-            else:
-                db_name = get_configparser().defaults()['database_name']
-            if not db_name:
-                db_name = ':memory:'
+            db_name = d.get('zdstack_database_name', ':memory:')
             if db_name == ':memory:':
                 db_str = 'sqlite://:memory:'
             else:
-                db_name = os.path.abspath(db_name) # just to be sure
+                db_name = resolve_path(db_name) # just to be sure
                 if not os.path.isfile(db_name):
-                    raise ValueError("SQLite DB file %s not found" % (db_name))
+                    es = "SQLite DB file %s not found, will create new DB"
+                    logging.info(es)
                 db_str = 'sqlite:///%s' % (db_name)
         else:
-            db_host = get_configparser().defaults()['database_host']
-            if port in get_configparser().defaults():
-                db_port = get_configparser().defaults()['port']
-                if db_port:
-                    try:
-                        db_port = int(db_port)
-                    except:
-                        es = "Invalid port number format %s"
-                        raise ValueError(es % (db_port))
+            db_host = d['zdstack_database_host']
+            if 'port' in d and d['port']:
+                db_port = d['port']
+                try:
+                    db_port = int(db_port)
+                except:
+                    es = "Invalid port number format %s"
+                    raise ValueError(es % (db_port))
                 db_temp = '%%s://%%s:%%s@%%s:%d/%%s' % (db_port)
                 if db_driver == 'mysql' and db_host == 'localhost':
                     db_host = get_loopback()
@@ -175,8 +202,28 @@ def get_engine():
                 # so we use SQLAlchemy's.
                 ###
                 db_temp += '?charset=utf8&use_unicode=0'
-            db_user = get_configparser().defaults()['database_user']
-            db_pass = get_configparser().defaults()['database_password']
+            ###
+            # Some databases might be configured for user-less/password-less
+            # access (potentially dumb, but w/e).
+            ###
+            db_user = ''
+            db_pass = ''
+            ###
+            # Be a little flexible in the labeling of the db user & pw fields
+            ###
+            if 'zdstack_database_user' in d and d['zdstack_database_user']:
+                db_user = d['zdstack_database_user']
+            elif 'zdstack_database_username' in d and \
+               d['zdstack_database_username']:
+                db_user = d['zdstack_database_username']
+            if 'zdstack_database_pass' in d and d['zdstack_database_pass']:
+                db_pass = d['zdstack_database_pass']
+            elif 'zdstack_database_password' in d and \
+               d['zdstack_database_password']:
+                db_pass = d['zdstack_database_password']
+            elif 'zdstack_database_passwd' in d and \
+               d['zdstack_database_passwd']:
+                db_pass = d['zdstack_database_passwd']
             db_str = db_temp % (db_driver, db_user, db_pass, db_host, db_name)
         from sqlalchemy import create_engine
         if db_driver == 'mysql':
@@ -184,10 +231,14 @@ def get_engine():
             # We need to recycle connections every hour or so to avoid MySQL's
             # idle connection timeouts.
             ###
-            __ENGINE = create_engine(db_str, pool_recycle=3600)
+            logging.debug("Creating engine from DB str: [%s]" % (db_str))
+            print "Creating engine from DB str: [%s]" % (db_str)
+            DB_ENGINE = create_engine(db_str, pool_recycle=3600)
         else:
-            __ENGINE = create_engine(db_str)
-    return __ENGINE
+            logging.debug("Creating engine from DB str: [%s]" % (db_str))
+            print "Creating engine from DB str: [%s]" % (db_str)
+            DB_ENGINE = create_engine(db_str)
+    return DB_ENGINE
 
 def get_metadata():
     global DB_METADATA
@@ -197,12 +248,16 @@ def get_metadata():
         DB_METADATA.bind = get_engine()
     return DB_METADATA
 
-def get_session():
-    global DB_SESSION
-    if not DB_SESSION:
+def get_session_class():
+    global DB_SESSION_CLASS
+    if not DB_SESSION_CLASS:
         from sqlalchemy.orm import sessionmaker
-        DB_SESSION = sessionmaker(bind=get_engine())
-    return DB_SESSION
+        DB_SESSION_CLASS = sessionmaker(bind=get_engine())
+    return DB_SESSION_CLASS
+
+def get_session():
+    Session = get_session_class()
+    return Session()
 
 def get_configfile():
     global CONFIGFILE
@@ -215,7 +270,7 @@ def get_configfile():
                                  '/etc/zdstack/zdstackrc'
                                  '/etc/zdstack/zdstack.ini']
         possible_config_files = \
-                        [resolve_file(x) for x in possible_config_files]
+                        [resolve_path(x) for x in possible_config_files]
         possible_config_files = \
                         [x for x in possible_config_files if os.path.isfile(x)]
         if not possible_config_files:
@@ -223,20 +278,82 @@ def get_configfile():
         CONFIGFILE = possible_config_files[0]
     return CONFIGFILE
 
-get_configfile()
-
 def set_configfile(config_file):
     global CONFIGFILE
-    config_file = resolve_file(config_file)
+    config_file = resolve_path(config_file)
     if not os.path.isfile(config_file):
         es = "Configuration file [%s] not found"
         raise ValueError(es % (config_file))
     CONFIGFILE = config_file
 
 def load_configparser():
-    cp = CP(CONFIGFILE, allow_duplicate_sections=False)
+    global RPC_CLASS
+    global RPC_PROXY_CLASS
+    cp = CP(get_configfile(), allow_duplicate_sections=False)
+    defaults = cp.defaults()
     for section in cp.sections():
         cp.set(section, 'name', section)
+    for x in REQUIRED_GLOBAL_CONFIG_OPTIONS:
+        if x not in defaults or not defaults[x]:
+            raise ValueError("Required global option %s not found" % (x))
+    for fo, m in REQUIRED_GLOBAL_VALID_FOLDERS:
+        f = resolve_path(defaults[fo])
+        if not os.path.isdir(f):
+            raise ValueError("Required folder %s not found" % (fo))
+        if not os.access(f, m):
+            raise ValueError("Insufficient access provided for %s" % (f))
+        cp.set('DEFAULT', fo, f)
+    for s in cp.sections():
+        d = dict(cp.items(s))
+        for x in REQUIRED_SERVER_CONFIG_OPTIONS:
+            if x not in d or not d[x]:
+                es = "Required server option %s not found for server [%s]"
+                raise ValueError(es % (x, s))
+        for fo, m in REQUIRED_SERVER_VALID_FILES:
+            f = resolve_path(cp.get(s, fo))
+            if not os.access(f, m):
+                raise ValueError("Insufficient access provided for %s" % (f))
+            cp.set(s, fo, f)
+        if d['mode'].lower() not in SUPPORTED_GAME_MODES:
+            raise ValueError("Unsupported game mode %s" % (d['mode']))
+    ###
+    # Because we might have changed things, reload defaults
+    ###
+    defaults = cp.defaults()
+    ###
+    # Below are some checks for specific options & values
+    ###
+    ###
+    # Check RPC protocol is supported
+    ###
+    rp = defaults['zdstack_rpc_protocol'].lower()
+    if rp in ('jsonrpc', 'json-rpc'):
+        cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
+        from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
+        from jsonrpc import ServiceProxy
+        rpc_class = SimpleJSONRPCServer
+        proxy_class = ServiceProxy
+    elif rp in ('xmlrpc', 'xml-rpc'):
+        cp.set('DEFAULT', 'zdstack_rpc_protocol', 'xml-rpc')
+        from ZDStack.XMLRPCServer import XMLRPCServer
+        from xmlrpclib import ServerProxy
+        rpc_class = XMLRPCServer
+        proxy_class = ServerProxy
+    else:
+        es = "RPC Protocol [%s] not supported"
+        raise ValueError(es % (defaults['zdstack_rpc_protocol']))
+    if not 'zdstack_rpc_hostname' in defaults or \
+       not defaults['zdstack_rpc_hostname'] or \
+           defaults['zdstack_rpc_hostname'].lower() == 'localhost':
+        cp.set('DEFAULT', 'zdstack_rpc_protocol', get_loopback())
+    if not os.path.isdir(defaults['zdstack_zserv_folder']):
+        try:
+            os.mkdir(defaults['zdstack_zserv_folder'])
+        except Exception, e:
+            es = "Error: ZServ Server folder %s is not valid: %s"
+            raise ValueError(es % (defaults['zdstack_zserv_folder'], e))
+    RPC_CLASS = rpc_class
+    RPC_PROXY_CLASS = proxy_class
     return cp
 
 def get_configparser(reload=False):
@@ -245,22 +362,13 @@ def get_configparser(reload=False):
         CONFIGPARSER = load_configparser()
     return CONFIGPARSER
 
-def get_zserv_exe():
-    global CONFIGPARSER
-    global ZSERV_EXE
-    if ZSERV_EXE is None:
-        if CONFIGPARSER is None:
-            get_configparser(config_file)
-        if 'zserv_exe' not in CONFIGPARSER.defaults():
-            raise ValueError("Option 'zserv_exe' not found")
-        else:
-            zserv_exe = resolve_file(CONFIGPARSER.defaults()['zserv_exe'])
-            if not os.path.isfile(zserv_exe):
-                raise ValueError("Could not find zserv executable")
-            if not os.access(zserv_exe, os.R_OK | os.X_OK):
-                raise ValueError("Could not execute zserv")
-        ZSERV_EXE = zserv_exe
-    return ZSERV_EXE
+def get_server_proxy():
+    """Returns an object that is a proxy for the running ZDStack."""
+    cp = get_configparser() # assuming it's already loaded at this point
+    defaults = cp.defaults()
+    address = 'http://%s:%s' % (defaults['zdstack_rpc_hostname'],
+                                defaults['zdstack_port'])
+    return RPC_PROXY_CLASS(address)
 
 def get_plugins(plugins='all', config_file=None):
     global CONFIGPARSER
@@ -269,33 +377,17 @@ def get_plugins(plugins='all', config_file=None):
         if CONFIGPARSER is None:
             get_configparser(config_file)
         d = CONFIGPARSER.defaults()
-        if not 'plugin_dir' in d:
+        if not 'plugin_folder' in d:
             PLUGINS = []
-        plugin_dir = d['plugin_dir']
-        if not os.path.isdir(resolve_file(plugin_dir)):
-            raise ValueError("Plugin folder [%s] not found" % (plugin_dir))
+        plugin_folder = d['plugin_folder']
+        if not os.path.isdir(resolve_path(plugin_folder)):
+            raise ValueError("Plugin folder [%s] not found" % (plugin_folder))
         from ZDStack.Plugins import get_plugins
-        PLUGINS = get_plugins(plugin_dir)
+        PLUGINS = get_plugins(plugin_folder)
     return [x for x in PLUGINS if plugins == 'all' or x.__name__ in plugins]
 
-def get_logfile(log_file=None, config_file=None):
-    global CONFIGPARSER
-    global LOGFILE
-    if LOGFILE is None:
-        if log_file:
-            LOGFILE = log_file
-        else:
-            if CONFIGPARSER is None:
-                get_configparser(config_file)
-            rootfolder = get_configparser().defaults()['rootfolder']
-            LOGFILE = os.path.join(rootfolder, 'ZDStack.log')
-    return LOGFILE
-
 def set_debugging(debugging, log_file=None, config_file=None):
-    global LOGFILE
     global DEBUGGING
-    if LOGFILE is None:
-        get_logfile(log_file, config_file)
     if debugging:
         __log_level = logging.DEBUG
         __log_format = '[%(asctime)s] '
@@ -310,12 +402,15 @@ def set_debugging(debugging, log_file=None, config_file=None):
         __log_format += '%(levelname)-8s %(message)s'
         __handler_class = logging.handlers.TimedRotatingFileHandler
         DEBUGGING = False
+    cp = get_configparser()
+    log_folder = cp.defaults()['zdstack_log_folder']
+    log_file = os.path.join(log_folder, 'ZDStack.log')
     formatter = logging.Formatter(__log_format, DATEFMT)
-    handler = __handler_class(LOGFILE, when='midnight', backupCount=4)
+    handler = __handler_class(log_file, when='midnight', backupCount=4)
     handler.setFormatter(formatter)
     logging.RootLogger.root.addHandler(handler)
     logging.RootLogger.root.setLevel(__log_level)
     handler.setLevel(__log_level)
 
-set_debugging(False)
+# set_debugging(False)
 

@@ -3,7 +3,8 @@
 import sys
 import getopt
 
-from ZDStack import get_configparser, HOSTNAME
+from ZDStack import set_configfile, load_configparser, get_server_proxy
+from ZDStack.Utils import send_proxy_method
 
 def print_usage(msg=None):
     if msg:
@@ -19,8 +20,8 @@ Usage:
     zservctl reload-config -c [ config_file ]\n\n"""
     sys.exit(-1)
 
-actions = ('start', 'stop', 'restart', 'start-all', 'stop-all', 'restart-all',
-           'reload-config')
+actions = ('start', 'stop', 'restart', 'start-all', 'stop-all', 'restart-all')
+
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], 'n:c:', [])
 except getopt.GetoptError, ge:
@@ -29,64 +30,27 @@ if len(args) != 1 or args[0] not in actions:
     print_usage("Invalid number of arguments, or invalid action specified")
 opts = dict(opts)
 action = args[0]
-if not '-c' in opts:
-    cp = get_configparser(None)
-else:
-    cp = get_configparser(opts['-c'])
-if 'zdstack_port' not in cp.defaults():
-    print_usage("Option 'zdstack_port' not found in configuration file")
-if not 'rpc_protocol' in cp.defaults():
-    raise Exception("Could not find option 'rpc_protocol' in config")
-if cp.defaults()['rpc_protocol'].lower() in ('json', 'jsonrpc', 'json-rpc'):
-    from jsonrpc import ServiceProxy as BaseProxy
-elif cp.defaults()['rpc_protocol'].lower() in ('xml', 'xmlrpc', 'xml-rpc'):
-    from xmlrpclib import ServerProxy as BaseProxy
-else:
-    raise Exception("Invalid RPC Type: [%s]" % (cp.defaults()['rpc_protocol']))
-
-address = 'http://%s:%s' % (HOSTNAME, cp.defaults()['zdstack_port'])
-proxy = BaseProxy(address)
-
-#
-# I'm not a huge fan of eval, but it's so easy I can't resist.
-#
-
-def server(method_name, *args):
-    try:
-        return eval("proxy." + method_name + "(*args)")
-    except Exception, e:
-        if not hasattr(e, 'traceback') and not hasattr(e, 'error'):
-            raise
-        else:
-            if hasattr(e, 'error'):
-                try:
-                    print >> sys.stderr, "\n%s: %s\n" % (e.error['name'],
-                                                         e.error['message'])
-                    if 'traceback' in e.error:
-                        print >> sys.stderr, e.error['traceback']
-                except:
-                    raise e
-            else:
-                raise
+if '-c' in opts:
+    set_configfile(opts['-c'])
+load_configparser()
+proxy = get_server_proxy()
 
 if action in ('start', 'stop', 'restart'):
     if not '-n' in opts:
-        print_usage("Must specify a ZServ instance")
+        print_usage("Must specify a ZServ name")
     if action == 'start':
-        server('start_zserv', *[opts['-n']])
+        send_proxy_method(proxy, 'start_zserv', *[opts['-n']])
     elif action == 'stop':
-        server('stop_zserv', *[opts['-n']])
+        send_proxy_method(proxy, 'stop_zserv', *[opts['-n']])
     elif action == 'restart':
-        server('restart_zserv', *[opts['-n']])
+        send_proxy_method(proxy, 'restart_zserv', *[opts['-n']])
 else:
     if '-n' in opts:
-        print_usage("Action [%s] does not take a ZServ instance" % (action))
+        print_usage("Action [%s] does not require a ZServ name" % (action))
     if action == 'start-all':
-        server('start_all_zservs')
+        send_proxy_method(proxy, 'start_all_zservs')
     elif action == 'stop-all':
-        server('stop_all_zservs')
+        send_proxy_method(proxy, 'stop_all_zservs')
     elif action == 'restart-all':
-        server('restart_all_zservs')
-    elif action == 'reload-config':
-        server('reload_config')
+        send_proxy_method(proxy, 'restart_all_zservs')
 

@@ -7,8 +7,8 @@ from StringIO import StringIO
 
 from ZDStack import get_configfile, get_configparser
 from ZDStack.Utils import yes
+from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
-from ZDStack.ZServDepot import get_zserv_class
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 
 class AuthenticationError(Exception):
@@ -23,20 +23,16 @@ class Stack(Server):
 
     """Stack represents the main ZDStack class."""
 
-    def __init__(self, config_file=None, debugging=False):
+    def __init__(self, debugging=False):
         """Initializes a Stack instance.
 
-        config_file: optional, a string representing the path to a
-                     configuration file.  If not given, looks for a
-                     configuration file in a predefined list of
-                     locations.
         debugging:   a boolean, whether or not debugging is enabled
 
         """
         self.spawn_lock = Lock()
         self.zservs = {}
         self.start_time = datetime.now()
-        Server.__init__(self, config_file, debugging)
+        Server.__init__(self, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
@@ -45,29 +41,11 @@ class Stack(Server):
     def check_all_zserv_configs(self, config):
         """Ensures that all ZServ configuration sections are correct."""
         # logging.debug('')
-        sections = config.sections()
-        for section in sections:
-            self.check_zserv_config(dict(config.items(section)))
         for zserv_name in self.zservs:
             if not zserv_name in sections \
                and self.zservs[zserv_name].pid is None:
                 es = "Cannot remove running zserv [%s] from the config."
                 raise Exception(es % (zserv_name))
-
-    def check_zserv_config(self, zserv_config):
-        """Ensures that a ZServ configuration section is correct.
-        
-        A dict containing ZServ configuration options and values.
-        
-        """
-        # logging.debug('')
-        if not 'type' in zserv_config:
-            es = "Could not determine type of server [%s]"
-            raise ValueError(es % (section))
-        if zserv_config['type'].lower() not in \
-                                    ('ctf', 'coop', 'duel', 'ffa', 'teamdm'):
-            es = "Invalid server type [%s]"
-            raise ValueError(es % (zserv_config['type']))
 
     def load_zservs(self):
         """Instantiates all configured ZServs."""
@@ -78,21 +56,8 @@ class Stack(Server):
                 logging.info("Reloading Config for [%s]" % (zserv_name))
                 self.zservs[zserv_name].reload_config(zs_config)
             else:
-                game_mode = zs_config['type'].lower()
-                memory_slots = int(zs_config['maps_to_remember'])
-                ###
-                # IP Logging is disabled until SQLite support is added
-                #
-                # log_ips = yes(zs_config['enable_ip_logging'])
-                #
-                ###
-                log_ips = False
-                load_plugins = yes(zs_config['load_plugins'])
-                zs_class = get_zserv_class(game_mode, memory_slots,
-                                           log_ips, load_plugins)
-                zs = zs_class(zserv_name, zs_config, self)
-                # logging.debug("Adding zserv [%s]" % (zserv_name))
-                self.zservs[zserv_name] = zs
+                logging.debug("Adding zserv [%s]" % (zserv_name))
+                self.zservs[zserv_name] = ZServ(zserv_name, zs_config, self)
 
     def load_config(self, config, reload=False):
         """Loads the configuration.
@@ -110,15 +75,19 @@ class Stack(Server):
         self.config = config
         self.raw_config = raw_config
         try:
-            self.username = self.config.defaults()['username']
-            self.password = self.config.defaults()['password']
+            self.username = self.config.defaults()['zdstack_username']
+            self.password = self.config.defaults()['zdstack_password']
         except KeyError, e:
             es = "Could not find option %s in configuration file"
             raise ValueError(es % (str(e)))
         self.load_zservs()
 
     def _dispatch(self, method, params):
-        """This should actually be monkeypatched into XMLRPCServer."""
+        ###
+        # This currently doesn't work even a little, and I suppose it should
+        # actually be monkeypatched into XMLRPCServer... or I guess in our
+        # case I can just put it in our custom classes.
+        ###
         if method in self.methods_requiring_authentication:
             if not self.authenticate(params[0], params[1]):
                 s = "Authentication for method [%s] by user [%s] failed"

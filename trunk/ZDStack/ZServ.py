@@ -7,29 +7,32 @@ import logging
 from decimal import Decimal
 from datetime import datetime
 from threading import Timer, Lock
+from collections import deque
 from subprocess import Popen, PIPE
 
 from pyfileutils import write_file
 
-from ZDStack import HOSTNAME, PlayerNotFoundError
+from ZDStack import TEAM_COLORS, TICK, PlayerNotFoundError, get_session
 from ZDStack.Utils import yes, no
 from ZDStack.LogFile import LogFile
-from ZDStack.ZDSModels import Player, Team
+from ZDStack.ZDSModels import Port, GameMode, Wad, Map, Round, TeamColor
 from ZDStack.LogParser import GeneralLogParser
 from ZDStack.LogListener import GeneralLogListener, PluginLogListener
+from ZDStack.ZDSTeamsList import TeamsList
+from ZDStack.ZDSPlayersList import PlayersList
 
-COOP_TYPES = ('coop', 'cooperative', 'co-op', 'co-operative')
-DUEL_TYPES = ('1v1', 'duel')
-FFA_TYPES = ('ffa', 'deathmatch', 'dm', 'free for all', 'free-for-all')
-TEAMDM_TYPES = ('teamdm', 'team deathmatch', 'tdm')
-CTF_TYPES = ('ctf', 'capture the flag', 'capture-the-flag')
+COOP_MODES = ('coop', 'cooperative', 'co-op', 'co-operative')
+DUEL_MODES = ('1v1', 'duel', '1vs1')
+FFA_MODES = ('ffa', 'deathmatch', 'dm', 'free for all', 'free-for-all')
+TEAMDM_MODES = ('teamdm', 'team deathmatch', 'tdm')
+CTF_MODES = ('ctf', 'capture the flag', 'capture-the-flag')
 
-DM_TYPES = DUEL_TYPES + FFA_TYPES + TEAMDM_TYPES + CTF_TYPES
-TEAM_TYPES = TEAMDM_TYPES + CTF_TYPES
+DM_MODES = DUEL_MODES + FFA_MODES + TEAMDM_MODES + CTF_MODES
+TEAM_MODES = TEAMDM_MODES + CTF_MODES
 
 class ZServ:
 
-    """ZServ represents a ZServ.
+    """ZServ provides an interface to a zserv process.
 
     ZServ does the following:
 
@@ -40,34 +43,38 @@ class ZServ:
 
     """
 
-    # There are probably a lot of race conditions here...
-    # TODO: add locks, specifically in RPC-accessible methods and
-    #       around the data structures they use.
+    port = Port('zdaemon')
 
-    def __init__(self, name, type, config, zdstack):
+    ###
+    # There might still be race conditions here
+    # TODO: explicitly go through each method and check for thread-safety,
+    #       especially in RPC-accessible methods & the data structures they
+    #       use.
+    ###
+
+    def __init__(self, name, game_mode, config, zdstack):
         """Initializes a ZServ instance.
 
-        name:    a string representing the name of this ZServ.
-        type:    the game-mode of this ZServ, like 'ctf', 'ffa', etc.
-        config:  a dict of configuration values for this ZServ.
-        zdstack: the calling ZDStack instance
+        name:      a string representing the name of this ZServ.
+        game_mode: the game-mode of this ZServ, like 'ctf', 'ffa', etc.
+        config:    a dict of configuration values for this ZServ.
+        zdstack:   the calling (ZD)Stack instance.
 
         """
         self.start_time = datetime.now()
         self.name = name
-        self.type = type
+        self.raw_game_mode = game_mode
+        self.session_lock = Lock()
+        self.initialize_session()
+        self.game_mode = self.mode # lame, I know
         self.zdstack = zdstack
         self.keep_spawning = False
         self.already_watching = False
-        self._players_lock = Lock()
         self._zserv_stdin_lock = Lock()
-        ###
-        # Hmm...
-        self.players = list()
-        self.disconnected_players = list()
-        self.teams = list()
-        # End Hmm...
-        ###
+        self.map = None
+        self.round = None
+        self.players = PlayersList()
+        self.teams = TeamsList()
         self.reload_config(config)
         self.zserv = None
         self.pid = None
@@ -87,6 +94,25 @@ class ZServ:
                 logging.debug("Load plugins: [%s]" % (load_plugins))
                 logging.debug("Plugins: [%s]" % ('plugins' in self.config))
             logging.debug("Listeners: [%s]" % (self.logfile.listeners))
+
+    def initialize_session(self, acquire_lock=True):
+        """Initializes the SQLAlchemy session.
+        
+        acquire_lock: a boolean that, if True, acquires the session
+                      lock before initializing the session.  True by
+                      default.
+        
+        """
+        def blah():
+            self.session = get_session()
+            self.mode = GameMode(port=self.port, name=game_mode,
+                                 has_teams=game_mode in TEAM_MODES)
+            self.session.add(self.mode)
+        if acquire_lock:
+            with self.session_lock:
+                blah()
+        else:
+            blah()
 
     ###
     # I have to say that I'm very close to pulling all the config stuff out
@@ -120,62 +146,42 @@ class ZServ:
             return x in config and config[x]
         def is_yes(x):
             return x in config and yes(config[x])
-        def set_value(option, parse_func, should_set=None):
-            should_set = should_set or lambda x: True
-            type_option = '_'.join([self.type, option])
-            if is_valid(type_option) and should_set(type_option):
-                parse_func(config[type_option])
+        def set_value(x, to_exec, should_set=None):
+            if should_set is None:
+                should_set = lambda x: True
+            mode_option = '_'.join([self.mode, x])
+            if is_valid(mode_option) and should_set(mode_option):
+                exec to_exec in globals(), locals()
+                # to_exec(config[mode_option])
                 return True
-            elif is_valid(option) and should_set(option):
-                parse_func(option)
+            elif is_valid(x) and should_set(x):
+                exec to_exec in globals(), locals()
+                # to_exec(x)
                 return True
             return False
         def set_yes_value(option, parse_func):
-            return set_value(option, parse_func, is_yes)
+            return set_value(option, to_exec, is_yes)
         def to_list(s, sep):
             return [x for x in s.split(sep) if x]
         ### mandatory stuff
-        mandatory_options = \
-            ('iwad', 'waddir', 'iwaddir', 'port', 'maps_to_remember',
-             'zservfolder', 'enable_events', 'enable_stats', 'enable_plugins')
-        for mandatory_option in mandatory_options:
-            if mandatory_option not in config:
-                es = "%s: Could not find required option '%s' in configuration"
-                raise ValueError(es % (self.name, mandatory_option))
-        ### CMD-line stuff
-        if not os.path.isdir(config['iwaddir']):
-            es = "%s: IWAD dir %s is not valid"
-            raise ValueError(es % (self.name, config['iwaddir']))
-        if not os.path.isdir(config['waddir']):
-            es = "%s: WAD dir %s is not valid"
-            raise ValueError(es % (self.name, config['waddir']))
-        if not os.path.isfile(os.path.join(config['iwaddir'], config['iwad'])):
-            es = "%s: Could not find IWAD %s"
-            raise ValueError(es % (self.name, config['iwad']))
-        if not os.path.isdir(config['zservfolder']):
-            try:
-                os.mkdir(config['zservfolder'])
-            except Exception, e:
-                es = "%s: ZServ Server folder %s is not valid: %s"
-                raise ValueError(es % (self.name, config['zservfolder'], e))
         self.wads = []
         if 'wads' in config and config['wads']:
             wads = [x.strip() for x in config['wads'].split(',')]
             for wad in wads:
-                wadpath = os.path.join(config['waddir'], wad)
+                wadpath = os.path.join(config['zdstack_wad_folder'], wad)
                 if not os.path.isfile(wadpath):
                     es = "%s: WAD [%s] not found"
                     raise ValueError(es % (self.name, wad))
-            self.wads = wads
-        self.homedir = os.path.join(config['zservfolder'], self.name)
+            self.raw_wads = wads
+            self.wads = [Wad(x) for x in self.raw_wads]
+        self.homedir = os.path.join(config['zdstack_zserv_folder'], self.name)
         if not os.path.isdir(self.homedir):
             os.mkdir(self.homedir)
-        self.iwaddir = config['iwaddir']
-        self.waddir = config['waddir']
+        self.iwaddir = config['zdstack_iwad_folder']
+        self.waddir = config['zdstack_wad_folder']
         self.base_iwad = config['iwad']
         self.iwad = os.path.join(self.iwaddir, self.base_iwad)
         self.port = int(config['port'])
-        self.maps_to_remember = int(config['maps_to_remember'])
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad',
                     self.iwad, '-port', str(self.port), '-cfg',
@@ -218,10 +224,10 @@ class ZServ:
             plugins_enabled = False
         if not events_enabled:
             if stats_enabled:
-                es = "Statistics require events, but they have been disabled")
+                es = "Statistics require events, but they have been disabled"
                 raise ValueError(es)
             if plugins_enabled:
-                es = "Plugins require events, but they have been disabled")
+                es = "Plugins require events, but they have been disabled"
                 raise ValueError(es)
         self.events_enabled = events_enabled
         self.stats_enabled = stats_enabled
@@ -286,6 +292,7 @@ class ZServ:
         ## game-mode-specific stuff
         self.dmflags = None
         self.dmflags2 = None
+        self.playing_colors = None
         self.max_teams = None
         self.max_clients = None
         self.max_players = None
@@ -296,99 +303,103 @@ class ZServ:
         self.scorelimit = None
         self.auto_respawn = None
         ### Load admin stuff
-        if set_yes_value('enable_rcon', lambda x: self.rcon_enabled = True):
-            if set_value('rcon_password', lambda x: self.rcon_password = x):
-                if is_valid('rcon_password_1') and is_valid('rcon_commands_1'):
-                    self.rcon_password_1 = config['rcon_password_1']
-                    self.rcon_commands_1 = config['rcon_commands_1'].split()
-                if is_valid('rcon_password_2') and is_valid('rcon_commands_2'):
-                    self.rcon_password_2 = config['rcon_password_2']
-                    self.rcon_commands_2 = config['rcon_commands_2'].split()
-                if is_valid('rcon_password_3') and is_valid('rcon_commands_3'):
-                    self.rcon_password_3 = config['rcon_password_3']
-                    self.rcon_commands_3 = config['rcon_commands_3'].split()
-                if is_valid('rcon_password_4') and is_valid('rcon_commands_4'):
-                    self.rcon_password_4 = config['rcon_password_4']
-                    self.rcon_commands_4 = config['rcon_commands_4'].split()
-                if is_valid('rcon_password_5') and is_valid('rcon_commands_5'):
-                    self.rcon_password_5 = config['rcon_password_5']
-                    self.rcon_commands_5 = config['rcon_commands_5'].split()
-                if is_valid('rcon_password_6') and is_valid('rcon_commands_6'):
-                    self.rcon_password_6 = config['rcon_password_6']
-                    self.rcon_commands_6 = config['rcon_commands_6'].split()
-                if is_valid('rcon_password_7') and is_valid('rcon_commands_7'):
-                    self.rcon_password_7 = config['rcon_password_7']
-                    self.rcon_commands_7 = config['rcon_commands_7'].split()
-                if is_valid('rcon_password_8') and is_valid('rcon_commands_8'):
-                    self.rcon_password_8 = config['rcon_password_8']
-                    self.rcon_commands_8 = config['rcon_commands_8'].split()
-                if is_valid('rcon_password_9') and is_valid('rcon_commands_9'):
-                    self.rcon_password_9 = config['rcon_password_9']
-                    self.rcon_commands_9 = config['rcon_commands_9'].split()
-        if set_yes_value('requires_password', \
-                         lambda x: self.requires_password = True):
-            set_value('server_password', lambda x: self.server_password = x)
-        set_value('deathlimit', lambda x: self.deathlimit = int(x))
-        set_value('spam_window', lambda x: self.spam_window = int(x))
-        set_value('spam_limit', lambda x: self.spam_limit = int(x))
-        set_value('speed_check', lambda x: self.speed_check = True)
-        set_value('restart_empty_map', lambda x: self.restart_empty_map = True)
+        if set_value('rcon_password', 'self.rcon_password = x'):
+            self.rcon_enabled = True
+            if is_valid('rcon_password_1') and is_valid('rcon_commands_1'):
+                self.rcon_password_1 = config['rcon_password_1']
+                self.rcon_commands_1 = config['rcon_commands_1'].split()
+            if is_valid('rcon_password_2') and is_valid('rcon_commands_2'):
+                self.rcon_password_2 = config['rcon_password_2']
+                self.rcon_commands_2 = config['rcon_commands_2'].split()
+            if is_valid('rcon_password_3') and is_valid('rcon_commands_3'):
+                self.rcon_password_3 = config['rcon_password_3']
+                self.rcon_commands_3 = config['rcon_commands_3'].split()
+            if is_valid('rcon_password_4') and is_valid('rcon_commands_4'):
+                self.rcon_password_4 = config['rcon_password_4']
+                self.rcon_commands_4 = config['rcon_commands_4'].split()
+            if is_valid('rcon_password_5') and is_valid('rcon_commands_5'):
+                self.rcon_password_5 = config['rcon_password_5']
+                self.rcon_commands_5 = config['rcon_commands_5'].split()
+            if is_valid('rcon_password_6') and is_valid('rcon_commands_6'):
+                self.rcon_password_6 = config['rcon_password_6']
+                self.rcon_commands_6 = config['rcon_commands_6'].split()
+            if is_valid('rcon_password_7') and is_valid('rcon_commands_7'):
+                self.rcon_password_7 = config['rcon_password_7']
+                self.rcon_commands_7 = config['rcon_commands_7'].split()
+            if is_valid('rcon_password_8') and is_valid('rcon_commands_8'):
+                self.rcon_password_8 = config['rcon_password_8']
+                self.rcon_commands_8 = config['rcon_commands_8'].split()
+            if is_valid('rcon_password_9') and is_valid('rcon_commands_9'):
+                self.rcon_password_9 = config['rcon_password_9']
+                self.rcon_commands_9 = config['rcon_commands_9'].split()
+        if set_value('server_password', 'self.server_password = x'):
+            self.requires_password = True
+        set_value('deathlimit', 'self.deathlimit = int(x)')
+        set_value('spam_window', 'self.spam_window = int(x)')
+        set_value('spam_limit', 'self.spam_limit = int(x)')
+        set_value('speed_check', 'self.speed_check = True')
+        set_value('restart_empty_map', 'self.restart_empty_map = True')
         ### Load voting stuff
-        set_value('vote_limit', lambda x: self.vote_limit = int(x))
-        set_value('vote_timeout', lambda x: self.vote_timeout = int(x))
-        set_yes_value('vote_reset', lambda x: self.vote_reset = True)
-        if set_yes_value('vote_map', lambda x: self.vote_map = True):
+        set_value('vote_limit', 'self.vote_limit = int(x)')
+        set_value('vote_timeout', 'self.vote_timeout = int(x)')
+        set_yes_value('vote_reset', 'self.vote_reset = True')
+        if set_yes_value('vote_map', 'self.vote_map = True'):
             if is_valid('vote_map_percent'):
                 pc = Decimal(config['vote_map_percent'])
                 if pc < 1:
                     pc = pc * Decimal(100)
                 self.vote_map_percent = pc
-            set_yes_value('vote_map_skip',
-                          lambda x: self.vote_map_skip = int(x))
-        if set_yes_value('vote_map_kick', lambda x: self.vote_map_kick = True):
+            set_yes_value('vote_map_skip', 'self.vote_map_skip = int(x)')
+        if set_yes_value('vote_map_kick', 'self.vote_map_kick = True'):
             set_value('vote_kick_percent',
-                      lambda x: self.vote_kick_percent = Decimal(x))
+                      'self.vote_kick_percent = Decimal(x)')
         ### Load advertise stuff
-        set_value('admin_email', lambda x: self.admin_email = x)
-        set_yes_value('advertise', lambda x: self.advertise = True)
-        set_value('hostname', lambda x: self.hostname = x)
-        set_value('website', lambda x: self.website = x)
-        set_value('motd', lambda x: self.motd = x)
+        set_value('admin_email', 'self.admin_email = x')
+        set_yes_value('advertise', 'self.advertise = True')
+        set_value('hostname', 'self.hostname = x')
+        set_value('website', 'self.website = x')
+        set_value('motd', 'self.motd = x')
         set_yes_value('add_mapnum_to_hostname',
-                      lambda x: self.add_mapnum_to_hostname = True)
+                      'self.add_mapnum_to_hostname = True')
         ### Load game-mode-agnostic config stuff
         set_yes_value('remove_bots_when_humans',
-                      lambda x: self.remove_bots_when_humans = True)
-        set_value('maps', lambda x: self.maps = to_list(x, ','))
+                      'self.remove_bots_when_humans = True')
+        set_value('maps', 'self.maps = to_list(x, ",")')
         set_value('optional_wads',
-                  lambda x: self.optional_wads = to_list(x, ','))
+                  'self.optional_wads = to_list(x, ",")')
         set_value('alternate_wads',
-            lambda x: self.alternate_wads = [y.split('=') for y in x.split()])
-        set_yes_value('overtime', lambda x: self.overtime = True)
-        set_yes_value('skill', lambda x: self.skill = int(x))
-        set_yes_value('gravity', lambda x: self.overtime = int(x))
-        set_yes_value('air_control', lambda x: self.gravity = Decimal(x))
-        set_yes_value('telemissiles', lambda x: self.telemissiles = True)
+            'self.alternate_wads = [y.split("=") for y in x.split()]')
+        set_yes_value('overtime', 'self.overtime = True')
+        set_yes_value('skill', 'self.skill = int(x)')
+        set_yes_value('gravity', 'self.overtime = int(x)')
+        set_yes_value('air_control', 'self.gravity = Decimal(x)')
+        set_yes_value('telemissiles', 'self.telemissiles = True')
         set_yes_value('specs_dont_disturb_players',
-                      lambda x: self.specs_dont_disturb_players = True)
-        set_yes_value('min_players', lambda x: self.min_players = int(x))
-        set_yes_value('dmflags', lambda x: self.dmflags = True)
-        set_yes_value('dmflags2', lambda x: self.dmflags2 = True)
-        set_yes_value('max_clients', lambda x: self.max_clients = True)
-        if self.type in ('duel', '1v1'):
+                      'self.specs_dont_disturb_players = True')
+        set_yes_value('min_players', 'self.min_players = int(x)')
+        set_yes_value('dmflags', 'self.dmflags = True')
+        set_yes_value('dmflags2', 'self.dmflags2 = True')
+        set_yes_value('max_clients', 'self.max_clients = True')
+        if self.mode in DUEL_MODES:
             self.max_players = 2
         else:
-            set_value('max_players', lambda x: self.max_players = int(x))
-        set_value('timelimit', lambda x: self.timelimit = int(x))
-        set_value('auto_respawn', lambda x: self.auto_respawn = int(x))
-        set_value('teamdamage', lambda x: self.teamdamage = Decimal(x))
-        set_value('max_teams', lambda x: self.max_teams = int(x))
-        set_value('max_players_per_team':
-                  lambda x: self.max_players_per_team = int(x))
-        if self.type in TEAM_TYPES:
-            set_value('team_score_limit', lambda x: self.scorelimit = int(x))
+            set_value('max_players', 'self.max_players = int(x)')
+        set_value('timelimit', 'self.timelimit = int(x)')
+        set_value('auto_respawn', 'self.auto_respawn = int(x)')
+        set_value('teamdamage', 'self.teamdamage = Decimal(x)')
+        set_value('max_teams', 'self.max_teams = int(x)')
+        if max_teams:
+            self.playing_colors = TEAM_COLORS[:self.max_teams]
+        set_value('max_players_per_team',
+                  'self.max_players_per_team = int(x)')
+        if self.mode in TEAM_MODES:
+            set_value('team_score_limit', 'self.scorelimit = int(x)')
         ###
         # Why are we doing this...?  Commenting out to see what breaks :)
+        #
+        # Oh, it's because previously these were the game-mode specific things
+        # that the config parsing supported.  Hmm..., still leaving this
+        # disabled for now, because it is dumb to do it this way.
         #
         # config['name'] = self.name
         # config['dmflags'] = self.dmflags
@@ -427,9 +438,9 @@ class ZServ:
         add_line(True, 'set cfg_activated "1"')
         add_line(True, 'set log_disposition "0"')
         add_var_line(self.hostname, 'set hostname "%s"')
-        add_var_line(self.motd, 'set motd "%s"'))
-        add_var_line(self.website, 'set website "%s"'))
-        add_var_line(self.email, 'set email "%s"'))
+        add_var_line(self.motd, 'set motd "%s"')
+        add_var_line(self.website, 'set website "%s"')
+        add_var_line(self.email, 'set email "%s"')
         add_bool_line(self.advertise, 'set master_advertise "%s"')
         if add_bool_line(self.rcon_enabled, 'set enable_rcon "%s"'):
             add_var_line(self.rcon_password, 'set rcon_password "%s"')
@@ -501,17 +512,17 @@ class ZServ:
         add_var_line(self.dmflags, 'set dmflags "%s"')
         add_var_line(self.dmflags2, 'set dmflags2 "%s"')
         add_var_line(self.max_clients, 'set maxclients "%s"')
-        if self.type in DUEL_TYPES:
+        if self.mode in DUEL_MODES:
             self.max_players = 2
         add_var_line(self.max_players, 'set maxplayers "%s"')
         add_var_line(self.timelimit, 'set timelimit "%s"')
         add_var_line(self.fraglimit, 'set fraglimit "%s"')
         add_var_line(self.auto_respawn, 'set sv_autorespawn "%s"')
         add_var_line(self.teamdamage, 'set teamdamage "%s"')
-        add_bool_line(self.type in DM_TYPES, 'set deathmatch "%s"')
-        if add_bool_line(self.type in TEAM_TYPES, 'set teamplay "%s"'):
+        add_bool_line(self.mode in DM_MODES, 'set deathmatch "%s"')
+        if add_bool_line(self.mode in TEAM_MODES, 'set teamplay "%s"'):
             add_var_line(self.scorelimit, 'set teamscorelimit "%s"')
-        add_bool_line(self.type in CTF_TYPES, 'set ctf "%s"')
+        add_bool_line(self.mode in CTF_MODES, 'set ctf "%s"')
         return template # % self.config
 
     def watch_zserv(self, set_timer=True):
@@ -587,17 +598,16 @@ class ZServ:
         logging.debug('')
         self.keep_spawning = False
         self.logfile.stop_listeners()
-        out = True
+        error_stopping = False
         if self.pid is not None:
-            out = True
             try:
                 os.kill(self.pid, signum)
                 self.pid = None
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
-                logging.info(es % (e))
-                out = es % (e)
-        return out
+                logging.error(es % (e))
+                error_stopping = es % (e)
+        return error_stopping
 
     def restart(self, signum=15):
         """Restarts the zserv process, restarting it if it crashes.
@@ -607,207 +617,26 @@ class ZServ:
 
         """
         logging.debug('')
-        self.stop(signum)
+        error_stopping = self.stop(signum)
+        if error_stopping:
+            raise Exception(error_stopping)
         self.start()
-
-    def _add_player(self, player, acquire_lock=True):
-        """Adds a player to self.players - threadsafe.
-
-        player:       a Player instance
-        acquire_lock: if True, will acquire self._players_lock before
-                      taking any action; True by default
-
-        """
-        def blah():
-            full_list = []
-            name_list = []
-            p_full = (player.name, player.ip, player.port)
-            p_name = (player.name, player.ip)
-            for p in self.players:
-                full_list.append((p.name, p.ip, p.port))
-                name_list.append((p.name, p.ip))
-            if p_name in name_list:
-                ###
-                # Player reconnected
-                #
-                # Recreate self.disconnected_players without this player
-                # Find this player in self.players and:
-                #   set .port to new port
-                #   set .disconnected to False
-                ###
-                logging.debug("Player [%s] has reconnected" % (p_name[0]))
-                dp = Listable([x for x in self.disconnected_players \
-                                            if (x.name, x.ip) != p_name])
-                self.disconnected_players = dp
-                for p in self.players:
-                    if (p.name, p.ip) == p_name:
-                        p.port = player.port
-                        p.disconnected = False
-            else:
-                ###
-                # Totally new connection
-                ###
-                logging.debug("Found totally new player [%s]" % (p_name[0]))
-                self.players.append(player)
-        if acquire_lock:
-            with self._players_lock:
-                blah()
-        else:
-            blah()
-
-    def _remove_player(self, player, acquire_lock=True):
-        """Disconnects a player - threadsafe.
-
-        player:       a Player instance
-        acquire_lock: if True, will acquire self._players_lock before
-                      taking any action; True by default
-
-        """
-        def blah():
-            player.playing = False
-            player.disconnected = True
-            if player in self.players and \
-               player not in self.disconnected_players:
-                self.disconnected_players.append(player)
-        if acquire_lock:
-            with self._players_lock:
-                blah()
-        else:
-            blah()
 
     def sync_players(self, sleep=None):
         """Ensures that self.players matches up with self.zplayers().
         
         sleep: a float representing how much time to sleep between
                acquiring the _players_lock and creating the list of
-               players; default to not sleeping at all (None)
+               players; defaults to not sleeping at all (None)
                
         """
-        zplayers = self.zplayers()
-        with self._players_lock:
-            if sleep:
+        if sleep:
+            with self.players.lock:
+                zplayers = self.zplayers()
                 time.sleep(sleep)
-            players_list = []
-            disconnected_players_list = []
-            zplayers_list = []
-            zplayers_list_plus_numbers = []
-            for p in self.players:
-                if not p.name:
-                    ###
-                    # Skip players w/ blank names
-                    ###
-                    continue
-                players_list.append((p.name, p.ip, p.port))
-            for dp in self.disconnected_players:
-                if not dp.name:
-                    ###
-                    # Skip players w/ blank names
-                    ###
-                    continue
-                disconnected_players_list.append((dp.name, dp.ip, dp.port))
-            for d in zplayers:
-                if not d['player_name']:
-                    ###
-                    # Skip players w/ blank names
-                    ###
-                    continue
-                zplayers_list.append((d['player_name'], d['player_ip'],
-                                      d['player_port']))
-                zplayers_list_plus_numbers.append((d['player_num'],
-                                                   d['player_name'],
-                                                   d['player_ip'],
-                                                   d['player_port']))
-            for z_full in zplayers_list:
-                if z_full not in players_list or \
-                   z_full in disconnected_players_list:
-                    ###
-                    # found a missing or reconnected player
-                    ###
-                    player = self.player_class(self, z_full[1], z_full[2],
-                                               z_full[0])
-                    self._add_player(player, acquire_lock=False)
-                    logging.debug("Added new player [%s]" % (player.name))
-            for p_full in players_list:
-                if p_full not in zplayers_list: # found a ghost player
-                    player = self.get_player(name=p_full[0],
-                                             ip_address_and_port=p_full[1:])
-                    logging.debug("Removed player [%s]" % (p_full[0]))
-                    self._remove_player(player, acquire_lock=False)
-            for z_full_num in zplayers_list_plus_numbers:
-                for p in self.players:
-                    if (p.name, p.ip, p.port) == z_full_num[1:]:
-                        if p.number != z_full_num[0]:
-                            if p.name.endswith('s'):
-                                es = "Set %s' number to %s"
-                            else:
-                                es = "Set %s's number to %s"
-                            logging.debug(es % (p.name, z_full_num[0]))
-                            p.number = z_full_num[0]
-
-    def add_player(self, ip_address, port):
-        """Adds a player to self.players
-
-        ip_address: a string representing a player's IP address
-        port: a string representing a player's port
-
-        """
-        s = "Adding player: [%s:%s]" % (ip_address, port)
-        logging.debug(s)
-        self.update_player_numbers_and_ips()
-        time.sleep(.2)
-        ###
-        # Players are uniquely identified by the combination of the IP address
-        # and port number, but identity is about as far as that uniqueness
-        # goes.  If players have the same name, there's no reliable way to tell
-        # who fragged whom and with what.
-        player = self.player_class(self, ip_address, port)
-        self._add_player(player)
-        self.update_player_numbers_and_ips()
-
-    def remove_player(self, player_name):
-        """Disconnects a player.
-
-        player_name: the name of the player to disconnect
-        
-        """
-        # logging.debug('')
-        player = self.get_player(name=player_name)
-        self._remove_player(player)
-        self.update_player_numbers_and_ips()
-
-    def get_player(self, name=None, ip_address_and_port=None):
-        """Returns a Player instance.
-
-        name: the name of the player to return
-        ip_address_and_port: A 2-Tuple (ip_address, port), both strings
-
-        Either name or ip_address_and_port is optional, but at least
-        one must be given.  Note that only giving name can potentially
-        return the wrong player, as multiple players can have the same
-        name.
-
-        """
-        # logging.debug('')
-        if name and ip_address_and_port:
-            ip_address, port = ip_address_and_port
-            cf = lambda x: x.name == name and \
-                           x.ip == ip_address and \
-                           x.port == port
-        elif name:
-            cf = lambda x: x.name == name
-        elif ip_address_and_port:
-            ip_address, port = ip_address_and_port
-            cf = lambda x: x.ip == ip_address and x.port == port
+                self.players.sync(zplayers, acquire_lock=False)
         else:
-            raise ValueError("One of name or ip_address_and_port is required")
-        for player in self.players:
-            if cf(player):
-                return player
-        self.sync_players()
-        for player in self.players:
-            if cf(player):
-                return player
-        raise PlayerNotFoundError(name, ip_address_and_port)
+            self.players.sync(self.zplayers(), acquire_lock=True)
 
     def update_player_numbers_and_ips(self):
         """Sets player numbers and IP addresses.
@@ -818,23 +647,29 @@ class ZServ:
         """
         for d in self.zplayers():
             try:
-                p = self.get_player(ip_address_and_port=(d['player_ip'],
-                                                         d['player_port']))
+                p = self.players.get(ip_address_and_port=(d['player_ip'],
+                                                          d['player_port']))
             except PlayerNotFoundError, pnfe:
                 es = "Players out of sync, %s at %s:%s not found"
                 logging.debug(es % (d['player_name'], d['player_ip'],
                                     d['player_port']))
-                continue
-            except ValueError, e:
-                logging.debug("ValueError in upnai: %s" % (e))
+                ###
+                # Previously, we weren't adding players that weren't found...
+                # so if this causes errors it should ostensibly be removed.
+                ###
+                p = Player(self, d['player_ip'], d['player_port'],
+                                 d['player_name'], d['player_num'])
+                self.players.add(p)
                 continue
             except Exception, e:
-                logging.debug("Error updating player #s and IPs: %s" % (e))
+                logging.error("Error updating player #s and IPs: %s" % (e))
                 continue
-            p.set_name(d['player_name'])
-            p.number = d['player_num']
-            es = "Set name/number %s/%s to address %s:%s"
-            logging.debug(es % (p.name, p.number, p.ip, p.port))
+            with self.players.lock:
+                p.set_name(d['player_name'])
+                p.number = d['player_num']
+                es = "Set name/number %s/%s to address %s:%s"
+                logging.debug(es % (p.name, p.number, p.ip, p.port))
+        self.players.sync()
 
     def distill_player(self, possible_player_names):
         """Discerns the most likely existing player.
@@ -844,29 +679,36 @@ class ZServ:
 
         Because messages are formatted in such a way that separating
         messenger's name from the message is not straightforward, this
-        method will return the most likely player name from a list of
-        possible messenger names.  This method has other uses, but
+        function will return the most likely player name from a list of
+        possible messenger names.  This function has other uses, but
         that's the primary one.
 
         """
-        messenger = None
-        names = [x.name for x in self.players]
-        def blah():
-            for player_name in possible_player_names:
-                if player_name in names:
-                    return self.get_player(name=player_name)
-        messenger = blah()
-        if not messenger:
-            self.sync_players()
-            names = [x.name for x in self.players]
-            messenger = blah()
-        # if not messenger:
+        m = self.players.get_first_matching_player(possible_player_names)
+        if not m:
+            ###
+            # We used to just do a sync here, but update_player_numbers_and_ips
+            # covers more possibilities... even though it requires interaction
+            # with the zserv.  So if this causes problems, switch back to just
+            # using sync.
+            #
+            # self.players.sync()
+            #
+            ###
+            self.update_player_numbers_and_ips()
+        m = self.players.get_first_matching_player(possible_player_names)
+        ###
+        # Some logging stuff...
+        #
+        # if not m:
         #     player_names = ', '.join(names)
         #     ppn = ', '.join(possible_player_names)
         #     logging.info("No player could be distilled")
         #     logging.info("Players: [%s]" % (player_names))
         #     logging.info("Possible: [%s]" % (ppn))
-        return messenger
+        #
+        ###
+        return m
 
     def get_player_ip_address(self, player_name):
         """Returns a player's IP address.
@@ -877,7 +719,7 @@ class ZServ:
         """
         d = [x for x in self.zplayers() if x['player_name'] == player_name]
         if not d:
-            raise ValueError("Player [%s] not found" % (player_name))
+            raise PlayerNotFoundError(player_name)
         return d[0]['player_ip']
 
     def get_player_number(self, player_name):
@@ -892,21 +734,8 @@ class ZServ:
         """
         d = [x for x in self.zplayers() if x['player_name'] == player_name]
         if not d:
-            raise ValueError("Player [%s] not found" % (player_name))
+            raise PlayerNotFoundError(player_name)
         return d[0]['player_num']
-
-    def handle_message(self, message, messenger):
-        """Handles a message.
-
-        message:   a string representing the message
-        messenger: a string representing the name of the messenger
-
-        """
-        ###
-        # This is handled by plugins now, someday I'll fully remove the
-        # references to this.
-        ###
-        pass
 
     def change_map(self, map_number, map_name):
         """Handles a map change event.
@@ -916,14 +745,19 @@ class ZServ:
 
         """
         # logging.debug('')
-        self.map = self.map_class(map_number, map_name)
-        self.players = [x for x in self.players \
-                            if x not in self.disconnected_players]
-        self.players = Listable(self.players)
-        for player in self.players:
-            player.initialize()
-            player.set_map(self.map)
-        self.disconnected_players = Listable()
+        with self.session_lock:
+            self.round.end_time = datetime.now()
+            if self.enable_stats:
+                self.session.commit()
+            self.players.clear()
+            self.teams.clear()
+            if not self.enable_stats:
+                self.session.close()
+                self.initialize_session(acquire_lock=False)
+            self.map = Map(number=map_number, name=map_name)
+            self.round = Round(game_mode=self.game_mode, map=self.map,
+                               start_time=datetime.now())
+            self.session.add([self.map, self.round])
 
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
@@ -933,9 +767,10 @@ class ZServ:
                              wait for in response
 
         When using this method, keep the following in mind:
-            - Your message cannot contain newlines.
-            - If event_response_type is None, no response will be
-              returned
+
+          - Your message cannot contain newlines.
+          - If event_response_type is None, no response will be
+            returned
 
         This method returns a list of events returned in response.
 
@@ -1123,7 +958,7 @@ class ZServ:
         ###
         logging.debug('')
         d = {'name': self.name,
-             'type': self.type,
+             'mode': self.mode,
              'port': self.port,
              'iwad': self.base_iwad,
              'wads': [os.path.basename(x) for x in self.wads],

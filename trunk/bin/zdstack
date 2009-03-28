@@ -8,6 +8,7 @@ import signal
 
 from pyfileutils import read_file, write_file
 
+from ZDStack import set_configfile, get_configparser, get_server_proxy
 from ZDStack.Stack import Stack
 
 def fork(logfile, pidfile, signal_handler, debug=False):
@@ -25,10 +26,6 @@ def fork(logfile, pidfile, signal_handler, debug=False):
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    # if not debug:
-    ###
-    # Next six lines are normally disabled when debugging
-    ###
     si = open(stdin, 'r')
     so = open(logfile, 'a+')
     se = open(logfile, 'a+', 0)
@@ -39,21 +36,32 @@ def fork(logfile, pidfile, signal_handler, debug=False):
 def print_usage(msg=None):
     if msg:
         print >> sys.stderr, msg
-    print >> sys.stderr, """\nzdstackctl\n
-Usage: zdstackctl [ start | stop | restart ] [-c config file]\n"""
+    script_name = os.path.basename(os.path.expanduser(sys.argv[0]))
+    print >> sys.stderr, """\n%s\n
+Usage: %s [ start | stop | restart | reload-config ] [ -c config file ]
+""" % (script_name, script_name)
     sys.exit(-1)
 
 def start(config_file, debug=False):
+    print "Starting ZDStack"
+    if config_file:
+        print "Setting configuration file to %s" % (config_file)
+        set_configfile(config_file)
     try:
-        zdstack = Stack(config_file, debugging=debug)
+        print "Initializing ZDStack"
+        zdstack = Stack(debugging=debug)
         if os.path.isfile(zdstack.pidfile):
             es = "\nZDStack is already running: %s\n"
             print >> sys.stderr, es % (zdstack.pidfile)
             sys.exit(-1)
+        print "Forking"
         fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal, debug)
+        print "Done forking"
         if debug:
             print "PID: ", os.getpid()
+        print "Starting up"
         zdstack.startup()
+        print "Done starting up"
     except Exception, e:
         if debug:
             raise
@@ -61,8 +69,10 @@ def start(config_file, debug=False):
         sys.exit(-1)
 
 def stop(config_file=None):
+    if config_file:
+        set_configfile(configfile)
     try:
-        zdstack = Stack(config_file)
+        zdstack = Stack()
         try:
             os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
         except (OSError, IOError):
@@ -79,10 +89,12 @@ def stop(config_file=None):
 
 def restart(config_file):
     stop(config_file)
+    print "Waiting for ZDStack to shut down"
     time.sleep(5)
+    print "Starting whether ZDStack has exited or not (this is normal)"
     start(config_file)
 
-actions = ('start', 'stop', 'restart', 'debug')
+actions = ('start', 'stop', 'restart', 'debug', 'reload-config')
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], 'c:', [])
 except getopt.GetoptError, ge:
@@ -106,4 +118,9 @@ elif action == 'restart':
     restart(config_file)
 elif action == 'debug':
     start(config_file, debug=True)
+elif action == 'reload-config':
+    if config_file:
+        set_configfile(config_file)
+    cp = get_configparser() # implicitly loads the configuration file as well
+    get_server_proxy().reload_config()
 

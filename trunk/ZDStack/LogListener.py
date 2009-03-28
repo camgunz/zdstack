@@ -1,32 +1,52 @@
+from __future__ import with_statement
+
 import Queue
 import logging
+import datetime
 
-from ZDStack import get_plugins
-from ZDStack.Frag import Frag
+from ZDStack import TEAM_COLORS, TICK, PlayerNotFoundError, get_plugins, \
+                    get_session
 from ZDStack.Utils import start_thread
+from ZDStack.ZDSModels import Weapon, Alias, Frag, FlagTouch, FlagReturn, \
+                              RCONAccess, RCONDenial, RCONAction
 
-class LogListener:
+from sqlalchemy import desc
 
-    classname = 'LogListener'
+class BaseLogListener(object):
 
-    def __init__(self, name):
-        """Initializes a LogListener.
+    classname = 'BaseLogListener'
 
-        name: a string representing the name of this LogListener
+    def __init__(self, name, zserv):
+        """Initializes a BaseLogListener.
+
+        name:  a string representing the name of this LogListener
+        zserv: a ZServ instance.
 
         """
+        logging.debug('')
         self.name = name
+        self.zserv = zserv
         self.events = Queue.Queue()
-        self.last_event = None
-        self.event_types_to_handlers = {'error': self.handle_error_event}
         self.keep_listening = False
         self.listener_thread = None
+        self.set_handler('error', self.handle_error_event)
+
+    def set_handler(self, event_type, handler):
+        """Sets the handler method for a certain event_type.
+
+        event_type: a string representing the type of event to handle.
+        handler:    a function that will handle the event, takes an
+                    event instance as its only argument.
+
+        """
+        self.event_types_to_handlers[event_type] = handler
 
     def start(self):
         """Starts listening."""
         logging.debug('')
         self.keep_listening = True
-        self.listener_thread = start_thread(self.handle_event,
+        self.clear_processed_events()
+        self.listener_thread = start_thread(self.start_handling_events,
                                             "%s listener thread" % self.name)
 
     def stop(self):
@@ -42,17 +62,33 @@ class LogListener:
     def __repr__(self):
         return '%s(%s)' % (self.classname, self.name)
 
-    def handle_event(self):
-        """Continuously handles an event.
+    def start_handling_events(self):
+        """Starts handling events.
         
         This method is called by a thread spawned by start().
         
         """
         while self.keep_listening:
-            event = self.events.get()
-            if event.type != 'junk':
-                logging.debug("Handling event: %s" % (event.type))
-            self._handle_event(event)
+            try:
+                event = self.events.get(1)
+            except Queue.Empty:
+                ###
+                # If we're shutting down, this thread will wait forever on an
+                # event that will never come.  So make this thread check every
+                # second that it should keep listening.
+                ###
+                continue
+            logging.debug("Handling event: %s" % (event.type))
+            try:
+                self._handle_event(event)
+            except Exception, e:
+                ###
+                # I suppose we should just log the error and keep handling
+                # events... but I haven't really thought a lot about it.
+                ###
+                es = "Error while handling event [%s]: %s"
+                logging.error(es % (event, e))
+                continue
 
     def _handle_event(self, event):
         """Handles an event.
@@ -60,12 +96,10 @@ class LogListener:
         event: a LogEvent instance.
 
         """
-        if not event.type in self.event_types_to_handlers:
-            self.handle_unhandled_event(event)
-        else:
+        try:
             self.event_types_to_handlers[event.type](event)
-        if event.type != 'junk':
-            self.last_event = event
+        except KeyError:
+            self.handle_unhandled_event(event)
 
     def handle_error_event(self, event):
         """Handles an error event.
@@ -73,6 +107,11 @@ class LogListener:
         event: a LogEvent instance.
 
         """
+        ###
+        # Should we really raise an exception here?  I think the rest of the
+        # code doesn't assume that event handling stops on an error, so we
+        # should at least correct that inconsistency.
+        ###
         raise Exception(event.data['error'])
 
     def handle_unhandled_event(self, event):
@@ -81,35 +120,11 @@ class LogListener:
         event: a LogEvent instance.
 
         """
+        logging.debug("Unhandled event: %s" % (event))
         return
-        # raise Exception("Unhandled event: %s" % (event)) # for debugging
-
-
-class ZServLogListener(LogListener):
-
-    classname = 'ZServLogListener'
-
-    def __init__(self, name, zserv):
-        """Initializes a ZServLogListener.
-
-        name:  a string representing the name of this LogListener
-        zserv: a ZServ instance.
-
-        """
-        self.zserv = zserv
-        LogListener.__init__(self, name)
-        self.event_types_to_handlers['log_roll'] = self.handle_log_roll_event
 
     def __str__(self):
         return "<%s for [%s]: %s>" % (self.classname, self.zserv, self.name)
-
-    def handle_log_roll_event(self, event):
-        """Handles a log_roll event.
-
-        event: a LogEvent instance.
-
-        """
-        self.zserv.roll_log(event.data['log'])
 
     def handle_error_event(self, event):
         """Handles an error event.
@@ -117,8 +132,8 @@ class ZServLogListener(LogListener):
         event: a LogEvent instance.
 
         """
-        logging.info("Event error: %s" % (event.data['error']))
-        logging.info("Event traceback: \n%s\n" % (event.data['traceback']))
+        logging.error("Event error: %s" % (event.data['error']))
+        logging.error("Event traceback: \n%s\n" % (event.data['traceback']))
 
     def handle_unhandled_event(self, event):
         """Handles an unhandled event.
@@ -128,7 +143,7 @@ class ZServLogListener(LogListener):
         """
         pass # do nothing... actually do not handle the event
 
-class PluginLogListener(ZServLogListener):
+class PluginLogListener(BaseLogListener):
 
     classname = 'PluginLogListener'
 
@@ -138,7 +153,7 @@ class PluginLogListener(ZServLogListener):
         zserv: a ZServ instance
 
         """
-        ZServLogListener.__init__(self, 'Plugin Log Listener', zserv)
+        BaseLogListener.__init__(self, 'Plugin Log Listener', zserv)
         plugins = get_plugins()
         self.plugins = [x for x in plugins if x.__name__ in self.zserv.plugins]
         for p in self.plugins:
@@ -157,41 +172,9 @@ class PluginLogListener(ZServLogListener):
             except Exception, e:
                 raise
                 es = "Exception in plugin %s: [%s]"
-                logging.info(es % (plugin.__name__, e))
+                logging.error(es % (plugin.__name__, e))
 
-class ConnectionLogListener(ZServLogListener):
-
-    classname = 'ConnectionLogListener'
-
-    def __init__(self, zserv):
-        """Initializes a ConnectionLogListener.
-
-        zserv: a ZServ instance.
-
-        """
-        ZServLogListener.__init__(self, 'Connection Log Listener', zserv)
-        self.event_types_to_handlers['ip_log'] = self.handle_ip_log_event
-
-    def handle_log_roll_event(self, event):
-        """Handles a log_roll event.
-
-        event: a LogEvent instance.
-
-        """
-        self.zserv.set_connection_log_filename(roll=True)
-
-    def handle_ip_log_event(self, event):
-        """Handles an ip_log event.
-
-        event: a LogEvent instance.
-
-        """
-        logging.debug("Logging %s:%s" % (event.data['player'],
-                                                       event.data['ip_address']))
-        print "Logging %s:%s" % (event.data['player'], event.data['ip_address'])
-        self.zserv.log_ip(event.data['player'], event.data['ip_address'])
-
-class GeneralLogListener(ZServLogListener):
+class GeneralLogListener(BaseLogListener):
 
     classname = 'GeneralLogListener'
 
@@ -201,76 +184,49 @@ class GeneralLogListener(ZServLogListener):
         zserv: a ZServ instance.
 
         """
-        ZServLogListener.__init__(self, 'General Log Listener', zserv)
-        self.event_types_to_handlers['message'] = self.handle_message_event
-        self.event_types_to_handlers['team_switch'] = \
-                                                self.handle_team_switch_event
-        self.event_types_to_handlers['rcon_denied'] = \
-                                                self.handle_rcon_denied_event
-        self.event_types_to_handlers['rcon_granted'] = \
-                                                self.handle_rcon_granted_event
-        self.event_types_to_handlers['rcon_action'] = \
-                                                self.handle_rcon_action_event
-        self.event_types_to_handlers['flag_touch'] = \
-                                                self.handle_flag_touch_event
-        self.event_types_to_handlers['flag_loss'] = \
-                                                self.handle_flag_loss_event
-        self.event_types_to_handlers['flag_cap'] = \
-                                                self.handle_flag_cap_event
-        self.event_types_to_handlers['flag_return'] = \
-                                                self.handle_flag_return_event
-        self.event_types_to_handlers['flag_pick'] = \
-                                                self.handle_flag_pick_event
-        self.event_types_to_handlers['map_change'] = \
-                                                self.handle_map_change_event
-        self.event_types_to_handlers['frag'] = self.handle_frag_event
-        self.event_types_to_handlers['death'] = self.handle_frag_event
-        self.event_types_to_handlers['connection'] = \
-                                                self.handle_connection_event
-        self.event_types_to_handlers['disconnection'] = \
-                                                self.handle_disconnection_event
-        self.event_types_to_handlers['player_lookup'] = \
-                                                self.handle_player_lookup_event
-        self.event_types_to_handlers['game_join'] = self.handle_game_join_event
-        self.event_types_to_handlers['team_join'] = self.handle_game_join_event
-        self.lost_flag = []
+        BaseLogListener.__init__(self, 'General Log Listener', zserv)
+        self.set_handler('connection', self._sync_players)
+        self.set_handler('disconnection', self._sync_players)
+        self.set_handler('player_lookup', self._sync_players)
+        self.set_handler('game_join', self.handle_game_join_event)
+        self.set_handler('team_join', self.handle_game_join_event)
+        self.set_handler('team_switch', self.handle_game_join_event)
+        self.set_handler('rcon_denied', self.handle_rcon_event)
+        self.set_handler('rcon_granted', self.handle_rcon_event)
+        self.set_handler('rcon_action', self.handle_rcon_event)
+        self.set_handler('flag_touch', self.handle_flag_touch_event)
+        self.set_handler('flag_cap', self.handle_flag_touch_event)
+        self.set_handler('flag_pick', self.handle_flag_touch_event)
+        self.set_handler('flag_touch', self.handle_flag_loss_event)
+        self.set_handler('flag_return', self.handle_flag_return_event)
+        self.set_handler('map_change', self.handle_map_change_event)
+        self.set_handler('frag', self.handle_frag_event)
+        self.set_handler('death', self.handle_frag_event)
+        self.state_lock = Lock()
+        self.clear_state() # Adds some instance variables too
 
-    def handle_connection_event(self, event):
-        """Handles a connection event.
+    def _handle_event(self, event):
+        """Handles an event.
 
         event: a LogEvent instance.
 
         """
-        logging.debug("Connection Event: %s" % (str(event.data)))
-        # self.zserv.add_player(event.data['player_name'])
-        # self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        with self.state_lock:
+            try:
+                self.event_types_to_handlers[event.type](event)
+            except KeyError:
+                self.handle_unhandled_event(event)
+
+    def clear_state(self):
+        """Clears the current state of the round."""
+        with self.state_lock:
+            self.players_holding_flags = list()
+            self.teams_holding_flags = list()
+            self.fragged_runners = list()
+            self.team_scores = dict()
+
+    def _sync_players(self, event):
         self.zserv.sync_players(sleep=2.0)
-
-    def handle_player_lookup_event(self, event):
-        """Handles a player_lookup event.
-
-        event: a LogEvent instance.
-
-        """
-        # self.zserv.update_player_numbers_and_ips()
-        self.zserv.sync_players()
-
-    def handle_log_roll_event(self, event):
-        """Handles a log_roll event.
-
-        event: a LogEvent instance.
-
-        """
-        self.zserv.set_general_log_filename(roll=True)
-
-    def handle_disconnection_event(self, event):
-        """Handles a disconnection event.
-
-        event: a LogEvent instance.
-
-        """
-        # self.zserv.remove_player(event.data['player'])
-        self.zserv.sync_players(sleep=1.0)
 
     def handle_game_join_event(self, event):
         """Handles a game_join event.
@@ -278,87 +234,21 @@ class GeneralLogListener(ZServLogListener):
         event: a LogEvent instance.
 
         """
-        if not self.zserv.should_remember:
-            self.zserv.should_remember = True
         try:
-            player = self.zserv.get_player(event.data['player'])
-        except ValueError:
-            es = "Received a %s event for non-existent player [%s]"
-            logging.info(es % (event.type, event.data['player']))
+            player = self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
+            if event.type[0] in 'aeiou':
+                es = "Received an %s event for non-existent player [%s]"
+            else:
+                es = "Received a %s event for non-existent player [%s]"
+            logging.error(es % (event.type, event.data['player']))
             return
-        player.playing = True
-        if event.type == 'team_join':
-            try:
-                team = self.zserv.get_team(event.data['team'])
-            except ValueError:
-                es = "Received a team join event to non-existent team [%s]"
-                logging.info(es % (event.data['team']))
-                return
-            player.set_team(team)
-
-    def handle_frag_event(self, event):
-        """Handles a frag event.
-
-        event: a LogEvent instance.
-
-        """
-        try:
-            fraggee = self.zserv.get_player(event.data['fraggee'])
-        except ValueError:
-            es = "Received a death event for non-existent player [%s]"
-            logging.info(es % (event.data['fraggee']))
-            return
-        if event.data['fraggee'] in self.lost_flag:
-            fragged_runner = True
-            self.lost_flag = []
+        if event.type in ('team_join', 'team_switch'):
+            color = event.data['team']
+            self.zserv.teams.add(color)
+            self.zserv.teams.set_player_team(player, color)
         else:
-            fragged_runner = False
-        try:
-            frag = Frag(event.data['fragger'], event.data['fraggee'],
-                        event.data['weapon'], fragged_runner=fragged_runner)
-        except:
-            print "Broken Frag Event: %r, %s" % (event, event.line)
-            raise
-        fraggee.add_death(frag)
-        # if self.last_event.type == 'flag_loss':
-        #     fraggee.add_flag_loss(frag)
-        if event.type == 'frag': # no suicides
-            try:
-                fragger = self.zserv.get_player(event.data['fragger'])
-            except ValueError:
-                es = "Received a frag event for non-existent player [%s]"
-                logging.info(es % (event.data['fragger']))
-                return
-            fragger.add_frag(frag)
-            if self.last_event.type == 'flag_loss':
-                fragger.add_flag_drop(frag)
-
-    def handle_message_event(self, event):
-        """Handles a message event.
-
-        event: a LogEvent instance.
-
-        """
-        self.zserv.handle_message(event.data['message'],
-                                  event.data['messenger'])
-
-    def handle_team_switch_event(self, event):
-        """Handles a team_switch event.
-
-        event: a LogEvent instance.
-
-        """
-        try:
-            team = self.zserv.get_team(event.data['team'])
-        except ValueError:
-            es = "Received a team switch event to non-existent team [%s]"
-            logging.info(es % (event.data['team']))
-            return
-        try:
-            self.zserv.get_player(event.data['player']).set_team(team)
-        except ValueError:
-            es = "Received a team switch event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            player.playing = True
 
     def handle_rcon_granted_event(self, event):
         """Handles an rcon_granted event.
@@ -367,10 +257,13 @@ class GeneralLogListener(ZServLogListener):
 
         """
         try:
-            self.zserv.get_player(event.data['player']).add_rcon_access()
-        except ValueError:
+            player = self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
             es = "Received an RCON access event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            logging.error(es % (event.data['player']))
+            return
+        self.zserv.session.add(RCONAccess(player=player, round=self.zserv.round,
+                                          timestamp=event.dt))
 
     def handle_rcon_denied_event(self, event):
         """Handles an rcon_denied event.
@@ -379,10 +272,12 @@ class GeneralLogListener(ZServLogListener):
 
         """
         try:
-            self.zserv.get_player(event.data['player']).add_rcon_denial()
-        except ValueError:
+            self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
             es = "Received a RCON denial event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            logging.error(es % (event.data['player']))
+        self.zserv.session.add(RCONDenial(player=player, round=self.zserv.round,
+                                          timestamp=event.dt))
 
     def handle_rcon_action_event(self, event):
         """Handles an rcon_action event.
@@ -392,10 +287,33 @@ class GeneralLogListener(ZServLogListener):
         """
         action = event.data['action']
         try:
-            self.zserv.get_player(event.data['player']).add_rcon_action(action)
-        except ValueError:
+            self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
             es = "Received an RCON action event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            logging.error(es % (event.data['player']))
+        self.zserv.session.add(RCONAction(player=player, round=self.zserv.round,
+                                          timestamp=event.dt,
+                                          action=event.data['action']))
+
+    def _get_latest_flag_touch(self, player):
+        """Returns the latest FlagTouch for a player.
+
+        player: a Player instance.
+
+        """
+        alias = Alias(name=player.name, ip_address=player.ip)
+        q = self.zserv.session.query(FlagTouch)
+        q = q.where(player=runner, round=round)
+        q = q.order_by(desc(FlagTouch.touch_time))
+        ###
+        # This should be surrounded in a try/except, but I don't know what
+        # SQLAlchemy will do if it doesn't find a matching FlagTouch, and I am
+        # much too lazy to look it up.
+        #
+        # TODO: wrap in proper try/except
+        #
+        ###
+        return q.first() # this should be the runner's latest FlagTouch
 
     def handle_flag_touch_event(self, event):
         """Handles a flag_touch event.
@@ -404,43 +322,46 @@ class GeneralLogListener(ZServLogListener):
 
         """
         try:
-            player = self.zserv.get_player(event.data['player'])
-        except ValueError:
+            runner = self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
             es = "Received a flag touch event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            logging.error(es % (event.data['player']))
             return
-        player.set_has_flag(True)
-        player.add_flag_touch()
-
-    def handle_flag_loss_event(self, event):
-        """Handles a flag_loss event.
-
-        event: a LogEvent instance.
-
-        """
-        try:
-            runner = self.zserv.get_player(event.data['player'])
-        except ValueError:
-            es = "Received a flag loss event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
-            return
-        runner.set_has_flag(False)
-        self.lost_flag.append(runner.name)
-
-    def handle_flag_cap_event(self, event):
-        """Handles a flag_cap event.
-
-        event: a LogEvent instance.
-
-        """
-        try:
-            player = self.zserv.get_player(event.data['player'])
-        except ValueError:
-            es = "Received a flag cap event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
-            return
-        player.add_flag_cap()
-        player.set_has_flag(False)
+        self.players_holding_flags.append(runner)
+        tc = self.zserv.teams.get_player_team(runner)
+        self.teams_holding_flags.append(tc.color)
+        red_team_holding_flag = 'red' in self.teams_holding_flags
+        blue_team_holding_flag = 'blue' in self.teams_holding_flags
+        green_team_holding_flag = 'green' in self.teams_holding_flags
+        white_team_holding_flag = 'white' in self.teams_holding_flags
+        if event.type in ('flag_touch', 'flag_pick'):
+            s = FlagTouch(player=runner, round=self.zserv.round,
+                          touch_time=event.dt,
+                          was_picked=event.type=='flag_pick',
+                          player_team_color=tc.color,
+                          red_team_holding_flag=red_team_holding_flag,
+                          blue_team_holding_flag=blue_team_holding_flag,
+                          green_team_holding_flag=green_team_holding_flag,
+                          white_team_holding_flag=white_team_holding_flag,
+                          red_team_score=self.team_scores['red'],
+                          blue_team_score=self.team_scores['blue'],
+                          green_team_score=self.team_scores['green'],
+                          white_team_score=self.team_scores['white'])
+            self.zserv.session.add(s)
+        else:
+            ###
+            # At this point, the event is either a flag_cap or flag_loss.
+            ###
+            s = self._get_latest_flag_touch(runner)
+            s.loss_time = datetime.datetime.now()
+            self.teams_holding_flags.remove(team.color)
+            self.players_holding_flags.remove(runner)
+            if event.type == 'flag_cap':
+                s.resulted_in_score = True
+                self.team_scores[tc.color] += 1
+            else: # flag_loss!
+                s.resulted_in_score = False
+                self.fragged_runners.append(runner)
 
     def handle_flag_return_event(self, event):
         """Handles a flag_return event.
@@ -449,25 +370,87 @@ class GeneralLogListener(ZServLogListener):
 
         """
         try:
-            self.zserv.get_player(event.data['player']).add_flag_return()
-        except ValueError:
+            player = self.zserv.players.get(event.data['player'])
+        except PlayerNotFoundError:
             es = "Received a flag return event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            logging.error(es % (event.data['player']))
+        tc = self.zserv.teams.get_player_team(player)
+        self.teams_holding_flags.append(tc.color)
+        player_was_holding_flag = player in self.players_holding_flags
+        red_team_holding_flag = 'red' in self.teams_holding_flags
+        blue_team_holding_flag = 'blue' in self.teams_holding_flags
+        green_team_holding_flag = 'green' in self.teams_holding_flags
+        white_team_holding_flag = 'white' in self.teams_holding_flags
+        if event.type in ('flag_touch', 'flag_pick'):
+            s = FlagReturn(player=runner, round=self.zserv.round,
+                           timestamp=event.dt,
+                           player_was_holding_flag=player_was_holding_flag,
+                           player_team_color=tc.color,
+                           red_team_holding_flag=red_team_holding_flag,
+                           blue_team_holding_flag=blue_team_holding_flag,
+                           green_team_holding_flag=green_team_holding_flag,
+                           white_team_holding_flag=white_team_holding_flag,
+                           red_team_score=self.team_scores['red'],
+                           blue_team_score=self.team_scores['blue'],
+                           green_team_score=self.team_scores['green'],
+                           white_team_score=self.team_scores['white'])
+            self.zserv.session.add(s)
 
-    def handle_flag_pick_event(self, event):
-        """Handles a flag_pick event.
+    def handle_frag_event(self, event):
+        """Handles a frag event.
 
         event: a LogEvent instance.
 
         """
         try:
-            player = self.zserv.get_player(event.data['player'])
-        except ValueError:
-            es = "Received a flag pick event for non-existent player [%s]"
-            logging.info(es % (event.data['player']))
+            fraggee = self.zserv.players.get(event.data['fraggee'])
+        except PlayerNotFoundError:
+            es = "Received a death event for non-existent player [%s]"
+            logging.error(es % (event.data['fraggee']))
             return
-        player.add_flag_pick()
-        player.set_has_flag(True)
+        if 'fragger' in event.data:
+            try:
+                fragger = self.zserv.players.get(event.data['fragger'])
+            except PlayerNotFoundError:
+                es = "Received a death event for non-existent player [%s]"
+                logging.error(es % (event.data['fragger']))
+                return
+            is_suicide = False
+        else:
+            fragger = fraggee
+            is_suicide = True
+        weapon = Weapon(name=event.data['weapon'], is_suicide=is_suicide)
+        if fraggee in self.fragged_runners:
+            fraggee_was_holding_flag = True
+            self.fragged_funners.remove(fraggee)
+        else:
+            fraggee_was_holding_flag = False
+        fraggee_team = self.zserv.teams.get_player_team(fraggee)
+        if is_suicide:
+            fragger_was_holding_flag = fraggee_was_holding_flag
+            fragger_team = fraggee_team
+        else:
+            fragger_was_holding_flag = fragger in self.players_holding_flags
+            fragger_team = self.zserv.teams.get_player_team(fragger)
+        red_team_holding_flag = 'red' in self.teams_holding_flags
+        blue_team_holding_flag = 'blue' in self.teams_holding_flags
+        green_team_holding_flag = 'green' in self.teams_holding_flags
+        white_team_holding_flag = 'white' in self.teams_holding_flags
+        f = Frag(fragger=fragger, fraggee=fraggee, weapon=weapon,
+                 round=self.zserv.round, timestamp=event.dt,
+                 fragger_was_holding_flag=fragger_was_holding_flag,
+                 fraggee_was_holding_flag=fraggee_was_holding_flag,
+                 fragger_team_color=fragger_team.color,
+                 fraggee_team_color=fraggee_team.color,
+                 red_team_holding_flag=red_team_holding_flag,
+                 blue_team_holding_flag=blue_team_holding_flag,
+                 green_team_holding_flag=green_team_holding_flag,
+                 white_team_holding_flag=white_team_holding_flag,
+                 red_team_score=self.team_scores['red'],
+                 blue_team_score=self.team_scores['blue'],
+                 green_team_score=self.team_scores['green'],
+                 white_team_score=self.team_scores['white'])
+        self.zserv.session.add(f)
 
     def handle_map_change_event(self, event):
         """Handles a map_change event.
@@ -477,37 +460,22 @@ class GeneralLogListener(ZServLogListener):
         """
         self.zserv.change_map(event.data['number'], event.data['name'])
 
-class FakeZServLogListener(GeneralLogListener):
+class FakeLogListener(GeneralLogListener):
 
-    classname = 'FakeZServLogListener'
+    classname = 'FakeLogListener'
 
     def __init__(self, zserv):
-        """Initializes a FakeZServLogListener.
+        """Initializes a FakeLogListener.
 
         zserv: a ZServ instance.
 
         """
         GeneralLogListener.__init__(self, zserv)
-        for x in self.event_types_to_handlers:
-            if x == 'map_change':
-                self.event_types_to_handlers['map_change'] = \
-                                                        self.handle_map_change
-            elif x == 'connection':
-                self.event_types_to_handlers['connection'] = \
-                                                        self.handle_connection
-            elif x == 'disconnection':
-                self.event_types_to_handlers['disconnection'] = \
-                                                    self.handle_disconnection
-            elif x == 'player_lookup':
-                self.event_types_to_handlers['player_lookup'] = \
-                                                self.handle_player_lookup_event
-            elif x == 'players_command':
-                self.event_types_to_handlers['players_command'] = \
-                                            self.handle_players_command_event
-            else:
-                sf = lambda x: self.zserv.send_line(x.line)
-                self.event_types_to_handlers[x] = sf
-
+        self.set_handler('map_change', self.handle_map_change)
+        self.set_handler('connection', self.handle_connection)
+        self.set_handler('disconnection', self.handle_disconnection)
+        self.set_handler('player_lookup', self.handle_player_lookup_event)
+        self.set_handler('players_command', self.handle_players_command_event)
 
     def handle_map_change(self, event):
         dl = \
@@ -519,15 +487,16 @@ class FakeZServLogListener(GeneralLogListener):
         self.zserv.send_line(dl)
 
     def handle_connection(self, event):
-        self.zserv.add_player(event.data['ip_address'], event.data['port'])
+        self.zserv.players.add(event.data['ip_address'], event.data['port'])
         self.zserv.send_line(event.line)
 
     def handle_disconnection(self, event):
-        self.zserv.remove_player(event.data['player'])
+        self.zserv.players.remove(event.data['player'])
         self.zserv.send_line(event.line)
 
     def handle_player_lookup_event(self, event):
-        self.zserv.set_player_name(event.data['player_name'])
+        pn = event.data['player_name']
+        self.zserv.players.get(pn).set_name(pn)
         self.zserv.send_line(event.line)
 
     def handle_players_command_event(self, event):

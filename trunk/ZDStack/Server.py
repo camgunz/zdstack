@@ -8,24 +8,28 @@ import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import HOSTNAME, get_configfile, set_configfile, \
+from ZDStack import RPC_CLASS, get_configfile, set_configfile, \
                     load_configparser, get_configparser, set_debugging
+from ZDStack.Utils import resolve_path
 
 class Server:
 
     """Server represents a daemonized process serving network requests."""
 
-    def __init__(self, config_file=None, debugging=False):
+    def __init__(self, debugging=False):
         """Initializes a Server instance.
 
-        config_file: a string representing the full path to a
-                     configuration file
         debugging:   a boolean, whether or not debugging is enabled
 
         """
         set_debugging(debugging)
-        self.initialize_config(config_file)
-        os.chdir(self.homedir)
+        self.initialize_config()
+        ###
+        # Normally, daemons chdir to '/', but all the daemonizing logic is
+        # contained in the 'zdstack' script.  So there's no reason for us
+        # to chdir here, except to be really, really tricky.
+        ###
+        # os.chdir(self.homedir)
         self.stats = {}
         self.status = 'Stopped'
         self.keep_serving = False
@@ -34,18 +38,14 @@ class Server:
         signal.signal(signal.SIGTERM, self.handle_signal)
         signal.signal(signal.SIGHUP, self.handle_signal)
 
-    def initialize_config(self, config_file=None, reload=False):
+    def initialize_config(self, reload=False):
         """Initializes the server configuration:
 
-        config_file: a string representing the full path to a
-                     configuration file
         reload:      a boolean, whether or not the configuration is
                      being reloaded
 
         """
         # logging.debug('')
-        if config_file:
-            set_configfile(config_file)
         self.config_file = get_configfile()
         self.load_config(get_configparser(), reload=reload)
 
@@ -57,46 +57,15 @@ class Server:
 
         """
         # logging.debug('')
-        ###
-        # TODO:
-        #   Split this up in to check_config and load_config methods.
-        ###
         defaults = config.defaults()
-        if 'rootfolder' in defaults:
-            rootfolder = defaults['rootfolder']
-        else:
-            rootfolder = tempfile.gettempdir()
-        if not os.path.isdir(rootfolder):
-            raise ValueError("Root folder [%s] does not exist" % (rootfolder))
-        if not 'zdstack_port' in defaults:
-            es = "Could not find option 'zdstack_port' in the configuration"
-            raise ValueError(es)
-        if not 'rpc_protocol' in defaults:
-            es = "Could not find option 'rpc_protocol' in the configuration"
-            raise ValueError(es)
-        if defaults['rpc_protocol'].lower() in ('jsonrpc', 'json-rpc'):
-            from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
-            rpc_class = SimpleJSONRPCServer
-        elif defaults['rpc_protocol'].lower() in ('xmlrpc', 'xml-rpc'):
-            from ZDStack.XMLRPCServer import XMLRPCServer
-            rpc_class = XMLRPCServer
-        else:
-            es = "RPC Protocol [%s] not supported"
-            raise ValueError(es % (defaults['rpc_protocol']))
-        if 'rpc_hostname' in defaults:
-            hostname = defaults['rpc_hostname']
-        else:
-            hostname = HOSTNAME
+        hostname = defaults['zdstack_rpc_hostname']
         port = int(defaults['zdstack_port'])
-        homedir = rootfolder
-        logfile = os.path.join(homedir, 'ZDStack.log')
-        pidfile = os.path.join(homedir, 'ZDStack.pid')
+        logfile = os.path.join(defaults['zdstack_log_folder'], 'ZDStack.log')
+        pidfile = defaults['zdstack_pid_file']
         self.config = config
         self.defaults = defaults
-        self.rpc_class = rpc_class
         self.hostname = hostname
         self.port = port
-        self.homedir = homedir
         self.logfile = logfile
         self.pidfile = pidfile
 
@@ -108,7 +77,7 @@ class Server:
     def startup(self):
         """Starts the server up."""
         # logging.debug('')
-        self.rpc_server = self.rpc_class((HOSTNAME, self.port))
+        self.rpc_server = RPC_CLASS((self.hostname, self.port))
         self.register_functions()
         self.keep_serving = True
         self.status = "Running"
@@ -171,5 +140,9 @@ class Server:
     def get_logfile(self):
         """Returns the contents of this server's logfile."""
         # logging.debug('')
-        return read_file(logfile)
+        ###
+        # This could potentially be quite large, maybe we should make this
+        # method a little smarter eh?
+        ###
+        return read_file(self.logfile)
 

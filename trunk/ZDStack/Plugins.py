@@ -3,6 +3,10 @@ import imp
 import inspect
 import compileall
 
+###
+# Whoa, badass black magic.
+###
+
 def is_plugin(p):
     """Returns True if 'p' is a plugin.
 
