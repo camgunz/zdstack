@@ -2,7 +2,6 @@ import sys
 import os.path
 
 from datetime import datetime, timedelta
-from threading import Thread
 
 def yes(x):
     return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely',
@@ -23,22 +22,20 @@ def no(x):
                          'fuck no', 'shit no', 'oh man not a chance'
                     'i would probably kill myself if i had to put up with this')
 
+def to_list(s, sep):
+    """Parses s into a list.
+
+    s:   a string that will be split by separator tokens.
+    sep: a string representing the separator token.
+
+    Omits non-True values.
+
+    """
+    return [x for x in s.split(sep) if x]
+
 def timedelta_in_seconds(x):
     """Returns the value of a time delta in seconds as an int."""
     return (x.days * 86400) + x.seconds
-
-def start_thread(target, name=None, daemonic=True):
-    """Starts a thread.
-
-    name:     a string representing the name to give to the new thread
-    daemonic: a boolean, whether or not the thread is daemonic.  True
-              by default
-
-    """
-    t = Thread(target=target, name=name)
-    t.setDaemon(daemonic)
-    t.start()
-    return t
 
 def get_logfile_suffix(roll=False):
     """Returns today's logfile suffix.

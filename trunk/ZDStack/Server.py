@@ -8,8 +8,11 @@ import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-from ZDStack import RPC_CLASS, get_configfile, set_configfile, \
-                    load_configparser, get_configparser, set_debugging
+import ZDSThreadPool
+
+from ZDStack import RPC_CLASS, DIE_THREADS_DIE, get_configfile, \
+                    set_configfile, load_configparser, get_configparser, \
+                    set_debugging
 from ZDStack.Utils import resolve_path
 
 class Server:
@@ -62,12 +65,16 @@ class Server:
         port = int(defaults['zdstack_port'])
         logfile = os.path.join(defaults['zdstack_log_folder'], 'ZDStack.log')
         pidfile = defaults['zdstack_pid_file']
+        username = defaults['zdstack_username']
+        password = defaults['zdstack_password']
         self.config = config
         self.defaults = defaults
         self.hostname = hostname
         self.port = port
         self.logfile = logfile
         self.pidfile = pidfile
+        self.username = username
+        self.password = password
 
     def reload_config(self):
         """Reloads the configuration."""
@@ -77,10 +84,10 @@ class Server:
     def startup(self):
         """Starts the server up."""
         # logging.debug('')
-        self.rpc_server = RPC_CLASS((self.hostname, self.port))
+        addr = (self.hostname, self.port)
+        self.rpc_server = RPC_CLASS(self.username, self.password, addr)
         self.register_functions()
         self.keep_serving = True
-        self.status = "Running"
         write_file(str(os.getpid()), self.pidfile)
         self.start()
         while self.keep_serving:
@@ -91,28 +98,30 @@ class Server:
         # logging.debug('')
         self.stop()
         self.keep_serving = False
+        DIE_THREADS_DIE = True
+        ZDSThreadPool.join_all()
         try:
             delete_file(self.pidfile)
         except OSError, e:
-            logging.info("Error removing PID file %s: [%s]" % (self.pidfile, e))
+            es = "Error removing PID file %s: [%s]"
+            logging.error(es % (self.pidfile, e))
         sys.exit(0)
 
     def start(self):
         """Starts serving requests."""
         # logging.debug('')
-        raise NotImplementedError()
+        self.status = "Running"
 
     def stop(self):
         """Stops serving requests."""
         # logging.debug('')
-        raise NotImplementedError()
+        self.status = "Stopped"
 
     def restart(self):
         """Restarts the server."""
         # logging.debug('')
         self.stop()
         self.start()
-        return True
 
     def handle_signal(self, signum, frame):
         """Handles a signal."""
@@ -126,11 +135,16 @@ class Server:
         """Registers public XML-RPC functions."""
         # logging.debug('')
         self.rpc_server.register_function(self.get_status)
-        self.rpc_server.register_function(self.get_logfile)
-        self.rpc_server.register_function(self.reload_config)
-        self.rpc_server.register_function(self.start)
-        self.rpc_server.register_function(self.stop)
-        self.rpc_server.register_function(self.restart)
+        self.rpc_server.register_function(self.get_logfile,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.reload_config,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.start,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.stop,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.restart,
+                                          requires_authentication=True)
 
     def get_status(self):
         """Returns the current status of the server."""

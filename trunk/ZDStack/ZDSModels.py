@@ -1,128 +1,217 @@
-from elixir import Unicode, DateTime, String, Integer, Entity, Field, \
-                   using_options, OneToMany, ManyToOne, ManyToMany, setup_all
+from elixir import Unicode, DateTime, Integer, Boolean, Entity, Field, \
+                   OneToMany, ManyToOne, ManyToMany, using_options, \
+                   using_table_options, setup_all, create_all
 
-from sqlalchemy import and_
-from sqlalchemy.orm import mapper, relation
+from sqlalchemy import UniqueConstraint, MetaData
 
-import logging
+import datetime
 
-from base64 import b64encode
+from ZDStack import get_engine
 
-from ZDStack import get_engine, get_session
-from ZDStack.Utils import parse_player_name, homogenize, html_escape
-from ZDStack.ZDSTables import *
+class TeamColor(Entity):
 
-class Wad(Entity):
-
-    name = Field(
+    color = Field(Unicode(10), primary_key=True)
 
     def __str__(self):
-        return '<Wad %s>' % (self.name)
-
-    def __repr__(self):
-        return "Wad('%s')" % (self.name)
-
-class TeamColor(object):
-
-    def __init__(self, x, is_playing=False):
-        self.color = self.name = x
-        self.is_playing = is_playing
-
-    def __str__(self):
-        return self.color
+        return '<TeamColor %s>' % (self.color)
 
     def __repr__(self):
         return "Team('%s')" % (self.color)
 
-class Map(object):
+class Map(Entity):
+
+    wad = Field(Unicode(50), required=False)
+    number = Field(Integer)
+    name = Field(Unicode(255))
+    rounds = OneToMany('Round', inverse='map')
+
+    using_table_options(UniqueConstraint('wad', 'number', 'name'))
 
     def __str__(self):
-        return "Map%s: %s" % (str(self.number).zfill(2), self.name)
+        return "<Map%s: %s>" % (str(self.number).zfill(2), self.name)
 
     def __repr__(self):
         return "Map(%s, '%s')" % (self.number, self.name)
 
-class Weapon(object): pass
+class Weapon(Entity):
 
-class Port(object):
+    name = Field(Unicode(50), primary_key=True)
+    is_suicide = Field(Boolean, default=False)
 
-    def __init__(self, name):
-        self.name = name
+    def __str__(self):
+        return '<Weapon %s>' % (self.name)
 
-class GameMode(object): pass
-class Round(object): pass
-class StoredPlayer(object): pass
-class Alias(object): pass
-class Frag(object): pass
-class FlagTouch(object): pass
-class FlagReturn(object): pass
-class RCONAccess(object): pass
-class RCONDenial(object): pass
-class RCONAction(object): pass
+    def __repr__(self):
+        return "Weapon('%s', %s)" % (self.name, self.is_suicide)
 
-mapper(Wad, wad_table)
-mapper(Map, map_table)
-mapper(Weapon, weapon_table)
-mapper(Port, port_table)
-mapper(GameMode, game_mode_table)
-mapper(Round, round_table,
-       properties={'players': relation(Alias, secondary=round_alias_table,
-                                              backref='rounds')})
-mapper(TeamColor, team_color_table)
-mapper(StoredPlayer, player_table,
-       properties={\
-         'aliases': relation(Alias,
-                             primaryjoin=and_(player_table.c.id == \
-                                                player_alias_table.c.player_id,
-                                              alias_table.c.id == \
-                                                player_alias_table.c.alias_id),
-                             secondary=player_alias_table,
-                             backref='players', cascade='all')})
-mapper(Alias, alias_table,
-  properties={\
-    'frags': relation(Frag,
-                      primaryjoin=and_(player_table.c.id == \
-                                         frag_table.c.fragger_id,
-                                       frag_table.c.fragger_id != \
-                                         frag_table.c.fraggee_id),
-                      backref='fragger', cascade='all, delete-orphan'),
-     'deaths': relation(Frag,
-                        primaryjoin=player_table.c.id == \
-                                      frag_table.c.fraggee_id,
-                        backref='fraggee', cascade='all, delete-orphan'),
-     'flag_touches': relation(FlagTouch, backref='player',
-                              cascade='all, delete-orphan'),
-     'flag_returns': relation(FlagReturn, backref='player',
-                              cascade='all, delete-orphan'),
-     'flag_picks': relation(FlagTouch,
-                            primaryjoin=and_(player_table.c.id == \
-                                               flag_touch_table.c.player_id,
-                                             flag_touch_table.c.was_picked == \
-                                               True),
-                            cascade='all, delete-orphan'),
-     'flag_caps': relation(FlagTouch,
-                           primaryjoin=and_(player_table.c.id == \
-                                              flag_touch_table.c.player_id,
-                                            flag_touch_table.c.resulted_in_score == \
-                                              True),
-                           cascade='all, delete-orphan'),
-      'flag_pick_caps': relation(FlagTouch,
-                                 primaryjoin=and_(player_table.c.id == \
-                                                    flag_touch_table.c.player_id,
-                                                  flag_touch_table.c.was_picked == \
-                                                    True,
-                                                  flag_touch_table.c.resulted_in_score == \
-                                                    True),
-                                 cascade='all, delete-orphan'),
-       'rcon_access': relation(RCONAccess, backref='player',
-                               cascade='all, delete-orphan'),
-       'rcon_denial': relation(RCONDenial, backref='player',
-                               cascade='all, delete-orphan'),
-       'rcon_action': relation(RCONAction, backref='player',
-                               cascade='all, delete-orphan'),
-  }
-)
-mapper(Frag, frag_table)
-mapper(FlagTouch, flag_touch_table)
-mapper(FlagReturn, flag_return_table)
+class Port(Entity):
+
+    name = Field(Unicode(50), primary_key=True)
+    game_modes = ManyToMany('GameMode', inverse='ports')
+
+    def __str__(self):
+        return '<Port %s>' % (self.name)
+
+    def __repr__(self):
+        return "Port('%s')" % (self.name)
+
+class GameMode(Entity):
+
+    name = Field(Unicode(30), primary_key=True)
+    ports = ManyToMany('Port', inverse='game_modes')
+    has_teams = Field(Boolean, default=False)
+    rounds = OneToMany('Round', inverse='game_modes')
+
+    def __str__(self):
+        return '<GameMode %s>' % (self.name)
+
+    def __repr__(self):
+        s = "GameMode('%s', %s, %s)"
+        return s % (self.name, self.port, self.has_teams)
+
+class Round(Entity):
+
+    game_modes = ManyToOne('GameMode', inverse='rounds')
+    map = ManyToOne('Map', inverse='rounds')
+    start_time = Field(DateTime, default=datetime.datetime.now)
+    end_time = Field(DateTime, required=False)
+    players = ManyToMany('Alias', inverse='rounds')
+
+    def __str__(self):
+        s = '<Round on %s at %s>'
+        return s % (self.map, self.start_time)
+
+    def __repr__(self):
+        s = "Round(%s, %s)"
+        return s % (self.map, self.start_time)
+
+class StoredPlayer(Entity):
+
+    name = Field(Unicode(255), primary_key=True)
+
+    def __str__(self):
+        return '<Player %s>' % (self.name)
+
+    def __repr__(self):
+        return "Player('%s')" % (self.name)
+
+class Alias(Entity):
+
+    name = Field(Unicode(255), index=True)
+    ip_address = Field(Unicode(16), index=True)
+    was_namefake = Field(Boolean, default=False, required=False)
+    rounds = ManyToMany('Round', inverse='players')
+
+    def __str__(self):
+        return '<Alias %s>' % (self.name)
+
+    def __repr__(self):
+        s = "Alias('%s', '%s', %s)"
+        return s % (self.name, self.ip_address, self.wad_namefake)
+
+class Frag(Entity):
+
+    fragger = ManyToOne('Alias')
+    fraggee = ManyToOne('Alias')
+    weapon = ManyToOne('Weapon')
+    round = ManyToOne('Round')
+    timestamp = Field(DateTime)
+    fragger_was_holding_flag = Field(Boolean, default=False)
+    fraggee_was_holding_flag = Field(Boolean, default=False)
+    fragger_team_color = ManyToOne('TeamColor')
+    fraggee_team_color = ManyToOne('TeamColor')
+    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    red_team_score = Field(Integer, nullable=True)
+    blue_team_score = Field(Integer, nullable=True)
+    green_team_score = Field(Integer, nullable=True)
+    white_team_score = Field(Integer, nullable=True)
+
+    def __str__(self):
+        return '<Frag %s>' % (self.weapon)
+
+class FlagTouch(Entity):
+
+    player = ManyToOne('Alias')
+    round = ManyToOne('Round')
+    touch_time = Field(DateTime, default=datetime.datetime.now)
+    loss_time = Field(DateTime, required=False)
+    was_picked = Field(Boolean, default=False)
+    resulted_in_score = Field(Boolean, default=False)
+    player_team_color = ManyToOne('TeamColor')
+    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    red_team_score = Field(Integer, nullable=True)
+    blue_team_score = Field(Integer, nullable=True)
+    green_team_score = Field(Integer, nullable=True)
+    white_team_score = Field(Integer, nullable=True)
+
+    def __str__(self):
+        return '<FlagTouch %s>' % (self.player)
+
+class FlagReturn(Entity):
+
+    player = ManyToOne('Alias')
+    round = ManyToOne('Round')
+    timestamp = Field(DateTime, default=datetime.datetime.now)
+    player_was_holding_flag = Field(Boolean, default=False)
+    player_team_color = ManyToOne('TeamColor')
+    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
+    red_team_score = Field(Integer, nullable=True)
+    blue_team_score = Field(Integer, nullable=True)
+    green_team_score = Field(Integer, nullable=True)
+    white_team_score = Field(Integer, nullable=True)
+
+    def __str__(self):
+        return '<FlagReturn %s>' % (self.player)
+
+class RCONAccess(Entity):
+
+    player = ManyToOne('Alias')
+    round = ManyToOne('Round')
+    timestamp = Field(DateTime, default=datetime.datetime.now)
+
+    def __str__(self):
+        return '<RCON Access %s>' % (self.player)
+
+class RCONDenial(Entity):
+
+    player = ManyToOne('Alias')
+    round = ManyToOne('Round')
+    timestamp = Field(DateTime, default=datetime.datetime.now)
+
+    def __str__(self):
+        return '<RCON Denial %s>' % (self.player)
+
+class RCONAction(Entity):
+
+    player = ManyToOne('Alias')
+    round = ManyToOne('Round')
+    timestamp = Field(DateTime, default=datetime.datetime.now)
+    action = Field(Unicode(255))
+
+    def __str__(self):
+        return '<RCON Action %s - %s>' % (self.action, self.player)
+
+###
+# Get the MetaData and bind it
+###
+MetaData.bind = get_engine()
+
+###
+# Setup all the mapping stuff.
+###
+setup_all()
+###
+# Should have some kind of test here that checks if the tables already exist,
+# and create them if they don't.
+###
+create_all()
 

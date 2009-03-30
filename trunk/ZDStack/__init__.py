@@ -20,8 +20,9 @@ from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'CONFIGFILE',
            'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS', 'DATEFMT',
            'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS', 'RPC_CLASS',
-           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'PlayerNotFoundError',
-           'TeamNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
+           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT',
+           'DIE_THREADS_DIE', 'PlayerNotFoundError', 'TeamNotFoundError',
+           'ZServNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
            'get_engine', 'get_metadata', 'get_session_class', 'get_session',
            'get_configfile', 'set_configfile', 'load_configparser',
            'get_configparser', 'get_server_proxy', 'get_plugins',
@@ -63,11 +64,13 @@ PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
 DB_ENGINE = None
 DB_METADATA = None
-DB_SESSION = None
+DB_SESSION_CLASS = None
 RPC_CLASS = None
 RPC_PROXY_CLASS = None
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
 TICK = Decimal('0.027')
+MAX_TIMEOUT = 1
+DIE_THREADS_DIE = False
 
 ###
 # I'm deciding to only have 1 DB engine, and to make all zservs use it.  I
@@ -98,6 +101,11 @@ class TeamNotFoundError(Exception):
 
     def __init__(self, color):
         Exception.__init__(self, "%s Team not found" % (color.capitalize()))
+
+class ZServNotFoundError(Exception):
+
+    def __init__(self, zserv_name:
+        Exception.__init__(self, "ZServ [%s] not found" % (zserv_name))
 
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
@@ -329,29 +337,40 @@ def load_configparser():
     rp = defaults['zdstack_rpc_protocol'].lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
-        from ZDStack.SimpleJSONRPCServer import SimpleJSONRPCServer
+        from ZDStack.RPCServer import JSONRPCServer
         from jsonrpc import ServiceProxy
-        rpc_class = SimpleJSONRPCServer
+        rpc_class = JSONRPCServer
         proxy_class = ServiceProxy
     elif rp in ('xmlrpc', 'xml-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'xml-rpc')
-        from ZDStack.XMLRPCServer import XMLRPCServer
+        from ZDStack.RPCServer import XMLRPCServer
         from xmlrpclib import ServerProxy
         rpc_class = XMLRPCServer
         proxy_class = ServerProxy
     else:
         es = "RPC Protocol [%s] not supported"
         raise ValueError(es % (defaults['zdstack_rpc_protocol']))
+    ###
+    # Resolve RPC hostname.
+    ###
     if not 'zdstack_rpc_hostname' in defaults or \
        not defaults['zdstack_rpc_hostname'] or \
            defaults['zdstack_rpc_hostname'].lower() == 'localhost':
         cp.set('DEFAULT', 'zdstack_rpc_protocol', get_loopback())
+    ###
+    # Make sure the folder for the zserv processes exists.
+    ###
     if not os.path.isdir(defaults['zdstack_zserv_folder']):
         try:
             os.mkdir(defaults['zdstack_zserv_folder'])
         except Exception, e:
             es = "Error: ZServ Server folder %s is not valid: %s"
             raise ValueError(es % (defaults['zdstack_zserv_folder'], e))
+    ###
+    # Resolve the PID file location.
+    ###
+    cp.set('DEFAULT', 'zdstack_pid_file',
+           resolve_path(defaults['zdstack_pid_file']))
     RPC_CLASS = rpc_class
     RPC_PROXY_CLASS = proxy_class
     return cp

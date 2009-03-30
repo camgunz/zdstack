@@ -10,12 +10,14 @@ from threading import Timer, Lock
 from collections import deque
 from subprocess import Popen, PIPE
 
+from elixir import session # is this threadsafe?  who cares, we're INSAAAAAANE!
+
 from pyfileutils import write_file
 
-from ZDStack import TEAM_COLORS, TICK, PlayerNotFoundError, get_session
-from ZDStack.Utils import yes, no
+from ZDStack import DIE_THREADS_DIE, TEAM_COLORS, TICK, PlayerNotFoundError
+from ZDStack.Utils import yes, no, to_list
 from ZDStack.LogFile import LogFile
-from ZDStack.ZDSModels import Port, GameMode, Wad, Map, Round, TeamColor
+from ZDStack.ZDSModels import Port, GameMode, Map, Round, TeamColor
 from ZDStack.LogParser import GeneralLogParser
 from ZDStack.LogListener import GeneralLogListener, PluginLogListener
 from ZDStack.ZDSTeamsList import TeamsList
@@ -43,7 +45,7 @@ class ZServ:
 
     """
 
-    port = Port('zdaemon')
+    port = Port(name='zdaemon')
 
     ###
     # There might still be race conditions here
@@ -52,30 +54,27 @@ class ZServ:
     #       use.
     ###
 
-    def __init__(self, name, game_mode, config, zdstack):
+    def __init__(self, name, config, zdstack):
         """Initializes a ZServ instance.
 
         name:      a string representing the name of this ZServ.
-        game_mode: the game-mode of this ZServ, like 'ctf', 'ffa', etc.
         config:    a dict of configuration values for this ZServ.
         zdstack:   the calling (ZD)Stack instance.
 
         """
         self.start_time = datetime.now()
         self.name = name
-        self.raw_game_mode = game_mode
         self.session_lock = Lock()
-        self.initialize_session()
-        self.game_mode = self.mode # lame, I know
         self.zdstack = zdstack
         self.keep_spawning = False
-        self.already_watching = False
         self._zserv_stdin_lock = Lock()
         self.map = None
         self.round = None
-        self.players = PlayersList()
-        self.teams = TeamsList()
+        self.players = PlayersList(self)
+        self.teams = TeamsList(self)
+        self._template = ''
         self.reload_config(config)
+        self.initialize_session()
         self.zserv = None
         self.pid = None
         self.logfile = LogFile(GeneralLogParser(), self)
@@ -91,23 +90,25 @@ class ZServ:
                 self.logfile.listeners.append(PluginLogListener(self))
             else:
                 logging.info("Not loading plugins")
-                logging.debug("Load plugins: [%s]" % (load_plugins))
                 logging.debug("Plugins: [%s]" % ('plugins' in self.config))
             logging.debug("Listeners: [%s]" % (self.logfile.listeners))
 
     def initialize_session(self, acquire_lock=True):
         """Initializes the SQLAlchemy session.
         
+        game_mode:    a string representing the game mode of this
+                      ZServ.
         acquire_lock: a boolean that, if True, acquires the session
                       lock before initializing the session.  True by
                       default.
         
         """
         def blah():
-            self.session = get_session()
-            self.mode = GameMode(port=self.port, name=game_mode,
-                                 has_teams=game_mode in TEAM_MODES)
-            self.session.add(self.mode)
+            self.session = session()
+            self.game_mode = \
+                GameMode(name=self.raw_game_mode,
+                         has_teams=self.raw_game_mode in TEAM_MODES)
+            self.session.add(self.game_mode)
         if acquire_lock:
             with self.session_lock:
                 blah()
@@ -146,23 +147,25 @@ class ZServ:
             return x in config and config[x]
         def is_yes(x):
             return x in config and yes(config[x])
-        def set_value(x, to_exec, should_set=None):
+        ###
+        # We absolutely have to set the game mode of this ZServ now.
+        ###
+        self.raw_game_mode = config['mode']
+        def set_value(y, to_exec, should_set=None):
             if should_set is None:
-                should_set = lambda x: True
-            mode_option = '_'.join([self.mode, x])
+                should_set = lambda y: True
+            mode_option = '_'.join([self.raw_game_mode, y])
             if is_valid(mode_option) and should_set(mode_option):
+                x = config[mode_option]
                 exec to_exec in globals(), locals()
-                # to_exec(config[mode_option])
                 return True
-            elif is_valid(x) and should_set(x):
+            elif is_valid(y) and should_set(y):
+                x = config[y]
                 exec to_exec in globals(), locals()
-                # to_exec(x)
                 return True
             return False
-        def set_yes_value(option, parse_func):
+        def set_yes_value(option, to_exec):
             return set_value(option, to_exec, is_yes)
-        def to_list(s, sep):
-            return [x for x in s.split(sep) if x]
         ### mandatory stuff
         self.wads = []
         if 'wads' in config and config['wads']:
@@ -171,9 +174,8 @@ class ZServ:
                 wadpath = os.path.join(config['zdstack_wad_folder'], wad)
                 if not os.path.isfile(wadpath):
                     es = "%s: WAD [%s] not found"
-                    raise ValueError(es % (self.name, wad))
-            self.raw_wads = wads
-            self.wads = [Wad(x) for x in self.raw_wads]
+                    raise ValueError(es % (self.name, wadpath))
+            self.wads = wads
         self.homedir = os.path.join(config['zdstack_zserv_folder'], self.name)
         if not os.path.isdir(self.homedir):
             os.mkdir(self.homedir)
@@ -184,8 +186,7 @@ class ZServ:
         self.port = int(config['port'])
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
         self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad',
-                    self.iwad, '-port', str(self.port), '-cfg',
-                    self.configfile, '-clog', '-log']
+                    self.iwad, '-port', str(self.port), '-cfg', self.configfile]
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
         if 'ip' in config and config['ip']:
@@ -267,7 +268,7 @@ class ZServ:
         self.vote_map = None
         self.vote_map_percent = None
         self.vote_map_skip = None
-        self.vote_map_kick = None
+        self.vote_kick = None
         self.vote_kick_percent = None
         ### advertise stuff
         self.admin_email = None
@@ -350,7 +351,7 @@ class ZServ:
                     pc = pc * Decimal(100)
                 self.vote_map_percent = pc
             set_yes_value('vote_map_skip', 'self.vote_map_skip = int(x)')
-        if set_yes_value('vote_map_kick', 'self.vote_map_kick = True'):
+        if set_yes_value('vote_kick', 'self.vote_kick = True'):
             set_value('vote_kick_percent',
                       'self.vote_kick_percent = Decimal(x)')
         ### Load advertise stuff
@@ -370,29 +371,28 @@ class ZServ:
         set_value('alternate_wads',
             'self.alternate_wads = [y.split("=") for y in x.split()]')
         set_yes_value('overtime', 'self.overtime = True')
-        set_yes_value('skill', 'self.skill = int(x)')
-        set_yes_value('gravity', 'self.overtime = int(x)')
-        set_yes_value('air_control', 'self.gravity = Decimal(x)')
+        set_value('skill', 'self.skill = int(x)')
+        set_value('gravity', 'self.gravity = Decimal(x)')
+        set_value('air_control', 'self.air_control = Decimal(x)')
         set_yes_value('telemissiles', 'self.telemissiles = True')
         set_yes_value('specs_dont_disturb_players',
                       'self.specs_dont_disturb_players = True')
-        set_yes_value('min_players', 'self.min_players = int(x)')
-        set_yes_value('dmflags', 'self.dmflags = True')
-        set_yes_value('dmflags2', 'self.dmflags2 = True')
-        set_yes_value('max_clients', 'self.max_clients = True')
-        if self.mode in DUEL_MODES:
+        set_value('min_players', 'self.min_players = int(x)')
+        set_value('dmflags', 'self.dmflags = x')
+        set_value('dmflags2', 'self.dmflags2 = x')
+        set_value('max_clients', 'self.max_clients = int(x)')
+        if self.raw_game_mode in DUEL_MODES:
             self.max_players = 2
         else:
             set_value('max_players', 'self.max_players = int(x)')
         set_value('timelimit', 'self.timelimit = int(x)')
         set_value('auto_respawn', 'self.auto_respawn = int(x)')
         set_value('teamdamage', 'self.teamdamage = Decimal(x)')
-        set_value('max_teams', 'self.max_teams = int(x)')
-        if max_teams:
+        if set_value('max_teams', 'self.max_teams = int(x)'):
             self.playing_colors = TEAM_COLORS[:self.max_teams]
         set_value('max_players_per_team',
                   'self.max_players_per_team = int(x)')
-        if self.mode in TEAM_MODES:
+        if self.raw_game_mode in TEAM_MODES:
             set_value('team_score_limit', 'self.scorelimit = int(x)')
         ###
         # Why are we doing this...?  Commenting out to see what breaks :)
@@ -419,10 +419,10 @@ class ZServ:
         ###
         # TODO: add support for "add_mapnum_to_hostname"
         ###
-        template = ''
+        self._new_template = ''
         def add_line(should_add, line):
             if should_add:
-                template += line + '\n'
+                self._new_template += line + '\n'
                 return True
             return False
         def add_bool_line(bool, line):
@@ -440,7 +440,7 @@ class ZServ:
         add_var_line(self.hostname, 'set hostname "%s"')
         add_var_line(self.motd, 'set motd "%s"')
         add_var_line(self.website, 'set website "%s"')
-        add_var_line(self.email, 'set email "%s"')
+        add_var_line(self.admin_email, 'set email "%s"')
         add_bool_line(self.advertise, 'set master_advertise "%s"')
         if add_bool_line(self.rcon_enabled, 'set enable_rcon "%s"'):
             add_var_line(self.rcon_password, 'set rcon_password "%s"')
@@ -485,13 +485,17 @@ class ZServ:
         if self.rcon_password_9 and self.rcon_commands_9:
             add_var_line(self.rcon_password_9, 'set rcon_pwd_9 "%s"')
             add_var_line(' '.join(self.rcon_commands_9), 'set rcon_cmds_9 "%s"')
+        add_bool_line(self.raw_game_mode in DM_MODES, 'set deathmatch "%s"')
+        if add_bool_line(self.raw_game_mode in TEAM_MODES, 'set teamplay "%s"'):
+            add_var_line(self.scorelimit, 'set teamscorelimit "%s"')
+        add_bool_line(self.raw_game_mode in CTF_MODES, 'set ctf "%s"')
         add_bool_line(self.telemissiles, 'set sv_telemissiles "%s"')
         add_bool_line(self.specs_dont_disturb_players,
                       'set specs_dont_disturb_players "%s"')
         add_bool_line(self.restart_empty_map, 'set restartemptymap "%s"')
         if self.maps:
             for map in self.maps:
-                add_var_line(True, 'addmap "%s"' % (map))
+                add_var_line(map, 'addmap "%s"')
         if self.optional_wads:
             add_var_line(' '.join(self.optional_wads), 'set optional_wads "%s"')
         if self.alternate_wads:
@@ -512,38 +516,28 @@ class ZServ:
         add_var_line(self.dmflags, 'set dmflags "%s"')
         add_var_line(self.dmflags2, 'set dmflags2 "%s"')
         add_var_line(self.max_clients, 'set maxclients "%s"')
-        if self.mode in DUEL_MODES:
+        if self.raw_game_mode in DUEL_MODES:
             self.max_players = 2
         add_var_line(self.max_players, 'set maxplayers "%s"')
         add_var_line(self.timelimit, 'set timelimit "%s"')
         add_var_line(self.fraglimit, 'set fraglimit "%s"')
         add_var_line(self.auto_respawn, 'set sv_autorespawn "%s"')
         add_var_line(self.teamdamage, 'set teamdamage "%s"')
-        add_bool_line(self.mode in DM_MODES, 'set deathmatch "%s"')
-        if add_bool_line(self.mode in TEAM_MODES, 'set teamplay "%s"'):
-            add_var_line(self.scorelimit, 'set teamscorelimit "%s"')
-        add_bool_line(self.mode in CTF_MODES, 'set ctf "%s"')
-        return template # % self.config
+        self._template = self._new_template
+        return self._template
 
-    def watch_zserv(self, set_timer=True):
-        """Watches the zserv process, restarting it if it crashes.
-
-        set_timer: a Boolean that, if True, sets a timer to re-run
-                   this method half a second after completion.  True
-                   by default.
-
-        """
-        if not self.keep_spawning:
-            return
+    def is_running(self):
+        """Returns True if the internal zserv process is running."""
+        ###
+        # If the internal zserv process has exited, it will have a
+        # returncode... which we can get with .poll().  Otherwise
+        # .poll() returns None.
+        ###
+        if not self.zserv or not self.zserv.pid:
+            return False
         x = self.zserv.poll()
-        if x:
-            logging.debug('Poll: %s' % (x))
-            for func in self.post_spawn_funcs:
-                func()
-            self.clean_up_after_zserv()
-            self.spawn_zserv()
-        if set_timer == True:
-            Timer(.5, self.watch_zserv).start()
+        logging.debug('Poll: %s' % (x))
+        return x is None
 
     def spawn_zserv(self):
         """Starts the zserv process.
@@ -553,40 +547,35 @@ class ZServ:
         
         """
         logging.info('Acquiring spawn lock [%s]' % (self.name))
-        self.zdstack.spawn_lock.acquire()
         with self.zdstack.spawn_lock:
+            if self.is_running():
+                return
+            self.pid = None
             curdir = os.getcwd()
-            os.chdir(self.homedir)
-            for func in self.pre_spawn_funcs:
-                func()
-            logging.info("Spawning [%s]" % (' '.join(self.cmd)))
-            ###
-            # Should we do anything with STDERR here?
-            #
-            # Also switched close_fds to False... I think it's required to get
-            # stdout => self.logfile to work.
-            ###
-            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=self.logfile,
-                               bufsize=0, close_fds=False)
-            self.send_to_zserv('players') # keeps the process from CPU spinning
-            self.pid = self.zserv.pid
-            os.chdir(curdir)
-
-    def clean_up_after_zserv(self):
-        """Cleans up after the zserv process exits."""
-        logging.debug('')
-        self.pid = None
+            try:
+                os.chdir(self.homedir)
+                logging.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
+                ###
+                # Should we do anything with STDERR here?
+                ###
+                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=PIPE, bufsize=0,
+                                   close_fds=True)
+                self.send_to_zserv('players') # avoids CPU spinning
+                self.pid = self.zserv.pid
+            finally:
+                os.chdir(curdir)
 
     def start(self):
         """Starts the zserv process, restarting it if it crashes."""
         logging.debug('')
-        self.pid = None
         self.logfile.start_listeners()
         self.keep_spawning = True
-        self.spawn_zserv()
-        if not self.already_watching:
-            self.already_watching = True
-            self.watch_zserv()
+        self.spawning_thread = \
+            ZDSThreadPool.get_thread(name='%s spawning thread' % (self.name),
+                                     target=self.spawn_zserv,
+                                     keep_going=lambda: self.keep_spawning,
+                                     sleep=Decimal(.5))
+        Server.start(self)
 
     def stop(self, signum=15):
         """Stops the zserv process.
@@ -598,6 +587,7 @@ class ZServ:
         logging.debug('')
         self.keep_spawning = False
         self.logfile.stop_listeners()
+        ZDSThreadPool.join(self.spawning_thread)
         error_stopping = False
         if self.pid is not None:
             try:
@@ -607,6 +597,7 @@ class ZServ:
                 es = "Caught exception while stopping: [%s]"
                 logging.error(es % (e))
                 error_stopping = es % (e)
+        Server.stop(self)
         return error_stopping
 
     def restart(self, signum=15):
@@ -753,7 +744,8 @@ class ZServ:
             self.teams.clear()
             if not self.enable_stats:
                 self.session.close()
-                self.initialize_session(acquire_lock=False)
+                self.initialize_session(game_mode=self.raw_game_mode,
+                                        acquire_lock=False)
             self.map = Map(number=map_number, name=map_name)
             self.round = Round(game_mode=self.game_mode, map=self.map,
                                start_time=datetime.now())
@@ -958,7 +950,7 @@ class ZServ:
         ###
         logging.debug('')
         d = {'name': self.name,
-             'mode': self.mode,
+             'mode': self.raw_game_mode,
              'port': self.port,
              'iwad': self.base_iwad,
              'wads': [os.path.basename(x) for x in self.wads],

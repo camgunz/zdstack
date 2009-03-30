@@ -23,11 +23,7 @@ class LogFile(object):
         listeners: a list of LogListener instances to send events to
 
         """
-        self.closed = False
-        self.encoding = None
         self.errors = None
-        self.newlines = None
-        self.softspace = 0
         self.parse = parser # tricky!
         self.zserv = zserv
         self.listeners = listeners
@@ -43,56 +39,6 @@ class LogFile(object):
     def __repr__(self):
         return "LogFile(%r, %r, %r)" % (self.parse, self.zserv, self.listeners)
 
-    def close(self):
-        self.closed = True
-
-    def flush(self):
-        pass
-
-    def isatty(self):
-        return False
-
-    def next(self):
-        ###
-        # Normally file objects are their own iterators, returning lines of
-        # their contents.  This file object has no contents, so this
-        # automatically raises StopIteration
-        ###
-        raise StopIteration
-
-    def read(self, size=None):
-        ###
-        # Normally file objects have contents, but this file object doesn't.
-        ###
-        return ''
-
-    def readline(self, size=None):
-        ###
-        # Normally file objects have contents, but this file doesn't.
-        ###
-        return ''
-
-    def readlines(self, sizehint=None):
-        ###
-        # Normally file objects have contents, but this file doesn't.
-        ###
-        return []
-
-    def xreadlines(self):
-        ###
-        # Normally file objects have contents, but this file doesn't.
-        ###
-        raise StopIteration
-
-    def seek(self, offset, whence=None):
-        pass
-
-    def tell(self):
-        return 0
-
-    def truncate(self, size=None):
-        pass
-
     def write(self, s):
         if not self.zserv.events_enabled:
             return
@@ -100,13 +46,10 @@ class LogFile(object):
         if self.unprocessed_data:
             self.process_data()
 
-    def writelines(self, seq):
-        self.write(''.join(seq))
-
     def start_listeners(self):
         """Starts all listeners in self.listeners."""
         for x in self.listeners:
-            logging.debug("Starting %s" % (listener.name))
+            logging.debug("Starting %s" % (x.name))
             x.start()
 
     def stop_listeners(self):

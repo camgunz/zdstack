@@ -4,8 +4,12 @@ import Queue
 import logging
 import datetime
 
-from ZDStack import TEAM_COLORS, TICK, PlayerNotFoundError, get_plugins, \
-                    get_session
+from threading import Lock
+
+import ZDSThreadPool
+
+from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, TEAM_COLORS, TICK, \
+                    PlayerNotFoundError, get_plugins, get_session
 from ZDStack.Utils import start_thread
 from ZDStack.ZDSModels import Weapon, Alias, Frag, FlagTouch, FlagReturn, \
                               RCONAccess, RCONDenial, RCONAction
@@ -28,7 +32,7 @@ class BaseLogListener(object):
         self.zserv = zserv
         self.events = Queue.Queue()
         self.keep_listening = False
-        self.listener_thread = None
+        self.event_types_to_handlers = dict()
         self.set_handler('error', self.handle_error_event)
 
     def set_handler(self, event_type, handler):
@@ -45,16 +49,16 @@ class BaseLogListener(object):
         """Starts listening."""
         logging.debug('')
         self.keep_listening = True
-        self.clear_processed_events()
-        self.listener_thread = start_thread(self.start_handling_events,
-                                            "%s listener thread" % self.name)
+        self.listener_thread = \
+            ZDSThreadPool.get_thread(target=self.start_handling_events,
+                                     name='%s listener thread' % (self.name),
+                                     keep_going=lambda: self.keep_listening)
 
     def stop(self):
         """Stops listening."""
         logging.debug('')
         self.keep_listening = False
-        # self.listener_thread.join()
-        # self.listener_thread = None
+        ZDSThreadPool.join(self.listener_thread)
 
     def __str__(self):
         return "<%s: %s>" % (self.classname, self.name)
@@ -68,27 +72,25 @@ class BaseLogListener(object):
         This method is called by a thread spawned by start().
         
         """
-        while self.keep_listening:
-            try:
-                event = self.events.get(1)
-            except Queue.Empty:
-                ###
-                # If we're shutting down, this thread will wait forever on an
-                # event that will never come.  So make this thread check every
-                # second that it should keep listening.
-                ###
-                continue
-            logging.debug("Handling event: %s" % (event.type))
-            try:
-                self._handle_event(event)
-            except Exception, e:
-                ###
-                # I suppose we should just log the error and keep handling
-                # events... but I haven't really thought a lot about it.
-                ###
-                es = "Error while handling event [%s]: %s"
-                logging.error(es % (event, e))
-                continue
+        try:
+            event = self.events.get(MAX_TIMEOUT)
+        except Queue.Empty:
+            ###
+            # If we're shutting down, this thread will wait forever on an
+            # event that will never come.  So make this thread check every
+            # second that it should keep listening.
+            ###
+            return
+        logging.debug("Handling event: %s" % (event.type))
+        try:
+            self._handle_event(event)
+        except Exception, e:
+            ###
+            # I suppose we should just log the error and keep handling
+            # events... but I haven't really thought a lot about it.
+            ###
+            es = "Error while handling event [%s]: %s"
+            logging.error(es % (event, e))
 
     def _handle_event(self, event):
         """Handles an event.
@@ -194,10 +196,9 @@ class GeneralLogListener(BaseLogListener):
         self.set_handler('rcon_denied', self.handle_rcon_event)
         self.set_handler('rcon_granted', self.handle_rcon_event)
         self.set_handler('rcon_action', self.handle_rcon_event)
-        self.set_handler('flag_touch', self.handle_flag_touch_event)
-        self.set_handler('flag_cap', self.handle_flag_touch_event)
-        self.set_handler('flag_pick', self.handle_flag_touch_event)
-        self.set_handler('flag_touch', self.handle_flag_loss_event)
+        self.set_handler('flag_touch', self.handle_flag_event)
+        self.set_handler('flag_cap', self.handle_flag_event)
+        self.set_handler('flag_pick', self.handle_flag_event)
         self.set_handler('flag_return', self.handle_flag_return_event)
         self.set_handler('map_change', self.handle_map_change_event)
         self.set_handler('frag', self.handle_frag_event)
@@ -250,8 +251,8 @@ class GeneralLogListener(BaseLogListener):
         else:
             player.playing = True
 
-    def handle_rcon_granted_event(self, event):
-        """Handles an rcon_granted event.
+    def handle_rcon_event(self, event):
+        """Handles an RCON-related event.
 
         event: a LogEvent instance.
 
@@ -259,41 +260,21 @@ class GeneralLogListener(BaseLogListener):
         try:
             player = self.zserv.players.get(event.data['player'])
         except PlayerNotFoundError:
-            es = "Received an RCON access event for non-existent player [%s]"
+            es = "Received an RCON event for non-existent player [%s]"
             logging.error(es % (event.data['player']))
             return
-        self.zserv.session.add(RCONAccess(player=player, round=self.zserv.round,
-                                          timestamp=event.dt))
-
-    def handle_rcon_denied_event(self, event):
-        """Handles an rcon_denied event.
-
-        event: a LogEvent instance.
-
-        """
-        try:
-            self.zserv.players.get(event.data['player'])
-        except PlayerNotFoundError:
-            es = "Received a RCON denial event for non-existent player [%s]"
-            logging.error(es % (event.data['player']))
-        self.zserv.session.add(RCONDenial(player=player, round=self.zserv.round,
-                                          timestamp=event.dt))
-
-    def handle_rcon_action_event(self, event):
-        """Handles an rcon_action event.
-
-        event: a LogEvent instance.
-
-        """
-        action = event.data['action']
-        try:
-            self.zserv.players.get(event.data['player'])
-        except PlayerNotFoundError:
-            es = "Received an RCON action event for non-existent player [%s]"
-            logging.error(es % (event.data['player']))
-        self.zserv.session.add(RCONAction(player=player, round=self.zserv.round,
-                                          timestamp=event.dt,
-                                          action=event.data['action']))
+        if event.type == 'rcon_denied':
+            s = RCONDenial(player=player, round=self.zserv.round,
+                           timestamp=event.dt)
+        elif event.type == 'rcon_granted':
+            s = RCONAccess(player=player, round=self.zserv.round,
+                           timestamp=event.dt)
+        elif event.type == 'rcon_action':
+            s = RCONAction(player=player, round=self.zserv.round,
+                           timestamp=event.dt,
+                           action=event.data['action'])
+        with self.zserv.session_lock:
+            self.zserv.session.add(s)
 
     def _get_latest_flag_touch(self, player):
         """Returns the latest FlagTouch for a player.
@@ -315,7 +296,7 @@ class GeneralLogListener(BaseLogListener):
         ###
         return q.first() # this should be the runner's latest FlagTouch
 
-    def handle_flag_touch_event(self, event):
+    def handle_flag_event(self, event):
         """Handles a flag_touch event.
 
         event: a LogEvent instance.
