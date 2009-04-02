@@ -17,7 +17,7 @@
 == Version 0.11.0 ==
   * Add authentication
   * Add global ban/whitelist
-  * Add ConnectionQualityStatistics
+  * Switch to SQLAlchemy/Elixir for events & stats
   * Add support for all zserv server config variables
 
 == Version 0.12.0 ==
@@ -37,6 +37,7 @@ Subsequent releases will be Release Candidates, with no substantial changes apar
   * Committed ZDWebStats to SVN, will backport fixes and release both 0.9 and 0.10
 
 == Version 0.11.0 ==
-  * Add client-log parse utility to ZDWebStats
-  * Add CSV export to ZDWebStats
+  * Add client-log parsing
+  * Add CSV export
   * Add admin section
+  * Add fine-grained authentication
