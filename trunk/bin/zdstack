@@ -53,7 +53,7 @@ def start(config_file, debug=False):
         if os.path.isfile(zdstack.pidfile):
             es = "\nZDStack is already running: %s\n"
             print >> sys.stderr, es % (zdstack.pidfile)
-            sys.exit(-1)
+            zdstack.shutdown(retval=-1)
         print "Forking"
         fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal, debug)
         print "Done forking"
@@ -72,7 +72,7 @@ def stop(config_file=None):
     if config_file:
         set_configfile(configfile)
     try:
-        zdstack = Stack()
+        zdstack = Stack(stopping=True)
         try:
             os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
         except (OSError, IOError):
@@ -83,6 +83,7 @@ def stop(config_file=None):
                 es = "\nZDStack not running, removing stale PID file.\n"
                 print >> sys.stderr, es
                 os.unlink(zdstack.pidfile)
+            zdstack.shutdown(retval=-1)
     except Exception, e:
         print >> sys.stderr, "\nError: %s\n" % (str(e))
         sys.exit(-1)

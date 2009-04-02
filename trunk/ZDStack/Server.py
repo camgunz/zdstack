@@ -8,8 +8,7 @@ import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
-import ZDSThreadPool
-
+from ZDStack import ZDSThreadPool
 from ZDStack import RPC_CLASS, DIE_THREADS_DIE, get_configfile, \
                     set_configfile, load_configparser, get_configparser, \
                     set_debugging
@@ -85,7 +84,8 @@ class Server:
         """Starts the server up."""
         # logging.debug('')
         addr = (self.hostname, self.port)
-        self.rpc_server = RPC_CLASS(self.username, self.password, addr)
+        self.rpc_server = RPC_CLASS(addr, self.username, self.password)
+        self.rpc_server.timeout = 1
         self.register_functions()
         self.keep_serving = True
         write_file(str(os.getpid()), self.pidfile)
@@ -93,19 +93,24 @@ class Server:
         while self.keep_serving:
             self.rpc_server.handle_request()
 
-    def shutdown(self, signum=15):
+    def shutdown(self, signum=15, retval=0):
         """Shuts the server down."""
         # logging.debug('')
         self.stop()
+        logging.debug("Setting keep_serving False")
         self.keep_serving = False
+        logging.debug("Setting DIE_THREADS_DIE True")
         DIE_THREADS_DIE = True
+        logging.debug("Joining all threads")
         ZDSThreadPool.join_all()
         try:
+            logging.debug("Deleting PID file")
             delete_file(self.pidfile)
         except OSError, e:
             es = "Error removing PID file %s: [%s]"
             logging.error(es % (self.pidfile, e))
-        sys.exit(0)
+        logging.debug("Exiting")
+        sys.exit(retval)
 
     def start(self):
         """Starts serving requests."""

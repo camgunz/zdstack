@@ -8,6 +8,8 @@ import traceback
 from datetime import datetime
 from threading import Lock, Event
 
+from ZDStack import ZDSThreadPool
+
 from ZDStack import TICK
 from ZDStack.LogEvent import LogEvent
 
@@ -42,6 +44,7 @@ class LogFile(object):
     def write(self, s):
         if not self.zserv.events_enabled:
             return
+        # logging.debug("Adding %s to unprocessed data" % (s))
         self.unprocessed_data += s
         if self.unprocessed_data:
             self.process_data()
@@ -55,19 +58,25 @@ class LogFile(object):
     def stop_listeners(self):
         """Stops all listeners in self.listeners."""
         for x in self.listeners:
-            logging.debug("Stopping %s" % (listener.name))
-            x.stop() # should kill all listener threads
+            logging.debug("Stopping %s" % (x.name))
+            ###
+            # x.stop() # should kill all listener threads
+            ###
+            x.keep_listening = False
+            ZDSThreadPool.join(x.command_listener_thread)
+            ZDSThreadPool.join(x.generic_listener_thread)
+        logging.debug("Stopped all listeners")
 
-    def watch_for_response(self, response_event_type):
-        """Starts watching for a certain event type.
+    def set_response_type(self, response_event_type):
+        """Sets the type of event to store as a command response.
 
         response_event_type: a string representing the type of event
                              to watch for.
 
-        This method starts watching for a certain event type, and
-        stores matching events in self.response_events.  A Logfile
-        stops watching for response events only when it finds a
-        matching event (or events) and then finds one that doesn't.
+        This method causes the LogFile to save events of the given type
+        to self.response_events.  A Logfile stops watching for response
+        response events only when it finds a matching event (or events)
+        and then finds one that doesn't.
 
         """
         # logging.debug('')
@@ -79,8 +88,8 @@ class LogFile(object):
                 # Wait for any previous response watching to finish
                 ###
                 time.sleep(TICK)
-                self.event_to_watch_for = response_event_type
-                self.response_events = []
+            self.response_events = []
+            self.event_to_watch_for = response_event_type
             ###
             # Un-set the "end of response" event
             ###
@@ -98,17 +107,21 @@ class LogFile(object):
         ###
         self.response_finished.wait(1)
         ###
+        # Clear all response stuff.
+        ###
+        for event in self.response_events:
+            d = {'type': event.type}
+            d.update(event.data)
+            output.append(d)
+        self.event_to_watch_for = None
+        self.response_events = []
+        ###
         # Reset the "end of response" event
         ###
         self.response_finished.clear()
         ###
         # Add all received events to an output list as dicts
         ###
-        for event in self.response_events:
-            d = {'type': event.type}
-            d.update(event.data)
-            output.append(d)
-        self.response_events = []
         return output
 
     def process_data(self):
@@ -125,9 +138,8 @@ class LogFile(object):
             # raise # for debugging
             tb = traceback.format_exc()
             ed = {'error': e, 'traceback': tb}
-            events = [LogEvent(datetime.now(), 'error', ed)]
+            events = [LogEvent(datetime.now(), 'error', ed, 'error')]
         for event in events:
-            es = "%s Sending event [%%s]" % (self.filepath)
             if event.type == 'message':
                 ppn = event.data['possible_player_names']
                 c = event.data['contents'] 
@@ -138,7 +150,7 @@ class LogFile(object):
                     continue
                 message = c.replace(player.name, '', 1)[3:]
                 d = {'message': message, 'messenger': player}
-                event = LogEvent(event.dt, 'message', d, event.line)
+                event = LogEvent(event.dt, 'message', d, 'message', event.line)
             if self.event_to_watch_for:
                 if event.type == self.event_to_watch_for:
                     self.response_events.append(event)
@@ -152,11 +164,17 @@ class LogFile(object):
                     self.event_to_watch_for = None
             for listener in self.listeners:
                 if event.type != 'junk':
-                    es = 'LogFile for %s putting Event %s in Listener %s'
-                    t = (self.zserv.name, event.type, listener.name)
-                    logging.debug(es % t)
+                    es = '%s LogFile put Event [%s] in %s'
                     ###
                     # Don't process junk events, waste of cycles
                     ###
-                    listener.events.put_nowait(event)
+                    if event.category == 'command':
+                        listener.command_events.put_nowait(event)
+                        queue = 'command'
+                    else:
+                        listener.generic_events.put_nowait(event)
+                        queue = 'generic'
+                    t = (self.zserv.name, event.type, listener.name, queue,
+                         event.category)
+                    logging.debug((es + "'s %s queue, category: %s") % t)
 

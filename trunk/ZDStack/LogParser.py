@@ -106,9 +106,9 @@ class ConnectionLogParser(LogParser):
                 events.extend(parsed_events)
             elif line.endswith('Connection Log Stopped'):
                 d = {'log': 'connection'}
-                events.append(LogEvent(line_dt, 'log_roll', d))
+                events.append(LogEvent(line_dt, 'log_roll', d, 'log_roll'))
             else:
-                events.append(LogEvent(line_dt, 'junk', {'data': line}))
+                events.append(LogEvent(line_dt, 'junk', {'data': line}, 'junk'))
         return (events, leftovers)
 
 class GeneralLogParser(LogParser):
@@ -137,14 +137,14 @@ class GeneralLogParser(LogParser):
         events = []
         while len(lines):
             line = lines.popleft()
-            logging.debug("Parsing line [%s]" % (line))
+            # logging.debug("Parsing line [%s]" % (line))
             # events.extend(self.lineparser.get_event(now, line))
             parsed_events = self.lineparser.get_event(now, line)
             if parsed_events:
                 events.extend(parsed_events)
             elif line == 'General logging off':
                 d = {'log': 'general'}
-                events.append(LogEvent(now, 'log_roll', d, line))
+                events.append(LogEvent(now, 'log_roll', d, 'log_roll', line))
             elif line.startswith('<') and '>' in line:
                 ###
                 # There are certain strings that make it impossible to
@@ -168,10 +168,11 @@ class GeneralLogParser(LogParser):
                     possible_player_names.append('>'.join(tokens[:x])[1:])
                 line_data = {'contents': line,
                              'possible_player_names': possible_player_names}
-                e = LogEvent(now, 'message', line_data, line)
+                e = LogEvent(now, 'message', line_data, 'message', line)
                 events.append(e)
             if not events:
-                events.append(LogEvent(now, 'junk', {'data': line}, line))
+                d = {'data': line}
+                events.append(LogEvent(now, 'junk', d, 'junk', line))
         return (events, leftovers)
 
 class FakeZServLogParser(GeneralLogParser):

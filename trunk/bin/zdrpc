@@ -5,7 +5,7 @@ import getopt
 import pprint
 
 from ZDStack import set_configfile, load_configparser, get_server_proxy
-from ZDStack.Utils import send_server_method
+from ZDStack.Utils import send_proxy_method
 
 def print_usage(msg=None):
     if msg:

@@ -1,10 +1,12 @@
 from __future__ import with_statement
 
+import logging
+
 from threading import Lock
 from collections import deque
 
-from ZDStack import TEAM_COLORS, TeamNotFoundError, get_session
-from ZDStack.ZDSModels import TeamColor
+from ZDStack import TEAM_COLORS, TeamNotFoundError
+from ZDStack.ZDSModels import get_team_color
 
 class TeamsList(object):
 
@@ -19,8 +21,7 @@ class TeamsList(object):
         self.lock = Lock()
 
     def __iter__(self):
-        with self.lock:
-            return self.__teams
+        return self.__teams.__iter__()
 
     def clear(self):
         """Clears the team list."""
@@ -36,13 +37,12 @@ class TeamsList(object):
                       True by default.
 
         """
+        logging.debug("add(%s, acquire_lock=%s)" % (color, acquire_lock))
         def blah():
             if color not in TEAM_COLORS:
                 raise ValueError("Unsupported team color %s" % (color))
-            tc = TeamColor(color, is_playing=color in self.playing_colors)
-            if tc not in self.__teams:
-                with self.zserv.session_lock:
-                    self.zserv.session.add(tc)
+            tc = get_team_color(color=color)
+            if tc not in self.__teams.keys():
                 self.__teams[tc] = deque()
         if acquire_lock:
             with self.lock:
@@ -60,17 +60,18 @@ class TeamsList(object):
                       True by default.
 
         """
+        logging.debug("get(%s, acquire_lock=%s)" % (color, acquire_lock))
         def blah():
-            self.add(color, acquire_lock=not acquire_lock)
-            for tc in self.__teams:
-                if t.color == color:
+            self.add(color, acquire_lock=False)
+            for tc in self.__teams.keys():
+                if tc.color == color:
                     return tc
             ###
             # This should never happen.
             ###
             raise TeamNotFoundError(color)
         if acquire_lock:
-            with self.lock():
+            with self.lock:
                 return blah()
         else:
             return blah()
@@ -85,6 +86,7 @@ class TeamsList(object):
                       default.
 
         """
+        logging.debug("get_members(%s, acquire_lock=%s)" % (color, acquire_lock))
         if acquire_lock:
             with self.lock:
                 return self.__teams[self.get(color, acquire_lock=False)]
@@ -100,10 +102,12 @@ class TeamsList(object):
                       default.
 
         """
+        logging.debug("get_player_team(%s, acquire_lock=%s)" % (player, acquire_lock))
         def blah():
-            ac = not acquire_lock
-            for tc in self.__teams:
-                if self.contains_player(tc.color, player, acquire_lock=ac):
+            for tc in self.__teams.keys():
+                logging.debug("Checking team %s for %s" % (tc.color, player.name))
+                if self.contains_player(tc.color, player, acquire_lock=False):
+                    logging.debug("Found team %s" % (tc.color))
                     return tc
         if acquire_lock:
             with self.lock:
@@ -119,6 +123,7 @@ class TeamsList(object):
                 player is to be added.
 
         """
+        logging.debug("set_player_team(%s, %s)" % (player, color))
         with self.lock:
             current_team = self.get_player_team(player, acquire_lock=False)
             future_team = self.get(color, acquire_lock=False)
@@ -138,8 +143,10 @@ class TeamsList(object):
                 player.playing = True
             else:
                 player.playing = False
-            alias = Alias(name=player.name, ip_address=player.ip)
-            self.zserv.round.players.add(alias)
+        logging.debug("%s team contains player: %s" % \
+                        (color, self.contains_player(color, player)))
+        logging.debug("%s team members: %s" % \
+                        (color, str(self.__teams[self.get(color)])))
 
     def contains_player(self, color, player, acquire_lock=True):
         """Returns True if a player is a member of the specified team.
@@ -152,10 +159,10 @@ class TeamsList(object):
                       a team.  True by default.
 
         """
+        logging.debug("contains_player(%s, %s, acquire_lock=%s)" % (color, player, acquire_lock))
         def blah():
-            ac = not acquire_lock
-            self.add(color, acquire_lock=ac)
-            return player in self.get_members(color, acquire_lock=ac)
+            self.add(color, acquire_lock=False)
+            return player in self.get_members(color, acquire_lock=False)
         if acquire_lock:
             with self.lock:
                 return blah()

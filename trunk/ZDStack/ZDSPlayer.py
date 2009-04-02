@@ -1,4 +1,8 @@
-from ZDSModels import Alias
+import logging
+
+from ZDStack.Utils import homogenize, parse_player_name, html_escape
+
+from ZDSModels import get_alias
 
 class Player(object):
 
@@ -20,12 +24,12 @@ class Player(object):
         self.port = port
         self.number = number
         self.name = ''
+        self.alias = None
         self.tag = None
         self.player_name = ''
         self.homogenized_name = ''
         self.escaped_name = ''
         self.escaped_homogenized_name = ''
-        self.encoded_name = ''
         self.homogenized_player_name = ''
         self.escaped_player_name = ''
         self.escaped_homogenized_player_name = ''
@@ -56,7 +60,6 @@ class Player(object):
         self.homogenized_name = homogenize(self.name)
         self.escaped_name = html_escape(self.name)
         self.escaped_homogenized_name = html_escape(self.homogenized_name)
-        self.encoded_name = b64encode(self.name)
         self.homogenized_player_name = homogenize(self.player_name)
         self.escaped_player_name = html_escape(self.player_name)
         self.escaped_homogenized_player_name = \
@@ -69,11 +72,10 @@ class Player(object):
             self.homogenized_tag = homogenize(self.tag)
             self.escaped_tag = html_escape(self.tag)
             self.escaped_homogenized_tag = html_escape(self.homogenized_tag)
-        ###
-        # We want to create an Alias mapping this name to this IP address.  If
-        # no such Alias exists, create one.
-        ###
-        self.zserv.session.add(Alias(name=self.name, ip_address=self.ip))
+        self.alias = get_alias(name=self.name, ip_address=self.ip,
+                               round=self.zserv.round)
+        if self.alias not in self.zserv.round.players:
+            self.zserv.round.players.append(self.alias)
 
     def __ne__(self, x):
         try:
@@ -91,7 +93,7 @@ class Player(object):
         if self.name:
             return "<Player [%s]>" % (self.name)
         else:
-            return "<Player [%s:%s]>" % (self.ip_address, self.port)
+            return "<Player [%s:%s]>" % (self.ip, self.port)
 
     def __repr__(self):
         if self.name:

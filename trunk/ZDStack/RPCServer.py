@@ -26,8 +26,8 @@ from ZDStack import RPCAuthenticationError
 
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
-    def __init__(self, allow_none, encoding, username, password):
-        SimpleXMLRPCDispatcher.__init__(self, allow_none, encoding)
+    def __init__(self, encoding, username, password):
+        SimpleXMLRPCDispatcher.__init__(self, True, encoding)
         self.username = username
         self.password = password
         self.methods_requiring_authentication = set()
@@ -118,10 +118,9 @@ class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
 
     def __init__(self, addr, username, password,
                  requestHandler=SimpleXMLRPCRequestHandler, logRequests=True,
-                 allow_none=False, encoding=None):
+                 encoding=None):
         self.logRequests = logRequests
-        AuthenticatedXMLRPCDispatcher.__init__(self, allow_none, encoding,
-                                                     username, password)
+        AuthenticatedRPCDispatcher.__init__(self, encoding, username, password)
         SocketServer.TCPServer.__init__(self, addr, requestHandler)
         if fcntl is not None and hasattr(fcntl, 'FD_CLOEXEC'):
             flags = fcntl.fcntl(self.fileno(), fcntl.F_GETFD)

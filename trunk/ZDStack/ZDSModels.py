@@ -1,8 +1,9 @@
-from elixir import Unicode, DateTime, Integer, Boolean, Entity, Field, \
+from elixir import String, DateTime, Integer, Boolean, Entity, Field, \
                    OneToMany, ManyToOne, ManyToMany, using_options, \
-                   using_table_options, setup_all, create_all
+                   using_table_options, setup_all, create_all, session
 
 from sqlalchemy import UniqueConstraint, MetaData
+from sqlalchemy.orm.exc import NoResultFound
 
 import datetime
 
@@ -10,7 +11,7 @@ from ZDStack import get_engine
 
 class TeamColor(Entity):
 
-    color = Field(Unicode(10), primary_key=True)
+    color = Field(String(10), primary_key=True)
 
     def __str__(self):
         return '<TeamColor %s>' % (self.color)
@@ -20,12 +21,12 @@ class TeamColor(Entity):
 
 class Map(Entity):
 
-    wad = Field(Unicode(50), required=False)
+    wad = Field(String(50), required=False)
     number = Field(Integer)
-    name = Field(Unicode(255))
+    name = Field(String(255))
     rounds = OneToMany('Round', inverse='map')
 
-    using_table_options(UniqueConstraint('wad', 'number', 'name'))
+    using_table_options(UniqueConstraint('number', 'name'))
 
     def __str__(self):
         return "<Map%s: %s>" % (str(self.number).zfill(2), self.name)
@@ -35,7 +36,7 @@ class Map(Entity):
 
 class Weapon(Entity):
 
-    name = Field(Unicode(50), primary_key=True)
+    name = Field(String(50), primary_key=True)
     is_suicide = Field(Boolean, default=False)
 
     def __str__(self):
@@ -46,7 +47,7 @@ class Weapon(Entity):
 
 class Port(Entity):
 
-    name = Field(Unicode(50), primary_key=True)
+    name = Field(String(50), primary_key=True)
     game_modes = ManyToMany('GameMode', inverse='ports')
 
     def __str__(self):
@@ -57,7 +58,7 @@ class Port(Entity):
 
 class GameMode(Entity):
 
-    name = Field(Unicode(30), primary_key=True)
+    name = Field(String(30), primary_key=True)
     ports = ManyToMany('Port', inverse='game_modes')
     has_teams = Field(Boolean, default=False)
     rounds = OneToMany('Round', inverse='game_modes')
@@ -66,8 +67,7 @@ class GameMode(Entity):
         return '<GameMode %s>' % (self.name)
 
     def __repr__(self):
-        s = "GameMode('%s', %s, %s)"
-        return s % (self.name, self.port, self.has_teams)
+        return "GameMode('%s', %s)" % (self.name, self.has_teams)
 
 class Round(Entity):
 
@@ -87,7 +87,7 @@ class Round(Entity):
 
 class StoredPlayer(Entity):
 
-    name = Field(Unicode(255), primary_key=True)
+    name = Field(String(255), primary_key=True)
 
     def __str__(self):
         return '<Player %s>' % (self.name)
@@ -97,8 +97,8 @@ class StoredPlayer(Entity):
 
 class Alias(Entity):
 
-    name = Field(Unicode(255), index=True)
-    ip_address = Field(Unicode(16), index=True)
+    name = Field(String(255), index=True)
+    ip_address = Field(String(16), index=True)
     was_namefake = Field(Boolean, default=False, required=False)
     rounds = ManyToMany('Round', inverse='players')
 
@@ -195,7 +195,7 @@ class RCONAction(Entity):
     player = ManyToOne('Alias')
     round = ManyToOne('Round')
     timestamp = Field(DateTime, default=datetime.datetime.now)
-    action = Field(Unicode(255))
+    action = Field(String(255))
 
     def __str__(self):
         return '<RCON Action %s - %s>' % (self.action, self.player)
@@ -214,4 +214,85 @@ setup_all()
 # and create them if they don't.
 ###
 create_all()
+
+###
+# What follows is ridiculous, and I can't imagine this is what you are
+# actually supposed to do.  But FUCK if I can't figure out how to get
+# SQLAlchemy to think for itself and not INSERT rows that already exist.
+# Goddamn.
+#
+# It's very simple:
+#
+#   Some stuff I want saved and some stuff I don't, so I can't use autoflush,
+#     autocommit, or save_on_init.  I can see how that's handy though.
+#   I'd rather not manually do a query to see if the object I'm about to create
+#     has ever, in the entire goddamn history of the database, been
+#     instantiated before.
+#   When I do decide I want to save things, I'd rather not manually check the
+#     session AND the database if it has ever been saved before.
+#   I don't want to subclass things or create MixIn junk or find random
+#     configuration "DSL" methods with obscure, random names to do this.
+#
+# OK, rant over.  Shit.
+###
+
+def get_weapon(name, is_suicide):
+    ses = session()
+    q = ses.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
+    try:
+        return q.one()
+    except NoResultFound:
+        out = Weapon(name=name, is_suicide=is_suicide)
+        ses.add(out)
+        return out
+
+def get_alias(name, ip_address, round=None):
+    ses = session()
+    q = ses.query(Alias).filter_by(name=name, ip_address=ip_address)
+    out = q.first()
+    if not out:
+        if not round:
+            return None
+        out = Alias(name=name, ip_address=ip_address, round=round)
+        ses.add(out)
+    return out
+
+def get_team_color(color):
+    ses = session()
+    q = ses.query(TeamColor).filter_by(color=color)
+    try:
+        return q.one()
+    except NoResultFound:
+        out = TeamColor(color=color)
+        ses.add(out)
+        return out
+
+def get_port(name):
+    ses = session()
+    q = ses.query(Port).filter_by(name=name)
+    try:
+        return q.one()
+    except NoResultFound:
+        out = Port(name=name)
+        ses.add(out)
+        return out
+
+def get_game_mode(name, has_teams):
+    ses = session()
+    q = ses.query(GameMode).filter_by(name=name, has_teams=has_teams)
+    try:
+        return q.one()
+    except NoResultFound:
+        out = GameMode(name=name, has_teams=has_teams)
+        ses.add(out)
+        return out
+
+def get_map(number, name):
+    ses = session()
+    q = ses.query(Map).filter_by(number=number, name=name)
+    out = q.first()
+    if not out:
+        out = Map(number=number, name=name)
+        ses.add(out)
+    return out
 

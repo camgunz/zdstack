@@ -2,22 +2,25 @@ from __future__ import with_statement
 
 import os
 import time
+import select
 import logging
 
 from decimal import Decimal
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from threading import Timer, Lock
 from collections import deque
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
-from elixir import session # is this threadsafe?  who cares, we're INSAAAAAANE!
+from elixir import session # is this threadsafe?  who cares, we're INSAAAANE!
 
 from pyfileutils import write_file
 
-from ZDStack import DIE_THREADS_DIE, TEAM_COLORS, TICK, PlayerNotFoundError
+from ZDStack import ZDSThreadPool
+from ZDStack import DEVNULL, DEBUGGING, DIE_THREADS_DIE, TEAM_COLORS, \
+                    PlayerNotFoundError, get_session
 from ZDStack.Utils import yes, no, to_list
 from ZDStack.LogFile import LogFile
-from ZDStack.ZDSModels import Port, GameMode, Map, Round, TeamColor
+from ZDStack.ZDSModels import get_port, get_game_mode, get_map, Round
 from ZDStack.LogParser import GeneralLogParser
 from ZDStack.LogListener import GeneralLogListener, PluginLogListener
 from ZDStack.ZDSTeamsList import TeamsList
@@ -45,7 +48,7 @@ class ZServ:
 
     """
 
-    port = Port(name='zdaemon')
+    source_port = get_port(name='zdaemon')
 
     ###
     # There might still be race conditions here
@@ -65,6 +68,8 @@ class ZServ:
         self.start_time = datetime.now()
         self.name = name
         self.session_lock = Lock()
+        self.to_save = deque()
+        self.game_mode = None
         self.zdstack = zdstack
         self.keep_spawning = False
         self._zserv_stdin_lock = Lock()
@@ -76,12 +81,13 @@ class ZServ:
         self.reload_config(config)
         self.initialize_session()
         self.zserv = None
-        self.pid = None
+        self.fifo = None
         self.logfile = LogFile(GeneralLogParser(), self)
         self.plugins = []
-        if yes(self.config['enable_events']):
+        if self.events_enabled:
             self.logfile.listeners.append(GeneralLogListener(self))
-            if yes(self.config['enable_plugins']) and 'plugins' in self.config:
+            if self.plugins_enabled and \
+              ('plugins' in self.config and self.config['plugins']):
                 logging.info("Loading plugins")
                 plugins = [x.strip() for x in self.config['plugins'].split(',')]
                 self.plugins = plugins
@@ -93,7 +99,7 @@ class ZServ:
                 logging.debug("Plugins: [%s]" % ('plugins' in self.config))
             logging.debug("Listeners: [%s]" % (self.logfile.listeners))
 
-    def initialize_session(self, acquire_lock=True):
+    def initialize_session(self):
         """Initializes the SQLAlchemy session.
         
         game_mode:    a string representing the game mode of this
@@ -103,17 +109,10 @@ class ZServ:
                       default.
         
         """
-        def blah():
-            self.session = session()
-            self.game_mode = \
-                GameMode(name=self.raw_game_mode,
-                         has_teams=self.raw_game_mode in TEAM_MODES)
-            self.session.add(self.game_mode)
-        if acquire_lock:
-            with self.session_lock:
-                blah()
-        else:
-            blah()
+        logging.debug("Initializing session")
+        has_teams = self.raw_game_mode in TEAM_MODES
+        self.game_mode = get_game_mode(name=self.raw_game_mode,
+                                       has_teams=has_teams)
 
     ###
     # I have to say that I'm very close to pulling all the config stuff out
@@ -179,14 +178,28 @@ class ZServ:
         self.homedir = os.path.join(config['zdstack_zserv_folder'], self.name)
         if not os.path.isdir(self.homedir):
             os.mkdir(self.homedir)
+        self.fifo_path = os.path.join(self.homedir, 'zdsfifo')
+        if os.path.exists(self.fifo_path):
+            ###
+            # Re-create the FIFO so we know there's no mode problems,
+            # and that it's definitely a FIFO.
+            ###
+            if os.path.isdir(self.fifo_path):
+                es = "[%s]: FIFO [%s] cannot be created, a folder with the"
+                es += " same name already exists"
+                raise Exception(es % (self.name, self.fifo_path))
+            else:
+                os.remove(self.fifo_path)
+        os.mkfifo(self.fifo_path)
         self.iwaddir = config['zdstack_iwad_folder']
         self.waddir = config['zdstack_wad_folder']
         self.base_iwad = config['iwad']
         self.iwad = os.path.join(self.iwaddir, self.base_iwad)
         self.port = int(config['port'])
         self.configfile = os.path.join(self.homedir, self.name + '.cfg')
-        self.cmd = [config['zserv_exe'], '-waddir', self.waddir, '-iwad',
-                    self.iwad, '-port', str(self.port), '-cfg', self.configfile]
+        self.cmd = [config['zserv_exe'], '-cfg', self.configfile, '-waddir',
+                    self.waddir, '-iwad', self.iwad, '-port', str(self.port),
+                    '-log']
         for wad in self.wads:
             self.cmd.extend(['-file', wad])
         if 'ip' in config and config['ip']:
@@ -436,7 +449,12 @@ class ZServ:
         def add_var_line(var, line):
             return add_line(var, line % (var))
         add_line(True, 'set cfg_activated "1"')
-        add_line(True, 'set log_disposition "0"')
+        ###
+        # 0: old logs are left in self.homedir.
+        # 1: old logs are moved to self.homedir/old-logs.
+        # 2: old logs are deleted.
+        ###
+        add_line(True, 'set log_disposition "2"')
         add_var_line(self.hostname, 'set hostname "%s"')
         add_var_line(self.motd, 'set motd "%s"')
         add_var_line(self.website, 'set website "%s"')
@@ -536,8 +554,22 @@ class ZServ:
         if not self.zserv or not self.zserv.pid:
             return False
         x = self.zserv.poll()
-        logging.debug('Poll: %s' % (x))
+        # logging.debug('Poll: %s' % (x))
         return x is None
+
+    def ensure_loglinks_exist(self):
+        """Creates links from all potential logfiles to the FIFO."""
+        ###
+        # zserv itself will remove old links, so no worries.
+        ###
+        today = date.today()
+        s = 'gen-%Y%m%d.log'
+        for loglink_name in [today.strftime(s),
+                             (today + timedelta(days=1)).strftime(s),
+                             (today + timedelta(days=2)).strftime(s)]:
+            loglink_path = os.path.join(self.homedir, loglink_name)
+            if not os.path.islink(loglink_path):
+                os.symlink(self.fifo_path, loglink_path)
 
     def spawn_zserv(self):
         """Starts the zserv process.
@@ -546,58 +578,66 @@ class ZServ:
         self.zserv.
         
         """
-        logging.info('Acquiring spawn lock [%s]' % (self.name))
+        # logging.debug('Acquiring spawn lock [%s]' % (self.name))
         with self.zdstack.spawn_lock:
             if self.is_running():
                 return
-            self.pid = None
             curdir = os.getcwd()
             try:
                 os.chdir(self.homedir)
+                self.ensure_loglinks_exist()
                 logging.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
                 ###
-                # Should we do anything with STDERR here?
+                # Should we do something with STDERR here?
                 ###
-                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=PIPE, bufsize=0,
-                                   close_fds=True)
-                self.send_to_zserv('players') # avoids CPU spinning
-                self.pid = self.zserv.pid
+                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
+                                   stderr=STDOUT, bufsize=0, close_fds=True)
+                self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+                # self.send_to_zserv('players') # avoids CPU spinning
             finally:
                 os.chdir(curdir)
 
     def start(self):
         """Starts the zserv process, restarting it if it crashes."""
-        logging.debug('')
+        logging.debug('Starting all listeners')
+        if self.is_running():
+            raise Exception("[%s] already started" % (self.name))
         self.logfile.start_listeners()
         self.keep_spawning = True
         self.spawning_thread = \
             ZDSThreadPool.get_thread(name='%s spawning thread' % (self.name),
                                      target=self.spawn_zserv,
                                      keep_going=lambda: self.keep_spawning,
-                                     sleep=Decimal(.5))
-        Server.start(self)
+                                     sleep=Decimal('.5'))
 
-    def stop(self, signum=15):
+    def stop(self, signum=15, stop_logfile=True):
         """Stops the zserv process.
 
-        signum: an int representing the signal number to send to the
-                zserv process.  15 (TERM) by default.
+        signum:       an int representing the signal number to send to
+                      the zserv process.  15 (TERM) by default.
+        stop_logfile: a boolean that, if True, will stop the logfile
+                      as well.  True by default.
 
         """
-        logging.debug('')
+        if not self.is_running():
+            raise Exception("[%s] already stopped" % (self.name))
+        logging.debug("Setting keep_spawning False")
         self.keep_spawning = False
-        self.logfile.stop_listeners()
+        logging.debug("Joining spawning thread")
         ZDSThreadPool.join(self.spawning_thread)
+        logging.debug("Killing zserv process")
         error_stopping = False
-        if self.pid is not None:
+        if self.is_running():
             try:
-                os.kill(self.pid, signum)
-                self.pid = None
+                os.kill(self.zserv.pid, signum)
+                retval = self.zserv.wait()
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
                 logging.error(es % (e))
                 error_stopping = es % (e)
-        Server.stop(self)
+        if stop_logfile:
+            logging.debug('Stopping all listeners')
+            self.logfile.stop_listeners()
         return error_stopping
 
     def restart(self, signum=15):
@@ -610,7 +650,13 @@ class ZServ:
         logging.debug('')
         error_stopping = self.stop(signum)
         if error_stopping:
-            raise Exception(error_stopping)
+            s = 'Caught exception while stopping: [%s] already stopped'
+            if error_stopping != s % (self.name):
+                ###
+                # If the zserv was already stopped, just start it.  Other errors
+                # get raised.
+                ###
+                raise Exception(error_stopping)
         self.start()
 
     def sync_players(self, sleep=None):
@@ -621,13 +667,17 @@ class ZServ:
                players; defaults to not sleeping at all (None)
                
         """
+        logging.debug("ZServ.sync_players")
         if sleep:
             with self.players.lock:
+                logging.debug("Getting ZPlayers")
                 zplayers = self.zplayers()
                 time.sleep(sleep)
+                logging.debug("self.players.sync(acquire_lock=False")
                 self.players.sync(zplayers, acquire_lock=False)
         else:
-            self.players.sync(self.zplayers(), acquire_lock=True)
+            logging.debug("self.players.sync(acquire_lock=True")
+            self.players.sync(acquire_lock=True)
 
     def update_player_numbers_and_ips(self):
         """Sets player numbers and IP addresses.
@@ -728,6 +778,13 @@ class ZServ:
             raise PlayerNotFoundError(player_name)
         return d[0]['player_num']
 
+    def add_stat(self, stat):
+        """Adds a stat model to the internal list of stat models.
+
+        stat: an object to add to the internal list of stat models.
+
+        """
+
     def change_map(self, map_number, map_name):
         """Handles a map change event.
 
@@ -735,21 +792,42 @@ class ZServ:
         map_name:   a string representing the name of the new map
 
         """
-        # logging.debug('')
-        with self.session_lock:
+        logging.debug('Change Map')
+        ses = session()
+        if self.round:
             self.round.end_time = datetime.now()
-            if self.enable_stats:
-                self.session.commit()
-            self.players.clear()
-            self.teams.clear()
-            if not self.enable_stats:
-                self.session.close()
-                self.initialize_session(game_mode=self.raw_game_mode,
-                                        acquire_lock=False)
-            self.map = Map(number=map_number, name=map_name)
-            self.round = Round(game_mode=self.game_mode, map=self.map,
-                               start_time=datetime.now())
-            self.session.add([self.map, self.round])
+            ses.merge(self.round)
+        if not self.stats_enabled:
+            ###
+            # Not everything is deleted.  Some things we want to persist, like
+            # weapons, team colors, ports, game modes and maps.  This stuff
+            # shouldn't take up too much memory anyway.  The rest of the stuff,
+            # like stats and aliases, all that can go out the window.
+            #
+            # Aha ignore that I suck cocks.
+            #
+            # to_delete = self.round.players + self.round.frags + \
+            #             self.round.flagtouches + self.round.flagreturns + \
+            #             self.round.rconaccesses + self.round.rcondenials + \
+            #             self.round.rconactions + [self.round]
+            # if DEBUGGING:
+            #     for x in to_delete:
+            #         logging.debug("Deleting %s" % (x))
+            #         ses.delete(x)
+            # else:
+            #     ses.delete_all(to_delete)
+            #
+            ###
+            ses.close()
+        else:
+            pass
+            # ses.commit()
+        self.to_save.clear()
+        self.players.clear()
+        self.teams.clear()
+        self.map = get_map(number=map_number, name=map_name)
+        self.round = Round(game_mode=self.game_mode, map=self.map,
+                           start_time=datetime.now())
 
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
@@ -771,18 +849,25 @@ class ZServ:
         if '\n' in message or '\r' in message:
             es = "Message cannot contain newlines or carriage returns"
             raise ValueError(es)
+        logging.debug("Obtaining STDIN lock")
         with self._zserv_stdin_lock:
+            logging.debug("Obtained STDIN lock")
             ###
             # zserv's STDIN is (obviously) not threadsafe, so we need to ensure
             # that access to it is limited to 1 thread at a time, which is both
             # writing to it, and waiting for responses from its STDOUT.
             ###
             if event_response_type is not None:
-                self.general_log.watch_for_response(event_response_type)
+                logging.debug("Setting response type")
+                self.logfile.set_response_type(event_response_type)
+            logging.debug("Writing to STDIN")
             self.zserv.stdin.write(message + '\n')
             self.zserv.stdin.flush()
             if event_response_type is not None:
-                return self.general_log.get_response()
+                logging.debug("Getting response")
+                response = self.logfile.get_response()
+                logging.debug("Send to zserv response: (%s)" % (response))
+                return response
 
     def zaddban(self, ip_address, reason='rofl'):
         """Adds a ban.

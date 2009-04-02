@@ -17,16 +17,33 @@ from pyfileutils import read_file, append_file
 from ZDStack.Utils import resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 
-__all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'CONFIGFILE',
-           'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS', 'DATEFMT',
-           'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS', 'RPC_CLASS',
-           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT',
-           'DIE_THREADS_DIE', 'PlayerNotFoundError', 'TeamNotFoundError',
-           'ZServNotFoundError', 'DebugTRFH', 'get_hostname', 'get_loopback',
-           'get_engine', 'get_metadata', 'get_session_class', 'get_session',
-           'get_configfile', 'set_configfile', 'load_configparser',
-           'get_configparser', 'get_server_proxy', 'get_plugins',
-           'set_debugging', 'log']
+###
+# ORM stuff.
+###
+try:
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    import elixir
+    Session = scoped_session(sessionmaker(autoflush=True, autocommit=True))
+    elixir.session = Session
+    elixir.options_defaults.update({'shortnames': True})
+    elixir.using_mapper_options(save_on_init=True)
+except ImportError:
+    pass
+###
+# End of ORM stuff.
+###
+
+__all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'DEVNULL',
+           'CONFIGFILE', 'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS',
+           'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS',
+           'RPC_CLASS', 'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK',
+           'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'PlayerNotFoundError',
+           'TeamNotFoundError', 'ZServNotFoundError',
+           'RPCAuthenticationError', 'DebugTRFH', 'get_hostname',
+           'get_loopback', 'get_engine', 'get_metadata', 'get_session_class',
+           'get_session', 'get_configfile', 'set_configfile',
+           'load_configparser', 'get_configparser', 'get_server_proxy',
+           'get_plugins', 'set_debugging', 'log']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
@@ -56,6 +73,7 @@ SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 
 HOSTNAME = None
 LOOPBACK = None
+DEVNULL = open(os.devnull, 'w')
 CONFIGFILE = None
 CONFIGPARSER = None
 DATABASE = None
@@ -104,13 +122,18 @@ class TeamNotFoundError(Exception):
 
 class ZServNotFoundError(Exception):
 
-    def __init__(self, zserv_name:
+    def __init__(self, zserv_name):
         Exception.__init__(self, "ZServ [%s] not found" % (zserv_name))
+
+class RPCAuthenticationError(Exception):
+
+    def __init__(self, username):
+        Exception.__init__(self, "Authentication failed for [%s]" % (username))
 
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
-        print >> sys.stderr, record.getMessage().strip()
+        # print >> sys.stderr, record.getMessage().strip()
 
 def get_hostname():
     global HOSTNAME
@@ -261,6 +284,8 @@ def get_session_class():
     if not DB_SESSION_CLASS:
         from sqlalchemy.orm import sessionmaker
         DB_SESSION_CLASS = sessionmaker(bind=get_engine())
+        DB_SESSION_CLASS = sessionmaker(autoflush=False, autocommit=False,
+                                        bind=get_engine())
     return DB_SESSION_CLASS
 
 def get_session():
@@ -410,9 +435,9 @@ def set_debugging(debugging, log_file=None, config_file=None):
     if debugging:
         __log_level = logging.DEBUG
         __log_format = '[%(asctime)s] '
-        __log_format += '%(filename)-14s - %(module)-14s - %(funcName)-16s '
+        __log_format += '%(filename)-18s - %(funcName)-25s '
         __log_format += '- %(lineno)-4d: '
-        __log_format += '%(levelname)-8s %(message)s'
+        __log_format += '%(levelname)-5s %(message)s'
         __handler_class = DebugTRFH
         DEBUGGING = True
     else:
@@ -430,6 +455,7 @@ def set_debugging(debugging, log_file=None, config_file=None):
     logging.RootLogger.root.addHandler(handler)
     logging.RootLogger.root.setLevel(__log_level)
     handler.setLevel(__log_level)
+    logging.info("Log Format: [%s]" % (__log_format))
 
 # set_debugging(False)
 

@@ -1,13 +1,13 @@
+import os
 import time
+import select
 import logging
 
-from select import select
 from datetime import datetime
-from threading import Lock, Thread
+from threading import Lock, Timer, Thread
 from StringIO import StringIO
 
-import ZDSThreadPool
-
+from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
                     get_configfile, get_configparser
 from ZDStack.Utils import yes
@@ -33,21 +33,39 @@ class Stack(Server):
     #       none of the access to self.zservs is threadsafe, add lock!
     ###
 
-    def __init__(self, debugging=False):
+    def __init__(self, debugging=False, stopping=False):
         """Initializes a Stack instance.
 
-        debugging:   a boolean, whether or not debugging is enabled
+        debugging:   a boolean, whether or not debugging is enabled.
+                     False by default.
+        stopping:    a boolean that indicates whether or not the Stack
+                     was initialized just to shutdown a running
+                     ZDStack.  False by defalut.
 
         """
         self.spawn_lock = Lock()
+        self.poller = select.poll()
         self.zservs = {}
         self.start_time = datetime.now()
         self.keep_polling = True
+        self.polling_thread = None
         Server.__init__(self, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
         self.methods_requiring_authentication.append('stop_all_zservs')
+        self.loglink_check_timer = None
+        if not stopping:
+            self.start_checking_loglinks()
+
+    def start_checking_loglinks(self):
+        """Starts checking every ZServ's log links every 30 minutes."""
+        try:
+            for zserv in self.zservs.values():
+                zserv.ensure_loglinks_exist()
+        finally:
+            self.loglink_check_timer = Timer(1800, self.start_checking_loglinks)
+            self.loglink_check_timer.start()
 
     def get_running_zservs(self):
         """Returns a list of ZServs whose internal zserv is running."""
@@ -60,17 +78,44 @@ class Stack(Server):
     def poll_zserv_output(self):
         ###
         # Rather than have a separate polling thread for each ZServ, I put
-        # a big poll here for every (running) ZServ.  I know that 'poll'
+        # a big 'select' here for every (running) ZServ.  I know that 'poll'
         # scales better than 'select', but 'select' is easier to use and I
         # don't think anyone will ever run enough ZServs to notice.
         #
         # Also the select call gives up every second, which allows it to check
         # whether or not it should keep polling.
         ###
-        stuff = [(x, x.zserv.stdout) for x in self.get_running_zservs()]
-        r, w, x = select([x[1] for x in stuff], [], [], MAX_TIMEOUT)
-        for zserv, fobj in [x for x in stuff if x[1] in r]:
-            zserv.logfile.write(fobj.read())
+        stuff = [(z, z.fifo) for z in self.get_running_zservs()]
+        r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
+        readable = [(z, f) for z, f in stuff if f in r]
+        # if readable:
+        #     logging.debug("Readable: %s" % (str(readable)))
+        for zserv, fd in readable:
+            # logging.debug("Reading data from [%s]" % (zserv.name))
+            data = ''
+            while 1:
+                try:
+                    ###
+                    # I guess 1024 bytes should be a big enough chunk.
+                    ###
+                    data += os.read(fd, 1024)
+                except OSError, e:
+                    if e.errno == 11:
+                        ###
+                        # Error code 11: FD would have blocked... meaning
+                        # we're at the end of the data stream.
+                        ###
+                        break
+                    else:
+                        ###
+                        # Something else happened, freak out.
+                        ###
+                        raise
+                if data:
+                    # logging.debug("Data from [%s]: [%s]" % (zserv.name, data))
+                    zserv.logfile.write(data)
+                else:
+                    break
 
     def check_all_zserv_configs(self, config):
         """Ensures that all ZServ configuration sections are correct."""
@@ -153,11 +198,16 @@ class Stack(Server):
         for zserv in self.get_stopped_zservs():
             zserv.start()
 
-    def stop_all_zservs(self):
-        """Stops all ZServs."""
+    def stop_all_zservs(self, stop_logfiles=False):
+        """Stops all ZServs.
+        
+        stop_logfiles: a boolean that, if True, stops the logfiles of
+                       the ZServ as well.  False by default.
+        
+        """
         # logging.debug('')
         for zserv in self.get_running_zservs():
-            zserv.stop()
+            zserv.stop(stop_logfile=stop_logfiles)
 
     def restart_all_zservs(self):
         """Restars all ZServs."""
@@ -174,13 +224,23 @@ class Stack(Server):
             ZDSThreadPool.get_thread(target=self.poll_zserv_output,
                                      name="ZDStack Polling Thread",
                                      keep_going=lambda: self.keep_polling)
+        Server.start(self)
 
     def stop(self):
         """Stops this Stack."""
         # logging.debug('')
-        self.stop_all_zservs()
+        logging.debug("Cancelling check_timer")
+        self.loglink_check_timer.cancel()
+        logging.debug("Stopping all ZServs")
+        self.stop_all_zservs(stop_logfiles=False)
+        logging.debug("Stopping all polling")
         self.keep_polling = False
-        ZDSThreadPool.join(self.polling_thread)
+        if self.polling_thread:
+            logging.debug("Joining polling thread")
+            ZDSThreadPool.join(self.polling_thread)
+        for zserv in self.get_stopped_zservs():
+            zserv.logfile.stop_listeners()
+        Server.stop(self)
 
     def get_zserv(self, zserv_name):
         """Returns a ZServ instance.
