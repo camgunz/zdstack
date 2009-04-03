@@ -23,10 +23,12 @@ except ImportError:
 from types import StringType
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher, \
                                SimpleXMLRPCRequestHandler
-from ZDStack import RPCAuthenticationError
-
 from xmlrpclib import Fault, Transport, SafeTransport, ServerProxy, \
                       FastMarshaller, Marshaller, _Method
+
+from ZDStack import RPCAuthenticationError, JSONNotFoundError, JSON_CLASS
+
+json_class = None
 
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
@@ -149,11 +151,14 @@ class JSONRPCServer(XMLRPCServer):
         of changing method dispatch behavior.
 
         """
-        import simplejson
+        if json_class is None:
+            from ZDStack import JSON_CLASS as json_class
+            if json_class is None:
+                raise JSONNotFoundError
         try:
             try:
                 logging.debug("Raw data: %s" % (data))
-                d = simplejson.loads(data)
+                d = json_class.loads(data)
             except Exception, e:
                 import traceback
                 traceback.print_exc()
@@ -192,7 +197,10 @@ class JSONRPCServer(XMLRPCServer):
         return (td.days * 86400) + td.seconds
 
     def generate_response(self, result=None, error=None, id=None):
-        import simplejson
+        if json_class is None:
+            from ZDStack import JSON_CLASS as json_class
+            if json_class is None:
+                raise JSONNotFoundError
         # print >> sys.stderr, "generate_response got %s, %s, %s" % (result,
                                                                    # error, id)
         out = {'result': None, 'error': None, 'version': '1.1', 'id': None}
@@ -203,7 +211,7 @@ class JSONRPCServer(XMLRPCServer):
             out['error'] = error
         if id is not None:
             out['id'] = id
-        out = simplejson.dumps(out, default=self.datetime_to_seconds)
+        out = json_class.dumps(out, default=self.datetime_to_seconds)
         # print >> sys.stderr, "Returning %s" % (out)
         return out
 
@@ -253,7 +261,10 @@ class JSONTransport(Transport):
             connection.send(request_body)
 
     def _parse_response(self, file, sock):
-        import simplejson
+        if json_class is None:
+            from ZDStack import JSON_CLASS as json_class
+            if json_class is None:
+                raise JSONNotFoundError
         response = ''
         if sock:
             chunk = sock.recv(1024)
@@ -268,7 +279,7 @@ class JSONTransport(Transport):
         if self.verbose:
             print "body:", repr(response)
         file.close()
-        return simplejson.loads(response)
+        return json_class.loads(response)
 
 class SafeJSONTransport(JSONTransport):
     """Handles an HTTPS transaction to an XML-RPC server."""
@@ -390,9 +401,12 @@ class JSONProxy:
         self.__method_response_template = method_response_template % (xmlheader)
 
     def __request(self, methodname, params):
-        import simplejson
+        if json_class is None:
+            from ZDStack import JSON_CLASS as json_class
+            if json_class is None:
+                raise JSONNotFoundError
         d = {'method': methodname, 'params': params, 'id': 'jsonrpc'}
-        req = simplejson.dumps(d)
+        req = json_class.dumps(d)
         resp = self.__transport.request(self.__host, self.__handler, req)
         if len(resp) == 1:
             resp = resp[0]

@@ -20,15 +20,12 @@ from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 ###
 # ORM stuff.
 ###
-try:
-    from sqlalchemy.orm import scoped_session, sessionmaker
-    import elixir
-    Session = scoped_session(sessionmaker(autoflush=True, autocommit=True))
-    elixir.session = Session
-    elixir.options_defaults.update({'shortnames': True})
-    elixir.using_mapper_options(save_on_init=True)
-except ImportError:
-    pass
+from sqlalchemy.orm import scoped_session, sessionmaker
+import elixir
+Session = scoped_session(sessionmaker(autoflush=True, autocommit=True))
+elixir.session = Session
+elixir.options_defaults.update({'shortnames': True})
+elixir.using_mapper_options(save_on_init=True)
 ###
 # End of ORM stuff.
 ###
@@ -36,9 +33,9 @@ except ImportError:
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'DEVNULL',
            'CONFIGFILE', 'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS',
            'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS',
-           'RPC_CLASS', 'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK',
-           'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'PlayerNotFoundError',
-           'TeamNotFoundError', 'ZServNotFoundError',
+           'JSON_CLASS', 'RPC_CLASS', 'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK',
+           'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'JSONNotFoundError',
+           'PlayerNotFoundError', 'TeamNotFoundError', 'ZServNotFoundError',
            'RPCAuthenticationError', 'DebugTRFH', 'get_hostname',
            'get_loopback', 'get_engine', 'get_metadata', 'get_session_class',
            'get_session', 'get_configfile', 'set_configfile',
@@ -83,6 +80,7 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 DB_ENGINE = None
 DB_METADATA = None
 DB_SESSION_CLASS = None
+JSON_CLASS = None
 RPC_CLASS = None
 RPC_PROXY_CLASS = None
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
@@ -134,6 +132,12 @@ class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
         # print >> sys.stderr, record.getMessage().strip()
+
+class JSONNotFoundError(Exception):
+    def __init__(self):
+        es = "Using JSON-RPC requires either Python 2.6 (or higher) or "
+        es += "simplejson"
+        Exception.__init__(self, es)
 
 def get_hostname():
     global HOSTNAME
@@ -362,6 +366,7 @@ def load_configparser():
     rp = defaults['zdstack_rpc_protocol'].lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
+        self._load_json()
         from ZDStack.RPCServer import JSONRPCServer, JSONProxy
         rpc_class = JSONRPCServer
         proxy_class = JSONProxy
@@ -397,6 +402,22 @@ def load_configparser():
     RPC_CLASS = rpc_class
     RPC_PROXY_CLASS = proxy_class
     return cp
+
+def _load_json():
+    global JSON_CLASS
+    ###
+    # Python 2.6 and up have a 'json' module we can use.  Otherwise we require
+    # simplejson.
+    ###
+    try:
+        import json
+        JSON_CLASS = json
+    except ImportError:
+        try:
+            import simplejson
+            JSON_CLASS = simplejson
+        except ImportError:
+            raise JSONNotFoundError
 
 def get_configparser(reload=False):
     global CONFIGPARSER
