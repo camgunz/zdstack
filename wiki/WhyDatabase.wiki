@@ -1,0 +1,159 @@
+#summary Why we chose to use a database as ZDStack's persistence solution
+
+= Overview =
+
+As a zserv process runs, it generates events such as frags, connections, team switches, and so on.  Before version 0.11, ZDStack saved these events in memory and XML files, although only Player => IP information was stored as XML.  In order to avoid eventually consuming all its machine's RAM, the number of rounds ZDStack would store in memory (per-ZServ) was configurable and defaulted to 7.  Because they were only stored in ZDStack's process memory, they were only accessible to other processes via RPC methods.  Plugins, being loaded into ZDStack, were able to make use of these events without using RPC.
+
+= Problems =
+
+== Plugins ==
+
+In order to ensure that plugins would have at least the events from the current round to work with, statistics could not be fully disabled.  Further, due to design shortcomings, disabling statistics in any measure was possibly only by setting the number of rounds remembered to 0.
+
+== Memory Usage ==
+
+Even setting the number of rounds remembered to 0, the internal structure required to support statistics was still loaded, and consumed large amounts of virtual memory.  While on modern dedicated machines this wasn't much of a problem, small VPS setups or embedded machines had difficulty running game servers in conjunction with ZDStack.
+
+== Complexity ==
+
+=== Internal Code Complexity ===
+
+The code required to support this architecture in ZDStack was over 1,000 LOC, and while very little if any code was duplicated, the maintenance and debugging of it was difficult and discouraged adding features.
+
+=== RPC Access Complexity ===
+
+Due to the limitations of the XML and JSON RPC specifications, ZDStack had to create a serialization layer for all of its exportable objects.  The structures returned by the RPC methods were large, complex, and often deeply nested, and the processing power needed to serialize and un-serialize them was more than expected.
+
+== CPU Usage ==
+
+The storage engine (PyXSE) used to store Player => IP mappings was very CPU heavy, and combined with the CPU necessary to (un)serialize the RPC structures, ZDStack itself was used a lot of CPU and disk I/O whenever handling RPC requests.
+
+= Shortcomings =
+
+== Performance Impact ==
+
+ZDStack's sporadic high CPU usage was always suspect as a source of decreased connection quality (lag).  Dual-core servers of course alleviated this suspicion, however not all server hosts offer affordable dual-core solutions.
+
+== Monolithic Architecture ==
+
+ZDStack was designed to be used on a single, reasonably powerful server.  ZDWebStats was created as a front-end to ZDStack with the requirement that it be able to run on a separate machine, accessing ZDStack only via RPC methods.  However, because of the high CPU usage related to processing RPC requests, this design made ZDWebStats practically unusable.  And without any other way to access statistics, it was impossible for ZDWebStats to work around the problem.
+
+= Solution Requirements =
+
+== Requirement 1: Have little or no impact on server performance ==
+
+There were 2 main detriments to performance in the previous design:
+
+  * Serializing/Unserializing objects
+  * The storage engine used to store Player => IP mappings
+
+Any solution would have to resolve these issues.
+
+== Requirement 2: Use much less memory, and do not grow in memory usage with time ==
+
+Although ZDStack ultimately would reach a limit on memory usage, that limit was quite high.  This was unacceptable in many situations.
+
+== Requirement 3: Be accessible to other processes ==
+
+One of the main features of ZDStack was the ability of other processes to access its information remotely (via RPC), and we didn't want to lose this.
+
+== Requirement 4: Don't require another running process ==
+
+We were 100% against needing to run something like MySQL or PostgreSQL... or even lighttpd alongside ZDStack.  It seemed insane, and was counter to Requirement 2 besides.
+
+== Requirement 5: Use as few software packages as possible ==
+
+Installing 7 odd different packages just to run a game server already seems excessive, so try to keep the number of requirements to an absolute minimum.
+
+= Solution Possibilities =
+
+== Use a better-performing key/value storage engine ==
+
+There are a number of high-quality key/value storage engines available, but one we really liked is Tokyo Cabinet (in conjunction with Tokyo Tyrant).  It would completely solve the high CPU usage due to using PyXSE and as a bonus, Tokyo Tyrant makes Tokyo Cabinet network accessible (over HTTP even!).
+
+== Use a relational database for statistics ==
+
+Because we were completely against requiring a huge DB engine, the only relational databases remaining were Firebird and SQLite.  Because both are designed as embedded database engines, they each have quirks when used by multiple processes (or threads) and require special locking mechanics to avoid errors.  However, this would greatly reduce the amount of code in ZDStack regarding event storage, remove the need for the limit on rounds remembered, and overall reduce ZDStack's memory usage by a huge amount -- all big wins.
+
+= Solution Drawbacks =
+
+== Tokyo Cabinet ==
+
+Moving to Tokyo Cabinet requires:
+
+  * The Tokyo Cabinet package
+  * a Python interface for it (or Tokyo Tyrant, which is a separate running daemon)
+  * additional code inside ZDStack
+
+Although the user isn't installing an "extra" package (because PyXSE is being replaced), there was very little code required to use PyXSE, and because it's Python there was no needed interface.
+
+== SQLite/Firebird ==
+
+Because Python 2.5 includes support for SQLite, it won out over Firebird in its own category.  Compared with ZDStack's in-memory event storage however, it would require the addition of an abstraction layer with a fine-grained locking mechanism.
+
+== Problems not solved ==
+
+Additionally, the drawbacks of using RPC for object transfer are not addressed by any of these methods.  In order to get ZDStack's information you would still have to query ZDStack itself for it via RPC.
+
+= Usage Scenarios =
+
+Not everyone is using ZDStack in the manner for which it was designed either.  Between jailed user accounts and VPS setups, the world in which ZDStack exists is too complicated for it.
+
+== Small, single server ==
+
+In this instance, statistics and even event processing may not be what the user wants.  The previous ZDStack always processed events and always held statistics for at least the current round.  And its overhead often ruled it out as a management solution.
+
+== Medium/Large single server ==
+
+Users in this environment may still want to disable features to reduce the possibility of lag, but should they enable them they would like to avoid high RAM/CPU/Disk usage.
+
+== Multiple Servers ==
+
+ZDWebStats supports running on a different machine than ZDStack, but in practice the design that relies on RPC was too sluggish, even with Player => IP mapping disabled.  Additionally, because ZDWebStats is so lightweight, it seems foolish to dedicate an entirely separate server to its use.
+
+= The Best Possible Solution =
+
+So to recap, here's what we were looking for:
+
+  * Reduce ZDStack's CPU/RAM/Disk I/O usage
+  * Require little or no additional software
+  * Require little or no additional code
+  * Require no additional running process
+  * Maintain accessibility to other processes
+  * Be as flexible as possible in terms of possible usage scenarios
+
+Ultimately what we found was that, depending upon the scenario, the best possible solution was different.  VPS setups are typically short on RAM and disk space, but have lots of CPU and disk I/O to spare because they're hosted on huge machines.  Dedicated systems have relatively lower CPU and disk I/O, but have more RAM and disk space available.  And for situations where multiple servers can be used, they should be used to reduce lag as much as possible on the main ZDStack machine.
+
+So what we decided to do, then, was adopt the most flexible solution possible.
+
+= SQLAlchemy =
+
+Adopting SQLAlchemy as ZDStack's persistence engine comes with some drawbacks:
+
+  * Requires SQLAlchemy (and Elixir, in our case)
+  * Using an engine that isn't SQLite requires a separate DB adapter
+  * ZDWebStack (renamed) will require a full RDBMS (not SQLite) to run reliably
+
+However here are the advantages:
+
+  * Can use in-memory SQLite, so current round events can be stored for use by plugins without touching the disk
+  * Can use on-disk SQLite, so memory usage is kept to a minimum
+  * Can use a full RDBMS (such as MySQL or PostgreSQL), which can be hosted on a separate machine
+  * Drastically reduces CPU usage due to Player => IP lookup
+  * Drastically reduces the amount of code handling statistics in ZDStack
+  * Removes the limit on remembered rounds
+  * Allows us to stop using RPC for object transfer
+
+= Outlook =
+
+Already in trunk, ZDStack is over 1,000 lines slimmer and has more features.  ZDStack looks like this in `top`:
+{{{
+  PID USER   PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+29510 devel  20   0 48436  10m 1832 S    0  1.0   0:00.36 zdstack
+}}}
+
+As opposed to:
+{{{
+ PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+5502 zdaemon   25   0  143g 480m 2320 S   14 24.0 264:55.36 zdstack
+}}}
