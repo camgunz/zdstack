@@ -1,0 +1,172 @@
+#summary How to configure ZDStack's database
+
+= Introduction =
+
+In version 0.11, ZDStack started to use a relational database to store its data -- both statistics and Player => IP mappings.  There are several ways to configure ZDStack's use of the database and this Wiki page covers all of them.
+
+= ZDStack Features =
+
+ZDStack has 3 main features that can potentially use the database:
+
+  * Events
+  * Statistics
+  * Plugins
+
+All of these features can be disabled; Statistics and Plugins both require that Events are enabled.
+
+== Events ==
+
+An event is anything that zserv logs to its general log file, including frags/deaths, map changes, player connections/disconnections, etc.  If events are enabled, ZDStack watches zserv's logfile for activity and parses events from it.  These events are stored in the database.  If Statistics are not enabled, ZDStack deletes these events at the end of every round (per-ZServ).
+
+== Statistics ==
+
+Statistics are specific types of events, like frags/deaths and flag touches.  If Statistics are enabled, ZDStack will not delete these events at the end of every round.
+
+== Plugins ==
+
+Plugins respond to events and can access the database.  Plugins typically restrict themselves to the current round's events, so it is generally safe to use them even if Statistics have not been enabled -- however this is not a strict rule.
+
+= Database Configuration =
+
+There are 3 ways ZDStack can use its database:
+
+  # In-memory SQLite (no file on disk)
+  # On-disk SQLite
+  # Traditional RDBMS system (such as MySQL or PostgreSQL).
+
+== Requirements ==
+
+ZDStack requires at least Python 2.5 or higher, and all of those version include SQLite support.  You don't need to install anything other than Python to use configurations 1 and 2.
+
+For configuration 3, you will need to install the RDBMS itself (obviously), as well as a database adapter for Python.  A good list of these adapters (and coincidentally ZDStack's database support) is listed [http://www.sqlalchemy.org/docs/05/dbengine.html#supported-dbapis here].
+
+== Defaults ==
+
+By default, ZDStack uses an in-memory SQLite database.
+
+== Configuration 1 ==
+
+Configuration 1 stores the entire database in memory.
+
+=== How to configure ===
+
+{{{
+zdstack_database_engine = sqlite
+zdstack_database_name = :memory:
+}}}
+
+Other `zdstack_database_*` options are not used.
+
+=== Features ===
+
+  * Doesn't use the disk at all
+  * Quite fast
+  * Doesn't require a separate database process or software
+  * Doesn't require a database adapter for Python (one is included)
+
+=== Limitations ===
+
+  * Enabling Statistics slowly increases the amount of memory consumed by ZDStack without limit
+  * Database is not accessible by other processes
+  * Database is not accessible by other machines
+  * All information is lost when ZDStack exits
+
+== Configuration 2 ==
+
+Configuration 2 stores the database in a single SQLite file on disk.
+
+=== How to configure ===
+
+{{{
+zdstack_database_engine = sqlite
+zdstack_database_name = /path/to/sqlite/database/file
+}}}
+
+Other `zdstack_database_*` options are not used.  If `zdstack_database_name` is not found, it is created.
+
+=== Features ===
+
+  * Very low RAM usage, even with Statistics enabled
+  * Fast, although not as fast as in-memory SQLite
+  * Doesn't require a separate database process or software
+  * Doesn't require a database adapter for Python (one is included)
+  * Data is saved over ZDStack restarts
+
+=== Limitations ===
+
+  * Disk space (if Statistics are enabled)
+  * Database is not reliably accessible by other processes
+  * Database is not accessible by other machines
+
+== Configuration 3 ==
+
+Configuration 3 uses a separate RDBMS, which can be located on the same machine as ZDStack or on a different one.
+
+=== How to configure ===
+
+{{{
+zdstack_database_engine = mysql (postgres, oracle, or mssql)
+zdstack_database_host = database.host.org
+zdstack_database_port = 5678 (optional, ZDStack will use the default ports if blank)
+zdstack_database_name = name_of_database
+zdstack_database_username = username_used_to_access_database
+zdstack_database_password = password_for_database_user
+}}}
+
+=== Features ===
+
+  * Database is reliably accessible by other processes
+  * Database is accessible by other machines
+  * Data is saved over ZDStack restarts
+
+=== Limitations ===
+
+  * Disk space (if Statistics are enabled)
+  * Higher RAM usage than SQLite (for the RDBMS, not ZDStack)
+  * Slower than SQLite, though still quite fast.
+  * Requires a separate database process and software
+  * Requires a database adapter for Python
+
+= Examples =
+
+Below are some potential situations and configurations that make the best of them.
+
+== VPS with very little storage and RAM (<= 128MB) ==
+
+  * Disable statistics
+  * Use on-disk SQLite
+
+== VPS with very little storage ==
+
+  * Disable statistics
+  * Optionally use in-memory SQLite
+
+== VPS with very little RAM (<= 128MB) ==
+
+  * Use on-disk SQLite
+
+== Don't care about stats or plugins ==
+
+  * Disable Events
+  * Disable Statistics
+  * Disable Plugins
+  * Use in-memory SQLite
+
+== Don't care about stats ==
+
+  * Disable Statistics
+  * Use in-memory SQLite
+
+== Want to use ZDWebStack for management and statistics ==
+
+  * Enable Events
+  * Enable Statistics
+  * Use an RDBMS
+
+== Want all features, don't want lag, have multiple machines ==
+
+  * Enable Events
+  * Enable Statistics
+  * Enable Plugins
+  * Use an RDBMS on a separate machine
+  * Setup ZDWebStack on the separate machine
