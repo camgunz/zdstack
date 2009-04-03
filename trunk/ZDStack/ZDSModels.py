@@ -12,6 +12,10 @@ from ZDStack import get_engine
 class TeamColor(Entity):
 
     color = Field(String(10), primary_key=True)
+    frags = OneToMany('Frag', inverse='fragger_team_color')
+    deaths = OneToMany('Frag', inverse='fraggee_team_color')
+    flag_touches = OneToMany('FlagTouch', inverse='player_team_color')
+    flag_returns = OneToMany('FlagReturn', inverse='player_team_color')
 
     def __str__(self):
         return '<TeamColor %s>' % (self.color)
@@ -38,6 +42,7 @@ class Weapon(Entity):
 
     name = Field(String(50), primary_key=True)
     is_suicide = Field(Boolean, default=False)
+    frags = OneToMany('Frag', inverse='weapon')
 
     def __str__(self):
         return '<Weapon %s>' % (self.name)
@@ -76,6 +81,12 @@ class Round(Entity):
     start_time = Field(DateTime, default=datetime.datetime.now)
     end_time = Field(DateTime, required=False)
     players = ManyToMany('Alias', inverse='rounds')
+    frags = OneToMany('Frag', inverse='round')
+    flag_touches = OneToMany('FlagTouch', inverse='round')
+    flag_returns = OneToMany('FlagReturn', inverse='round')
+    rcon_accesses = OneToMany('RCONAccess', inverse='round')
+    rcon_denials = OneToMany('RCONDenial', inverse='round')
+    rcon_actions = OneToMany('RCONAction', inverse='round')
 
     def __str__(self):
         s = '<Round on %s at %s>'
@@ -101,6 +112,13 @@ class Alias(Entity):
     ip_address = Field(String(16), index=True)
     was_namefake = Field(Boolean, default=False, required=False)
     rounds = ManyToMany('Round', inverse='players')
+    frags = OneToMany('Frag', inverse='fragger')
+    deaths = OneToMany('Frag', inverse='fraggee')
+    flag_touches = OneToMany('FlagTouch', inverse='player')
+    flag_returns = OneToMany('FlagReturn', inverse='player')
+    rcon_accesses = OneToMany('RCONAccess', inverse='player')
+    rcon_denials = OneToMany('RCONDenial', inverse='player')
+    rcon_actions = OneToMany('RCONAction', inverse='player')
 
     def __str__(self):
         return '<Alias %s>' % (self.name)
@@ -111,15 +129,15 @@ class Alias(Entity):
 
 class Frag(Entity):
 
-    fragger = ManyToOne('Alias')
-    fraggee = ManyToOne('Alias')
-    weapon = ManyToOne('Weapon')
-    round = ManyToOne('Round')
+    fragger = ManyToOne('Alias', inverse='frags')
+    fraggee = ManyToOne('Alias', inverse='deaths')
+    weapon = ManyToOne('Weapon', inverse='frags')
+    round = ManyToOne('Round', inverse='frags')
     timestamp = Field(DateTime)
     fragger_was_holding_flag = Field(Boolean, default=False)
     fraggee_was_holding_flag = Field(Boolean, default=False)
-    fragger_team_color = ManyToOne('TeamColor')
-    fraggee_team_color = ManyToOne('TeamColor')
+    fragger_team_color = ManyToOne('TeamColor', inverse='frags')
+    fraggee_team_color = ManyToOne('TeamColor', inverse='deaths')
     red_team_holding_flag = Field(Boolean, default=False, nullable=True)
     blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
     green_team_holding_flag = Field(Boolean, default=False, nullable=True)
@@ -134,13 +152,13 @@ class Frag(Entity):
 
 class FlagTouch(Entity):
 
-    player = ManyToOne('Alias')
-    round = ManyToOne('Round')
+    player = ManyToOne('Alias', inverse='flag_touches')
+    round = ManyToOne('Round', inverse='flag_touches')
     touch_time = Field(DateTime, default=datetime.datetime.now)
     loss_time = Field(DateTime, required=False)
     was_picked = Field(Boolean, default=False)
     resulted_in_score = Field(Boolean, default=False)
-    player_team_color = ManyToOne('TeamColor')
+    player_team_color = ManyToOne('TeamColor', inverse='flag_touches')
     red_team_holding_flag = Field(Boolean, default=False, nullable=True)
     blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
     green_team_holding_flag = Field(Boolean, default=False, nullable=True)
@@ -155,11 +173,11 @@ class FlagTouch(Entity):
 
 class FlagReturn(Entity):
 
-    player = ManyToOne('Alias')
-    round = ManyToOne('Round')
+    player = ManyToOne('Alias', inverse='flag_returns')
+    round = ManyToOne('Round', inverse='flag_returns')
     timestamp = Field(DateTime, default=datetime.datetime.now)
     player_was_holding_flag = Field(Boolean, default=False)
-    player_team_color = ManyToOne('TeamColor')
+    player_team_color = ManyToOne('TeamColor', inverse='flag_returns')
     red_team_holding_flag = Field(Boolean, default=False, nullable=True)
     blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
     green_team_holding_flag = Field(Boolean, default=False, nullable=True)
@@ -174,8 +192,8 @@ class FlagReturn(Entity):
 
 class RCONAccess(Entity):
 
-    player = ManyToOne('Alias')
-    round = ManyToOne('Round')
+    player = ManyToOne('Alias', inverse='rcon_accesses')
+    round = ManyToOne('Round', inverse='rcon_accesses')
     timestamp = Field(DateTime, default=datetime.datetime.now)
 
     def __str__(self):
@@ -183,8 +201,8 @@ class RCONAccess(Entity):
 
 class RCONDenial(Entity):
 
-    player = ManyToOne('Alias')
-    round = ManyToOne('Round')
+    player = ManyToOne('Alias', inverse='rcon_denials')
+    round = ManyToOne('Round', inverse='rcon_denials')
     timestamp = Field(DateTime, default=datetime.datetime.now)
 
     def __str__(self):
@@ -192,8 +210,8 @@ class RCONDenial(Entity):
 
 class RCONAction(Entity):
 
-    player = ManyToOne('Alias')
-    round = ManyToOne('Round')
+    player = ManyToOne('Alias', inverse='rcon_actions')
+    round = ManyToOne('Round', inverse='rcon_actions')
     timestamp = Field(DateTime, default=datetime.datetime.now)
     action = Field(String(255))
 

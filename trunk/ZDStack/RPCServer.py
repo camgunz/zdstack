@@ -1,18 +1,18 @@
 ###
 #
-# A lot of this code is ripped right out of SimpleXMLRPCServer.py included in
-# the Python stdlib (version 2.5.2).  My reason for doing so is that simply
-# changing the transport (from XML to JSON) is not possible doing simple
-# subclassing, and this is clearer than monkeypatching.
+# A lot of this code is ripped right out of SimpleXMLRPCServer.py and
+# xmlrpclib.py included in the Python stdlib (version 2.5.2).  My reason for
+# doing so is that changing the transport (from XML to JSON) is not possible
+# doing simple subclassing, and this is clearer than monkeypatching.
 #
 # While I imagine this causes a license conflict, I am ignoring it because I
 # could easily monkeypatch and avoid it.  If someone throws a fit I will
-# change this :)
+# change this... although I hope they don't! :)
 #
 ###
 
+import logging
 import datetime
-import simplejson
 import SocketServer
 
 try:
@@ -20,9 +20,13 @@ try:
 except ImportError:
     fcntl = None
 
+from types import StringType
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher, \
                                SimpleXMLRPCRequestHandler
 from ZDStack import RPCAuthenticationError
+
+from xmlrpclib import Fault, Transport, SafeTransport, ServerProxy, \
+                      FastMarshaller, Marshaller, _Method
 
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
@@ -145,8 +149,10 @@ class JSONRPCServer(XMLRPCServer):
         of changing method dispatch behavior.
 
         """
+        import simplejson
         try:
             try:
+                logging.debug("Raw data: %s" % (data))
                 d = simplejson.loads(data)
             except Exception, e:
                 import traceback
@@ -167,11 +173,6 @@ class JSONRPCServer(XMLRPCServer):
                 result = dispatch_method(d['method'], params)
             else:
                 result = self._dispatch(d['method'], params)
-        except ProcedureNotFoundError, pnfe:
-            import traceback
-            traceback.print_exc()
-            error = self.exception_to_dict(pnfe, '000', 'Procedure not found')
-            return self.generate_response(None, error)
         except Exception, e:
             import traceback
             traceback.print_exc()
@@ -179,7 +180,19 @@ class JSONRPCServer(XMLRPCServer):
             return self.generate_response(None, error)
         return self.generate_response(result, None, id)
 
+    def datetime_to_seconds(self, dt):
+        ###
+        # There's probably something in the 'time' module for this, but fuck
+        # it.
+        ###
+        epoch = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        if type(dt) != type(epoch):
+            raise TypeError("Cannot serialize [%s]" % (type(dt)))
+        td = dt - epoch
+        return (td.days * 86400) + td.seconds
+
     def generate_response(self, result=None, error=None, id=None):
+        import simplejson
         # print >> sys.stderr, "generate_response got %s, %s, %s" % (result,
                                                                    # error, id)
         out = {'result': None, 'error': None, 'version': '1.1', 'id': None}
@@ -229,4 +242,168 @@ class JSONRPCServer(XMLRPCServer):
         if hasattr(self, 'address') and self.address:
             out['address'] == self.address
         return out
+
+class JSONTransport(Transport):
+
+    def send_content(self, connection, request_body):
+        connection.putheader("Content-Type", 'application/json')
+        connection.putheader("Content-Length", str(len(request_body)))
+        connection.endheaders()
+        if request_body:
+            connection.send(request_body)
+
+    def _parse_response(self, file, sock):
+        import simplejson
+        response = ''
+        if sock:
+            chunk = sock.recv(1024)
+        else:
+            chunk = file.read(1024)
+        while chunk:
+            response += chunk
+            if sock:
+                chunk = sock.recv(1024)
+            else:
+                chunk = file.read(1024)
+        if self.verbose:
+            print "body:", repr(response)
+        file.close()
+        return simplejson.loads(response)
+
+class SafeJSONTransport(JSONTransport):
+    """Handles an HTTPS transaction to an XML-RPC server."""
+
+    def make_connection(self, host):
+        import httplib
+        host, extra_headers, x509 = self.get_host_info(host)
+        try:
+            HTTPS = httplib.HTTPS
+        except AttributeError:
+            es = "your version of httplib doesn't support HTTPS"
+            raise NotImplementedError(es)
+        else:
+            return HTTPS(host, None, **(x509 or {}))
+
+class BaseProxy(ServerProxy):
+
+    def __init__(self, uri, transport, encoding=None, verbose=0,
+                       use_datetime=0):
+        ServerProxy.__init__(self, uri, transport, encoding, verbose, True,
+                                   True)
+
+    def _secret_proxy_request_blag(self, methodname, params):
+        req = self._secret_proxy_dumps_blag(params, methodname)
+        resp = self.__transport.request(self.__host, self.__handler, req)
+        if len(resp) == 1:
+            resp = resp[0]
+        return resp
+
+    def _secret_get_request_func_blag(self):
+        raise NotImplementedError
+
+class XMLProxy:
+
+    def __init__(self, uri, transport=None, encoding=None, verbose=0,
+                       use_datetime=0):
+        import urllib
+        if transport is None:
+            protocol, uri = urllib.splittype(uri)[0]
+            if protocol == 'http':
+                self.__transport = Transport(use_datetime)
+            elif protocol == 'https':
+                self.__transport = SafeTransport(use_datetime)
+            else:
+                raise IOError("unsupported XML-RPC protocol")
+        else:
+            self.__transport = transport
+        self.__host, self.__handler = urllib.splithost(uri)
+        self.__handler = self.__handler or '/RPC2'
+        self.__encoding = encoding
+        if self.__encoding == 'utf-8':
+            xmlheader = "<?xml version='1.0'?>\n"
+        else:
+            xmlheader_template = "<?xml version='1.0' encoding='%s'?>\n"
+            xmlheader = xmlheader_template % str(self.__encoding)
+        if FastMarshaller:
+            self.__marshaller = FastMarshaller(self.__encoding)
+        else:
+            self.__marshaller = Marshaller(self.__encoding, allow_none=True)
+        method_call_template = \
+            '%s<methodCall>\n<methodName>%%s</methodName>\n%%s</methodCall>'
+        method_response_template = \
+            '%s<methodResponse>\n%%s</methodResponse>'
+        self.__method_call_template = method_call_template % (xmlheader)
+        self.__method_response_template = method_response_template % (xmlheader)
+
+    def __request(self, methodname, params):
+        req = self.marshaller.dumps(params)
+        if methodname:
+            if not isinstance(methodname, StringType):
+                methodname = methodname.encode(self.encoding)
+            req = self.method_call_template % (methodname, req)
+        resp = self.__transport.request(self.__host, self.__handler, req)
+        if len(resp) == 1:
+            resp = resp[0]
+        return resp
+
+    def __getattr__(self, name):
+        # magic method dispatcher
+        return _Method(self.__request, name)
+
+    def __repr__(self):
+        return ("<XMLServerProxy for %s%s>" % (self.__host, self.__handler))
+
+    __str__ = __repr__
+
+class JSONProxy:
+
+    def __init__(self, uri, transport=None, encoding=None, verbose=0,
+                       use_datetime=0):
+        import urllib
+        if transport is None:
+            protocol, uri = urllib.splittype(uri)
+            if protocol == 'http':
+                self.__transport = JSONTransport(use_datetime)
+            elif protocol == 'https':
+                self.__transport = SafeJSONTransport(use_datetime)
+            else:
+                raise IOError("unsupported JSON-RPC protocol")
+        else:
+            self.__transport = transport
+        self.__host, self.__handler = urllib.splithost(uri)
+        self.__handler = self.__handler or '/RPC2'
+        self.__encoding = encoding
+        if self.__encoding == 'utf-8':
+            xmlheader = "<?xml version='1.0'?>\n"
+        else:
+            xmlheader_template = "<?xml version='1.0' encoding='%s'?>\n"
+            xmlheader = xmlheader_template % str(self.__encoding)
+        if FastMarshaller:
+            self.__marshaller = FastMarshaller(self.__encoding)
+        else:
+            self.__marshaller = Marshaller(self.__encoding, allow_none=True)
+        method_call_template = \
+            '%s<methodCall>\n<methodName>%%s</methodName>\n%%s</methodCall>'
+        method_response_template = \
+            '%s<methodResponse>\n%%s</methodResponse>'
+        self.__method_call_template = method_call_template % (xmlheader)
+        self.__method_response_template = method_response_template % (xmlheader)
+
+    def __request(self, methodname, params):
+        import simplejson
+        d = {'method': methodname, 'params': params, 'id': 'jsonrpc'}
+        req = simplejson.dumps(d)
+        resp = self.__transport.request(self.__host, self.__handler, req)
+        if len(resp) == 1:
+            resp = resp[0]
+        return resp
+
+    def __getattr__(self, name):
+        # magic method dispatcher
+        return _Method(self.__request, name)
+
+    def __repr__(self):
+        return ("<JSONServerProxy for %s%s>" % (self.__host, self.__handler))
+
+    __str__ = __repr__
 

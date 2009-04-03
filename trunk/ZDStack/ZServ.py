@@ -797,31 +797,26 @@ class ZServ:
         if self.round:
             self.round.end_time = datetime.now()
             ses.merge(self.round)
-        if not self.stats_enabled:
+            to_delete = self.round.players + self.round.frags + \
+                        self.round.flag_touches + self.round.flag_returns + \
+                        self.round.rcon_accesses + self.round.rcon_denials + \
+                        self.round.rcon_actions + [self.round]
+        else:
+            to_delete = []
+        if to_delete and not self.stats_enabled:
             ###
             # Not everything is deleted.  Some things we want to persist, like
             # weapons, team colors, ports, game modes and maps.  This stuff
             # shouldn't take up too much memory anyway.  The rest of the stuff,
             # like stats and aliases, all that can go out the window.
-            #
-            # Aha ignore that I suck cocks.
-            #
-            # to_delete = self.round.players + self.round.frags + \
-            #             self.round.flagtouches + self.round.flagreturns + \
-            #             self.round.rconaccesses + self.round.rcondenials + \
-            #             self.round.rconactions + [self.round]
-            # if DEBUGGING:
-            #     for x in to_delete:
-            #         logging.debug("Deleting %s" % (x))
-            #         ses.delete(x)
-            # else:
-            #     ses.delete_all(to_delete)
-            #
             ###
-            ses.close()
-        else:
-            pass
-            # ses.commit()
+            for x in to_delete:
+                logging.debug("Deleting %s" % (x))
+                ses.delete(x)
+            # ses.close()
+        # else:
+        #     pass
+        #     ses.commit()
         self.to_save.clear()
         self.players.clear()
         self.teams.clear()
@@ -857,13 +852,13 @@ class ZServ:
             # that access to it is limited to 1 thread at a time, which is both
             # writing to it, and waiting for responses from its STDOUT.
             ###
-            if event_response_type is not None:
+            if self.events_enabled and event_response_type is not None:
                 logging.debug("Setting response type")
                 self.logfile.set_response_type(event_response_type)
             logging.debug("Writing to STDIN")
             self.zserv.stdin.write(message + '\n')
             self.zserv.stdin.flush()
-            if event_response_type is not None:
+            if self.events_enabled and event_response_type is not None:
                 logging.debug("Getting response")
                 response = self.logfile.get_response()
                 logging.debug("Send to zserv response: (%s)" % (response))

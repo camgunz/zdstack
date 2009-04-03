@@ -225,8 +225,9 @@ class GeneralLogListener(BaseLogListener):
         self.set_handler('rcon_granted', self.handle_rcon_event)
         self.set_handler('rcon_action', self.handle_rcon_event)
         self.set_handler('flag_touch', self.handle_flag_event)
-        self.set_handler('flag_cap', self.handle_flag_event)
         self.set_handler('flag_pick', self.handle_flag_event)
+        self.set_handler('flag_cap', self.handle_flag_event)
+        self.set_handler('flag_loss', self.handle_flag_event)
         self.set_handler('flag_return', self.handle_flag_return_event)
         self.set_handler('map_change', self.handle_map_change_event)
         self.set_handler('frag', self.handle_frag_event)
@@ -377,7 +378,7 @@ class GeneralLogListener(BaseLogListener):
             # At this point, the event is either a flag_cap or flag_loss.
             ###
             s = self._get_latest_flag_touch(runner)
-            s.loss_time = datetime.datetime.now()
+            s.loss_time = event.dt
             self.teams_holding_flags.remove(tc.color)
             self.players_holding_flags.remove(runner)
             if event.type == 'flag_cap':
@@ -386,6 +387,9 @@ class GeneralLogListener(BaseLogListener):
             else: # flag_loss!
                 s.resulted_in_score = False
                 self.fragged_runners.append(runner)
+            logging.debug("Merging %s, %s" % (s, s.loss_time))
+            session.merge(s)
+            logging.debug("Merged %s, %s" % (s, s.loss_time))
 
     def handle_flag_return_event(self, event):
         """Handles a flag_return event.
@@ -449,7 +453,7 @@ class GeneralLogListener(BaseLogListener):
         weapon = get_weapon(name=event.data['weapon'], is_suicide=is_suicide)
         if fraggee in self.fragged_runners:
             fraggee_was_holding_flag = True
-            self.fragged_funners.remove(fraggee)
+            self.fragged_runners.remove(fraggee)
         else:
             fraggee_was_holding_flag = False
         fraggee_team = self.zserv.teams.get_player_team(fraggee)

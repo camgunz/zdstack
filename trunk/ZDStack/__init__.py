@@ -362,16 +362,14 @@ def load_configparser():
     rp = defaults['zdstack_rpc_protocol'].lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
-        from ZDStack.RPCServer import JSONRPCServer
-        from jsonrpc import ServiceProxy
+        from ZDStack.RPCServer import JSONRPCServer, JSONProxy
         rpc_class = JSONRPCServer
-        proxy_class = ServiceProxy
+        proxy_class = JSONProxy
     elif rp in ('xmlrpc', 'xml-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'xml-rpc')
-        from ZDStack.RPCServer import XMLRPCServer
-        from xmlrpclib import ServerProxy
+        from ZDStack.RPCServer import XMLRPCServer, XMLProxy
         rpc_class = XMLRPCServer
-        proxy_class = ServerProxy
+        proxy_class = XMLProxy
     else:
         es = "RPC Protocol [%s] not supported"
         raise ValueError(es % (defaults['zdstack_rpc_protocol']))
@@ -412,6 +410,7 @@ def get_server_proxy():
     defaults = cp.defaults()
     address = 'http://%s:%s' % (defaults['zdstack_rpc_hostname'],
                                 defaults['zdstack_port'])
+    logging.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
     return RPC_PROXY_CLASS(address)
 
 def get_plugins(plugins='all', config_file=None):

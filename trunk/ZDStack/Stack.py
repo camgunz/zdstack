@@ -230,7 +230,8 @@ class Stack(Server):
         """Stops this Stack."""
         # logging.debug('')
         logging.debug("Cancelling check_timer")
-        self.loglink_check_timer.cancel()
+        if self.loglink_check_timer:
+            self.loglink_check_timer.cancel()
         logging.debug("Stopping all ZServs")
         self.stop_all_zservs(stop_logfiles=False)
         logging.debug("Stopping all polling")
