@@ -38,4 +38,4 @@ If you don't have Python 2.6, installing simplejson is... simple: run `easy_inst
 
 == Detached Database ==
 
-By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms.  ZDStack supports the use of many database engines, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseInfo.
+By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms.  ZDStack supports the use of many database engines, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseConfiguration.
