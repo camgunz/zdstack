@@ -9,7 +9,7 @@ Controlling ZDStack is done with 2 programs, `zdstack` and `zservctl`.  A web-in
 `zdstack` manages the ZDStack process as a whole.  You can start/stop/restart ZDStack using this.
 
 {{{
-Usage: zdstack [ start | stop | restart ] -c [ config_file ]
+Usage: zdstack [ start | stop | restart | reload-config ] -c [ config_file ]
 }}}
 Use of `-c` is optional; `zdstack` actually looks in lots of standard places for a configuration file, so most of the time you won't have to specify this.
 
@@ -25,7 +25,6 @@ Usage:
     zservctl start-all -c [ config_file ]
     zservctl stop-all -c [ config_file ]
     zservctl restart-all -c [ config_file ]
-    zservctl reload-config -c [ config_file ]
 }}}
 
 It's important to note that `zservctl reload-config` must be run after making changes to the configuration files, otherwise the changes won't be recognized.
@@ -50,7 +49,7 @@ When one of these files is found, it is used, and the ones below are ignored.
 To add a server:
 {{{
 $ ### Edit Config Here ###
-$ zservctl reload-config
+$ zdstack reload-config
 $ zservctl start -n 'Public ZD CTF'
 }}}
 
@@ -59,7 +58,7 @@ If you want to remove this server, run:
 {{{
 $ zservctl stop -n 'Public ZD CTF'
 $ ### Edit Config Here ###
-$ zservctl reload-config
+$ zdstack reload-config
 }}}
 
 If you want to change the wads and name of a server, say from ZD CTF to Odamex CTF, do the following:
@@ -67,6 +66,6 @@ If you want to change the wads and name of a server, say from ZD CTF to Odamex C
 {{{
 $ zservctl stop -n 'Public ZD CTF'
 $ ### Edit Config Here ###
-$ zservctl reload-config
+$ zdstack reload-config
 $ zservctl start -n 'Public ODA CTF'
 }}}
