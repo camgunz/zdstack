@@ -13,9 +13,9 @@ ZDStack requires:
     * In order to run fully, a file called an IWAD is needed.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.), and the awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
   * Python 2.5 or greater ([http://www.python.org])
   * pyfileutils 0.8.4 or greater ([http://pyfileutils.googlecode.com])
+  * SQLAlchemy 0.5 or greater ([http://www.sqlalchemy.org])
+  * Elixir 0.6 or greater ([http://elixir.ematia.de])
 
-Should you decide to use Player => IP mapping, you will need:
+= Optional Features and Their Requirements =
 
-  * PyXSE 0.4 or greater ([http://pyxse.googlecode.com])
-
-ZDStack offers the option to use either JSON or XML as the RPC transport format.  Using XML requires no extra libraries, XML parsing is built into the Python standard library.  Using JSON, however, requires the `simplejson` package.  The easiest way to obtain simplejson is to run `easy_install simplejson` at the command-prompt.   If you don't have the `easy_install` utility, visit the [http://peak.telecommunity.com/DevCenter/EasyInstall EasyInstall] webpage and follow the instructions there.
+  * Using JSON-RPC requires either Python 2.6.X, or the `simplejson` package ([http://code.google.com/p/simplejson/]).  The easiest way to obtain simplejson is to run `easy_install simplejson` at the command-prompt.   If you don't have the `easy_install` utility, visit the [http://peak.telecommunity.com/DevCenter/EasyInstall EasyInstall] webpage and follow the instructions there.
