@@ -5,17 +5,37 @@
 
 ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
 
-= Required Packages =
+= Basic Requirements =
 
-ZDStack requires:
+In order to run, ZDStack requires the following:
 
   * zserv ([http://www.zdaemon.org])
-    * In order to run fully, a file called an IWAD is needed.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.), and the awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
+    * zserv requires a file called an IWAD.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.).  The awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
   * Python 2.5 or greater ([http://www.python.org])
   * pyfileutils 0.8.4 or greater ([http://pyfileutils.googlecode.com])
   * SQLAlchemy 0.5 or greater ([http://www.sqlalchemy.org])
   * Elixir 0.6 or greater ([http://elixir.ematia.de])
 
+The following features are available using only the above packages:
+
+  * zserv process management (start | stop | restart)
+  * Automatic zserv restarting in the event of a crash
+  * Simple configuration for multiple zserv servers
+  * Event processing and real-time statistics generation
+  * Player => IP logging
+  * An RPC interface using XML as a transport
+
 = Optional Features and Their Requirements =
 
-  * Using JSON-RPC requires either Python 2.6.X, or the `simplejson` package ([http://code.google.com/p/simplejson/]).  The easiest way to obtain simplejson is to run `easy_install simplejson` at the command-prompt.   If you don't have the `easy_install` utility, visit the [http://peak.telecommunity.com/DevCenter/EasyInstall EasyInstall] webpage and follow the instructions there.
+== JSON-RPC ==
+
+Using JSON-RPC requires one of the following:
+
+  * Python 2.6 (or greater)
+  * The simplejson package ([http://code.google.com/p/simplejson/]).
+
+If you don't have Python 2.6, installing simplejson is... simple: run `easy_install simplejson` at the command-prompt.   If you don't have the `easy_install` utility, visit the [http://peak.telecommunity.com/DevCenter/EasyInstall EasyInstall] webpage and follow the instructions there.
+
+== Detached Database ==
+
+By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms.  ZDStack supports the use of many database engines, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseInfo.
