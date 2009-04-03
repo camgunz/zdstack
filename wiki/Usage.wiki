@@ -27,7 +27,7 @@ Usage:
     zservctl restart-all -c [ config_file ]
 }}}
 
-It's important to note that `zservctl reload-config` must be run after making changes to the configuration files, otherwise the changes won't be recognized.
+It's important to note that `zdstack reload-config` must be run after making changes to the configuration files, otherwise the changes won't be recognized.
 
 =zdstackrc=
 
