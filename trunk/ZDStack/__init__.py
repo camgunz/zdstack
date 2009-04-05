@@ -16,6 +16,7 @@ from pyfileutils import read_file, append_file
 
 from ZDStack.Utils import resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
+from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 
 ###
 # ORM stuff.
@@ -302,8 +303,7 @@ def get_configfile():
         possible_config_files = ['./zdstackrc', './zdstack.ini',
                                  '~/.zdstackrc', '~/.zdstack.ini',
                                  '~/.zdstack/zdstackrc',
-                                 '~/.zdstack/zdstack.ini',
-                                 '/etc/zdstackrc', '/etc/zdstack.ini',
+                                 '~/.zdstack/zdstack.ini', '/etc/zdstackrc', '/etc/zdstack.ini',
                                  '/etc/zdstack/zdstackrc'
                                  '/etc/zdstack/zdstack.ini']
         possible_config_files = \
@@ -311,7 +311,7 @@ def get_configfile():
         possible_config_files = \
                         [x for x in possible_config_files if os.path.isfile(x)]
         if not possible_config_files:
-            raise ValueError("Could not find a valid configuration file")
+            raise Exception("Could not find a valid configuration file")
         CONFIGFILE = possible_config_files[0]
     return CONFIGFILE
 
@@ -323,9 +323,11 @@ def set_configfile(config_file):
         raise ValueError(es % (config_file))
     CONFIGFILE = config_file
 
-def load_configparser():
+def load_configparser(raw=False):
     global RPC_CLASS
     global RPC_PROXY_CLASS
+    if raw:
+        return RCP(get_configfile(), allow_duplicate_sections=False)
     cp = CP(get_configfile(), allow_duplicate_sections=False)
     defaults = cp.defaults()
     for section in cp.sections():
@@ -366,7 +368,7 @@ def load_configparser():
     rp = defaults['zdstack_rpc_protocol'].lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
-        self._load_json()
+        _load_json()
         from ZDStack.RPCServer import JSONRPCServer, JSONProxy
         rpc_class = JSONRPCServer
         proxy_class = JSONProxy
@@ -419,10 +421,10 @@ def _load_json():
         except ImportError:
             raise JSONNotFoundError
 
-def get_configparser(reload=False):
+def get_configparser(reload=False, raw=False):
     global CONFIGPARSER
     if CONFIGPARSER is None or reload:
-        CONFIGPARSER = load_configparser()
+        CONFIGPARSER = load_configparser(raw=raw)
     return CONFIGPARSER
 
 def get_server_proxy():
@@ -475,7 +477,6 @@ def set_debugging(debugging, log_file=None, config_file=None):
     logging.RootLogger.root.addHandler(handler)
     logging.RootLogger.root.setLevel(__log_level)
     handler.setLevel(__log_level)
-    logging.info("Log Format: [%s]" % (__log_format))
 
 # set_debugging(False)
 

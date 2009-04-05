@@ -260,11 +260,49 @@ class Stack(Server):
         # logging.debug('')
         return self.zservs.keys()
 
+    def _get_zserv_info(self, zserv):
+        """Returns a dict of zserv info.
+
+        zserv: a ZServ instance for which info is to be returned.
+
+        """
+        players = len([x for x in zserv.players if not x.disconnected])
+        name, number = (zserv.map.name, zserv.map.number)
+        running = zserv.is_running()
+        return {'name': zserv.name, 'players': players, 'map_name': name,
+                'map_number': number, 'is_running': running}
+
+    def get_zserv_info(self, zserv_name):
+        """Returns a dict of zserv info.
+
+        zserv_name: a string representing the name of the ZServ for
+                    which info is to be returned.
+
+        The returned dict is formatted as follows:
+
+        {'name': <internal name of zserv instance as string>,
+         'players': <current number of players as int>,
+         'map_name': <current name of map as string>,
+         'map_number': <current number of map as int>,
+         'is_running': <boolean whether or not ZServ is running>}
+
+        """
+        zserv = self.get_zserv(zserv_name)
+        return self._get_zserv_info(self.get_zserv(zserv_name))
+
+    def get_all_zserv_info(self):
+        """Returns a list of zserv info dicts.
+
+        See get_zserv_info() for more information.
+
+        """
+        return [self._get_zserv_info(x) for x in self.zservs.values()]
+
     def _items_to_section(self, name, items):
         """Converts a list of items into a ConfigParser section.
 
         name:  a string representing the name of the section to
-               generate
+               generate.
         items: a list of option, value pairs (strings).
 
         """
@@ -529,6 +567,9 @@ class Stack(Server):
         # self.rpc_server.register_function(self.get_all_players)
         # self.rpc_server.register_function(self.list_player_names)
         ###
+        ###
+        # Process management functions
+        ###
         self.rpc_server.register_function(self.start_zserv,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.stop_zserv,
@@ -541,12 +582,19 @@ class Stack(Server):
                                           requires_authentication=True)
         self.rpc_server.register_function(self.restart_all_zservs,
                                           requires_authentication=True)
-        self.rpc_server.register_function(self.list_zserv_names,
-                                          requires_authentication=True)
+        ###
+        # Information functions
+        ###
+        self.rpc_server.register_function(self.list_zserv_names)
+        self.rpc_server.register_function(self.get_zserv_info)
+        self.rpc_server.register_function(self.get_all_zserv_info)
         self.rpc_server.register_function(self.get_zserv_config,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.set_zserv_config,
                                           requires_authentication=True)
+        ###
+        # Command functions
+        ###
         self.rpc_server.register_function(self.send_to_zserv,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.addban,

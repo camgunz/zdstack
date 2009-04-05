@@ -76,13 +76,13 @@ def stop(config_file=None):
         try:
             os.kill(int(read_file(zdstack.pidfile)), signal.SIGTERM)
         except (OSError, IOError):
-            if not os.path.isfile(zdstack.pidfile):
-                es = "\nZDStack not running\n"
-                print >> sys.stderr, es
-            else:
+            if os.path.isfile(zdstack.pidfile):
                 es = "\nZDStack not running, removing stale PID file.\n"
                 print >> sys.stderr, es
                 os.unlink(zdstack.pidfile)
+            else:
+                es = "\nZDStack not running\n"
+                print >> sys.stderr, es
             zdstack.shutdown(retval=-1)
     except Exception, e:
         print >> sys.stderr, "\nError: %s\n" % (str(e))

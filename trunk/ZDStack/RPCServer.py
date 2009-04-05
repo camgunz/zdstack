@@ -261,6 +261,7 @@ class JSONTransport(Transport):
             connection.send(request_body)
 
     def _parse_response(self, file, sock):
+        global json_class
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class
             if json_class is None:
@@ -401,6 +402,7 @@ class JSONProxy:
         self.__method_response_template = method_response_template % (xmlheader)
 
     def __request(self, methodname, params):
+        global json_class
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class
             if json_class is None:
