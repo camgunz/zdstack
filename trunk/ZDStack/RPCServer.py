@@ -86,10 +86,14 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             response = self.server._marshaled_dispatch(
                     data, getattr(self, '_dispatch', None)
                 )
-        except Exception, e: # This should only happen if the module is buggy
+        except Exception, e:
+            ###
+            # This should only happen if the module is buggy
+            ###
             # internal error, report as HTTP server error
             import traceback
-            traceback.print_exc()
+            es = "Error processing RPC request: %s\nTraceback:\n%s"
+            logging.error(es % (e, traceback.format_exc()))
             self.send_response(500)
             self.end_headers()
         else:
@@ -253,6 +257,25 @@ class JSONRPCServer(XMLRPCServer):
 
 class JSONTransport(Transport):
 
+    def request(self, host, handler, request_body, verbose=0):
+        # issue XML-RPC request
+        h = self.make_connection(host)
+        if verbose:
+            h.set_debuglevel(1)
+        self.send_request(h, handler, request_body)
+        self.send_host(h, host)
+        self.send_user_agent(h)
+        self.send_content(h, request_body)
+        errcode, errmsg, headers = h.getreply()
+        if errcode != 200:
+            raise ProtocolError(host + handler, errcode, errmsg, headers)
+        self.verbose = verbose
+        try:
+            sock = h._conn.sock
+        except AttributeError:
+            sock = None
+
+        return self._parse_response(h.getfile(), sock)
     def send_content(self, connection, request_body):
         connection.putheader("Content-Type", 'application/json')
         connection.putheader("Content-Length", str(len(request_body)))
