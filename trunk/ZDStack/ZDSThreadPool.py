@@ -77,6 +77,8 @@ def get_thread(target, name, keep_going, sleep=None):
         t = Thread(target=tf, name=name)
         logging.debug("Adding thread [%s]" % (t.getName()))
         __THREAD_POOL.append(t)
+        s = "%d threads currently in thread pool"
+        logging.debug(s % (len(__THREAD_POOL)))
         t.start()
         return t
 
@@ -95,7 +97,10 @@ def join(thread, acquire_lock=True):
         logging.debug("Joining thread [%s]" % (thread.getName()))
         thread.join()
         logging.debug("Removing thread [%s]" % (thread.getName()))
-        __THREAD_POOL.remove(thread)
+        try:
+            __THREAD_POOL.remove(thread)
+        except ValueError:
+            logging.error("Thread [%s] not found in pool" % (thread.getName()))
     if acquire_lock:
         with __THREAD_POOL_LOCK:
             blah()

@@ -15,6 +15,7 @@ from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSThreadPool import get_thread
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
+from ZDStack.ZDSEventHandler import ZServEventHandler
 
 class AuthenticationError(Exception):
 
@@ -46,17 +47,107 @@ class Stack(Server):
         self.spawn_lock = Lock()
         self.poller = select.poll()
         self.zservs = {}
+        self.stopped_zserv_names = set()
         self.start_time = datetime.now()
-        self.keep_polling = True
+        self.keep_spawning = False
+        self.keep_polling = False
+        self.keep_parsing = False
+        self.keep_handling_command_events = False
+        self.keep_handling_generic_events = False
+        self.keep_handling_plugin_events = False
+        self.spawning_thread = None
         self.polling_thread = None
+        self.parsing_thread = None
+        self.generic_handling_thread = None
+        self.command_handling_thread = None
+        self.plugin_handling_thread = None
+        self.parser = ZServLogParser()
+        self.event_handler = ZServEventHandler()
         Server.__init__(self, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
         self.methods_requiring_authentication.append('stop_all_zservs')
         self.loglink_check_timer = None
-        if not stopping:
+
+    def start(self):
+        """Starts this Stack."""
+        # logging.debug('')
+        if not self.loglink_check_timer:
             self.start_checking_loglinks()
+        self.keep_spawning = True
+        self.keep_polling = True
+        self.keep_parsing = True
+        self.keep_handling_generic_events = True
+        self.keep_handling_command_events = True
+        self.keep_handling_plugin_events = True
+        self.polling_thread = \
+            ZDSThreadPool.get_thread(self.poll_zservs,
+                                     "ZDStack Polling Thread",
+                                     lambda: self.keep_polling == True)
+        self.parsing_thread = \
+            ZDSThreadPool.get_thread(self.parse_zserv_output,
+                                     "ZDStack Parsing Thread",
+                                     lambda: self.keep_parsing == True)
+        self.command_handling_thread = \
+            ZDSThreadPool.get_thread(self.handle_zserv_command_events,
+                                     "ZDStack Command Event Thread",
+                             lambda: self.keep_handling_command_events == True)
+        self.generic_handling_thread = \
+            ZDSThreadPool.get_thread(self.handle_zserv_generic_events,
+                                     "ZDStack Generic Event Thread",
+                             lambda: self.keep_handling_generic_events == True)
+        self.plugin_handling_thread = \
+            ZDSThreadPool.get_thread(self.handle_zserv_plugin_events,
+                                     "ZDStack Plugin Event Thread",
+                             lambda: self.keep_handling_plugin_events == True)
+        ###
+        # Start the spawning thread last.
+        ###
+        self.spawning_thread = \
+            ZDSThreadPool.get_thread(self.spawn_zservs,
+                                     "ZDStack Spawning Thread",
+                                     lambda: self.keep_spawning == True)
+        Server.start(self)
+
+    def stop(self):
+        """Stops this Stack."""
+        # logging.debug('')
+        logging.debug("Cancelling check_timer")
+        if self.loglink_check_timer:
+            self.loglink_check_timer.cancel()
+        logging.debug("Stopping spawning thread")
+        self.keep_spawning = False
+        if self.spawning_thread:
+            ZDSThreadPool.join(self.spawning_thread)
+        logging.debug("Stopping all ZServs")
+        self.stop_all_zservs()
+        logging.debug("Stopping polling thread")
+        self.keep_polling = False
+        if self.polling_thread:
+            logging.debug("Joining polling thread")
+            ZDSThreadPool.join(self.polling_thread)
+        logging.debug("Stopping parsing thread")
+        self.keep_parsing = False
+        if self.parsing_thread:
+            logging.debug("Joining parsing thread")
+            ZDSThreadPool.join(self.parsing_thread)
+        logging.debug("Stopping command event handling thread")
+        self.keep_handling_command_events = False
+        if self.command_handling_thread:
+            logging.debug("Joining command event handling thread")
+            ZDSThreadPool.join(self.command_handling_thread)
+        logging.debug("Stopping generic event handling thread")
+        self.keep_handling_generic_events = False
+        if self.generic_handling_thread:
+            logging.debug("Joining generic event handling thread")
+            ZDSThreadPool.join(self.generic_handling_thread)
+        logging.debug("Stopping plugin event handling thread")
+        self.keep_handling_plugin_events = False
+        if self.plugin_handling_thread:
+            logging.debug("Joining plugin event handling thread")
+            ZDSThreadPool.join(self.plugin_handling_thread)
+        Server.stop(self)
 
     def start_checking_loglinks(self):
         """Starts checking every ZServ's log links every 30 minutes."""
@@ -67,15 +158,19 @@ class Stack(Server):
             self.loglink_check_timer = Timer(1800, self.start_checking_loglinks)
             self.loglink_check_timer.start()
 
-    def get_running_zservs(self):
-        """Returns a list of ZServs whose internal zserv is running."""
-        return [x for x in self.zservs.values() if x.is_running()]
+    def spawn_zservs(self):
+        """Spawns zservs, respawning if they've crashed."""
+        for zserv in self.zserv.values():
+            try:
+                if zserv.name in self.stopped_zserv_names or zserv.is_running():
+                    continue
+                zserv.start()
+            except Exception, e:
+                es = "Received error while checking [%s]: [%s]"
+                logging.error(es % (zserv.name, e))
+                continue
 
-    def get_stopped_zservs(self):
-        """Returns a list of ZServs whose internal zserv isn't running."""
-        return [x for x in self.zservs.values() if not x.is_running()]
-
-    def poll_zserv_output(self):
+    def poll_zservs(self):
         ###
         # Rather than have a separate polling thread for each ZServ, I put
         # a big 'select' here for every (running) ZServ.  I know that 'poll'
@@ -100,22 +195,143 @@ class Stack(Server):
                     ###
                     data += os.read(fd, 1024)
                 except OSError, e:
-                    if e.errno == 11:
+                    if e.errno != 11:
                         ###
                         # Error code 11: FD would have blocked... meaning
-                        # we're at the end of the data stream.
-                        ###
-                        break
-                    else:
-                        ###
-                        # Something else happened, freak out.
+                        # we're at the end of the data stream.  We don't care
+                        # about this, but we want other stuff to bubble up.
                         ###
                         raise
                 if data:
-                    # logging.debug("Data from [%s]: [%s]" % (zserv.name, data))
-                    zserv.logfile.write(data)
+                    zserv.add_output(data)
                 else:
                     break
+
+    def parse_zserv_output(self):
+        """Parses ZServ output into events, places them in the event queue."""
+        for zserv in self.zservs.values():
+            try:
+                for event in zserv.get_events(self.parser):
+                    if event.type == 'junk':
+                        ###
+                        # Skip junk events.
+                        ###
+                        continue
+                    elif event.type == 'message':
+                        ppn = event.data['possible_player_names']
+                        c = event.data['contents'] 
+                        player = zserv.distill_player(ppn)
+                        if not player:
+                            s = "Received a message from a non-existent player"
+                            logging.error(s)
+                        else:
+                            message = c.replace(player.name, '', 1)[3:]
+                            d = {'message': message, 'messenger': player}
+                            event = LogEvent(event.dt, 'message', d,
+                                             'message', event.line)
+                    if zserv.event_to_watch_for:
+                        if event.type == zserv.event_to_watch_for:
+                            zserv.response_events.append(event)
+                        elif zserv.response_events:
+                            ###
+                            # Received an event that was not a response to the
+                            # command after events that were responses to the
+                            # command, so notify the zserv that its response
+                            # is complete.
+                            ###
+                            zserv.response_finished.set()
+                    if event.category == 'command':
+                        zserv.command_events.put_nowait(event)
+                        queue = 'command'
+                    else:
+                        zserv.generic_events.put_nowait(event)
+                        if zserv.plugins_enabled:
+                            zserv.plugin_events.put_nowait(event)
+                        queue = 'generic'
+                    s = "Put [%s] event in %s's %s queue"
+                    logging.debug(s % (event.type, zserv.name, queue))
+                except Exception, e:
+                    es = "Received error while parsing output from [%s]: [%s]"
+                    logging.error(es % (zserv.name, e))
+                    continue
+
+    def _handle_zserv_events(self, zserv, queue, use_plugins=False):
+        """Handles zserv events from a specific queue.
+
+        zserv:       a ZServ instance.
+        queue:       the queue from which to get events.
+        use_plugins: a boolean that, if given, uses plugins to handle
+                     events instead of the event handler.  False by
+                     default.
+
+        """
+        try:
+            event = queue.get_nowait()
+        except Queue.Empty:
+            ###
+            # If we're shutting down, this thread will wait forever on an event
+            # that will never come.  Furthermore, other events are probably
+            # waiting to be handled.  So don't wait even a little if there are
+            # no events in this queue.
+            ###
+            return
+        if use_plugins:
+            for plugin in zserv.plugins:
+                logging.debug("Running plugin: %s" % (plugin.__name__))
+                try:
+                    plugin(event, zserv)
+                except Exception, e:
+                    es = "Exception in plugin %s: [%s]"
+                    logging.error(es % (plugin.__name__, e))
+                    continue
+        else:
+            handler = self.event_handler.get_handler(event.type)
+            if handler:
+                s = "Handling %s event (Line: [%s])" % (event.type, event.line)
+                logging.debug(s)
+                handler(event, zserv)
+                logging.debug("Finished handling %s event" % (event.type))
+            else:
+                logging.debug("No handler set for %s" % (event.type))
+
+    def handle_zserv_command_events(self):
+        """Handles command events as they're generated."""
+        for zserv in self.zservs.values():
+            try:
+                self._handle_zserv_events(zserv, zserv.command_events)
+            except Exception, e:
+                es = "Received error while handling events from [%s]: [%s]"
+                logging.error(es % (zserv.name, e))
+                continue
+
+    def handle_zserv_generic_events(self):
+        """Handles generic events as they're generated."""
+        for zserv in self.zservs.values():
+            try:
+                self._handle_zserv_events(zserv, zserv.generic_events)
+            except Exception, e:
+                es = "Received error while handling events from [%s]: [%s]"
+                logging.error(es % (zserv.name, e))
+                continue
+
+    def handle_zserv_plugin_events(self):
+        """Handles plugin events as they're generated."""
+        for zserv in self.zservs.values():
+            try:
+                self._handle_zserv_events(zserv, zserv.plugin_events,
+                                          use_plugins=True)
+            except Exception, e:
+                es = "Received error while handling events from [%s]: [%s]"
+                logging.error(es % (zserv.name, e))
+                continue
+
+    def get_running_zservs(self):
+        """Returns a list of ZServs whose internal zserv is running."""
+        return [x for x in self.zservs.values() if x.is_running()]
+
+    def get_stopped_zservs(self):
+        """Returns a list of ZServs whose internal zserv isn't running."""
+        return [x for x in self.zservs.values() if not x.is_running()]
 
     def check_all_zserv_configs(self, configparser):
         """Ensures that all ZServ configuration sections are correct."""
@@ -161,11 +377,20 @@ class Stack(Server):
 
         """
         # logging.debug('')
+        logging.debug("Starting %s" % (zserv_name))
         if zserv_name not in self.zservs:
             raise ZServNotFoundError(zserv_name)
         if self.zservs[zserv_name].is_running():
             raise Exception("ZServ [%s] is already running" % (zserv_name))
         self.zservs[zserv_name].start()
+        try:
+            self.stopped_zserv_names.remove(zserv_name)
+        except KeyError:
+            ###
+            # zserv_name wasn't in self.stopped_zserv_names.
+            ###
+            pass
+        logging.debug("Done starting %s" % (zserv_name))
 
     def stop_zserv(self, zserv_name):
         """Stops a ZServ.
@@ -174,11 +399,14 @@ class Stack(Server):
 
         """
         # logging.debug('')
+        logging.debug("Stopping %s" % (zserv_name))
         if zserv_name not in self.zservs:
             raise ZServNotFoundError(zserv_name)
         if not self.zservs[zserv_name].is_running():
             raise Exception("ZServ [%s] is not running" % (zserv_name))
         self.zservs[zserv_name].stop()
+        self.stopped_zserv_names.add(zserv_name)
+        logging.debug("Done stopping %s" % (zserv_name))
 
     def restart_zserv(self, zserv_name):
         """Restarts a ZServ.
@@ -188,17 +416,17 @@ class Stack(Server):
 
         """
         # logging.debug('')
+        logging.debug("Restarting %s" % (zserv_name))
         self.stop_zserv(zserv_name)
         time.sleep(1)
         self.start_zserv(zserv_name)
+        logging.debug("Done restarting %s" % (zserv_name))
 
     def start_all_zservs(self):
         """Starts all ZServs."""
         # logging.debug('')
         for zserv in self.get_stopped_zservs():
-            logging.debug("Starting %s" % (zserv.name))
-            zserv.start()
-            logging.debug("Done starting %s" % (zserv.name))
+            self.start_zserv(zserv.name)
 
     def stop_all_zservs(self, stop_logfiles=False):
         """Stops all ZServs.
@@ -209,41 +437,13 @@ class Stack(Server):
         """
         # logging.debug('')
         for zserv in self.get_running_zservs():
-            zserv.stop(stop_logfile=stop_logfiles)
+            self.stop_zserv(zserv.name)
 
     def restart_all_zservs(self):
         """Restars all ZServs."""
         # logging.debug('')
         for zserv in self.get_running_zservs():
-            zserv.restart()
-
-    def start(self):
-        """Starts this Stack."""
-        # logging.debug('')
-        self.keep_polling = True
-        self.start_all_zservs()
-        self.polling_thread = \
-            ZDSThreadPool.get_thread(target=self.poll_zserv_output,
-                                     name="ZDStack Polling Thread",
-                                     keep_going=lambda: self.keep_polling)
-        Server.start(self)
-
-    def stop(self):
-        """Stops this Stack."""
-        # logging.debug('')
-        logging.debug("Cancelling check_timer")
-        if self.loglink_check_timer:
-            self.loglink_check_timer.cancel()
-        logging.debug("Stopping all ZServs")
-        self.stop_all_zservs(stop_logfiles=False)
-        logging.debug("Stopping all polling")
-        self.keep_polling = False
-        if self.polling_thread:
-            logging.debug("Joining polling thread")
-            ZDSThreadPool.join(self.polling_thread)
-        for zserv in self.get_stopped_zservs():
-            zserv.logfile.stop_listeners()
-        Server.stop(self)
+            self.restart_zserv(zserv.name)
 
     def get_zserv(self, zserv_name):
         """Returns a ZServ instance.

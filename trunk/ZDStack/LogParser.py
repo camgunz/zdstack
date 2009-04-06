@@ -70,59 +70,16 @@ class LogParser:
         lines = deque(datalines)
         return (lines, leftovers)
 
-class ConnectionLogParser(LogParser):
+class ZServLogParser(LogParser):
 
-    def __init__(self, log_type='server', fake=False):
-        """Initializes a ConnectionLogParser.
+    def __init__(self, fake=False):
+        """Initializes a ZServ.
 
-        logtype: a string representing the type of log to parse.
-                 Valid options include 'server' and 'client'.
-        fake:    an optional boolean, whether or not this parser is
-                 parsing for a fake ZServ.
+        fake:  an optional boolean, whether or not this parser is
+               parsing for a fake ZServ.
 
         """
-        LogParser.__init__(self, "Connection Log Parser", log_type, fake=fake)
-
-    def parse(self, data):
-        """Parses data into LogEvents.
-
-        data: a string of log data.
-
-        Returns a 2-Tuple (list of LogEvents, string of leftover data)
-
-        """
-        lines, leftovers = self.split_data(data)
-        events = []
-        while len(lines):
-            line = lines.popleft()
-            tokens = [x for x in line.split() if x]
-            if '\n' in line:
-                raise ValueError("Somehow, there is a newline within a line")
-            timestamp = ' '.join([tokens[0], tokens[1]])
-            time_tup = time.strptime(timestamp, '%Y/%m/%d %H:%M:%S')
-            line_dt = datetime(*time_tup[:6])
-            parsed_events = self.lineparser.get_event(line_dt, line)
-            if parsed_events:
-                events.extend(parsed_events)
-            elif line.endswith('Connection Log Stopped'):
-                d = {'log': 'connection'}
-                events.append(LogEvent(line_dt, 'log_roll', d, 'log_roll'))
-            else:
-                events.append(LogEvent(line_dt, 'junk', {'data': line}, 'junk'))
-        return (events, leftovers)
-
-class GeneralLogParser(LogParser):
-
-    def __init__(self, log_type='server', fake=False):
-        """Initializes a GeneralLogParser.
-
-        logtype: a string representing the type of log to parse.
-                 Valid options include 'server' and 'client'.
-        fake:    an optional boolean, whether or not this parser is
-                 parsing for a fake ZServ.
-
-        """
-        LogParser.__init__(self, "General Log Parser", log_type, fake=fake)
+        LogParser.__init__(self, "ZServ Log Parser", 'server', fake=fake)
 
     def parse(self, data):
         """Parses data into LogEvents.
@@ -175,10 +132,10 @@ class GeneralLogParser(LogParser):
                 events.append(LogEvent(now, 'junk', d, 'junk', line))
         return (events, leftovers)
 
-class FakeZServLogParser(GeneralLogParser):
+class FakeZServLogParser(ZServLogParser):
 
     def __init__(self):
-        GeneralLogParser.__init__(self, log_type='server', fake=True)
+        ZServLogParser.__init__(self, log_type='server', fake=True)
         self.name = 'Fake Log Parser'
 
 

@@ -23,7 +23,7 @@ class LineParser:
     def generic_line_to_event(self, event_dt, line):
         """Generically parses a line into an event.
 
-        event_dt: a datetime representing the time of the event
+        event_dt: a datetime representing the time of the event.
         line:     a string representing the line itself.
 
         """
@@ -48,7 +48,7 @@ class LineParser:
     def line_to_death_event(self, event_dt, line):
         """Parses a line into a death event.
 
-        event_dt: a datetime representing the time of the event
+        event_dt: a datetime representing the time of the event.
         line:     a string representing the line itself.
 
         """
@@ -76,7 +76,7 @@ class LineParser:
     def line_to_join_event(self, event_dt, line):
         """Parses a line into a join event.
 
-        event_dt: a datetime representing the time of the event
+        event_dt: a datetime representing the time of the event.
         line:     a string representing the line itself.
 
         """
@@ -91,7 +91,7 @@ class LineParser:
     def line_to_map_event(self, event_dt, line):
         """Parses a line into a map event.
 
-        event_dt: a datetime representing the time of the event
+        event_dt: a datetime representing the time of the event.
         line:     a string representing the line itself.
 
         """

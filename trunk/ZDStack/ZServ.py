@@ -7,6 +7,7 @@ import logging
 
 from decimal import Decimal
 from datetime import date, datetime, timedelta
+from cStringIO import StringIO
 from threading import Timer, Lock
 from collections import deque
 from subprocess import Popen, PIPE, STDOUT
@@ -17,12 +18,9 @@ from pyfileutils import write_file
 
 from ZDStack import ZDSThreadPool
 from ZDStack import DEVNULL, DEBUGGING, DIE_THREADS_DIE, TEAM_COLORS, \
-                    PlayerNotFoundError, get_session
+                    PlayerNotFoundError, get_session, get_db_lock
 from ZDStack.Utils import yes, no, to_list
-from ZDStack.LogFile import LogFile
 from ZDStack.ZDSModels import get_port, get_game_mode, get_map, Round
-from ZDStack.LogParser import GeneralLogParser
-from ZDStack.LogListener import GeneralLogListener, PluginLogListener
 from ZDStack.ZDSTeamsList import TeamsList
 from ZDStack.ZDSPlayersList import PlayersList
 
@@ -67,11 +65,19 @@ class ZServ:
         """
         self.start_time = datetime.now()
         self.name = name
-        self.session_lock = Lock()
-        self.to_save = deque()
         self.game_mode = None
         self.zdstack = zdstack
-        self.keep_spawning = False
+        self._unprocessed_output = StringIO()
+        self.plugin_events = Queue.Queue()
+        self.generic_events = Queue.Queue()
+        self.command_events = Queue.Queue()
+        self.event_type_to_watch_for = None
+        self.response_events = []
+        self.response_finished = Event()
+        self._parse_lock = Lock()
+        self.state_lock = Lock()
+        # self.keep_spawning = False
+        # self.spawning_thread = None
         self._zserv_stdin_lock = Lock()
         self.map = None
         self.round = None
@@ -79,40 +85,56 @@ class ZServ:
         self.teams = TeamsList(self)
         self._template = ''
         self.reload_config(config)
-        self.initialize_session()
-        self.zserv = None
-        self.fifo = None
-        self.logfile = LogFile(GeneralLogParser(), self)
-        self.plugins = []
-        if self.events_enabled:
-            self.logfile.listeners.append(GeneralLogListener(self))
-            if self.plugins_enabled and \
-              ('plugins' in self.config and self.config['plugins']):
-                logging.info("Loading plugins")
-                plugins = [x.strip() for x in self.config['plugins'].split(',')]
-                self.plugins = plugins
-                for plugin in self.plugins:
-                    logging.info("Loaded plugin [%s]" % (plugin))
-                self.logfile.listeners.append(PluginLogListener(self))
-            else:
-                logging.info("Not loading plugins")
-                logging.debug("Plugins: [%s]" % ('plugins' in self.config))
-            logging.debug("Listeners: [%s]" % (self.logfile.listeners))
-
-    def initialize_session(self):
-        """Initializes the SQLAlchemy session.
-        
-        game_mode:    a string representing the game mode of this
-                      ZServ.
-        acquire_lock: a boolean that, if True, acquires the session
-                      lock before initializing the session.  True by
-                      default.
-        
-        """
-        logging.debug("Initializing session")
         has_teams = self.raw_game_mode in TEAM_MODES
         self.game_mode = get_game_mode(name=self.raw_game_mode,
                                        has_teams=has_teams)
+        self.clear_state() # adds some instance variables
+        self.zserv = None
+        self.fifo = None
+        self.plugins = list()
+        if self.events_enabled:
+            if self.plugins_enabled and \
+              ('plugins' in self.config and self.config['plugins']):
+                plugins = [x.strip() for x in self.config['plugins'].split(',')]
+                self.plugins = plugins
+            else:
+                logging.debug("Plugins: [%s]" % ('plugins' in self.config))
+
+    def add_output(self, data):
+        """Adds data to this ZServ's unprocessed output buffer.
+
+        data: a string of data to be added to the output buffer.
+
+        """
+        if not self.events_enabled:
+            ###
+            # Don't even save data here, just return.
+            ###
+            return
+        with self._parse_lock:
+            # logging.debug("Adding data to [%s]: [%s]" % (self.name, data))
+            self._unprocessed_output.write(data)
+
+    def get_events(self, parser):
+        """Returns a list of events from this ZServ's output.
+        
+        parser: a LogParser instance.
+        
+        """
+        events = list()
+        leftover = ''
+        with self._parse_lock:
+            try:
+                data = self._unprocessed_output.getvalue()
+                self._unprocessed_output.truncate()
+                events, leftover = parser.parse(data)
+                self._unprocessed_output.write(leftover)
+            except Exception, e:
+                # raise # for debugging
+                tb = traceback.format_exc()
+                ed = {'error': e, 'traceback': tb}
+                events = [LogEvent(datetime.now(), 'error', ed, 'error')]
+        return events
 
     ###
     # I have to say that I'm very close to pulling all the config stuff out
@@ -123,6 +145,61 @@ class ZServ:
     # TODO: Move all config stuff into separate classes.
     #
     ###
+
+    def clear_state(self, acquire_lock=True):
+        """Clears the current state of the round.
+        
+        acquire_lock: a boolean that, if True, will acquire the state
+                      lock before clearing state.  True by default.
+        
+        """
+        def blah():
+            self.players.clear()
+            self.teams.clear()
+            self.players_holding_flags = list()
+            self.teams_holding_flags = list()
+            self.fragged_runners = list()
+            self.team_scores = dict(zip(self.playing_teams,
+                                        ['0'] * len(self.playing_teams)))
+        if acquire_lock:
+            with self.state_lock:
+                blah()
+        else:
+            blah()
+
+    def clean_up(self):
+        """Cleans up after a round."""
+        logging.debug('Cleaning up')
+        if self.round:
+            self.round.end_time = datetime.now()
+            to_delete = self.round.players + self.round.frags + \
+                        self.round.flag_touches + self.round.flag_returns + \
+                        self.round.rcon_accesses + self.round.rcon_denials + \
+                        self.round.rcon_actions
+        else:
+            to_delete = []
+        with get_db_lock():
+            if to_delete and not self.stats_enabled:
+                ###
+                # Not everything is deleted.  Some things we want to persist,
+                # like weapons, team colors, ports, game modes and maps.  This
+                # stuff shouldn't take up too much memory anyway.  The rest of
+                # the stuff, like stats and aliases, all that can go out the
+                # window.
+                ###
+                for x in to_delete:
+                    if x in session.new or x in session.dirty:
+                        logging.debug("Deleting %s" % (x))
+                        session.delete(x)
+                self.round.delete()
+            elif self.stats_enabled:
+                session.merge(self.round)
+            try:
+                session.commit()
+            except IntegrityError:
+                logging.debug("Got integrity error committing in clean_up")
+                session.rollback()
+        self.clear_state()
 
     def reload_config(self, config):
         """Reloads the config for the ZServ.
@@ -592,7 +669,7 @@ class ZServ:
                 logging.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
-    def spawn_zserv(self):
+    def start(self):
         """Starts the zserv process.
         
         This keeps a reference to the running zserv process in
@@ -603,65 +680,44 @@ class ZServ:
         with self.zdstack.spawn_lock:
             if self.is_running():
                 return
-            curdir = os.getcwd()
-            try:
-                os.chdir(self.homedir)
-                self.ensure_loglinks_exist()
-                logging.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
-                ###
-                # Should we do something with STDERR here?
-                ###
-                ###
-                # Due to the semi-complicated blocking structure of FIFOs, there
-                # is a specific order to how this has to be done.
-                #
-                #   - Writing to a FIFO blocks until there is something
-                #     listening, so self.zdstack.polling_thread has to be
-                #     spawned.
-                #   - The polling thread only handles ZServs with .fifo
-                #     attributes that are non-False, so self.fifo has to be
-                #     created.
-                #   - Then the zserv can be spawned.
-                ###
-                self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
-                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
-                                   stderr=STDOUT, bufsize=0, close_fds=True)
-                # self.send_to_zserv('players') # avoids CPU spinning
-            finally:
-                os.chdir(curdir)
+            self.ensure_loglinks_exist()
+            if self.plugins_enabled:
+                for plugin in self.plugins:
+                    logging.info("Loaded plugin [%s]" % (plugin))
+            else:
+                logging.info("Not loading plugins")
+            ###
+            # Should we do something with STDERR here?
+            ###
+            ###
+            # Due to the semi-complicated blocking structure of FIFOs, there
+            # is a specific order in which this has to be done.
+            #
+            #   - Writing to a FIFO blocks until there is something
+            #     listening, so self.zdstack.polling_thread has to be
+            #     spawned.
+            #   - The polling thread only handles ZServs with .fifo
+            #     attributes that are non-False, so self.fifo has to be
+            #     created.
+            #   - Then the zserv can be spawned.
+            ###
+            logging.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
+            self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
+                               stderr=STDOUT, bufsize=0, close_fds=True,
+                               cwd=self.homedir)
+            # self.send_to_zserv('players') # avoids CPU spinning
 
-    def start(self):
-        """Starts the zserv process, restarting it if it crashes."""
-        logging.debug('Starting all listeners')
-        if self.is_running():
-            raise Exception("[%s] already started" % (self.name))
-        self.logfile.start_listeners()
-        self.keep_spawning = True
-        self.spawning_thread = \
-            ZDSThreadPool.get_thread(name='%s spawning thread' % (self.name),
-                                     target=self.spawn_zserv,
-                                     keep_going=lambda: self.keep_spawning,
-                                     sleep=Decimal('.5'))
-
-    def stop(self, signum=15, stop_logfile=True):
+    def stop(self, signum=15):
         """Stops the zserv process.
 
         signum:       an int representing the signal number to send to
                       the zserv process.  15 (TERM) by default.
-        stop_logfile: a boolean that, if True, will stop the logfile
-                      as well.  True by default.
 
         """
-        if not self.is_running():
-            raise Exception("[%s] already stopped" % (self.name))
-        logging.debug("Setting keep_spawning False")
-        self.keep_spawning = False
-        logging.debug("Joining spawning thread")
-        ZDSThreadPool.join(self.spawning_thread)
-        self.spawning_thread = None
-        logging.debug("Killing zserv process")
-        error_stopping = False
         if self.is_running():
+            error_stopping = False
+            logging.debug("Killing zserv process")
             try:
                 os.kill(self.zserv.pid, signum)
                 retval = self.zserv.wait()
@@ -669,11 +725,10 @@ class ZServ:
                 es = "Caught exception while stopping: [%s]"
                 logging.error(es % (e))
                 error_stopping = es % (e)
-        if stop_logfile:
-            logging.debug('Stopping all listeners')
-            self.logfile.stop_listeners()
-        self.clean_up()
-        return error_stopping
+            self.clean_up()
+            return error_stopping
+        else:
+            raise Exception("[%s] already stopped" % (self.name))
 
     def restart(self, signum=15):
         """Restarts the zserv process, restarting it if it crashes.
@@ -786,70 +841,6 @@ class ZServ:
         ###
         return m
 
-    def get_player_ip_address(self, player_name):
-        """Returns a player's IP address.
-        
-        player_name: a string representing the name of the player
-                     whose IP address is to be returned
-
-        """
-        d = [x for x in self.zplayers() if x['player_name'] == player_name]
-        if not d:
-            raise PlayerNotFoundError(player_name)
-        return d[0]['player_ip']
-
-    def get_player_number(self, player_name):
-        """Returns a player's number.
-        
-        player_name: a string representing the name of the player
-                     whose number is to be returned
-        
-        This number is the same as the number indicated by the zserv
-        'players' command, useful for kicking and not much else.
-
-        """
-        d = [x for x in self.zplayers() if x['player_name'] == player_name]
-        if not d:
-            raise PlayerNotFoundError(player_name)
-        return d[0]['player_num']
-
-    def clean_up(self):
-        """Cleans up after a map change, or after stopping."""
-        logging.debug('Cleaning up')
-        # ses = session()
-        if self.round:
-            self.round.end_time = datetime.now()
-            to_delete = self.round.players + self.round.frags + \
-                        self.round.flag_touches + self.round.flag_returns + \
-                        self.round.rcon_accesses + self.round.rcon_denials + \
-                        self.round.rcon_actions
-        else:
-            to_delete = []
-        if to_delete and not self.stats_enabled:
-            ###
-            # Not everything is deleted.  Some things we want to persist, like
-            # weapons, team colors, ports, game modes and maps.  This stuff
-            # shouldn't take up too much memory anyway.  The rest of the stuff,
-            # like stats and aliases, all that can go out the window.
-            ###
-            for x in to_delete:
-                if x in session.new or x in session.dirty:
-                    logging.debug("Deleting %s" % (x))
-                    session.delete(x)
-            self.round.delete()
-            # ses.close()
-        elif self.stats_enabled:
-            if not self.round in session:
-                session.add(self.round)
-            else:
-                session.merge(self.round)
-        # else:
-        #     pass
-        #     ses.commit()
-        self.to_save.clear()
-        self.players.clear()
-        self.teams.clear()
-
     def change_map(self, map_number, map_name):
         """Handles a map change event.
 
@@ -862,7 +853,14 @@ class ZServ:
         self.map = get_map(number=map_number, name=map_name)
         self.round = Round(game_mode=self.game_mode, map=self.map,
                            start_time=datetime.now())
-        session.add_all([self.map, self.round])
+        with get_db_lock():
+            try:
+                session.add(self.round)
+                session.commit()
+            except IntegrityError:
+                logging.error("Round %s already existed??" % (self.round))
+                session.rollback()
+                pass
 
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
@@ -884,6 +882,10 @@ class ZServ:
         if '\n' in message or '\r' in message:
             es = "Message cannot contain newlines or carriage returns"
             raise ValueError(es)
+        def _send(message):
+            logging.debug("Writing to STDIN")
+            self.zserv.stdin.write(message + '\n')
+            self.zserv.stdin.flush()
         logging.debug("Obtaining STDIN lock")
         with self._zserv_stdin_lock:
             logging.debug("Obtained STDIN lock")
@@ -892,17 +894,33 @@ class ZServ:
             # that access to it is limited to 1 thread at a time, which is both
             # writing to it, and waiting for responses from its STDOUT.
             ###
-            if self.events_enabled and event_response_type is not None:
-                logging.debug("Setting response type")
-                self.logfile.set_response_type(event_response_type)
-            logging.debug("Writing to STDIN")
-            self.zserv.stdin.write(message + '\n')
-            self.zserv.stdin.flush()
-            if self.events_enabled and event_response_type is not None:
-                logging.debug("Getting response")
-                response = self.logfile.get_response()
-                logging.debug("Send to zserv response: (%s)" % (response))
+            if not self.events_enabled or event_response_type is None:
+                return _send(message)
+            logging.debug("Setting response type")
+            self.response_events = []
+            self.event_type_to_watch_for = event_response_type
+            self.response_finished.clear()
+            _send(message)
+            response = []
+            logging.debug("Waiting for response")
+            ###
+            # We used to have a 1 second timeout here, let's see what happens
+            # without it.
+            ###
+            self.response_finished.wait()
+            try:
+                logging.debug("Processing response events")
+                for event in self.response_events:
+                    d = {'type': event.type}
+                    d.update(event.data)
+                    response.append(d)
+                logging.debug("Send to ZServ response: [%s]" % (response))
                 return response
+            finally:
+                logging.debug("Clearing response state")
+                self.response_events = []
+                self.event_type_to_watch_for = None
+                self.response_finished.set()
 
     def zaddban(self, ip_address, reason='rofl'):
         """Adds a ban.

@@ -1,13 +1,16 @@
+from __future__ import with_statement
+
 from elixir import String, DateTime, Integer, Boolean, Entity, Field, \
                    OneToMany, ManyToOne, ManyToMany, using_options, \
                    using_table_options, setup_all, create_all, session
 
 from sqlalchemy import UniqueConstraint, MetaData
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exceptions import IntegrityError
 
 import datetime
 
-from ZDStack import get_engine
+from ZDStack import get_engine, get_db_lock
 
 class TeamColor(Entity):
 
@@ -259,52 +262,91 @@ def get_weapon(name, is_suicide):
     try:
         return q.one()
     except NoResultFound:
-        out = Weapon(name=name, is_suicide=is_suicide)
-        session.add(out)
-        return out
+        with get_db_lock():
+            out = Weapon(name=name, is_suicide=is_suicide)
+            try:
+                session.add(out)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                pass
+        return get_weapon(name, is_suicide)
 
 def get_alias(name, ip_address, round=None):
     q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
     out = q.first()
-    if not out:
-        if not round:
-            return None
-        out = Alias(name=name, ip_address=ip_address, round=round)
-        session.add(out)
-    return out
+    if out:
+        return out
+    elif round:
+        with get_db_lock():
+            out = Alias(name=name, ip_address=ip_address, round=round)
+            try:
+                session.add(out)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                pass
+        return get_alias(name, ip_address, round)
+    else:
+        return None
 
 def get_team_color(color):
     q = session.query(TeamColor).filter_by(color=color)
     try:
         return q.one()
     except NoResultFound:
-        out = TeamColor(color=color)
-        session.add(out)
-        return out
+        with get_db_lock():
+            out = TeamColor(color=color)
+            try:
+                session.add(out)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                pass
+        return get_team_color(color)
 
 def get_port(name):
     q = session.query(Port).filter_by(name=name)
     try:
         return q.one()
     except NoResultFound:
-        out = Port(name=name)
-        session.add(out)
-        return out
+        with get_db_lock():
+            out = Port(name=name)
+            try:
+                session.add(out)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                pass
+        return get_port(name)
 
 def get_game_mode(name, has_teams):
     q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
     try:
         return q.one()
     except NoResultFound:
-        out = GameMode(name=name, has_teams=has_teams)
-        session.add(out)
-        return out
+        with get_db_lock():
+            out = GameMode(name=name, has_teams=has_teams)
+            try:
+                session.add(out)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                pass
+        return get_game_mode(name, has_teams)
 
 def get_map(number, name):
     q = session.query(Map).filter_by(number=number, name=name)
     out = q.first()
-    if not out:
+    if out:
+        return out
+    with get_db_lock():
         out = Map(number=number, name=name)
-        session.add(out)
-    return out
+        try:
+            session.add(out)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            pass
+    return get_map(number, name)
 

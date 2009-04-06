@@ -2,8 +2,7 @@ class LogEvent:
 
     """LogEvent represents an event occurring in a log file."""
 
-    def __init__(self, event_dt, event_type, event_data, event_category,
-                       line=''):
+    def __init__(self, event_dt, event_type, event_data, event_category, line=''):
         """Initializes a LogEvent instance.
 
         event_dt:       a datetime representing the time at which the

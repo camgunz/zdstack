@@ -9,7 +9,8 @@ import logging.handlers
 
 from decimal import Decimal
 from datetime import datetime, timedelta
-from threading import Thread
+from threading import Thread, Lock
+from dummy_threading import Lock as DummyLock
 from cStringIO import StringIO
 
 from pyfileutils import read_file, append_file
@@ -21,9 +22,10 @@ from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 ###
 # ORM stuff.
 ###
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import scoped_session, sessionmaker
 import elixir
-Session = scoped_session(sessionmaker(autoflush=True, autocommit=True))
+Session = scoped_session(sessionmaker(autoflush=False, autocommit=False))
 elixir.session = Session
 elixir.options_defaults.update({'shortnames': True})
 elixir.using_mapper_options(save_on_init=True)
@@ -33,15 +35,15 @@ elixir.using_mapper_options(save_on_init=True)
 
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'DEVNULL',
            'CONFIGFILE', 'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS',
-           'DATEFMT', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS',
+           'DATEFMT', 'DB_LOCK', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS',
            'JSON_CLASS', 'RPC_CLASS', 'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK',
            'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'JSONNotFoundError',
            'PlayerNotFoundError', 'TeamNotFoundError', 'ZServNotFoundError',
            'RPCAuthenticationError', 'DebugTRFH', 'get_hostname',
-           'get_loopback', 'get_engine', 'get_metadata', 'get_session_class',
-           'get_session', 'get_configfile', 'set_configfile',
-           'load_configparser', 'get_configparser', 'get_server_proxy',
-           'get_plugins', 'set_debugging', 'log']
+           'get_loopback', 'get_engine', 'get_db_lock', 'get_metadata',
+           'get_session_class', 'get_session', 'get_configfile',
+           'set_configfile', 'load_configparser', 'get_configparser',
+           'get_server_proxy', 'get_plugins', 'set_debugging', 'log']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
@@ -78,6 +80,7 @@ DATABASE = None
 DEBUGGING = None
 PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
+DB_LOCK = None
 DB_ENGINE = None
 DB_METADATA = None
 DB_SESSION_CLASS = None
@@ -202,12 +205,14 @@ def get_engine():
     # At this point, we are assuming that stats have been enabled.
     ###
     global DB_ENGINE
+    global DB_LOCK
     if not DB_ENGINE:
         d = get_configparser().defaults()
         db_driver = d.get('zdstack_database_engine', 'sqlite').lower()
         if db_driver not in SUPPORTED_ENGINE_TYPES:
             raise ValueError("DB engine %s is not supported" % (db_driver))
         if db_driver == 'sqlite':
+            DB_LOCK = Lock()
             db_name = d.get('zdstack_database_name', ':memory:')
             if db_name == ':memory:':
                 db_str = 'sqlite://:memory:'
@@ -218,6 +223,7 @@ def get_engine():
                     logging.info(es)
                 db_str = 'sqlite:///%s' % (db_name)
         else:
+            DB_LOCK = DummyLock()
             db_host = d['zdstack_database_host']
             if 'port' in d and d['port']:
                 db_port = d['port']
@@ -269,11 +275,15 @@ def get_engine():
             # idle connection timeouts.
             ###
             # print "Creating engine from DB str: [%s]" % (db_str)
-            DB_ENGINE = create_engine(db_str, pool_recycle=3600)
+            DB_ENGINE = create_engine(db_str, pool_recycle=3600, poolclass=NullPool)
         else:
             # print "Creating engine from DB str: [%s]" % (db_str)
-            DB_ENGINE = create_engine(db_str)
+            DB_ENGINE = create_engine(db_str, poolclass=NullPool)
     return DB_ENGINE
+
+def get_db_lock():
+    global DB_LOCK
+    return DB_LOCK
 
 def get_metadata():
     global DB_METADATA

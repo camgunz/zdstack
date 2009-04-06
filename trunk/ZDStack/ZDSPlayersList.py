@@ -107,12 +107,19 @@ class PlayersList(object):
         else:
             blah()
 
-    def get(self, name=None, ip_address_and_port=None, acquire_lock=True):
+    def get(self, name=None, ip_address_and_port=None, sync=True,
+                  acquire_lock=True):
         """Returns a Player instance.
 
         name:                the name of the player to return.
+        sync:                a boolean that, if given, performs a sync
+                             and reattempts to lookup a player if it is
+                             not initially found.  True by default.
         ip_address_and_port: a 2-Tuple (ip_address, port), both
                              strings.
+        acquire_lock:        a boolean that, if given, acquires the
+                             players lock before looking a player up.
+                             True by default.
 
         Either name or ip_address_and_port is optional, but at least
         one must be given.  Note that only giving name can potentially
@@ -151,7 +158,7 @@ class PlayersList(object):
                 return _find_player()
         p = None
         p = find_player(acquire_lock=acquire_lock)
-        if p is None:
+        if p is None and sync:
             ###
             # Didn't find the player, sync & try again.
             ###
@@ -284,5 +291,5 @@ class PlayersList(object):
             names = self.names()
             for pn in possible_player_names:
                 if pn in names:
-                    return self.get(name=name)
+                    return self.get(name=name, sync=False, acquire_lock=False)
 
