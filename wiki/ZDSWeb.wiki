@@ -1,0 +1,93 @@
+#summary Information on ZDSWeb
+
+= Introduction =
+
+ZDSWeb is a new utility included in ZDStack that allows users to perform basic administrative tasks from a web interface.
+
+= Usage =
+
+ZDSWeb can be used either as a CGI script, or as a standalone, special purpose webserver.
+
+== Using ZDSWeb as a CGI script ==
+
+To use ZDSWeb as a CGI script when using Apache, simply place it in your configured `cgi-bin` folder.  Using Lighttpd, place the following in your `lighttpd.conf` file:
+
+{{{
+server.modules += ( "mod_cgi" )
+alias.url += ( "/cgi-bin/" => "/srv/lighttpd/cgi-bin/" )
+$HTTP["remoteip"] =~ "127.0.0.1" {
+    $HTTP["url"] =~ "^/cgi-bin/" {
+        cgi.assign = ( "" => "" )
+    }
+}
+}}}
+
+...assuming `/srv/lighttpd/cgi-bin` is where your CGI scripts are located.
+
+To use a custom configuration file you must specify its location within the file itself.  To do so, edit the file and change the following line in this file as instructed (instructions are in the file):
+
+{{{
+CGI_CONFIGFILE = None
+}}}
+
+For example, if your custom configuration file resides at `/home/zdstack/.supersecretzdstackrc`, you would change that value like this:
+
+{{{
+CGI_CONFIGFILE = '/home/zdstack/.supersecretzdstackrc'
+}}}
+
+ZDSWeb determines whether or not its being run as a CGI script by checking for
+the 'GATEWAY_INTERFACE' environment variable.  This is set automatically by
+webservers, so this will only cause problems if you also have this variable
+defined in your environment.
+
+=== Pitfalls ===
+
+Python create an egg cache folder in `~/.python-eggs`.  So if your webserver is running as `nobody`, and `nobody`'s home folder is `/var/www`, the CGI script will try and create the folder `/var/www/.python-eggs`, and will often fail.  You can either create this folder yourself and give it the appropriate permissions, or you can set the `PYTHON_EGG_CACHE` environment variable in your webserver's configuration to a location it can write to.
+
+And of course, ensure that the `zdsweb` script is readable and executable by the webserver's user as well.
+
+== Using ZDSWeb as a standalone webserver ==
+
+ZDSWeb is also a full-fledged HTTP daemon.  As a daemon, it needs some values configured for it; this can be done on the command-line, or in the ZDStack configuration file (in the `DEFAULT` section).  The method for employing either method follows:
+
+{{{
+address:     -a [ address ]     | 'zdsweb_hostname = <address>'
+port:        -p [ port ]        | 'zdsweb_port = <port>'
+log folder:  -l [ log_folder ]  | 'zdsweb_log_folder = <folderpath>'
+PID file:    -i [ pid_file ]    | 'zdsweb_pidfile = <filepath>'
+config file: -c [ config_file ] | n/a
+}}}
+
+If options are defined in the ZDStack configuration file, they can be overridden here on the command-line (command-line options take precedence).  None of these options are required, defaulting as follows:
+
+  * Address: 'localhost'
+  * Port: 8080
+  * Log Folder: `<system_temp_folder>`
+  * PID File: `<system_temp_folder>/ZDSWeb.pid`
+
+Logs rotate automatically at midnight, and are named ZDSWeb.log or ZDSWeb.log.YYYY-MM-DD.
+
+= Configuration =
+
+ZDSWeb searches for the ZDStack configuration file in the same places and the same order that ZDStack does.  While it does read from this file to minimize that amount and size of RPC calls it makes to ZDStack, it does not write to it, so there should be no corruption of the configuration file.
+
+ZDSWeb uses the `zdstack_username` and `zdstack_password` options in the `DEFAULT` section of the configuration file when it makes RPC calls requiring authentication.  If these are not set properly the RPC calls will fail with an `RPCAuthenticationError`.
+
+= Authentication =
+
+Users of ZDSWeb can start/stop/restart any zserv running in ZDStack, as well as get/set their configurations.  All of these actions require authentication, but this is done automatically by ZDSWeb using the local ZDStack configuration file.  Because ZDSWeb does no authentication of users on its own, it is almost certainly a bad idea for it to be accessible to anonymous users.  There are a couple of ways that access to ZDSWeb can be restricted.
+
+== HTTP authentication ==
+
+When running ZDSWeb as a CGI application, you can configure your HTTP server to require its own authentication before a user can access it.  Instructions for Apache are [http://httpd.apache.org/docs/2.0/howto/auth.html here] and instructions for Lighttpd are [http://redmine.lighttpd.net/projects/lighttpd/wiki/Docs:ModAuth here]
+
+== Local access ==
+
+Using a local address (such as `127.0.0.1`) prevents users on the public network from using ZDSWeb.  To do this, either set `zdsweb_hostname = 127.0.0.1` in the ZDStack configuration file, or run ZDSWeb this way:
+
+{{{
+./zdsweb -a 127.0.0.1
+}}}
+
+This allows only users of the local machine access to ZDSWeb.
