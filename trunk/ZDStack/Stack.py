@@ -85,7 +85,7 @@ class Stack(Server):
         # Also the select call gives up every second, which allows it to check
         # whether or not it should keep polling.
         ###
-        stuff = [(z, z.fifo) for z in self.get_running_zservs()]
+        stuff = [(z, z.fifo) for z in self.zservs.values() if z.fifo]
         r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
         readable = [(z, f) for z, f in stuff if f in r]
         # if readable:
@@ -117,11 +117,11 @@ class Stack(Server):
                 else:
                     break
 
-    def check_all_zserv_configs(self, config):
+    def check_all_zserv_configs(self, configparser):
         """Ensures that all ZServ configuration sections are correct."""
         # logging.debug('')
         for zserv in self.get_running_zservs():
-            if not zserv.name in sections:
+            if not zserv.name in configparser.sections():
                 es = "Cannot remove running zserv [%s] from the config."
                 raise Exception(es % (zserv_name))
 
@@ -196,7 +196,9 @@ class Stack(Server):
         """Starts all ZServs."""
         # logging.debug('')
         for zserv in self.get_stopped_zservs():
+            logging.debug("Starting %s" % (zserv.name))
             zserv.start()
+            logging.debug("Done starting %s" % (zserv.name))
 
     def stop_all_zservs(self, stop_logfiles=False):
         """Stops all ZServs.
@@ -334,7 +336,7 @@ class Stack(Server):
         for o, v in cp.items(zserv_name):
             main_cp.set(zserv_name, o, v)
         main_cp.save()
-        self.initialize_config(get_configfile(), reload=True)
+        self.initialize_config(reload=True)
         zs_config = dict(self.config.items(zserv_name))
         self.get_zserv(zserv_name).reload_config(zs_config)
 

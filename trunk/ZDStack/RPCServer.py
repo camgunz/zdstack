@@ -11,6 +11,7 @@
 #
 ###
 
+import sys
 import logging
 import datetime
 import SocketServer
@@ -33,6 +34,7 @@ json_class = None
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
     def __init__(self, encoding, username, password):
+        logging.debug('')
         SimpleXMLRPCDispatcher.__init__(self, True, encoding)
         self.username = username
         self.password = password
@@ -46,13 +48,31 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
         for the function.
 
         """
-        SimpleXMLRPCDispatcher.register_function(self, function, name=name)
+        logging.debug('')
+        name = name or function.__name__
+        self.funcs[name] = function
         if requires_authentication:
             self.methods_requiring_authentication.add(name)
+
+    def _dispatch(self, method, params):
+        requires_auth = method in self.methods_requiring_authentication
+        s = 'Dispatching %s, requires_authentication: %s'
+        logging.debug(s % (method, requires_auth))
+        if requires_auth:
+            if not len(params) >= 2:
+                raise RPCAuthenticationError('<no_username_given>')
+            username, password, params = params[0], params[1], params[2:]
+            if (username, password) != (self.username, self.password):
+                raise RPCAuthenticationError(username)
+        else:
+            s = "Method %s was not in %s"
+            logging.debug(s % (method, self.methods_requiring_authentication))
+        return SimpleXMLRPCDispatcher._dispatch(self, method, params)
 
 class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
 
     def __init__(self, transport_mimetype):
+        logging.debug('')
         self.transport_mimetype = transport_mimetype
 
     def do_POST(self):
@@ -61,6 +81,7 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
         Attempts to interpret all HTTP POST requests as JSON-RPC calls,
         which are forwarded to the server's _dispatch method for handling.
         """
+        logging.debug('')
         # Check that the path is legal
         if not self.is_rpc_path_valid():
             self.report_404()
@@ -86,6 +107,7 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             response = self.server._marshaled_dispatch(
                     data, getattr(self, '_dispatch', None)
                 )
+            logging.debug("After _marshaled_dispatch")
         except Exception, e:
             ###
             # This should only happen if the module is buggy
@@ -93,8 +115,23 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             # internal error, report as HTTP server error
             import traceback
             es = "Error processing RPC request: %s\nTraceback:\n%s"
-            logging.error(es % (e, traceback.format_exc()))
-            self.send_response(500)
+            s = es % (e, traceback.format_exc())
+            logging.error(s)
+            logging.debug(s)
+            logging.info(s)
+            print >> sys.stderr, s
+            # self.send_response(500)
+            ###
+            # This is just for debugging.
+            ###
+            self.send_response(200)
+            self.send_header("Content-type", self.transport_mimetype)
+            self.send_header("Content-length", str(len(s)))
+            self.end_headers()
+            self.wfile.write(s)
+            # shut down the connection
+            self.wfile.flush()
+            self.connection.shutdown(1)
             self.end_headers()
         else:
             # got a valid JSON RPC response
@@ -108,6 +145,7 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             self.connection.shutdown(1)
 
     def log_message(self, format, *args):
+        logging.debug('')
         logging.info("%s - - [%s] %s\n" % (self.address_string(),
                                            self.log_date_time_string(),
                                            format % args))
@@ -115,11 +153,13 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
 class XMLRPCRequestHandler(BaseRPCRequestHandler):
 
     def __init__(self):
+        logging.debug('')
         BaseRPCRequestHandler.__init__(self, 'text/xml')
 
 class JSONRPCRequestHandler(BaseRPCRequestHandler):
 
     def __init__(self):
+        logging.debug('')
         BaseRPCRequestHandler.__init__(self, 'application/json')
 
 class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
@@ -129,6 +169,7 @@ class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
     def __init__(self, addr, username, password,
                  requestHandler=SimpleXMLRPCRequestHandler, logRequests=True,
                  encoding=None):
+        logging.debug('')
         self.logRequests = logRequests
         AuthenticatedRPCDispatcher.__init__(self, encoding, username, password)
         SocketServer.TCPServer.__init__(self, addr, requestHandler)
@@ -140,6 +181,7 @@ class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
 class JSONRPCServer(XMLRPCServer):
 
     def register_introspection_functions(self):
+        logging.debug('')
         XMLRPCServer.register_introspection_functions(self)
         self.func['system.describe'] = self.system_describe
 
@@ -155,6 +197,7 @@ class JSONRPCServer(XMLRPCServer):
         of changing method dispatch behavior.
 
         """
+        logging.debug('')
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class
             if json_class is None:
@@ -165,11 +208,13 @@ class JSONRPCServer(XMLRPCServer):
                 d = json_class.loads(data)
             except Exception, e:
                 import traceback
-                traceback.print_exc()
+                # traceback.print_exc()
+                logging.debug(traceback.format_exc())
                 error = self.exception_to_dict(e, '000', 'Parse error')
                 return self.generate_response(None, error)
             # print >> sys.stderr, "Received %s" % (str(d))
             if not 'method' in d:
+                logging.debug("No method given in RPC request")
                 error = {'name': 'JSONRPCError', 'code': '000',
                          'message': 'Bad Call'}
                 return self.generate_response(None, error)
@@ -184,16 +229,19 @@ class JSONRPCServer(XMLRPCServer):
                 result = self._dispatch(d['method'], params)
         except Exception, e:
             import traceback
-            traceback.print_exc()
+            # traceback.print_exc()
+            logging.debug(traceback.format_exc())
             error = self.exception_to_dict(e, '000', 'Server error')
             return self.generate_response(None, error)
-        return self.generate_response(result, None, id)
+        resp = self.generate_response(result, None, id)
+        logging.debug("Returning response %s" % (resp))
 
     def datetime_to_seconds(self, dt):
         ###
         # There's probably something in the 'time' module for this, but fuck
         # it.
         ###
+        logging.debug('')
         epoch = datetime.datetime(1970, 1, 1, 0, 0, 0)
         if type(dt) != type(epoch):
             raise TypeError("Cannot serialize [%s]" % (type(dt)))
@@ -201,6 +249,7 @@ class JSONRPCServer(XMLRPCServer):
         return (td.days * 86400) + td.seconds
 
     def generate_response(self, result=None, error=None, id=None):
+        logging.debug('')
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class
             if json_class is None:
@@ -220,6 +269,7 @@ class JSONRPCServer(XMLRPCServer):
         return out
 
     def exception_to_dict(self, e, code, context):
+        logging.debug('')
         out = {}
         out['name'] = "JSONRPCError"
         out['code'] = code
@@ -230,18 +280,22 @@ class JSONRPCServer(XMLRPCServer):
 
     def set_summary(self, summary):
         """Sets this server's summary."""
+        logging.debug('')
         self.summary = summary
 
     def set_help_url(self, help_url):
         """Sets this server's help URL."""
+        logging.debug('')
         self.help_url = help_url
 
     def set_address(self, address):
         """Sets this server's address."""
+        logging.debug('')
         self.address = address
 
     def system_describe(self):
         """system.describe() => {'sdversion': '1.0', 'name': ...}"""
+        logging.debug('')
         out = {}
         out['sdversion'] == '1.0'
         out['name'] == self.name
@@ -279,6 +333,7 @@ class JSONTransport(Transport):
     ###
 
     def send_content(self, connection, request_body):
+        logging.debug('')
         connection.putheader("Content-Type", 'application/json')
         connection.putheader("Content-Length", str(len(request_body)))
         connection.endheaders()
@@ -286,6 +341,7 @@ class JSONTransport(Transport):
             connection.send(request_body)
 
     def _parse_response(self, file, sock):
+        logging.debug('')
         global json_class
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class
@@ -311,6 +367,7 @@ class SafeJSONTransport(JSONTransport):
     """Handles an HTTPS transaction to an XML-RPC server."""
 
     def make_connection(self, host):
+        logging.debug('')
         import httplib
         host, extra_headers, x509 = self.get_host_info(host)
         try:
@@ -325,26 +382,18 @@ class BaseProxy(ServerProxy):
 
     def __init__(self, uri, transport, encoding=None, verbose=0,
                        use_datetime=0):
+        logging.debug('')
         ServerProxy.__init__(self, uri, transport, encoding, verbose, True,
                                    True)
-
-    def _secret_proxy_request_blag(self, methodname, params):
-        req = self._secret_proxy_dumps_blag(params, methodname)
-        resp = self.__transport.request(self.__host, self.__handler, req)
-        if len(resp) == 1:
-            resp = resp[0]
-        return resp
-
-    def _secret_get_request_func_blag(self):
-        raise NotImplementedError
 
 class XMLProxy:
 
     def __init__(self, uri, transport=None, encoding=None, verbose=0,
                        use_datetime=0):
+        logging.debug('')
         import urllib
+        protocol, uri = urllib.splittype(uri)
         if transport is None:
-            protocol, uri = urllib.splittype(uri)[0]
             if protocol == 'http':
                 self.__transport = Transport(use_datetime)
             elif protocol == 'https':
@@ -355,7 +404,7 @@ class XMLProxy:
             self.__transport = transport
         self.__host, self.__handler = urllib.splithost(uri)
         self.__handler = self.__handler or '/RPC2'
-        self.__encoding = encoding
+        self.__encoding = encoding or 'utf-8'
         if self.__encoding == 'utf-8':
             xmlheader = "<?xml version='1.0'?>\n"
         else:
@@ -373,11 +422,12 @@ class XMLProxy:
         self.__method_response_template = method_response_template % (xmlheader)
 
     def __request(self, methodname, params):
-        req = self.marshaller.dumps(params)
+        logging.debug('')
+        req = self.__marshaller.dumps(params)
         if methodname:
             if not isinstance(methodname, StringType):
-                methodname = methodname.encode(self.encoding)
-            req = self.method_call_template % (methodname, req)
+                methodname = methodname.encode(self.__encoding)
+            req = self.__method_call_template % (methodname, req)
         resp = self.__transport.request(self.__host, self.__handler, req)
         if len(resp) == 1:
             resp = resp[0]
@@ -396,9 +446,10 @@ class JSONProxy:
 
     def __init__(self, uri, transport=None, encoding=None, verbose=0,
                        use_datetime=0):
+        logging.debug('')
         import urllib
+        protocol, uri = urllib.splittype(uri)
         if transport is None:
-            protocol, uri = urllib.splittype(uri)
             if protocol == 'http':
                 self.__transport = JSONTransport(use_datetime)
             elif protocol == 'https':
@@ -427,6 +478,7 @@ class JSONProxy:
         self.__method_response_template = method_response_template % (xmlheader)
 
     def __request(self, methodname, params):
+        logging.debug('')
         global json_class
         if json_class is None:
             from ZDStack import JSON_CLASS as json_class

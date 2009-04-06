@@ -190,7 +190,21 @@ class ZServ:
                 raise Exception(es % (self.name, self.fifo_path))
             else:
                 os.remove(self.fifo_path)
+        logging.debug("Making FIFO: %s" % (self.fifo_path))
         os.mkfifo(self.fifo_path)
+        for x in [x for x in os.listdir(self.homedir) if x.endswith('.log')]:
+            p = os.path.join(self.homedir, x)
+            try:
+                if os.path.isfile(p):
+                    os.remove(p)
+                elif os.path.islink(p):
+                    os.remove(p)
+                else:
+                    es = "Cannot start, cannot remove old log file %s"
+                    raise Exception(es % (p))
+            except Exception, e:
+                es = "Cannot start, cannot remove old log file %s: %s"
+                raise Exception(es % (p, e))
         self.iwaddir = config['zdstack_iwad_folder']
         self.waddir = config['zdstack_wad_folder']
         self.base_iwad = config['iwad']
@@ -568,7 +582,14 @@ class ZServ:
                              (today + timedelta(days=1)).strftime(s),
                              (today + timedelta(days=2)).strftime(s)]:
             loglink_path = os.path.join(self.homedir, loglink_name)
-            if not os.path.islink(loglink_path):
+            if os.path.exists(loglink_path):
+                if not os.path.islink(loglink_path):
+                    es = "Cannot create log link, something named %s that is "
+                    es += "not a link already exists"
+                    raise Exception(es % (loglink_path))
+            else:
+                s = "Linking %s to %s"
+                logging.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
     def spawn_zserv(self):
@@ -590,9 +611,21 @@ class ZServ:
                 ###
                 # Should we do something with STDERR here?
                 ###
+                ###
+                # Due to the semi-complicated blocking structure of FIFOs, there
+                # is a specific order to how this has to be done.
+                #
+                #   - Writing to a FIFO blocks until there is something
+                #     listening, so self.zdstack.polling_thread has to be
+                #     spawned.
+                #   - The polling thread only handles ZServs with .fifo
+                #     attributes that are non-False, so self.fifo has to be
+                #     created.
+                #   - Then the zserv can be spawned.
+                ###
+                self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
                 self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
                                    stderr=STDOUT, bufsize=0, close_fds=True)
-                self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
                 # self.send_to_zserv('players') # avoids CPU spinning
             finally:
                 os.chdir(curdir)
@@ -625,6 +658,7 @@ class ZServ:
         self.keep_spawning = False
         logging.debug("Joining spawning thread")
         ZDSThreadPool.join(self.spawning_thread)
+        self.spawning_thread = None
         logging.debug("Killing zserv process")
         error_stopping = False
         if self.is_running():
@@ -638,6 +672,7 @@ class ZServ:
         if stop_logfile:
             logging.debug('Stopping all listeners')
             self.logfile.stop_listeners()
+        self.clean_up()
         return error_stopping
 
     def restart(self, signum=15):
@@ -778,29 +813,16 @@ class ZServ:
             raise PlayerNotFoundError(player_name)
         return d[0]['player_num']
 
-    def add_stat(self, stat):
-        """Adds a stat model to the internal list of stat models.
-
-        stat: an object to add to the internal list of stat models.
-
-        """
-
-    def change_map(self, map_number, map_name):
-        """Handles a map change event.
-
-        map_number: an int representing the number of the new map
-        map_name:   a string representing the name of the new map
-
-        """
-        logging.debug('Change Map')
-        ses = session()
+    def clean_up(self):
+        """Cleans up after a map change, or after stopping."""
+        logging.debug('Cleaning up')
+        # ses = session()
         if self.round:
             self.round.end_time = datetime.now()
-            ses.merge(self.round)
             to_delete = self.round.players + self.round.frags + \
                         self.round.flag_touches + self.round.flag_returns + \
                         self.round.rcon_accesses + self.round.rcon_denials + \
-                        self.round.rcon_actions + [self.round]
+                        self.round.rcon_actions
         else:
             to_delete = []
         if to_delete and not self.stats_enabled:
@@ -811,18 +833,36 @@ class ZServ:
             # like stats and aliases, all that can go out the window.
             ###
             for x in to_delete:
-                logging.debug("Deleting %s" % (x))
-                ses.delete(x)
+                if x in session.new or x in session.dirty:
+                    logging.debug("Deleting %s" % (x))
+                    session.delete(x)
+            self.round.delete()
             # ses.close()
+        elif self.stats_enabled:
+            if not self.round in session:
+                session.add(self.round)
+            else:
+                session.merge(self.round)
         # else:
         #     pass
         #     ses.commit()
         self.to_save.clear()
         self.players.clear()
         self.teams.clear()
+
+    def change_map(self, map_number, map_name):
+        """Handles a map change event.
+
+        map_number: an int representing the number of the new map
+        map_name:   a string representing the name of the new map
+
+        """
+        logging.debug('Change Map')
+        self.clean_up()
         self.map = get_map(number=map_number, name=map_name)
         self.round = Round(game_mode=self.game_mode, map=self.map,
                            start_time=datetime.now())
+        session.add_all([self.map, self.round])
 
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.

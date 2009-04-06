@@ -255,62 +255,56 @@ create_all()
 ###
 
 def get_weapon(name, is_suicide):
-    ses = session()
-    q = ses.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
+    q = session.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
     try:
         return q.one()
     except NoResultFound:
         out = Weapon(name=name, is_suicide=is_suicide)
-        ses.add(out)
+        session.add(out)
         return out
 
 def get_alias(name, ip_address, round=None):
-    ses = session()
-    q = ses.query(Alias).filter_by(name=name, ip_address=ip_address)
+    q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
     out = q.first()
     if not out:
         if not round:
             return None
         out = Alias(name=name, ip_address=ip_address, round=round)
-        ses.add(out)
+        session.add(out)
     return out
 
 def get_team_color(color):
-    ses = session()
-    q = ses.query(TeamColor).filter_by(color=color)
+    q = session.query(TeamColor).filter_by(color=color)
     try:
         return q.one()
     except NoResultFound:
         out = TeamColor(color=color)
-        ses.add(out)
+        session.add(out)
         return out
 
 def get_port(name):
-    ses = session()
-    q = ses.query(Port).filter_by(name=name)
+    q = session.query(Port).filter_by(name=name)
     try:
         return q.one()
     except NoResultFound:
         out = Port(name=name)
-        ses.add(out)
+        session.add(out)
         return out
 
 def get_game_mode(name, has_teams):
-    ses = session()
-    q = ses.query(GameMode).filter_by(name=name, has_teams=has_teams)
+    q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
     try:
         return q.one()
     except NoResultFound:
         out = GameMode(name=name, has_teams=has_teams)
-        ses.add(out)
+        session.add(out)
         return out
 
 def get_map(number, name):
-    ses = session()
-    q = ses.query(Map).filter_by(number=number, name=name)
+    q = session.query(Map).filter_by(number=number, name=name)
     out = q.first()
     if not out:
         out = Map(number=number, name=name)
-        ses.add(out)
+        session.add(out)
     return out
 

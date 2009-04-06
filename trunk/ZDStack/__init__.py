@@ -262,17 +262,16 @@ def get_engine():
                 db_pass = d['zdstack_database_passwd']
             db_str = db_temp % (db_driver, db_user, db_pass, db_host, db_name)
         from sqlalchemy import create_engine
+        logging.debug("Creating engine from DB str: [%s]" % (db_str))
         if db_driver == 'mysql':
             ###
             # We need to recycle connections every hour or so to avoid MySQL's
             # idle connection timeouts.
             ###
-            logging.debug("Creating engine from DB str: [%s]" % (db_str))
-            print "Creating engine from DB str: [%s]" % (db_str)
+            # print "Creating engine from DB str: [%s]" % (db_str)
             DB_ENGINE = create_engine(db_str, pool_recycle=3600)
         else:
-            logging.debug("Creating engine from DB str: [%s]" % (db_str))
-            print "Creating engine from DB str: [%s]" % (db_str)
+            # print "Creating engine from DB str: [%s]" % (db_str)
             DB_ENGINE = create_engine(db_str)
     return DB_ENGINE
 
@@ -323,11 +322,9 @@ def set_configfile(config_file):
         raise ValueError(es % (config_file))
     CONFIGFILE = config_file
 
-def load_configparser(raw=False):
+def load_configparser():
     global RPC_CLASS
     global RPC_PROXY_CLASS
-    if raw:
-        return RCP(get_configfile(), allow_duplicate_sections=False)
     cp = CP(get_configfile(), allow_duplicate_sections=False)
     defaults = cp.defaults()
     for section in cp.sections():
@@ -386,7 +383,7 @@ def load_configparser(raw=False):
     if not 'zdstack_rpc_hostname' in defaults or \
        not defaults['zdstack_rpc_hostname'] or \
            defaults['zdstack_rpc_hostname'].lower() == 'localhost':
-        cp.set('DEFAULT', 'zdstack_rpc_protocol', get_loopback())
+        cp.set('DEFAULT', 'zdstack_rpc_hostname', get_loopback())
     ###
     # Make sure the folder for the zserv processes exists.
     ###
@@ -422,9 +419,11 @@ def _load_json():
             raise JSONNotFoundError
 
 def get_configparser(reload=False, raw=False):
+    if raw:
+        return RCP(get_configfile(), allow_duplicate_sections=False)
     global CONFIGPARSER
     if CONFIGPARSER is None or reload:
-        CONFIGPARSER = load_configparser(raw=raw)
+        CONFIGPARSER = load_configparser()
     return CONFIGPARSER
 
 def get_server_proxy():

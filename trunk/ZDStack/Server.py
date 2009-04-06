@@ -49,7 +49,7 @@ class Server:
         """
         # logging.debug('')
         self.config_file = get_configfile()
-        self.load_config(get_configparser(), reload=reload)
+        self.load_config(get_configparser(reload=reload), reload=reload)
 
     def load_config(self, config, reload=False):
         """Loads the config.
@@ -107,8 +107,12 @@ class Server:
             logging.debug("Deleting PID file")
             delete_file(self.pidfile)
         except OSError, e:
-            es = "Error removing PID file %s: [%s]"
-            logging.error(es % (self.pidfile, e))
+            if e.errno != 2:
+                ###
+                # Error code 2: No such file or directory
+                ###
+                es = "Error removing PID file %s: [%s]"
+                logging.error(es % (self.pidfile, e))
         logging.debug("Exiting")
         sys.exit(retval)
 

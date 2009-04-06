@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import os
 import cgi
+# import cgitb; cgitb.enable()
 import sys
 import getopt
 import signal
@@ -11,6 +12,8 @@ import logging
 import tempfile
 import urlparse
 
+import ConfigParser
+
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
@@ -18,6 +21,7 @@ from pyfileutils import write_file
 
 from ZDStack import set_configfile, load_configparser, get_configparser, \
                     get_server_proxy
+from ZDStack.Utils import html_escape
 
 ###
 # Change this to the full path of the alternate configuration file you wish
@@ -109,6 +113,8 @@ PID_FILE = __get_vals(3)
 # End dumbness
 ###
 
+USERNAME = CP.get('DEFAULT', 'zdstack_username')
+PASSWORD = CP.get('DEFAULT', 'zdstack_password')
 ZDS_HOSTNAME = CP.get('DEFAULT', 'zdstack_rpc_hostname')
 SCRIPT_NAME = os.environ.get('SCRIPT_NAME', '/')
 
@@ -127,17 +133,14 @@ def __fork():
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    # si = open(stdin, 'r')
-    # so = open(logfile, 'a+')
-    # se = open(logfile, 'a+', 0)
-    # os.dup2(si.fileno(), sys.stdin.fileno())
-    # os.dup2(so.fileno(), sys.stdout.fileno())
-    # os.dup2(se.fileno(), sys.stderr.fileno())
+    sys.stdin = open(devnull, 'r')
+    sys.stdout = open(devnull, 'a+')
+    sys.stderr = open(devnull, 'a+')
 
 def _parse_list( x):
     return [y.strip() for y in x.split(',')]
 
-def _items_to_section(self, name, items):
+def _items_to_section(name, items):
     """Converts a list of items into a ConfigParser section.
 
     name:  a string representing the name of the section to
@@ -145,7 +148,19 @@ def _items_to_section(self, name, items):
     items: a list of option, value pairs (strings).
 
     """
-    return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in items])
+    new_items = []
+    for option, value in items:
+        if not option.startswith('zdstack') and \
+           not option.startswith('zdsweb') and \
+           not option.startswith('ctf') and \
+           not option.startswith('ffa') and \
+           not option.startswith('teamdm') and \
+           not option.startswith('coop') and \
+           not option.startswith('duel') and \
+           option != 'root_folder':
+            new_items.append((option, value))
+    new_items.sort()
+    return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in new_items])
 
 class ZDSInterface:
 
@@ -159,10 +174,21 @@ class ZDSInterface:
 
     def _get_zserv_dict(self, zserv_info):
         # zserv_info['name'] = zserv_info['name
+        zserv_name = zserv_info['name']
+        zserv_info['html_name'] = html_escape(zserv_name)
+        zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
         zserv_info['hostname'] = CP.get(zserv_name, 'hostname')
-        max_players = CP.getint(zserv_name, 'max_players') or 16
-        zserv_info['max_players'] = CP.getint(zserv_name, 'max_players')
         zserv_info['mode'] = CP.get(zserv_name, 'mode')
+        max_players = 16
+        try:
+            max_players = CP.getint(zserv_name, 'max_players')
+        except ConfigParser.NoOptionError:
+            try:
+                max_players = \
+                    CP.getint(zserv_name, zserv_info['mode'] + '_max_players')
+            except ConfigParser.NoOptionError:
+                pass
+        zserv_info['max_players'] = max_players
         optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
         wads = list()
         for wad in _parse_list(CP.get(zserv_name, 'wads')):
@@ -178,22 +204,22 @@ class ZDSInterface:
         return [self._get_zserv_dict(x) for x in self._get_all_zserv_info()]
 
     def start_zserv(self, zserv_name):
-        return self.proxy.start_zserv(zserv_name)
+        return self.proxy.start_zserv(USERNAME, PASSWORD, zserv_name)
 
     def stop_zserv(self, zserv_name):
-        return self.proxy.stop_zserv(zserv_name)
+        return self.proxy.stop_zserv(USERNAME, PASSWORD, zserv_name)
 
     def restart_zserv(self, zserv_name):
-        return self.proxy.restart_zserv(zserv_name)
+        return self.proxy.restart_zserv(USERNAME, PASSWORD, zserv_name)
 
     def start_all_zservs(self):
-        return self.proxy.start_all_zservs()
+        return self.proxy.start_all_zservs(USERNAME, PASSWORD)
 
     def stop_all_zservs(self):
-        return self.proxy.stop_all_zservs()
+        return self.proxy.stop_all_zservs(USERNAME, PASSWORD)
 
     def restart_all_zservs(self):
-        return self.proxy.restart_all_zservs()
+        return self.proxy.restart_all_zservs(USERNAME, PASSWORD)
 
     def get_zserv_names(self):
         return CP.sections()
@@ -203,7 +229,7 @@ class ZDSInterface:
         return self._get_zserv_dict(zserv_info)
 
     def get_all_zservs(self):
-        all_zserv_info = self._get_all_zserv_info(zserv_name)
+        all_zserv_info = self._get_all_zserv_info()
         return [self.get_zserv(x) for x in self.get_zserv_names()]
 
     def get_running_zservs(self):
@@ -215,8 +241,8 @@ class ZDSInterface:
     def get_zserv_config(self, zserv_name):
         return _items_to_section(zserv_name, RCP.items(zserv_name))
 
-    def set_zserv_config(self, zserv_name):
-        return self.proxy.set_zserv_config(zserv_name)
+    def set_zserv_config(self, zserv_name, d):
+        return self.proxy.set_zserv_config(USERNAME, PASSWORD, zserv_name, d)
 
 IFACE = ZDSInterface()
 
@@ -233,6 +259,9 @@ HEAD_TEMPLATE = """\
             color: white;
             background-color: black;
             font-size: .75em;
+            max-width: 1000px;
+            padding-left: 10px;
+            padding-right: 10px;
         }
         a { color: white; }
         a:visited { color: white; }
@@ -248,11 +277,41 @@ HEAD_TEMPLATE = """\
         .nolinebreak { white-space: nowrap; }
         thead { margin-top:1em; }
         tbody { margin-bottom: 1em; }
-        tbody tr.odd { background-color: #151515; }
+        tr.greybg, td.greybg { background-color: #404040; }
+        button {
+            background-color: black;
+            color: white;
+            border: 1px solid white;
+            padding: 0px;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        a#top, a#top:visited {
+            text-decoration: none;
+            color: white;
+        }
+        a#top:hover {
+            text-decoration: underline;
+        }
+        div#error {
+            background-color: red;
+            font-weight: bold;
+            margin-top: 0px;
+            margin-bottom: 10px;
+            padding-left: 2px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+        span.error {
+            height: 100%;
+            vertical-align: middle;
+        }
         table {
             border-spacing: .25em 0em;
             border-collapse: collapse;
-            width: auto;
+            width: 100%;
+            left: auto;
+            right: auto;
         }
         td,th {
             padding-left: .5em;
@@ -286,6 +345,19 @@ HEAD_TEMPLATE = """\
             -moz-opacity:0.9;
             */
         }
+        div#config { text-align: center; }
+        textarea {
+            left: auto;
+            right: auto;
+            background-color: black;
+            color: white;
+        }
+        button.set_config {
+            font-size: 1.25em;
+            font-weight: bold;
+            width: 80%;
+            margin: 1em;
+        }
     </style>
 </head>"""
 
@@ -295,27 +367,50 @@ HEAD_TEMPLATE = """\
 BODY_TEMPLATE = """\
 <body>
     <div id="content">
-        <h1 class="right">ZDStack Web Interface</h1>
+        <h1 class="right"><a id="top" href="%s">ZDStack Web Interface</a></h1>
         <div id="line"></div>
-        %(content)s
+        %%(content)s
     </div>
 </body>
-</html>"""
+</html>""" % (SCRIPT_NAME)
 
 ###
 # content, errors
 ###
-ERROR_TEMPLATE = """\
+ERRORS_TEMPLATE = """\
 <body>
     <div id="content">
-        <h1 class="right">ZDStack Web Interface</h1>
+        <h1 class="right"><a id="top" href="%s">ZDStack Web Interface</a></h1>
         <div id="line"></div>
-        <div id="error">%(errors)s</div>
+        <div id="error">%%(errors)s</div>
         <div id="line"></div>
-        %(content)s
+        %%(content)s
     </div>
 </body>
-</html>"""
+</html>""" % (SCRIPT_NAME)
+
+ERROR_TEMPLATE = '<span class="error">%s</span>'
+
+###
+# name, config
+###
+CONFIG_TEMPLATE = """\
+<br/>
+<div id="line"></div>
+<div id="config">
+    <h2 class="right">Configure %%(html_name)s</h2>
+    <form action="%s" method="POST"
+          enctype="application/x-www-form-urlencoded">
+        <input type="hidden" name="name" value="%%(name)s"/>
+        <textarea name="config" rows="%%(height)s"
+                  cols="120">%%(config)s</textarea>
+        <br/>
+        <button class="control set_config" name="action"
+                value="set_config" type="submit">Set Config</button>
+    </form>
+</div>
+<div id="line"></div>
+""" % (SCRIPT_NAME)
 
 ###
 # servers
@@ -324,13 +419,13 @@ SERVERS_TEMPLATE = """\
         <table id="servers">
             <thead>
                 <tr>
-                    <th class="centered">Server Name</th>
+                    <th class="left">Server Name</th>
                     <th class="centered">Players</th>
                     <th class="centered">Type</th>
                     <th class="centered">PWADs</th>
                     <th class="centered">Current Map</th>
                     <th class="centered">Port</th>
-                    <th class="centered>Controls</th>
+                    <th class="centered">Controls</th>
                 </tr>
             </thead>
             <tbody>
@@ -339,40 +434,71 @@ SERVERS_TEMPLATE = """\
         </table>"""
 
 ###
-# action, url_name, cap_action
+# action, cap_action
 ###
 CONTROL_TEMPLATE = """\
-<a href=%s?action=%%(action)s&name=%%(url_name)s>%%(cap_action)s\
-""" % (SCRIPT_NAME)
+                             <button class="control" type="submit" name="action" value="%(action)s">%(cap_action)s</button>"""
+
+###
+# port
+###
+JOIN_TEMPLATE = '<a href="zds://%s:%%(port)s">Join</a>' % (ZDS_HOSTNAME)
 
 ###
 # name, players, max_players, mode, wads, map_name, map_number, port
 ###
-SERVER_TEMPLATE = """\
-                <tr>
-                    <td class="nolinebreak">%%(name)s</td>
+SERVER_TEMPLATE = """    <tr>
+                    <td class="nolinebreak">
+                        <a href="zds://%s:%%(port)s">%%(html_name)s</a>
+                    </td>
                     <td class="centered">%%(players)s / %%(max_players)s</td>
                     <td class="centered">%%(mode)s</td>
-                    <td class=>%%(wads)s</td>
+                    <td class="centered">%%(wads)s</td>
                     <td class="nolinebreak">%%(map_name)s :: MAP%%(map_number)s</td>
-                    <td class="centered">%%(port)s :: <a href="zds://%s:%%(port)s">Join</a></td>
+                    <td class="centered">%%(port)s</td>
                     <td class="centered">
                         <form action="%s" method="POST"
                               enctype="application/x-www-form-urlencoded">
-                        %%(controls)s
+                            <input type="hidden" name="name" value="%%(name)s"/>
+%%(controls)s
                         </form>
                     </td>
                 </tr>""" % (ZDS_HOSTNAME, SCRIPT_NAME)
 
-NO_SERVERS_TEMPLATE = "<div>No Servers Configured</div>"
+###
+# name, players, max_players, mode, wads, map_name, map_number, port
+###
+SERVER_TEMPLATE_GREY = """    <tr class="greybg">
+                    <td class="nolinebreak">
+                        <a href="zds://%s:%%(port)s">%%(html_name)s</a>
+                    </td>
+                    <td class="centered greybg">%%(players)s / %%(max_players)s</td>
+                    <td class="centered greybg">%%(mode)s</td>
+                    <td class="centered greybg">%%(wads)s</td>
+                    <td class="nolinebreak greybg">%%(map_name)s :: MAP%%(map_number)s</td>
+                    <td class="centered greybg">%%(port)s</td>
+                    <td class="centered greybg">
+                        <form name="%%(name)s" action="%s" method="POST"
+                              enctype="application/x-www-form-urlencoded">
+                            <input type="hidden" name="name" value="%%(name)s"/>
+%%(controls)s
+                        </form>
+                    </td>
+                </tr>""" % (ZDS_HOSTNAME, SCRIPT_NAME)
+
+NO_SERVERS_TEMPLATE = '<div class="centered">No Servers Configured</div>'
+
+def _get_cap_action(action):
+    tokens = action.replace('_', ' ').split(' ')
+    return ' '.join([x.capitalize() for x in tokens])
 
 def _add_control(controls, action, name):
     d = {'action': action, 'url_name': urllib.quote(name),
-         'cap_action': action.capitalize()}
+         'cap_action': _get_cap_action(action)}
     controls.append(CONTROL_TEMPLATE % d)
     return controls
 
-def _add_controls(self, zserv_dict):
+def _add_controls(zserv_dict):
     ###
     # get config
     # set config
@@ -381,20 +507,37 @@ def _add_controls(self, zserv_dict):
     # restart
     ###
     controls = list()
-    _add_control(controls, 'get_config', zserv_dict['name'])
-    _add_control(controls, 'set_config', zserv_dict['name'])
+    # _add_control(controls, 'set_config', zserv_dict['name'])
     if zserv_dict['is_running']:
         _add_control(controls, 'stop', zserv_dict['name'])
+        _add_control(controls, 'restart', zserv_dict['name'])
     else:
         _add_control(controls, 'start', zserv_dict['name'])
-        _add_control(controls, 'restart', zserv_dict['name'])
-    zserv_dict['controls'] = controls
+    _add_control(controls, 'get_config', zserv_dict['name'])
+    # controls.append(JOIN_TEMPLATE % zserv_dict)
+    zserv_dict['controls'] = '\n'.join(controls)
+    return zserv_dict
+
+class DebugPage:
+
+    def _to_str(self, d):
+        content = ''
+        for x, y in d.items():
+            s = html_escape("%s: %s" % (x, y))
+            if 'TEMPLATE' not in s and \
+               'function' not in s and \
+               'module' not in s:
+                content += s + "<br/>"
+        return content
+
+    def render(self, d):
+        d = {'content': self._to_str(d)}
+        return HEAD_TEMPLATE + BODY_TEMPLATE % d
 
 class Page:
 
     ###
     # A couple things:
-    #   - How do we handle errors?
     #   - Do we want an AJAX-style get_config thing?  I think... no?
     ###
 
@@ -409,13 +552,20 @@ class Page:
 
     requires_name = ('start', 'stop', 'restart', 'get_config', 'set_config')
 
-    def __init__(self, action=None, name=None):
+    def __init__(self, action=None, name=None, config=None):
+        self.action = action
+        self.name = name
         if not action:
             self._func = None
-        elif action in requires_name:
+        elif action in self.requires_name:
             if not name:
                 raise ValueError("Action %s requires a ZServ name" % (action))
-            self._func = lambda: self.actions[action](name)
+            if action == 'set_config':
+                if not config:
+                    raise ValueError("'set_config' requires config data")
+                self._func = lambda: self.actions[action](name, config)
+            else:
+                self._func = lambda: self.actions[action](name)
         else:
             if name:
                 es = "Action %s does not act on a single ZServ"
@@ -426,90 +576,131 @@ class Page:
         errors = []
         all_zservs = []
         servers = []
+        content = ''
+        bottom_content = ''
         try:
             if self._func:
-                self.func()
+                if self.action == 'get_config':
+                    config = self._func()
+                    d = {'name': self.name, 'config': config,
+                         'html_name': html_escape(self.name),
+                         'height': config.count('\n') + 1}
+                    bottom_content += CONFIG_TEMPLATE % d
+                else:
+                    self._func()
         except socket.error:
-            template = ERROR_TEMPLATE
-            d = {'content': '', 'errors': 'Could not connect to ZDStack'}
-            return template % d
+            error = 'Could not connect to ZDStack: %s' % (IFACE.proxy._XMLProxy__host)
+            d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
+            return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
+            # raise
             errors.append(str(e))
         try:
             all_zservs = IFACE.get_all_zservs()
         except socket.error:
-            template = ERROR_TEMPLATE
-            d = {'content': '', 'errors': 'Could not connect to ZDStack'}
-            return template % d
+            # error = 'Could not connect to ZDStack'
+            error = 'Could not connect to ZDStack: %s' % (IFACE.proxy._XMLProxy__host)
+            d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
+            return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
+            # raise
             errors.append(str(e))
         if all_zservs:
+            server_template = SERVER_TEMPLATE
             for zserv_dict in all_zservs:
-                servers.append(SERVER_TEMPLATE % _add_controls(zserv_dict))
-            content = SERVERS_TEMPLATE % {'servers': '\n'.join(servers)}
+                if server_template == SERVER_TEMPLATE:
+                    server_template = SERVER_TEMPLATE_GREY
+                elif server_template == SERVER_TEMPLATE_GREY:
+                    server_template = SERVER_TEMPLATE
+                servers.append(server_template % _add_controls(zserv_dict))
+            content += SERVERS_TEMPLATE % {'servers': '\n'.join(servers)}
         else:
-            content = NO_SERVERS_TEMPLATE
+            content += NO_SERVERS_TEMPLATE
+        if bottom_content:
+            content += bottom_content
         if errors:
-            errors = ' | '.join(errors)
-            template = ERROR_TEMPLATE
+            errors = [html_escape(error) for error in errors]
+            errors = ' | '.join([ERROR_TEMPLATE % (error) for error in errors])
+            template = ERRORS_TEMPLATE
             d = {'content': content, 'errors': errors}
         else:
             errors = ''
             template = BODY_TEMPLATE
             d = {'content': content}
-        return template % d
+        return HEAD_TEMPLATE + template % d
 
     def render_cgi(self):
-        s = "Content-Type: text/html\r\nContent-Length: %d\r\n%s\r\n"
+        s = "Content-Type: text/html\r\nContent-Length: %d\n\n%s\r\n"
         page = self.render()
         return s % (len(page), page)
 
     def __call__(self):
         return self.render()
 
+def _get_page(query_dict=None):
+    action = name = config = None
+    query_dict = query_dict or dict()
+    if 'action' in query_dict:
+        if len(query_dict['action']) > 1:
+            es = "A maximum of 1 action per request is allowed"
+            raise Exception(es)
+        action = query_dict['action'][0]
+        if 'name' in query_dict:
+            if len(query_dict['name']) > 1:
+                es = "A maximum of 1 name per request is allowed"
+                raise Exception(es)
+            name = query_dict['name'][0]
+        if 'config' in query_dict:
+            if len(query_dict['name']) > 1:
+                es = "A maximum of 1 set of config data per request "
+                es += "is allowed"
+                raise Exception(es)
+            config = query_dict['config'][0]
+    elif 'name' in query_dict:
+        raise Exception("Names require actions")
+    return Page(action=action, name=name, config=config)
+
 class ZDSHTTPRequestHandler(SimpleHTTPRequestHandler):
 
     def send_head(self, post=False):
-        action = None
-        name = None
-        query = urlparse.urlparse(self.path).query
-        if query:
-            if not post:
-                self.send_error(501, "Can only send query params when POSTing")
+        query_dict = None
+        # query = urlparse.urlparse(self.path).query
+        if not post and urlparse.urlparse(self.path).query:
+            es = "Can only send query params when POSTing"
+            return self.send_error(501, es)
+        if post:
+            post_length = int(self.headers['Content-Length'])
+            query = self.rfile.read(post_length)
             query_dict = cgi.parse_qs(query)
-            if 'action' in query_dict:
-                if len(query_dict['action']) > 1:
-                    es = "A maximum of 1 action per request is allowed"
-                    self.send_error(400, es)
-                action = query_dict['action'][0]
-                if 'name' in query_dict:
-                    if len(query_dict['name']) > 1:
-                        es = "A maximum of 1 name per request is allowed"
-                        self.send_error(400, es)
-                    name = query_dict['name'][0]
-            elif 'name' in query_dict:
-                self.send_error(400, "Names require actions")
         try:
-            output = Page(action=action, name=name).render()
+            page = _get_page(query_dict)
         except Exception, e:
-            self.send_error(500, str(e))
+            return self.send_error(400, str(e))
+        try:
+            content = page.render()
+        except Exception, e:
+            return self.send_error(500, str(e))
         self.send_response(200)
         self.send_header('Content-Type', 'text/html')
-        self.send_header('Content-Length', str(len(output)))
-        # self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+        self.send_header('Content-Length', str(len(content)))
         self.end_headers()
-        return output
+        return content
 
     def do_HEAD(self):
         self.send_head()
 
     def do_GET(self):
-        output = self.send_head()
-        self.wfile.write(output)
+        content = self.send_head()
+        if content:
+            self.wfile.write(content)
 
     def do_POST(self):
-        output = self.send_head(post=True)
-        self.wfile.write(output)
+        try:
+            content = self.send_head(post=True)
+            if content:
+                self.wfile.write(content)
+        except Exception, e:
+            self.send_error(500, str(e))
 
     def log_error(self, format, *args):
         logging.getLogger('zdsweb').error(format % args)
@@ -517,28 +708,26 @@ class ZDSHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         logging.getLogger('zdsweb').info(format % args)
 
-if 'GATEWAY_INTERFACE' in os.environ:
-    ###
-    # Only CGI should have GATEWAY_INTERFACE defined in their environment.
-    ###
+def _print_cgi_response(s):
+    print "Content-Type: text/plain\r"
+    print "Content-Length: %d\r" % (len(s))
+    print "\r\n%s\r\n" % (s)
+    sys.exit(0)
+
+def run_cgi():
     action = None
     name = None
-    query_dict = cgi.FieldStorage()
-    if 'action' in query_dict:
-        if len(query_dict['action']) > 1:
-            es = "A maximum of 1 action per request is allowed"
-            self.send_error(400, es)
-        action = query_dict.get_first('action')
-        if 'name' in query_dict:
-            if len(query_dict['name']) > 1:
-                es = "A maximum of 1 name per request is allowed"
-                self.send_error(400, es)
-            name = query_dict.get_first('name')
-    elif 'name' in query_dict:
-        self.send_error(400, "Names require actions")
-    print Page(action=action, name=name).render_cgi()
+    form = cgi.FieldStorage()
+    query_dict = dict()
+    for x in form:
+        query_dict[x] = form.getlist(x)
+    post = os.environ.get('REQUEST_METHOD', 'GET') == 'POST'
+    if not post and len(query_dict.keys()):
+        es = "Can only send query params when POSTing"
+        raise Exception(es)
+    print _get_page(query_dict).render_cgi()
 
-else:
+def run_httpd():
     if os.path.isfile(PID_FILE):
         print >> sys.stderr, "ZDSWeb is already running: %s\n" % (PID_FILE)
     __log_file = os.path.join(LOG_FOLDER, 'ZDSWeb.log')
@@ -556,4 +745,13 @@ else:
     write_file(str(os.getpid()), PID_FILE, overwrite=True)
     logging.info("ZDSWeb starting up on %s:%s" % server_address)
     HTTPServer(server_address, ZDSHTTPRequestHandler).serve_forever()
+
+if __name__ == "__main__":
+    if 'GATEWAY_INTERFACE' in os.environ:
+        ###
+        # Only CGI should have GATEWAY_INTERFACE defined in their environment.
+        ###
+        run_cgi()
+    else:
+        run_httpd()
 

@@ -120,7 +120,7 @@ class RawZDSConfigParser(RCP):
             if not hasattr(fobj, 'name'):
                 es = "File objects passed to loadfp must have a .name attribute"
                 raise ValueError(es)
-            set_file(fobj.name, acquire_lock=not acquire_lock)
+            set_file(fobj.name, acquire_lock=False)
             self.readfp(fobj)
         if acquire_lock:
             with self.lock:
@@ -186,14 +186,14 @@ class RawZDSConfigParser(RCP):
         with self.lock:
             RCP.remove_option(self, section, option)
 
-    def get(self, section, option, raw=False, vars=None, acquire_lock=True):
+    def get(self, section, option, acquire_lock=True):
         def blah():
-            return RCP.get(self, section, option, raw, vars)
+            return RCP.get(self, section, option)
         if acquire_lock:
             with self.lock:
-                return RCP.get(self, section, option, raw, vars)
+                return RCP.get(self, section, option)
         else:
-            return RCP.get(self, section, option, raw, vars)
+            return RCP.get(self, section, option)
 
 class ZDSConfigParser(CP):
 
@@ -297,7 +297,7 @@ class ZDSConfigParser(CP):
             if not hasattr(fobj, 'name'):
                 es = "File objects passed to loadfp must have a .name attribute"
                 raise ValueError(es)
-            set_file(fobj.name, acquire_lock=not acquire_lock)
+            set_file(fobj.name, acquire_lock=False)
             self.readfp(fobj)
         if acquire_lock:
             with self.lock:

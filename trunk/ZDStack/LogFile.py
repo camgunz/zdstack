@@ -63,8 +63,12 @@ class LogFile(object):
             # x.stop() # should kill all listener threads
             ###
             x.keep_listening = False
-            ZDSThreadPool.join(x.command_listener_thread)
-            ZDSThreadPool.join(x.generic_listener_thread)
+            if x.command_listener_thread:
+                logging.debug("Joining GLL Command Listener Thread")
+                ZDSThreadPool.join(x.command_listener_thread)
+            if x.generic_listener_thread:
+                logging.debug("Joining GLL Generic Listener Thread")
+                ZDSThreadPool.join(x.generic_listener_thread)
         logging.debug("Stopped all listeners")
 
     def set_response_type(self, response_event_type):

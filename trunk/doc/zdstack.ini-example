@@ -283,7 +283,7 @@ zdstack_password = pacman2000
 ;;;
 ; The port on which ZDStack should listen
 ;;;
-zdstack_port = 8080
+zdstack_port = 8888
 
 ;;;
 ; The RPC protocol to use, either xml-rpc or json-rpc
@@ -384,7 +384,7 @@ zdstack_wad_folder = %(root_folder)s/WADs
 ; Whether or not to parse events from the output of zserv processes.  This
 ;   is required for plugins and stats.
 ;;;
-enable_events = no
+enable_events = yes
 
 ;;;
 ; Whether or not to enable stats.  Some plugins may require this.
@@ -401,7 +401,7 @@ enable_plugins = no
 ;   Software and you need to purchase the game in order to host a server that
 ;   uses it.
 ;;;
-iwad = doom2.wad
+iwad = %(zdstack_iwad_folder)s/doom2.wad
 
 ;;;
 ; The path to the zserv executable.
@@ -417,7 +417,7 @@ zserv_exe = %(root_folder)s/bin/zserv
 ;;;
 ; The message to display in the server selector (like ZLauncher or IDE)
 ;;;
-hostname = ZDStack Server %(name)s %(type)s
+hostname = ZDStack Server %(name)s %(mode)s
 
 ;;;
 ; The administrator's e-mail address.

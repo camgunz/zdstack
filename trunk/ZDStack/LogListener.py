@@ -34,6 +34,8 @@ class BaseLogListener(object):
         self.generic_events = Queue.Queue()
         self.command_events = Queue.Queue()
         self.keep_listening = False
+        self.command_listener_thread = None
+        self.generic_listener_thread = None
         self.event_types_to_handlers = dict()
         self.set_handler('error', self.handle_error_event)
 
@@ -55,7 +57,7 @@ class BaseLogListener(object):
         cn = '%s command listener thread' % (self.name)
         gt = self.start_handling_generic_events
         gn = '%s generic listener thread' % (self.name)
-        kg = lambda: self.keep_listening
+        kg = lambda: self.keep_listening == True
         self.command_listener_thread = ZDSThreadPool.get_thread(target=ct,
                                                                 name=cn,
                                                                 keep_going=kg)
@@ -67,8 +69,10 @@ class BaseLogListener(object):
         """Stops listening."""
         logging.debug('')
         self.keep_listening = False
-        ZDSThreadPool.join(self.command_listener_thread)
-        ZDSThreadPool.join(self.generic_listener_thread)
+        if self.command_listener_thread:
+            ZDSThreadPool.join(self.command_listener_thread)
+        if self.generic_listener_thread:
+            ZDSThreadPool.join(self.generic_listener_thread)
         logging.debug("Joined all listener threads")
 
     def __str__(self):
@@ -307,15 +311,14 @@ class GeneralLogListener(BaseLogListener):
             logging.error(es % (event.data['player']))
             return
         if event.type == 'rcon_denied':
-            s = RCONDenial(player=player, round=self.zserv.round,
+            s = RCONDenial(player=player.alias, round=self.zserv.round,
                            timestamp=event.dt)
         elif event.type == 'rcon_granted':
-            s = RCONAccess(player=player, round=self.zserv.round,
+            s = RCONAccess(player=player.alias, round=self.zserv.round,
                            timestamp=event.dt)
         elif event.type == 'rcon_action':
-            s = RCONAction(player=player, round=self.zserv.round,
-                           timestamp=event.dt,
-                           action=event.data['action'])
+            s = RCONAction(player=player.alias, round=self.zserv.round,
+                           timestamp=event.dt, action=event.data['action'])
         logging.debug("Putting %s in session" % (s))
         session.add(s)
 
@@ -325,7 +328,7 @@ class GeneralLogListener(BaseLogListener):
         player: a Player instance.
 
         """
-        q = session().query(FlagTouch)
+        q = session.query(FlagTouch)
         q = q.filter(Alias.name==player.name)
         q = q.filter(Round.id==self.zserv.round.id)
         q = q.order_by(desc(FlagTouch.touch_time))

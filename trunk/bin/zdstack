@@ -11,12 +11,11 @@ from pyfileutils import read_file, write_file
 from ZDStack import set_configfile, get_configparser, get_server_proxy
 from ZDStack.Stack import Stack
 
-def fork(logfile, pidfile, signal_handler, debug=False):
+def fork(debug=False):
     if hasattr(os, 'devnull'):
-        stdin = os.devnull
+        devnull = os.devnull
     else:
-        stdin = '/dev/null'
-    stdout = stderr = logfile
+        devnull = '/dev/null'
     if os.fork():
         os._exit(0)
     os.chdir('/')
@@ -26,12 +25,10 @@ def fork(logfile, pidfile, signal_handler, debug=False):
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
-    # si = open(stdin, 'r')
-    # so = open(logfile, 'a+')
-    # se = open(logfile, 'a+', 0)
-    # os.dup2(si.fileno(), sys.stdin.fileno())
-    # os.dup2(so.fileno(), sys.stdout.fileno())
-    # os.dup2(se.fileno(), sys.stderr.fileno())
+    if not debug:
+        sys.stdin = open(devnull, 'r')
+        sys.stdout = open(devnull, 'a+')
+        sys.stderr = open(devnull, 'a+')
 
 def print_usage(msg=None):
     if msg:
@@ -55,7 +52,7 @@ def start(config_file, debug=False):
             print >> sys.stderr, es % (zdstack.pidfile)
             zdstack.shutdown(retval=-1)
         print "Forking"
-        fork(zdstack.logfile, zdstack.pidfile, zdstack.handle_signal, debug)
+        fork(debug)
         print "Done forking"
         if debug:
             print "PID: ", os.getpid()

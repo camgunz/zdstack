@@ -1,0 +1,6 @@
+- Debug with multiple servers, multiple players, and then both
+- Test with MySQL on idl.org
+- ZDSConfigParser stuff
+  - Use a sorted dict class for _sections
+  - Add a getlist(section, option, parse_func=None)
+- Make sure non-debugging output is quiet
