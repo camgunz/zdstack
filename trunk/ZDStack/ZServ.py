@@ -8,8 +8,7 @@ import logging
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from cStringIO import StringIO
-from threading import Timer, Lock
-from collections import deque
+from threading import Timer, Lock, Event
 from subprocess import Popen, PIPE, STDOUT
 
 from elixir import session # is this threadsafe?  who cares, we're INSAAAANE!
@@ -68,9 +67,6 @@ class ZServ:
         self.game_mode = None
         self.zdstack = zdstack
         self._unprocessed_output = StringIO()
-        self.plugin_events = Queue.Queue()
-        self.generic_events = Queue.Queue()
-        self.command_events = Queue.Queue()
         self.event_type_to_watch_for = None
         self.response_events = []
         self.response_finished = Event()
@@ -106,13 +102,13 @@ class ZServ:
         data: a string of data to be added to the output buffer.
 
         """
-        if not self.events_enabled:
+        if not self.events_enabled or not data:
             ###
             # Don't even save data here, just return.
             ###
             return
         with self._parse_lock:
-            # logging.debug("Adding data to [%s]: [%s]" % (self.name, data))
+            # logging.debug("Adding %d bytes for [%s]" % (len(data), self.name))
             self._unprocessed_output.write(data)
 
     def get_events(self, parser):
@@ -126,14 +122,19 @@ class ZServ:
         with self._parse_lock:
             try:
                 data = self._unprocessed_output.getvalue()
+                self._unprocessed_output.seek(0)
                 self._unprocessed_output.truncate()
                 events, leftover = parser.parse(data)
+                if events:
+                    s = "Got %d events from %d bytes of data"
+                    logging.debug(s % (len(events), len(data)))
                 self._unprocessed_output.write(leftover)
             except Exception, e:
                 # raise # for debugging
                 tb = traceback.format_exc()
                 ed = {'error': e, 'traceback': tb}
                 events = [LogEvent(datetime.now(), 'error', ed, 'error')]
+        logging.debug("Returning %s" % (events))
         return events
 
     ###
@@ -159,8 +160,11 @@ class ZServ:
             self.players_holding_flags = list()
             self.teams_holding_flags = list()
             self.fragged_runners = list()
-            self.team_scores = dict(zip(self.playing_teams,
-                                        ['0'] * len(self.playing_teams)))
+            if self.playing_colors:
+                self.team_scores = dict(zip(self.playing_colors,
+                                            ['0'] * len(self.playing_colors)))
+            else:
+                self.team_scores = dict()
         if acquire_lock:
             with self.state_lock:
                 blah()

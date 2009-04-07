@@ -1,11 +1,15 @@
+from __future__ import with_statement
+
 import os
 import time
+import Queue
 import select
 import logging
 
 from datetime import datetime
+from cStringIO import StringIO
 from threading import Lock, Timer, Thread
-from StringIO import StringIO
+from collections import deque
 
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
@@ -13,7 +17,7 @@ from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
 from ZDStack.Utils import yes
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
-from ZDStack.ZDSThreadPool import get_thread
+from ZDStack.LogParser import ZServLogParser
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
 
@@ -45,6 +49,7 @@ class Stack(Server):
 
         """
         self.spawn_lock = Lock()
+        self.ready_to_parse_lock = Lock()
         self.poller = select.poll()
         self.zservs = {}
         self.stopped_zserv_names = set()
@@ -63,6 +68,10 @@ class Stack(Server):
         self.plugin_handling_thread = None
         self.parser = ZServLogParser()
         self.event_handler = ZServEventHandler()
+        self.ready_to_parse = deque()
+        self.plugin_events = Queue.Queue()
+        self.generic_events = Queue.Queue()
+        self.command_events = Queue.Queue()
         Server.__init__(self, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
@@ -160,15 +169,22 @@ class Stack(Server):
 
     def spawn_zservs(self):
         """Spawns zservs, respawning if they've crashed."""
-        for zserv in self.zserv.values():
+        spawned = False
+        for zserv in self.zservs.values():
             try:
                 if zserv.name in self.stopped_zserv_names or zserv.is_running():
                     continue
+                spawned = True
                 zserv.start()
             except Exception, e:
                 es = "Received error while checking [%s]: [%s]"
                 logging.error(es % (zserv.name, e))
                 continue
+        if not spawned:
+            ###
+            # Avoid spinning up here.
+            ###
+            time.sleep(MAX_TIMEOUT)
 
     def poll_zservs(self):
         ###
@@ -187,95 +203,138 @@ class Stack(Server):
         #     logging.debug("Readable: %s" % (str(readable)))
         for zserv, fd in readable:
             # logging.debug("Reading data from [%s]" % (zserv.name))
-            data = ''
+            should_add = False
             while 1:
                 try:
                     ###
                     # I guess 1024 bytes should be a big enough chunk.
                     ###
-                    data += os.read(fd, 1024)
+                    data = os.read(fd, 1024)
+                    if data:
+                        zserv.add_output(data)
+                        should_add = True
+                    else:
+                        ###
+                        # Non-blocking FDs should raise exceptions instead of
+                        # returning nothing, but just for the hell of it.
+                        ###
+                        break
                 except OSError, e:
-                    if e.errno != 11:
+                    if e.errno == 11:
                         ###
                         # Error code 11: FD would have blocked... meaning
-                        # we're at the end of the data stream.  We don't care
-                        # about this, but we want other stuff to bubble up.
+                        # we're at the end of the data stream.
+                        ###
+                        break
+                    else:
+                        ###
+                        # We want other stuff to bubble up.
                         ###
                         raise
-                if data:
-                    zserv.add_output(data)
-                else:
-                    break
+            if should_add:
+                with self.ready_to_parse_lock:
+                    if zserv not in self.ready_to_parse:
+                        self.ready_to_parse.appendleft(zserv)
 
     def parse_zserv_output(self):
         """Parses ZServ output into events, places them in the event queue."""
-        for zserv in self.zservs.values():
-            try:
-                for event in zserv.get_events(self.parser):
-                    if event.type == 'junk':
-                        ###
-                        # Skip junk events.
-                        ###
-                        continue
-                    elif event.type == 'message':
-                        ppn = event.data['possible_player_names']
-                        c = event.data['contents'] 
-                        player = zserv.distill_player(ppn)
-                        if not player:
-                            s = "Received a message from a non-existent player"
-                            logging.error(s)
-                        else:
-                            message = c.replace(player.name, '', 1)[3:]
-                            d = {'message': message, 'messenger': player}
-                            event = LogEvent(event.dt, 'message', d,
-                                             'message', event.line)
-                    if zserv.event_to_watch_for:
-                        if event.type == zserv.event_to_watch_for:
-                            zserv.response_events.append(event)
-                        elif zserv.response_events:
-                            ###
-                            # Received an event that was not a response to the
-                            # command after events that were responses to the
-                            # command, so notify the zserv that its response
-                            # is complete.
-                            ###
-                            zserv.response_finished.set()
-                    if event.category == 'command':
-                        zserv.command_events.put_nowait(event)
-                        queue = 'command'
-                    else:
-                        zserv.generic_events.put_nowait(event)
-                        if zserv.plugins_enabled:
-                            zserv.plugin_events.put_nowait(event)
-                        queue = 'generic'
-                    s = "Put [%s] event in %s's %s queue"
-                    logging.debug(s % (event.type, zserv.name, queue))
-                except Exception, e:
-                    es = "Received error while parsing output from [%s]: [%s]"
-                    logging.error(es % (zserv.name, e))
+        try:
+            zserv = self.ready_to_parse.pop()
+        except IndexError:
+            ###
+            #
+            # IndexError in this case means the deque was empty.
+            #
+            # If for some reason there's a dearth of output, this thread will
+            # spin up like crazy.  So we sleep when there's no output.
+            ###
+            time.sleep(MAX_TIMEOUT)
+            return
+        try:
+            events = zserv.get_events(self.parser)
+            # logging.debug("Events for [%s]: %s" % (zserv.name, events))
+            for event in events:
+                if event.type == 'junk':
+                    ###
+                    # Skip junk events.
+                    ###
+                    logging.debug("Skipping junk event")
                     continue
+                elif event.type == 'message':
+                    logging.debug("Converting message event")
+                    ppn = event.data['possible_player_names']
+                    c = event.data['contents'] 
+                    player = zserv.distill_player(ppn)
+                    if not player:
+                        s = "Received a message from a non-existent player"
+                        logging.error(s)
+                    else:
+                        message = c.replace(player.name, '', 1)[3:]
+                        d = {'message': message, 'messenger': player}
+                        event = LogEvent(event.dt, 'message', d,
+                                         'message', event.line)
+                if zserv.event_type_to_watch_for:
+                    s = "%s is watching for %s events"
+                    logging.debug(s % (zserv.name,
+                                       zserv.event_type_to_watch_for))
+                    if event.type == zserv.event_type_to_watch_for:
+                        logging.debug("Found a response event")
+                        zserv.response_events.append(event)
+                    elif zserv.response_events:
+                        logging.debug("Response is finished")
+                        ###
+                        # Received an event that was not a response to the
+                        # command after events that were responses to the
+                        # command, so notify the zserv that its response
+                        # is complete.
+                        ###
+                        zserv.response_finished.set()
+                s = "Put [%s] event from %s in the %s queue"
+                if event.category == 'command':
+                    self.command_events.put_nowait((event, zserv))
+                    logging.debug(s % (event.type, zserv.name, 'command'))
+                else:
+                    self.generic_events.put_nowait((event, zserv))
+                    logging.debug(s % (event.type, zserv.name, 'generic'))
+                if zserv.plugins_enabled:
+                    self.plugin_events.put_nowait((event, zserv))
+                    logging.debug(s % (event.type, zserv.name, 'plugin'))
+        except Exception, e:
+            es = "Received error while parsing output from [%s]: [%s]"
+            logging.error(es % (zserv.name, e))
+            return
 
-    def _handle_zserv_events(self, zserv, queue, use_plugins=False):
+    def _handle_zserv_events(self, queue, use_plugins=False):
         """Handles zserv events from a specific queue.
 
-        zserv:       a ZServ instance.
         queue:       the queue from which to get events.
         use_plugins: a boolean that, if given, uses plugins to handle
                      events instead of the event handler.  False by
                      default.
 
         """
+        if queue == self.command_events:
+            queue_name = 'Command'
+        elif queue == self.generic_events:
+            queue_name = 'Generic'
+        if queue == self.plugin_events:
+            queue_name = 'Plugin'
+        logging.debug('Handling ZServ %s Events' % (queue_name))
         try:
-            event = queue.get_nowait()
+            logging.debug("Getting from %s queue" % (queue_name))
+            event, zserv = queue.get(block=True, timeout=MAX_TIMEOUT)
+            s = "Got %s - %s from %s queue"
+            logging.debug(s % (event, zserv, queue_name))
         except Queue.Empty:
             ###
             # If we're shutting down, this thread will wait forever on an event
-            # that will never come.  Furthermore, other events are probably
-            # waiting to be handled.  So don't wait even a little if there are
-            # no events in this queue.
+            # that will never come.  So we want to check to see if we're
+            # shutting down every second.
             ###
+            logging.debug('No events in %s queue' % (queue_name))
             return
         if use_plugins:
+            logging.debug("Sending %s to %s's plugins" % (event, zserv.name))
             for plugin in zserv.plugins:
                 logging.debug("Running plugin: %s" % (plugin.__name__))
                 try:
@@ -283,7 +342,7 @@ class Stack(Server):
                 except Exception, e:
                     es = "Exception in plugin %s: [%s]"
                     logging.error(es % (plugin.__name__, e))
-                    continue
+                    return
         else:
             handler = self.event_handler.get_handler(event.type)
             if handler:
@@ -296,34 +355,24 @@ class Stack(Server):
 
     def handle_zserv_command_events(self):
         """Handles command events as they're generated."""
-        for zserv in self.zservs.values():
-            try:
-                self._handle_zserv_events(zserv, zserv.command_events)
-            except Exception, e:
-                es = "Received error while handling events from [%s]: [%s]"
-                logging.error(es % (zserv.name, e))
-                continue
+        try:
+            self._handle_zserv_events(self.command_events)
+        except Exception, e:
+            logging.error("Received error while handling events: [%s]" % (e))
 
     def handle_zserv_generic_events(self):
         """Handles generic events as they're generated."""
-        for zserv in self.zservs.values():
-            try:
-                self._handle_zserv_events(zserv, zserv.generic_events)
-            except Exception, e:
-                es = "Received error while handling events from [%s]: [%s]"
-                logging.error(es % (zserv.name, e))
-                continue
+        try:
+            self._handle_zserv_events(self.generic_events)
+        except Exception, e:
+            logging.error("Received error while handling events: [%s]" % (e))
 
     def handle_zserv_plugin_events(self):
         """Handles plugin events as they're generated."""
-        for zserv in self.zservs.values():
-            try:
-                self._handle_zserv_events(zserv, zserv.plugin_events,
-                                          use_plugins=True)
-            except Exception, e:
-                es = "Received error while handling events from [%s]: [%s]"
-                logging.error(es % (zserv.name, e))
-                continue
+        try:
+            self._handle_zserv_events(self.plugin_events, use_plugins=True)
+        except Exception, e:
+            logging.error("Received error while handling events: [%s]" % (e))
 
     def get_running_zservs(self):
         """Returns a list of ZServs whose internal zserv is running."""

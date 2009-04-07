@@ -9,6 +9,7 @@ import signal
 import socket
 import urllib
 import logging
+import operator
 import tempfile
 import urlparse
 
@@ -191,17 +192,21 @@ class ZDSInterface:
         zserv_info['max_players'] = max_players
         optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
         wads = list()
-        for wad in _parse_list(CP.get(zserv_name, 'wads')):
+        stuff = sorted(_parse_list(CP.get(zserv_name, 'wads')))
+        for wad in stuff:
+            if wad not in optional_wads:
+                wads.append(wad)
+        for wad in stuff:
             if wad in optional_wads:
                 wads.append(wad.join(['[', ']']))
-            else:
-                wads.append(wad)
         zserv_info['wads'] = ', '.join(wads)
         zserv_info['port'] = CP.getint(zserv_name, 'port')
         return zserv_info
 
     def _get_all_zserv_dicts(self):
-        return [self._get_zserv_dict(x) for x in self._get_all_zserv_info()]
+        out = [self._get_zserv_dict(x) for x in self._get_all_zserv_info()]
+        out.sort(key=operator.itemgetter('port'))
+        return out
 
     def start_zserv(self, zserv_name):
         return self.proxy.start_zserv(USERNAME, PASSWORD, zserv_name)
@@ -229,8 +234,7 @@ class ZDSInterface:
         return self._get_zserv_dict(zserv_info)
 
     def get_all_zservs(self):
-        all_zserv_info = self._get_all_zserv_info()
-        return [self.get_zserv(x) for x in self.get_zserv_names()]
+        return self._get_all_zserv_dicts()
 
     def get_running_zservs(self):
         return [x for x in self.get_all_zservs() if x['is_running']]
@@ -277,7 +281,7 @@ HEAD_TEMPLATE = """\
         .nolinebreak { white-space: nowrap; }
         thead { margin-top:1em; }
         tbody { margin-bottom: 1em; }
-        tr.greybg, td.greybg { background-color: #404040; }
+        tr.greybg, td.greybg { background-color: #353535; }
         button {
             background-color: black;
             color: white;
@@ -419,7 +423,7 @@ SERVERS_TEMPLATE = """\
         <table id="servers">
             <thead>
                 <tr>
-                    <th class="left">Server Name</th>
+                    <th class="centered">Server Name</th>
                     <th class="centered">Players</th>
                     <th class="centered">Type</th>
                     <th class="centered">PWADs</th>
@@ -448,13 +452,13 @@ JOIN_TEMPLATE = '<a href="zds://%s:%%(port)s">Join</a>' % (ZDS_HOSTNAME)
 # name, players, max_players, mode, wads, map_name, map_number, port
 ###
 SERVER_TEMPLATE = """    <tr>
-                    <td class="nolinebreak">
+                    <td class="nolinebreak left">
                         <a href="zds://%s:%%(port)s">%%(html_name)s</a>
                     </td>
                     <td class="centered">%%(players)s / %%(max_players)s</td>
                     <td class="centered">%%(mode)s</td>
-                    <td class="centered">%%(wads)s</td>
-                    <td class="nolinebreak">%%(map_name)s :: MAP%%(map_number)s</td>
+                    <td class="left">%%(wads)s</td>
+                    <td class="nolinebreak left">%%(map_name)s :: MAP%%(map_number)s</td>
                     <td class="centered">%%(port)s</td>
                     <td class="centered">
                         <form action="%s" method="POST"
@@ -469,13 +473,13 @@ SERVER_TEMPLATE = """    <tr>
 # name, players, max_players, mode, wads, map_name, map_number, port
 ###
 SERVER_TEMPLATE_GREY = """    <tr class="greybg">
-                    <td class="nolinebreak">
+                    <td class="nolinebreak left greybg">
                         <a href="zds://%s:%%(port)s">%%(html_name)s</a>
                     </td>
                     <td class="centered greybg">%%(players)s / %%(max_players)s</td>
                     <td class="centered greybg">%%(mode)s</td>
-                    <td class="centered greybg">%%(wads)s</td>
-                    <td class="nolinebreak greybg">%%(map_name)s :: MAP%%(map_number)s</td>
+                    <td class="left greybg">%%(wads)s</td>
+                    <td class="nolinebreak left greybg">%%(map_name)s :: MAP%%(map_number)s</td>
                     <td class="centered greybg">%%(port)s</td>
                     <td class="centered greybg">
                         <form name="%%(name)s" action="%s" method="POST"

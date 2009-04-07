@@ -21,10 +21,11 @@ class LogEvent:
         self.line = line
 
     def __str__(self):
-        return "<%s event at %s>" % (self.type, self.dt)
+        return "<Event %s at %s>" % (self.type, self.dt)
 
     def __repr__(self):
-        return "LogEvent(%s, %s, %s)" % (self.dt, self.type, self.data)
+        return "LogEvent(%s, %s, %s, %s)" % (self.dt, self.type, self.data,
+                                             self.category)
 
     def __eq__(self, x):
         try:
