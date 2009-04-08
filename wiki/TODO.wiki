@@ -13,3 +13,5 @@
       * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
 
   * Test plugins on TT-beta
+  * Disallow duplicate ports in server config sections
+  * Detect rapid server crashing: stop the server and log an error
