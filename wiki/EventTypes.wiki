@@ -20,6 +20,8 @@ kick_command
 
 killban_command
 
+map_change
+
 maplist_command
 
 players_command
