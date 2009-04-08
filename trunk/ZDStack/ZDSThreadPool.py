@@ -39,7 +39,7 @@ import logging
 
 from threading import Thread, Lock
 
-from ZDStack import DIE_THREADS_DIE
+from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT
 
 __THREAD_POOL = []
 __THREAD_POOL_LOCK = Lock()
@@ -75,6 +75,69 @@ def get_thread(target, name, keep_going, sleep=None):
                     time.sleep(sleep)
             logging.debug("[%s]: I have quit my loop!" % (name))
         t = Thread(target=tf, name=name)
+        logging.debug("Adding thread [%s]" % (t.getName()))
+        __THREAD_POOL.append(t)
+        s = "%d threads currently in thread pool"
+        logging.debug(s % (len(__THREAD_POOL)))
+        t.start()
+        return t
+
+def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
+    """Creates a thread that processes tasks in a Queue.
+
+    target:       a function to run continuously in a while loop.
+    name:         a string representing the name to give to the new
+                  thread.
+    keep_going:   a function that returns a boolean.  if the boolean is
+                  false, the thread will stop running target().
+    input_queue:  a queue from which to obtain tasks.
+    output_queue: a queue in which to place task output.  Optional.
+    sleep:        an int/float/Decimal representing the amount of time
+                  to sleep between loop iterations.  Optional, defaults
+                  to not sleeping at all.
+
+    """
+    def tf():
+        while 1:
+            if DIE_THREADS_DIE:
+                s = "[%s]: DIE_THREADS_DIE is set, quitting loop"
+                logging.debug(s % (name))
+                break
+            try:
+                ###
+                # If we're shutting down, this thread will wait forever on
+                # a task that will never come.  So we want to check to see
+                # if we're shutting down every MAX_TIMEOUT seconds.
+                ###
+                task = input_queue.get(block=True, timeout=MAX_TIMEOUT)
+                output = task.perform()
+                input_queue.task_done()
+                if output and output_queue:
+                    output_queue.put_nowait(output)
+            except Queue.Empty:
+                ###
+                # If this thread has been stopped, its keep_going function
+                # will return False.  Otherwise just try to get more tasks.
+                ###
+                if keep_going():
+                    continue
+                else:
+                    ###
+                    # OK, so we should quit.  This means something has
+                    # .join()'d our Queue, and is waiting on us to perform
+                    # all the tasks from it.  Since our Queue was just
+                    # empty, this has apparently already done!
+                    ###
+                    s = "[%s]: No more tasks, quitting loop"
+                    logging.debug(s % (name))
+                    break
+            except Exception, e:
+                logging.error("[%s] received error: [%s]" % (name, e))
+            if sleep:
+                time.sleep(sleep)
+        logging.debug("[%s]: I have quit my loop!" % (name))
+    with __THREAD_POOL_LOCK:
+        t = Thread(target=tf, name=name + ' Processing Thread')
         logging.debug("Adding thread [%s]" % (t.getName()))
         __THREAD_POOL.append(t)
         s = "%d threads currently in thread pool"

@@ -14,7 +14,7 @@ from ZDStack import RPC_CLASS, DIE_THREADS_DIE, get_configfile, \
                     set_debugging
 from ZDStack.Utils import resolve_path
 
-class Server:
+class Server(object):
 
     """Server represents a daemonized process serving network requests."""
 

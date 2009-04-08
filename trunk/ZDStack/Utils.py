@@ -198,3 +198,33 @@ def send_proxy_method(proxy, method_name, *args):
             else:
                 raise
 
+def get_event_from_line(line, regexps, now=None):
+    """Returns a LogEvent from a line.
+
+    line:    the line from which to return an event - a string.
+    regexps: a sequence of Regexp instances which will be used to
+             parse the line.
+    now:     an optional datetime instance that will be used for the
+             event's event_dt parameter.  If not given, 'now()' is
+             used.
+
+    """
+    now = now or datetime.now()
+    e = None
+    for r in regexps:
+        e = r.get_event(line, now)
+        if e:
+            break
+    if e:
+        if e.category == 'frag':
+            e.data['weapon'] = weapon
+        elif e.category == 'death':
+            e.data.update({'fragger': d['fraggee'], 'weapon': e.event_type})
+        elif e.category == 'join':
+            if 'team' in e.data:
+                e.data['team'] = e.data['team'].lower()
+        if e.type == 'map_change':
+            e.data['number'] = int(e.data['number'])
+    return e
+
+

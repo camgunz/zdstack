@@ -32,7 +32,7 @@ CTF_MODES = ('ctf', 'capture the flag', 'capture-the-flag')
 DM_MODES = DUEL_MODES + FFA_MODES + TEAMDM_MODES + CTF_MODES
 TEAM_MODES = TEAMDM_MODES + CTF_MODES
 
-class ZServ:
+class ZServ(object):
 
     """ZServ provides an interface to a zserv process.
 
@@ -66,7 +66,7 @@ class ZServ:
         self.name = name
         self.game_mode = None
         self.zdstack = zdstack
-        self._unprocessed_output = StringIO()
+        self._fragment = None
         self.event_type_to_watch_for = None
         self.response_events = []
         self.response_finished = Event()
@@ -95,47 +95,6 @@ class ZServ:
                 self.plugins = plugins
             else:
                 logging.debug("Plugins: [%s]" % ('plugins' in self.config))
-
-    def add_output(self, data):
-        """Adds data to this ZServ's unprocessed output buffer.
-
-        data: a string of data to be added to the output buffer.
-
-        """
-        if not self.events_enabled or not data:
-            ###
-            # Don't even save data here, just return.
-            ###
-            return
-        with self._parse_lock:
-            # logging.debug("Adding %d bytes for [%s]" % (len(data), self.name))
-            self._unprocessed_output.write(data)
-
-    def get_events(self, parser):
-        """Returns a list of events from this ZServ's output.
-        
-        parser: a LogParser instance.
-        
-        """
-        events = list()
-        leftover = ''
-        with self._parse_lock:
-            try:
-                data = self._unprocessed_output.getvalue()
-                self._unprocessed_output.seek(0)
-                self._unprocessed_output.truncate()
-                events, leftover = parser.parse(data)
-                if events:
-                    s = "Got %d events from %d bytes of data"
-                    logging.debug(s % (len(events), len(data)))
-                self._unprocessed_output.write(leftover)
-            except Exception, e:
-                # raise # for debugging
-                tb = traceback.format_exc()
-                ed = {'error': e, 'traceback': tb}
-                events = [LogEvent(datetime.now(), 'error', ed, 'error')]
-        logging.debug("Returning %s" % (events))
-        return events
 
     ###
     # I have to say that I'm very close to pulling all the config stuff out

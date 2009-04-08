@@ -386,7 +386,7 @@ class BaseProxy(ServerProxy):
         ServerProxy.__init__(self, uri, transport, encoding, verbose, True,
                                    True)
 
-class XMLProxy:
+class XMLProxy(object):
 
     def __init__(self, uri, transport=None, encoding=None, verbose=0,
                        use_datetime=0):
@@ -442,7 +442,7 @@ class XMLProxy:
 
     __str__ = __repr__
 
-class JSONProxy:
+class JSONProxy(object):
 
     def __init__(self, uri, transport=None, encoding=None, verbose=0,
                        use_datetime=0):

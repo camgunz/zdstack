@@ -1,6 +1,6 @@
 from ZDStack.Utils import homogenize
 
-class Token:
+class Token(object):
 
     """Used when parsing player names."""
 
