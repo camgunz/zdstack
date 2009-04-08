@@ -110,10 +110,7 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
                 # if we're shutting down every MAX_TIMEOUT seconds.
                 ###
                 task = input_queue.get(block=True, timeout=MAX_TIMEOUT)
-                output = task.perform()
-                input_queue.task_done()
-                if output and output_queue:
-                    output_queue.put_nowait(output)
+                task.perform(input_queue, output_queue)
             except Queue.Empty:
                 ###
                 # If this thread has been stopped, its keep_going function
