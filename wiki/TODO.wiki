@@ -15,3 +15,4 @@
   * Test plugins on TT-beta
   * Disallow duplicate ports in server config sections
   * Detect rapid server crashing: stop the server and log an error
+  * Figure out how to make ban-list management easier (ZDSWeb interface?)
