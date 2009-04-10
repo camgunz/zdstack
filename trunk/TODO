@@ -1,4 +1,4 @@
-- Debug with multiple servers, multiple players, and then both
+- Debug with multiple players, and then multiple servers and multiple players
 - Test with MySQL and PostgreSQL
 - ZDSConfigParser stuff
   - Use a sorted dict class for _sections
@@ -7,3 +7,4 @@
 - Add 'save log' option
 - Add rapid-restart detection
 - Test all RPC functions
+- Deadlock in players/teams lists and EventHandler (sort this out)

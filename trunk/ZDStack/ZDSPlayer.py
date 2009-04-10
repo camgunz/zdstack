@@ -2,7 +2,7 @@ import logging
 
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
 
-from ZDSDatabase import get_alias
+from ZDStack.ZDSDatabase import get_alias
 
 class Player(object):
 

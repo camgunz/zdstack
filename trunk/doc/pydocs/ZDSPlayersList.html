@@ -1,0 +1,138 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ZDSPlayersList</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>ZDSPlayersList</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/ZDSPlayersList.py">/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/ZDSPlayersList.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ZDSPlayersList.html#PlayersList">PlayersList</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="PlayersList">class <strong>PlayersList</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#PlayersList">PlayersList</a>&nbsp;is&nbsp;a&nbsp;threadsafe&nbsp;list&nbsp;of&nbsp;players.<br>
+&nbsp;<br>
+It&nbsp;is&nbsp;possible&nbsp;that&nbsp;many&nbsp;threads&nbsp;will&nbsp;try&nbsp;and&nbsp;modify&nbsp;the&nbsp;players<br>
+list&nbsp;at&nbsp;the&nbsp;same&nbsp;time,&nbsp;with&nbsp;unpredictible&nbsp;results.&nbsp;&nbsp;<a href="#PlayersList">PlayersList</a><br>
+serializes&nbsp;access&nbsp;to&nbsp;its&nbsp;internal&nbsp;list&nbsp;of&nbsp;players&nbsp;so&nbsp;that&nbsp;any<br>
+addition&nbsp;or&nbsp;removal&nbsp;of&nbsp;players&nbsp;is&nbsp;done&nbsp;atomically,&nbsp;and&nbsp;so&nbsp;that&nbsp;the<br>
+internal&nbsp;list&nbsp;doesn't&nbsp;change&nbsp;during&nbsp;these&nbsp;operations.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="PlayersList-__init__"><strong>__init__</strong></a>(self, zserv)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#PlayersList">PlayersList</a>.<br>
+&nbsp;<br>
+zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;this&nbsp;<a href="#PlayersList">PlayersList</a>&nbsp;is&nbsp;holding&nbsp;players<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-__iter__"><strong>__iter__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="PlayersList-add"><strong>add</strong></a>(self, player, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;player&nbsp;-&nbsp;threadsafe&nbsp;if&nbsp;lock&nbsp;acquired.<br>
+&nbsp;<br>
+player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.<br>
+acquire_lock:&nbsp;if&nbsp;True,&nbsp;will&nbsp;acquire&nbsp;self.<strong>lock</strong>&nbsp;before<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;taking&nbsp;any&nbsp;action;&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-addresses"><strong>addresses</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;2-Tuples&nbsp;(ip,&nbsp;port)&nbsp;for&nbsp;all&nbsp;players.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-clear"><strong>clear</strong></a>(self)</dt><dd><tt>Clears&nbsp;the&nbsp;list&nbsp;of&nbsp;players.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-get"><strong>get</strong></a>(self, name<font color="#909090">=None</font>, ip_address_and_port<font color="#909090">=None</font>, sync<font color="#909090">=True</font>, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;Player&nbsp;instance.<br>
+&nbsp;<br>
+name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;player&nbsp;to&nbsp;return.<br>
+sync:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;given,&nbsp;performs&nbsp;a&nbsp;sync<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;reattempts&nbsp;to&nbsp;lookup&nbsp;a&nbsp;player&nbsp;if&nbsp;it&nbsp;is<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;not&nbsp;initially&nbsp;found.&nbsp;&nbsp;True&nbsp;by&nbsp;default.<br>
+ip_address_and_port:&nbsp;a&nbsp;2-Tuple&nbsp;(ip_address,&nbsp;port),&nbsp;both<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;strings.<br>
+acquire_lock:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;given,&nbsp;acquires&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;players&nbsp;lock&nbsp;before&nbsp;looking&nbsp;a&nbsp;player&nbsp;up.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;True&nbsp;by&nbsp;default.<br>
+&nbsp;<br>
+Either&nbsp;name&nbsp;or&nbsp;ip_address_and_port&nbsp;is&nbsp;optional,&nbsp;but&nbsp;at&nbsp;least<br>
+one&nbsp;must&nbsp;be&nbsp;given.&nbsp;&nbsp;Note&nbsp;that&nbsp;only&nbsp;giving&nbsp;name&nbsp;can&nbsp;potentially<br>
+return&nbsp;the&nbsp;wrong&nbsp;player,&nbsp;as&nbsp;multiple&nbsp;players&nbsp;can&nbsp;have&nbsp;the&nbsp;same<br>
+name.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-get_first_matching_player"><strong>get_first_matching_player</strong></a>(self, possible_player_names)</dt><dd><tt>Returns&nbsp;the&nbsp;player&nbsp;whose&nbsp;name&nbsp;matches&nbsp;a&nbsp;list&nbsp;of&nbsp;names.<br>
+&nbsp;<br>
+possible_player_names:&nbsp;a&nbsp;list&nbsp;of&nbsp;strings&nbsp;representing&nbsp;player<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;names.<br>
+&nbsp;<br>
+Given&nbsp;a&nbsp;list&nbsp;of&nbsp;names,&nbsp;get_first_matching_player&nbsp;will&nbsp;return<br>
+a&nbsp;player&nbsp;whose&nbsp;name&nbsp;matches&nbsp;a&nbsp;name&nbsp;in&nbsp;the&nbsp;list.&nbsp;&nbsp;Each&nbsp;name&nbsp;in<br>
+the&nbsp;list&nbsp;is&nbsp;tested,&nbsp;when&nbsp;a&nbsp;name&nbsp;matches,&nbsp;the&nbsp;matching&nbsp;player<br>
+is&nbsp;returned.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-names"><strong>names</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;list&nbsp;of&nbsp;player&nbsp;names.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-remove"><strong>remove</strong></a>(self, player, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Disconnects&nbsp;a&nbsp;player&nbsp;-&nbsp;threadsafe&nbsp;if&nbsp;lock&nbsp;acquired.<br>
+&nbsp;<br>
+player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.<br>
+acquire_lock:&nbsp;if&nbsp;True,&nbsp;will&nbsp;acquire&nbsp;self.<strong>lock</strong>&nbsp;before<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;taking&nbsp;any&nbsp;action;&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+
+<dl><dt><a name="PlayersList-sync"><strong>sync</strong></a>(self, zplayers<font color="#909090">=None</font>, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Syncs&nbsp;the&nbsp;internal&nbsp;players&nbsp;list&nbsp;with&nbsp;the&nbsp;running&nbsp;zserv.<br>
+&nbsp;<br>
+zplayers:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;list&nbsp;of&nbsp;dicts&nbsp;representing&nbsp;zserv's&nbsp;players.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;not&nbsp;given,&nbsp;it&nbsp;is&nbsp;acquired&nbsp;from&nbsp;self.<strong>zserv</strong>.<br>
+acquire_lock:&nbsp;an&nbsp;optional&nbsp;boolean&nbsp;whether&nbsp;or&nbsp;not&nbsp;to&nbsp;acquire<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.<strong>lock</strong>,&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-Lock"><strong>Lock</strong></a> = allocate_lock(...)</dt><dd><tt>allocate_lock()&nbsp;-&gt;&nbsp;lock&nbsp;<a href="__builtin__.html#object">object</a><br>
+(allocate()&nbsp;is&nbsp;an&nbsp;obsolete&nbsp;synonym)<br>
+&nbsp;<br>
+Create&nbsp;a&nbsp;new&nbsp;lock&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;&nbsp;See&nbsp;LockType.__doc__&nbsp;for&nbsp;information&nbsp;about&nbsp;locks.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)</td></tr></table>
+</body></html>

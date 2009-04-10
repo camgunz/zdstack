@@ -9,7 +9,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exceptions import IntegrityError
 
 from ZDStack import get_db_lock, db_is_noop, get_session_class
-from ZDSModels import *
+from ZDStack.ZDSModels import *
 
 __GLOBAL_SESSION = None
 
