@@ -14,7 +14,6 @@ In order to run, ZDStack requires the following:
   * Python 2.5 or greater ([http://www.python.org])
   * pyfileutils 0.8.4 or greater ([http://pyfileutils.googlecode.com])
   * SQLAlchemy 0.5 or greater ([http://www.sqlalchemy.org])
-  * Elixir 0.6 or greater ([http://elixir.ematia.de])
 
 The following features are available using only the above packages:
 
@@ -38,4 +37,4 @@ If you don't have Python 2.6, installing simplejson is... simple: run `easy_inst
 
 == Detached Database ==
 
-By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms.  ZDStack supports the use of many database engines, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseConfiguration.
+By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot reliably be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms, meaning that any front-end that needs access to the database (a stat viewer, for example) will most likely not function correctly, and may even prevent ZDStack from writing to the database, losing data.  ZDStack supports the use of other database engines without this limitation, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseConfiguration.
