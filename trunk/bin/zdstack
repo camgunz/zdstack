@@ -24,8 +24,11 @@ def fork(debug=False):
         os._exit(0)
     sys.stdout.flush()
     sys.stderr.flush()
+    sys.stdin.close()
+    sys.stdin = open(devnull, 'r')
     if not debug:
-        sys.stdin = open(devnull, 'r')
+        sys.stdout.close()
+        sys.stderr.close()
         sys.stdout = open(devnull, 'a+')
         sys.stderr = open(devnull, 'a+')
 
@@ -38,26 +41,22 @@ Usage: %s [ start | stop | restart | reload-config ] [ -c config file ]
 """ % (script_name, script_name)
     sys.exit(-1)
 
-def start(debug=False):
-    print "Starting ZDStack"
+def start(debug=False, restart=False):
     try:
         cp = get_configparser()
         pid_file = cp.get('DEFAULT', 'zdstack_pid_file')
         if os.path.isfile(pid_file):
-            es = "\nZDStack is already running: %s\n"
+            if restart:
+                es = "\nZDStack is still running: %s\n"
+            else:
+                es = "\nZDStack is already running: %s\n"
             print >> sys.stderr, es % (pid_file)
             sys.exit(-1)
-        print "Initializing ZDStack"
+        print "\nStarting ZDStack\n"
         from ZDStack.Stack import Stack
         zdstack = Stack(debugging=debug)
-        print "Forking"
         fork(debug)
-        print "Done forking"
-        if debug:
-            print "PID: ", os.getpid()
-        print "Starting up"
         zdstack.startup()
-        print "Done starting up"
     except Exception, e:
         if debug:
             raise
@@ -70,6 +69,7 @@ def stop():
         pid_file = cp.get('DEFAULT', 'zdstack_pid_file')
         try:
             os.kill(int(read_file(pid_file)), signal.SIGTERM)
+            print "\nStopping ZDStack\n"
         except (OSError, IOError):
             if os.path.isfile(pid_file):
                 es = "\nZDStack not running, removing stale PID file.\n"
@@ -84,10 +84,10 @@ def stop():
         sys.exit(-1)
 
 def restart():
+    print "\nRestarting ZDStack"
     stop()
     print "Waiting for ZDStack to shut down"
     time.sleep(5)
-    print "Starting whether ZDStack has exited or not (this is normal)"
     start()
 
 actions = ('start', 'stop', 'restart', 'debug', 'reload-config')

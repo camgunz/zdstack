@@ -83,6 +83,7 @@ class Server(object):
     def startup(self):
         """Starts the server up."""
         # logging.debug('')
+        logging.info("ZDStack Starting Up")
         addr = (self.hostname, self.port)
         self.rpc_server = RPC_CLASS(addr, self.username, self.password)
         self.rpc_server.timeout = 1
@@ -90,12 +91,15 @@ class Server(object):
         self.keep_serving = True
         write_file(str(os.getpid()), self.pidfile)
         self.start()
+        logging.info("ZDStack listening on %s:%s" % addr)
+        logging.info("ZDStack Startup Complete")
         while self.keep_serving:
             self.rpc_server.handle_request()
 
     def shutdown(self, signum=15, retval=0):
         """Shuts the server down."""
         # logging.debug('')
+        logging.info("ZDStack Shutting Down")
         self.stop()
         logging.debug("Setting keep_serving False")
         self.keep_serving = False
@@ -113,7 +117,7 @@ class Server(object):
                 ###
                 es = "Error removing PID file %s: [%s]"
                 logging.error(es % (self.pidfile, e))
-        logging.debug("Exiting")
+        logging.info("ZDStack Shutdown Complete")
         sys.exit(retval)
 
     def start(self):

@@ -31,8 +31,6 @@ Base.metadata.bind = __engine
 logging.debug("Binding Session")
 get_session_class().configure(bind=__engine)
 
-print "Engine! %s" % (__engine)
-
 _parent_cascades = 'save-update, delete, delete-orphan'
 
 ports_and_gamemodes = \
