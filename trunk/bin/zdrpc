@@ -4,8 +4,10 @@ import sys
 import getopt
 import pprint
 
-from ZDStack import set_configfile, load_configparser, get_server_proxy
+from ZDStack import set_configfile, get_configparser, get_server_proxy
 from ZDStack.Utils import send_proxy_method
+
+NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
 
 def print_usage(msg=None):
     if msg:
@@ -21,6 +23,14 @@ Usage:
 """
     sys.exit(-1)
 
+def handle_response(response):
+    if isinstance(response, str):
+        print response
+    elif isinstance(response, list):
+        print '\n'.join([str(x) for x in response])
+    else:
+        pprint.pprint(response) # actually prints
+
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], 'm:a:c:', [])
 except getopt.GetoptError, ge:
@@ -30,15 +40,23 @@ if len(opts) not in (1, 2, 3):
 opts = dict(opts)
 if '-c' in opts:
     set_configfile(opts['-c'])
-load_configparser()
+cp = get_configparser()
 proxy = get_server_proxy()
 
-if '-a'in opts:
-    args = [x for x in opts['-a'].split(',') if x]
+if opts['-m'] not in NO_AUTH_REQUIRED:
+    username = cp.get('DEFAULT', 'zdstack_username')
+    password = cp.get('DEFAULT', 'zdstack_password')
+    args = [username, password]
 else:
     args = []
+if '-a'in opts:
+    args.extend([x for x in opts['-a'].split(',') if x])
 function_kwarg_str = ', '.join(args)
 call_string = opts['-m'] + "(" + function_kwarg_str + ")"
 print "Running %s" % (call_string)
-pprint.pprint(send_proxy_method(proxy, opts['-m'], *args))
+response = send_proxy_method(proxy, opts['-m'], *args)
+if response:
+    handle_response(response)
+else:
+    print 'No response'
 

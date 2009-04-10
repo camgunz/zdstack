@@ -2,24 +2,22 @@ from __future__ import with_statement
 
 import os
 import time
-import select
 import logging
 
 from decimal import Decimal
 from datetime import date, datetime, timedelta
-from cStringIO import StringIO
 from threading import Timer, Lock, Event
 from subprocess import Popen, PIPE, STDOUT
 
-from elixir import session # is this threadsafe?  who cares, we're INSAAAANE!
-
 from pyfileutils import write_file
 
-from ZDStack import ZDSThreadPool
-from ZDStack import DEVNULL, DEBUGGING, DIE_THREADS_DIE, TEAM_COLORS, \
-                    PlayerNotFoundError, get_session, get_db_lock
-from ZDStack.Utils import yes, no, to_list
-from ZDStack.ZDSModels import get_port, get_game_mode, get_map, Round
+from ZDStack import DEVNULL, TEAM_COLORS, PlayerNotFoundError
+from ZDStack.Utils import yes, to_list
+from ZDStack.ZDSTask import Task
+from ZDStack.ZDSModels import Round
+from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
+                                persist, global_session
+from ZDStack.ZDSDummyMap import DummyMap
 from ZDStack.ZDSTeamsList import TeamsList
 from ZDStack.ZDSPlayersList import PlayersList
 
@@ -45,7 +43,7 @@ class ZServ(object):
 
     """
 
-    source_port = get_port(name='zdaemon')
+    source_port = 'zdaemon'
 
     ###
     # There might still be race conditions here
@@ -75,7 +73,7 @@ class ZServ(object):
         # self.keep_spawning = False
         # self.spawning_thread = None
         self._zserv_stdin_lock = Lock()
-        self.map = None
+        self.map = DummyMap()
         self.round = None
         self.players = PlayersList(self)
         self.teams = TeamsList(self)
@@ -94,7 +92,8 @@ class ZServ(object):
                 plugins = [x.strip() for x in self.config['plugins'].split(',')]
                 self.plugins = plugins
             else:
-                logging.debug("Plugins: [%s]" % ('plugins' in self.config))
+                pass
+                # logging.debug("Plugins: [%s]" % ('plugins' in self.config))
 
     ###
     # I have to say that I'm very close to pulling all the config stuff out
@@ -133,36 +132,50 @@ class ZServ(object):
     def clean_up(self):
         """Cleans up after a round."""
         logging.debug('Cleaning up')
-        if self.round:
-            self.round.end_time = datetime.now()
-            to_delete = self.round.players + self.round.frags + \
-                        self.round.flag_touches + self.round.flag_returns + \
-                        self.round.rcon_accesses + self.round.rcon_denials + \
-                        self.round.rcon_actions
+        now = datetime.now()
+        if not self.round:
+            logging.debug("self.round: [%s]" % (self.round))
+            return
+        if self.stats_enabled:
+            logging.debug("Setting round end_time to [%s]" % (now))
+            self.round.end_time = now
+            persist(self.round, update=True)
         else:
-            to_delete = []
-        with get_db_lock():
-            if to_delete and not self.stats_enabled:
-                ###
-                # Not everything is deleted.  Some things we want to persist,
-                # like weapons, team colors, ports, game modes and maps.  This
-                # stuff shouldn't take up too much memory anyway.  The rest of
-                # the stuff, like stats and aliases, all that can go out the
-                # window.
-                ###
-                for x in to_delete:
-                    if x in session.new or x in session.dirty:
-                        logging.debug("Deleting %s" % (x))
-                        session.delete(x)
-                self.round.delete()
-            elif self.stats_enabled:
-                session.merge(self.round)
-            try:
-                session.commit()
-            except IntegrityError:
-                logging.debug("Got integrity error committing in clean_up")
-                session.rollback()
+            ###
+            # Because statistics are not enabled, all generated stats must be
+            # deleted at the conclusion of a round.  Not everything is deleted.
+            # Some things we want to persist, like weapons, team colors, ports,
+            # game modes and maps.  This stuff shouldn't take up too much
+            # memory anyway.  The rest of the stuff, like stats & aliases, can
+            # go out the window.
+            ###
+            logging.debug("Deleting a bunch of stuff")
+            with global_session() as session:
+                for stat in self.round.players + \
+                            self.round.frags + \
+                            self.round.flag_touches + \
+                            self.round.flag_returns + \
+                            self.round.rcon_accesses + \
+                            self.round.rcon_denials + \
+                            self.round.rcon_actions:
+                    # session.add(stat)
+                    logging.debug("Deleting %s" % (stat))
+                    session.delete(stat)
+                # session.merge(self.round)
+                session.delete(self.round)
         self.clear_state()
+
+    def change_map(self, map_number, map_name):
+        """Handles a map change event.
+
+        map_number: an int representing the number of the new map
+        map_name:   a string representing the name of the new map
+
+        """
+        logging.debug('Change Map')
+        self.clean_up()
+        self.map = get_map(number=map_number, name=map_name)
+        self.round = get_round(self.game_mode, self.map)
 
     def reload_config(self, config):
         """Reloads the config for the ZServ.
@@ -170,7 +183,7 @@ class ZServ(object):
         config: a dict of configuration options and values.
 
         """
-        logging.debug('')
+        # logging.debug('')
         self.load_config(config)
         self.configuration = self.get_configuration()
         write_file(self.configuration, self.configfile, overwrite=True)
@@ -181,7 +194,7 @@ class ZServ(object):
         config: a dict of configuration options and values.
 
         """
-        logging.debug('')
+        # logging.debug('')
         def is_valid(x):
             return x in config and config[x]
         def is_yes(x):
@@ -230,7 +243,7 @@ class ZServ(object):
                 raise Exception(es % (self.name, self.fifo_path))
             else:
                 os.remove(self.fifo_path)
-        logging.debug("Making FIFO: %s" % (self.fifo_path))
+        # logging.debug("Making FIFO: %s" % (self.fifo_path))
         os.mkfifo(self.fifo_path)
         for x in [x for x in os.listdir(self.homedir) if x.endswith('.log')]:
             p = os.path.join(self.homedir, x)
@@ -628,8 +641,8 @@ class ZServ(object):
                     es += "not a link already exists"
                     raise Exception(es % (loglink_path))
             else:
-                s = "Linking %s to %s"
-                logging.debug(s % (loglink_path, self.fifo_path))
+                # s = "Linking %s to %s"
+                # logging.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
     def start(self):
@@ -640,6 +653,7 @@ class ZServ(object):
         
         """
         # logging.debug('Acquiring spawn lock [%s]' % (self.name))
+        get_port(name=self.source_port)
         with self.zdstack.spawn_lock:
             if self.is_running():
                 return
@@ -648,7 +662,8 @@ class ZServ(object):
                 for plugin in self.plugins:
                     logging.info("Loaded plugin [%s]" % (plugin))
             else:
-                logging.info("Not loading plugins")
+                pass
+                # logging.info("Not loading plugins")
             ###
             # Should we do something with STDERR here?
             ###
@@ -804,27 +819,6 @@ class ZServ(object):
         ###
         return m
 
-    def change_map(self, map_number, map_name):
-        """Handles a map change event.
-
-        map_number: an int representing the number of the new map
-        map_name:   a string representing the name of the new map
-
-        """
-        logging.debug('Change Map')
-        self.clean_up()
-        self.map = get_map(number=map_number, name=map_name)
-        self.round = Round(game_mode=self.game_mode, map=self.map,
-                           start_time=datetime.now())
-        with get_db_lock():
-            try:
-                session.add(self.round)
-                session.commit()
-            except IntegrityError:
-                logging.error("Round %s already existed??" % (self.round))
-                session.rollback()
-                pass
-
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
 
@@ -874,7 +868,7 @@ class ZServ(object):
             try:
                 logging.debug("Processing response events")
                 for event in self.response_events:
-                    d = {'type': event.type}
+                    d = {'type': event.type, 'line': event.line}
                     d.update(event.data)
                     response.append(d)
                 logging.debug("Send to ZServ response: [%s]" % (response))

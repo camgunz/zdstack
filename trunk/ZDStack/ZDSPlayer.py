@@ -2,7 +2,7 @@ import logging
 
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
 
-from ZDSModels import get_alias
+from ZDSDatabase import get_alias
 
 class Player(object):
 
@@ -24,24 +24,13 @@ class Player(object):
         self.port = port
         self.number = number
         self.name = ''
-        self.alias = None
         self.tag = None
         self.player_name = ''
-        self.homogenized_name = ''
-        self.escaped_name = ''
-        self.escaped_homogenized_name = ''
-        self.homogenized_player_name = ''
-        self.escaped_player_name = ''
-        self.escaped_homogenized_player_name = ''
+        self.alias = None
         if name:
             self.set_name(name)
         self.playing = False
-        self.has_played_this_round = False
         self.disconnected = False
-        ###
-        # TODO:
-        #   - Add latency/packet-loss tracking
-        ###
 
     def set_name(self, name):
         """Sets this player's name.
@@ -57,21 +46,6 @@ class Player(object):
             return
         self.name = name
         self.tag, self.player_name = parse_player_name(self.name)
-        self.homogenized_name = homogenize(self.name)
-        self.escaped_name = html_escape(self.name)
-        self.escaped_homogenized_name = html_escape(self.homogenized_name)
-        self.homogenized_player_name = homogenize(self.player_name)
-        self.escaped_player_name = html_escape(self.player_name)
-        self.escaped_homogenized_player_name = \
-                                    html_escape(self.homogenized_player_name)
-        if self.tag is None:
-            self.homogenized_tag = None
-            self.escaped_tag = None
-            self.escaped_homogenized_tag = None
-        else:
-            self.homogenized_tag = homogenize(self.tag)
-            self.escaped_tag = html_escape(self.tag)
-            self.escaped_homogenized_tag = html_escape(self.homogenized_tag)
         self.alias = get_alias(name=self.name, ip_address=self.ip,
                                round=self.zserv.round)
         if self.alias not in self.zserv.round.players:

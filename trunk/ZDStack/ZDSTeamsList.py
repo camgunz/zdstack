@@ -6,7 +6,7 @@ from threading import Lock
 from collections import deque
 
 from ZDStack import TEAM_COLORS, TeamNotFoundError
-from ZDStack.ZDSModels import get_team_color
+from ZDStack.ZDSDatabase import get_team_color
 
 class TeamsList(object):
 
@@ -115,16 +115,19 @@ class TeamsList(object):
         else:
             return blah()
 
-    def set_player_team(self, player, color):
+    def set_player_team(self, player, color, acquire_lock=True):
         """Sets the player's team.
 
-        player: a player instance.
-        color:  a string representing the color of the team to which
-                player is to be added.
+        player:       a player instance.
+        color:        a string representing the color of the team to
+                      which player is to be added.
+        acquire_lock: an optional boolean that, if True, acquires this
+                      TeamsList's lock before setting a player's team.
+                      Defaults to True.
 
         """
         logging.debug("set_player_team(%s, %s)" % (player, color))
-        with self.lock:
+        def blah():
             current_team = self.get_player_team(player, acquire_lock=False)
             future_team = self.get(color, acquire_lock=False)
             if current_team:
@@ -139,10 +142,13 @@ class TeamsList(object):
                     return
                 self.__teams[current_team].remove(player)
             self.__teams[future_team].append(player)
-            if future_team.color in self.zserv.playing_colors:
-                player.playing = True
-            else:
-                player.playing = False
+            with self.zserv.players.lock:
+                player.playing = future_team.color in self.zserv.playing_colors
+        if acquire_lock:
+            with self.lock:
+                blah()
+        else:
+            blah()
         logging.debug("%s team contains player: %s" % \
                         (color, self.contains_player(color, player)))
         logging.debug("%s team members: %s" % \

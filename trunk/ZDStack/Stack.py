@@ -17,7 +17,9 @@ from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
 from ZDStack.Utils import yes, get_event_from_line
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
+from ZDStack.ZDSTask import Task
 from ZDStack.ZDSRegexps import get_server_regexps
+from ZDStack.ZDSDatabase import persist
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
 
@@ -60,14 +62,16 @@ class Stack(Server):
         self.keep_handling_command_events = False
         self.keep_handling_generic_events = False
         self.keep_handling_plugin_events = False
+        self.keep_persisting = False
         self.regexps = get_server_regexps()
+        Server.__init__(self, debugging)
+        self.load_zservs()
         self.event_handler = ZServEventHandler()
         self.output_queue = Queue.Queue()
         self.plugin_events = Queue.Queue()
         self.generic_events = Queue.Queue()
         self.command_events = Queue.Queue()
         self.persistence_queue = Queue.Queue()
-        Server.__init__(self, debugging)
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
@@ -85,6 +89,7 @@ class Stack(Server):
         self.keep_handling_generic_events = True
         self.keep_handling_command_events = True
         self.keep_handling_plugin_events = True
+        self.keep_persisting = True
         if not self.loglink_check_timer:
             self.start_checking_loglinks()
         self.polling_thread = \
@@ -93,14 +98,14 @@ class Stack(Server):
                                      lambda: self.keep_polling == True)
         ZDSThreadPool.process_queue(self.output_queue, 'ZServ Output Queue',
                                     lambda: self.keep_parsing == True)
-        ZDSThreadPool.process_queue(self.command_queue, 'ZServ Command Queue',
-                            lambda: self.keep_handling_command_events == True
+        ZDSThreadPool.process_queue(self.command_events, 'ZServ Command Queue',
+                            lambda: self.keep_handling_command_events == True,
                             self.persistence_queue)
-        ZDSThreadPool.process_queue(self.generic_queue, 'ZServ Generic Queue',
-                            lambda: self.keep_handling_generic_events == True
+        ZDSThreadPool.process_queue(self.generic_events, 'ZServ Generic Queue',
+                            lambda: self.keep_handling_generic_events == True,
                             self.persistence_queue)
-        ZDSThreadPool.process_queue(self.plugin_queue, 'ZServ Plugin Queue',
-                            lambda: self.keep_handling_plugin_events == True
+        ZDSThreadPool.process_queue(self.plugin_events, 'ZServ Plugin Queue',
+                            lambda: self.keep_handling_plugin_events == True,
                             self.persistence_queue)
         ZDSThreadPool.process_queue(self.persistence_queue,
                                     'ZServ Persistence Queue',
@@ -109,7 +114,7 @@ class Stack(Server):
         # Start the spawning timer last.
         ###
         if not self.zserv_check_timer:
-            self.start_spawning_zservs()
+            self.spawn_zservs()
         Server.start(self)
 
     def stop(self):
@@ -134,13 +139,16 @@ class Stack(Server):
         self.output_queue.join()
         logging.debug("Clearing command event queue")
         self.keep_handling_command_events = False
-        self.command_queue.join()
+        self.command_events.join()
         logging.debug("Clearing generic event queue")
         self.keep_handling_generic_events = False
-        self.generic_queue.join()
+        self.generic_events.join()
         logging.debug("Clearing plugin event queue")
         self.keep_handling_plugin_events = False
-        self.plugin_queue.join()
+        self.plugin_events.join()
+        logging.debug("Clearing persistence queue")
+        self.keep_persisting = False
+        self.persistence_queue.join()
         Server.stop(self)
 
     def start_checking_loglinks(self):
@@ -178,7 +186,7 @@ class Stack(Server):
                     continue
         finally:
             if self.keep_spawning_zservs:
-                t = Timer(.5, self.start_spawning_zservs)
+                t = Timer(.5, self.spawn_zservs)
                 self.zserv_check_timer = t
                 self.zserv_check_timer.start()
 
@@ -220,7 +228,8 @@ class Stack(Server):
                         if not data.endswith('\n'):
                             lines, zserv._fragment = lines[:-1], lines[-1]
                         output = (zserv, datetime.now(), lines)
-                        task = Task(lambda: self.parse_zserv_output(*output))
+                        task = Task(self.parse_zserv_output, args=output,
+                                    name='Parsing')
                         self.output_queue.put_nowait(task)
                     else:
                         ###
@@ -246,7 +255,7 @@ class Stack(Server):
         # logging.debug("Events for [%s]: %s" % (zserv.name, events))
         for line in lines:
             try:
-                event = self.parser.get_event_from_line(line, self.regexps, dt)
+                event = get_event_from_line(line, self.regexps, dt)
             except Exception, e:
                 es = "Received error processing line [%s] from [%s]: [%s]"
                 logging.error(es % (line, zserv.name, e))
@@ -297,20 +306,25 @@ class Stack(Server):
                 es += "[%s]"
                 logging.error(es % (zserv.name, e))
                 continue
-            s = "Put [%s] event from %s in the %s queue"
+            s = "Put [%s] from %s in the %s queue"
             if event.category == 'command':
+                queue_name = 'command'
                 queue = self.command_events
-                f = lambda: self.handle_generic_events(event, zserv)
-                logging.debug(s % (event.type, zserv.name, 'command'))
-            else:
+            elif event.category != 'command':
+                queue_name = 'generic'
                 queue = self.generic_events
-                f = lambda: self.handle_generic_events(event, zserv)
-                logging.debug(s % (event.type, zserv.name, 'generic'))
+            else:
+                raise Exception("What the hell")
+            task = Task(self.handle_generic_events, args=[event, zserv],
+                        name='%s Event Handling' % (event.type.capitalize()))
+            queue.put_nowait(task)
+            # logging.debug(s % (event, zserv.name, queue_name))
             if zserv.plugins_enabled:
-                queue = self.plugin_events
                 f = lambda: self.handle_plugin_events(event, zserv)
-                logging.debug(s % (event.type, zserv.name, 'plugin'))
-            queue.put_nowait(Task(f))
+                t = Task(self.handle_plugin_events, args=[event, zserv],
+                         name='%s Event Handling' % (event.type.capitalize()))
+                # logging.debug(s % (event.type, zserv.name, 'plugin'))
+                self.plugin_events.put_nowait(t)
 
     def handle_generic_events(self, event, zserv):
         """Handles generic events.
@@ -322,15 +336,15 @@ class Stack(Server):
         handler = self.event_handler.get_handler(event.type)
         if handler:
             s = "Handling %s event (Line: [%s])" % (event.type, event.line)
-            logging.debug(s)
+            # logging.debug(s)
             ###
-            # This should return a Task... or nothing
+            # This should return a new model... or nothing.
             ###
-            task = handler(event, zserv)
-            logging.debug("Finished handling %s event" % (event.type))
+            handler(event, zserv)
+            # logging.debug("Finished handling %s event" % (event.type))
         else:
-            logging.debug("No handler set for %s" % (event.type))
-        return task
+            pass
+            # logging.debug("No handler set for %s" % (event.type))
 
     def handle_plugin_events(self, event, zserv):
         """Handles plugin events.
@@ -343,6 +357,10 @@ class Stack(Server):
         for plugin in zserv.plugins:
             logging.debug("Processing %s with %s" % (event, plugin.__name__))
             try:
+                ###
+                # If a plugin wants to persist something (God forbid), then
+                # they'll have to do it themselves.
+                ###
                 plugin(event, zserv)
             except Exception, e:
                 es = "Exception in plugin %s: [%s]"
@@ -392,7 +410,8 @@ class Stack(Server):
         Server.load_config(self, config, reload)
         self.config = config
         self.raw_config = raw_config
-        self.load_zservs()
+        if reload:
+            self.load_zservs()
 
     def start_zserv(self, zserv_name):
         """Starts a ZServ.
@@ -493,10 +512,10 @@ class Stack(Server):
 
         """
         players = len([x for x in zserv.players if not x.disconnected])
-        name, number = (zserv.map.name, zserv.map.number)
+        map_name, map_number = (zserv.map.name, zserv.map.number)
         running = zserv.is_running()
-        return {'name': zserv.name, 'players': players, 'map_name': name,
-                'map_number': number, 'is_running': running}
+        return {'name': zserv.name, 'players': players, 'map_name': map_name,
+                'map_number': map_number, 'is_running': running}
 
     def get_zserv_info(self, zserv_name):
         """Returns a dict of zserv info.

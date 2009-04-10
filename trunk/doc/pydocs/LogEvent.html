@@ -8,9 +8,17 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>LogEvent</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/LogEvent.py">/media/disk-1/data/zdstack/trunk/ZDStack/LogEvent.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/LogEvent.py">/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/LogEvent.py</a></font></td></tr></table>
     <p></p>
 <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -18,13 +26,18 @@
     
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
 <dt><font face="helvetica, arial"><a href="LogEvent.html#LogEvent">LogEvent</a>
 </font></dt></dl>
+</dd>
+</dl>
  <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="LogEvent">class <strong>LogEvent</strong></a></font></td></tr>
+<font color="#000000" face="helvetica, arial"><a name="LogEvent">class <strong>LogEvent</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
 <td colspan=2><tt><a href="#LogEvent">LogEvent</a>&nbsp;represents&nbsp;an&nbsp;event&nbsp;occurring&nbsp;in&nbsp;a&nbsp;log&nbsp;file.<br>&nbsp;</tt></td></tr>
@@ -34,14 +47,15 @@
 
 <dl><dt><a name="LogEvent-__gt__"><strong>__gt__</strong></a>(self, x)</dt></dl>
 
-<dl><dt><a name="LogEvent-__init__"><strong>__init__</strong></a>(self, event_dt, event_type, event_data, line<font color="#909090">=''</font>)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#LogEvent">LogEvent</a>&nbsp;instance.<br>
+<dl><dt><a name="LogEvent-__init__"><strong>__init__</strong></a>(self, event_dt, event_type, event_data, event_category, line<font color="#909090">=''</font>)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#LogEvent">LogEvent</a>&nbsp;instance.<br>
 &nbsp;<br>
-event_dt:&nbsp;&nbsp;&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the&nbsp;event<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;occurred<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;the&nbsp;event<br>
-event_data:&nbsp;a&nbsp;dict&nbsp;of&nbsp;event&nbsp;data<br>
-line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;optional,&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;this<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;was&nbsp;created&nbsp;to&nbsp;represent</tt></dd></dl>
+event_dt:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;datetime&nbsp;representing&nbsp;the&nbsp;time&nbsp;at&nbsp;which&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;occurred.<br>
+event_type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;the&nbsp;event.<br>
+event_data:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;dict&nbsp;of&nbsp;event&nbsp;data.<br>
+event_category:&nbsp;the&nbsp;category&nbsp;this&nbsp;event&nbsp;belongs&nbsp;to.<br>
+line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;optional,&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;line&nbsp;this<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;was&nbsp;created&nbsp;to&nbsp;represent.</tt></dd></dl>
 
 <dl><dt><a name="LogEvent-__lt__"><strong>__lt__</strong></a>(self, x)</dt></dl>
 
@@ -49,5 +63,13 @@ line:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;optional,&nbsp;a&nbsp;string&nbsp
 
 <dl><dt><a name="LogEvent-__str__"><strong>__str__</strong></a>(self)</dt></dl>
 
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
 </td></tr></table></td></tr></table>
 </body></html>

@@ -1,17 +1,12 @@
 from __future__ import with_statement
 
-import Queue
 import logging
 import datetime
-import traceback
 
-from elixir import session
-
-from ZDStack import ZDSThreadPool
-from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, TEAM_COLORS, TICK, \
-                    PlayerNotFoundError, get_db_lock, get_plugins
-from ZDStack.ZDSModels import get_weapon, Round, Alias, Frag, FlagTouch, \
-                              FlagReturn, RCONAccess, RCONDenial, RCONAction
+from ZDStack import PlayerNotFoundError, get_session_class
+from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
+                              RCONAccess, RCONDenial, RCONAction
+from ZDStack.ZDSDatabase import get_weapon, global_session, persist
 
 from sqlalchemy import desc
 
@@ -123,6 +118,23 @@ class ZServEventHandler(BaseEventHandler):
         ###
         zserv.players.sync()
 
+    def _get_latest_flag_touch(self, player, round):
+        """Returns the latest FlagTouch for a player.
+
+        player: a Player instance.
+        round:  the Round where the FlagTouch occurred.
+
+        """
+        with global_session() as session:
+            try:
+                q = session.query(FlagTouch)
+                q = q.filter(Alias.name==player.name)
+                q = q.filter(Round.id==round.id)
+                q = q.order_by(desc(FlagTouch.touch_time))
+                return q.first() # this should be the runner's latest FlagTouch
+            except NoResultFound:
+                raise Exception("No FlagTouch by %s found" % (player.name))
+
     def handle_game_join_event(self, event, zserv):
         """Handles a game_join event.
 
@@ -142,8 +154,9 @@ class ZServEventHandler(BaseEventHandler):
             return
         if event.type in ('team_join', 'team_switch'):
             color = event.data['team']
-            zserv.teams.add(color)
-            zserv.teams.set_player_team(player, color)
+            with zserv.teams.lock:
+                zserv.teams.add(color, acquire_lock=False)
+                zserv.teams.set_player_team(player, color, acquire_lock=False)
         else:
             with zserv.players.lock:
                 player.playing = True
@@ -155,14 +168,17 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("handle_rcon_event(%s)" % (event))
+        if event.type not in ('rcon_denied', 'rcon_granted', 'rcon_action'):
+            es = 'handle_rcon_event does not handle events of type [%s]'
+            raise Exception(es % (event.type))
+        logging.debug('handle_rcon_event(%s)' % (event))
         try:
             player = zserv.players.get(event.data['player'])
         except PlayerNotFoundError:
-            es = "Received an RCON event for non-existent player [%s]"
+            es = 'Received an RCON event for non-existent player [%s]'
             logging.error(es % (event.data['player']))
             return
-        with get_db_lock():
+        with global_session() as session:
             if event.type == 'rcon_denied':
                 s = RCONDenial(player=player.alias, round=zserv.round,
                                timestamp=event.dt)
@@ -172,25 +188,7 @@ class ZServEventHandler(BaseEventHandler):
             elif event.type == 'rcon_action':
                 s = RCONAction(player=player.alias, round=zserv.round,
                                timestamp=event.dt, action=event.data['action'])
-            logging.debug("Putting %s in session" % (s))
-            session.add(s)
-            session.commit()
-
-    def _get_latest_flag_touch(self, player, round):
-        """Returns the latest FlagTouch for a player.
-
-        player: a Player instance.
-        round:  the Round where the FlagTouch occurred.
-
-        """
-        q = session.query(FlagTouch)
-        q = q.filter(Alias.name==player.name)
-        q = q.filter(Round.id==round.id)
-        q = q.order_by(desc(FlagTouch.touch_time))
-        ft =  q.first() # this should be the runner's latest FlagTouch
-        if not ft:
-            raise Exception("No FlagTouch by %s found" % (player.name))
-        return ft
+            persist(s, session=session)
 
     def handle_flag_event(self, event, zserv):
         """Handles a flag_touch event.
@@ -206,52 +204,50 @@ class ZServEventHandler(BaseEventHandler):
             es = "Received a flag touch event for non-existent player [%s]"
             logging.error(es % (event.data['player']))
             return
-        tc = zserv.teams.get_player_team(runner)
-        logging.debug("Found player's team: %s" % (tc.color))
         with zserv.state_lock:
-            red_team_holding_flag = 'red' in zserv.teams_holding_flags
-            blue_team_holding_flag = 'blue' in zserv.teams_holding_flags
-            green_team_holding_flag = 'green' in zserv.teams_holding_flags
-            white_team_holding_flag = 'white' in zserv.teams_holding_flags
-            red_team_score = zserv.team_scores.get('red', None)
-            blue_team_score = zserv.team_scores.get('blue', None)
-            green_team_score = zserv.team_scores.get('green', None)
-            white_team_score = zserv.team_scores.get('white', None)
-            if event.type in ('flag_touch', 'flag_pick'):
-                zserv.players_holding_flags.append(runner)
-                zserv.teams_holding_flags.append(tc.color)
-                s = FlagTouch(player=runner.alias, round=zserv.round,
-                              touch_time=event.dt,
-                              was_picked=event.type=='flag_pick',
-                              player_team_color=tc,
-                              red_team_holding_flag=red_team_holding_flag,
-                              blue_team_holding_flag=blue_team_holding_flag,
-                              green_team_holding_flag=green_team_holding_flag,
-                              white_team_holding_flag=white_team_holding_flag,
-                              red_team_score=red_team_score,
-                              blue_team_score=blue_team_score,
-                              green_team_score=green_team_score,
-                              white_team_score=white_team_score)
-                session.add(s)
-                session.commit()
-            else:
-                ###
-                # At this point, the event is either a flag_cap or flag_loss.
-                ###
-                s = self._get_latest_flag_touch(runner, zserv.round)
-                s.loss_time = event.dt
-                zserv.teams_holding_flags.remove(tc.color)
-                zserv.players_holding_flags.remove(runner)
-                if event.type == 'flag_cap':
-                    s.resulted_in_score = True
-                    zserv.team_scores[tc.color] += 1
-                else: # flag_loss!
-                    s.resulted_in_score = False
-                    zserv.fragged_runners.append(runner)
-                logging.debug("Merging %s, %s" % (s, s.loss_time))
-                session.merge(s)
-                session.commit()
-                logging.debug("Merged %s, %s" % (s, s.loss_time))
+            with global_session() as session:
+                tc = zserv.teams.get_player_team(runner)
+                logging.debug("Found player's team: %s" % (tc.color))
+                red_holding_flag = 'red' in zserv.teams_holding_flags
+                blue_holding_flag = 'blue' in zserv.teams_holding_flags
+                green_holding_flag = 'green' in zserv.teams_holding_flags
+                white_holding_flag = 'white' in zserv.teams_holding_flags
+                red_score = zserv.team_scores.get('red', None)
+                blue_score = zserv.team_scores.get('blue', None)
+                green_score = zserv.team_scores.get('green', None)
+                white_score = zserv.team_scores.get('white', None)
+                if event.type in ('flag_touch', 'flag_pick'):
+                    update = False
+                    zserv.players_holding_flags.append(runner)
+                    zserv.teams_holding_flags.append(tc.color)
+                    s = FlagTouch(player=runner.alias, round=zserv.round,
+                                  touch_time=event.dt,
+                                  was_picked=event.type=='flag_pick',
+                                  player_team_color=tc,
+                                  red_team_holding_flag=red_holding_flag,
+                                  blue_team_holding_flag=blue_holding_flag,
+                                  green_team_holding_flag=green_holding_flag,
+                                  white_team_holding_flag=white_holding_flag,
+                                  red_team_score=red_score,
+                                  blue_team_score=blue_score,
+                                  green_team_score=green_score,
+                                  white_team_score=white_score)
+                else:
+                    ###
+                    # At this point, the event is either a flag_cap or flag_loss.
+                    ###
+                    update = True
+                    s = self._get_latest_flag_touch(runner, zserv.round)
+                    s.loss_time = event.dt
+                    zserv.teams_holding_flags.remove(tc.color)
+                    zserv.players_holding_flags.remove(runner)
+                    if event.type == 'flag_cap':
+                        s.resulted_in_score = True
+                        zserv.team_scores[tc.color] += 1
+                    else: # flag_loss!
+                        s.resulted_in_score = False
+                        zserv.fragged_runners.append(runner)
+                persist(s, update=update, session=session)
 
     def handle_flag_return_event(self, event, zserv):
         """Handles a flag_return event.
@@ -266,33 +262,32 @@ class ZServEventHandler(BaseEventHandler):
         except PlayerNotFoundError:
             es = "Received a flag return event for non-existent player [%s]"
             logging.error(es % (event.data['player']))
-        tc = zserv.teams.get_player_team(player)
         with zserv.state_lock:
+            tc = zserv.teams.get_player_team(player)
             zserv.teams_holding_flags.append(tc.color)
             player_was_holding_flag = player in zserv.players_holding_flags
-            red_team_holding_flag = 'red' in zserv.teams_holding_flags
-            blue_team_holding_flag = 'blue' in zserv.teams_holding_flags
-            green_team_holding_flag = 'green' in zserv.teams_holding_flags
-            white_team_holding_flag = 'white' in zserv.teams_holding_flags
-            red_team_score = zserv.team_scores.get('red', None)
-            blue_team_score = zserv.team_scores.get('blue', None)
-            green_team_score = zserv.team_scores.get('green', None)
-            white_team_score = zserv.team_scores.get('white', None)
-            s = FlagReturn(player=runner, round=zserv.round,
-                           timestamp=event.dt,
-                           player_was_holding_flag=player_was_holding_flag,
-                           player_team_color=tc,
-                           red_team_holding_flag=red_team_holding_flag,
-                           blue_team_holding_flag=blue_team_holding_flag,
-                           green_team_holding_flag=green_team_holding_flag,
-                           white_team_holding_flag=white_team_holding_flag,
-                           red_team_score=red_team_score,
-                           blue_team_score=blue_team_score,
-                           green_team_score=green_team_score,
-                           white_team_score=white_team_score)
-            logging.debug("Putting %s in session" % (s))
-            session.add(s)
-            session.commit()
+            red_holding_flag = 'red' in zserv.teams_holding_flags
+            blue_holding_flag = 'blue' in zserv.teams_holding_flags
+            green_holding_flag = 'green' in zserv.teams_holding_flags
+            white_holding_flag = 'white' in zserv.teams_holding_flags
+            red_score = zserv.team_scores.get('red', None)
+            blue_score = zserv.team_scores.get('blue', None)
+            green_score = zserv.team_scores.get('green', None)
+            white_score = zserv.team_scores.get('white', None)
+            with global_session() as session:
+                s = FlagReturn(player=runner, round=zserv.round,
+                               timestamp=event.dt,
+                               player_was_holding_flag=player_was_holding_flag,
+                               player_team_color=tc,
+                               red_team_holding_flag=red_holding_flag,
+                               blue_team_holding_flag=blue_holding_flag,
+                               green_team_holding_flag=green_holding_flag,
+                               white_team_holding_flag=white_holding_flag,
+                               red_team_score=red_score,
+                               blue_team_score=blue_score,
+                               green_team_score=green_score,
+                               white_team_score=white_score)
+                persist(s, session=session)
 
     def handle_frag_event(self, event, zserv):
         """Handles a frag event.
@@ -302,27 +297,28 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         logging.debug("handle_frag_event(%s)" % (event))
-        try:
-            fraggee = zserv.players.get(event.data['fraggee'])
-        except PlayerNotFoundError:
-            es = "Received a death event for non-existent player [%s]"
-            logging.error(es % (event.data['fraggee']))
-            return
-        fraggee_team = zserv.teams.get_player_team(fraggee)
-        if 'fragger' in event.data:
-            try:
-                fragger = zserv.players.get(event.data['fragger'])
-            except PlayerNotFoundError:
-                es = "Received a frag event for non-existent player [%s]"
-                logging.error(es % (event.data['fragger']))
-                return
-            is_suicide = False
-        else:
-            fragger = fraggee
-            fragger_team = fraggee_team
-            is_suicide = True
-        weapon = get_weapon(name=event.data['weapon'], is_suicide=is_suicide)
         with zserv.state_lock:
+            try:
+                fraggee = zserv.players.get(event.data['fraggee'])
+            except PlayerNotFoundError:
+                es = "Received a death event for non-existent player [%s]"
+                logging.error(es % (event.data['fraggee']))
+                return
+            fraggee_team = zserv.teams.get_player_team(fraggee)
+            if 'fragger' in event.data:
+                try:
+                    fragger = zserv.players.get(event.data['fragger'])
+                except PlayerNotFoundError:
+                    es = "Received a frag event for non-existent player [%s]"
+                    logging.error(es % (event.data['fragger']))
+                    return
+                is_suicide = False
+            else:
+                fragger = fraggee
+                fragger_team = fraggee_team
+                is_suicide = True
+            weapon = get_weapon(name=event.data['weapon'],
+                                is_suicide=is_suicide)
             if fraggee in zserv.fragged_runners:
                 fraggee_was_holding_flag = True
                 zserv.fragged_runners.remove(fraggee)
@@ -331,32 +327,32 @@ class ZServEventHandler(BaseEventHandler):
             if is_suicide:
                 fragger_was_holding_flag = fraggee_was_holding_flag
             else:
-                fragger_was_holding_flag = fragger in zserv.players_holding_flags
-            red_team_holding_flag = 'red' in zserv.teams_holding_flags
-            blue_team_holding_flag = 'blue' in zserv.teams_holding_flags
-            green_team_holding_flag = 'green' in zserv.teams_holding_flags
-            white_team_holding_flag = 'white' in zserv.teams_holding_flags
-            red_team_score = zserv.team_scores.get('red', None)
-            blue_team_score = zserv.team_scores.get('blue', None)
-            green_team_score = zserv.team_scores.get('green', None)
-            white_team_score = zserv.team_scores.get('white', None)
-            f = Frag(fragger=fragger.alias, fraggee=fraggee.alias,
-                     weapon=weapon, round=zserv.round, timestamp=event.dt,
-                     fragger_was_holding_flag=fragger_was_holding_flag,
-                     fraggee_was_holding_flag=fraggee_was_holding_flag,
-                     fragger_team_color=fragger_team,
-                     fraggee_team_color=fraggee_team,
-                     red_team_holding_flag=red_team_holding_flag,
-                     blue_team_holding_flag=blue_team_holding_flag,
-                     green_team_holding_flag=green_team_holding_flag,
-                     white_team_holding_flag=white_team_holding_flag,
-                     red_team_score=red_team_score,
-                     blue_team_score=blue_team_score,
-                     green_team_score=green_team_score,
-                     white_team_score=white_team_score)
-            logging.debug("Putting %s in session" % (f))
-            session.add(f)
-            session.commit()
+                fragger_was_holding_flag = fragger in \
+                                                    zserv.players_holding_flags
+            red_holding_flag = 'red' in zserv.teams_holding_flags
+            blue_holding_flag = 'blue' in zserv.teams_holding_flags
+            green_holding_flag = 'green' in zserv.teams_holding_flags
+            white_holding_flag = 'white' in zserv.teams_holding_flags
+            red_score = zserv.team_scores.get('red', None)
+            blue_score = zserv.team_scores.get('blue', None)
+            green_score = zserv.team_scores.get('green', None)
+            white_score = zserv.team_scores.get('white', None)
+            with global_session() as session:
+                s = Frag(fragger=fragger.alias, fraggee=fraggee.alias,
+                         weapon=weapon, round=zserv.round, timestamp=event.dt,
+                         fragger_was_holding_flag=fragger_was_holding_flag,
+                         fraggee_was_holding_flag=fraggee_was_holding_flag,
+                         fragger_team_color=fragger_team,
+                         fraggee_team_color=fraggee_team,
+                         red_team_holding_flag=red_holding_flag,
+                         blue_team_holding_flag=blue_holding_flag,
+                         green_team_holding_flag=green_holding_flag,
+                         white_team_holding_flag=white_holding_flag,
+                         red_team_score=red_score,
+                         blue_team_score=blue_score,
+                         green_team_score=green_score,
+                         white_team_score=white_score)
+                persist(s, session=session)
 
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.

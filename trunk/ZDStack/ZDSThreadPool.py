@@ -10,32 +10,39 @@ from __future__ import with_statement
 
 ZDSThreadPool is the module controlling threads in ZDStack.
 
-Getting a thread is not completely straight-forward.  In ZDStack, all
-custom threads run in loops with termination conditions.
-'get_thread()' pulls those common patterns into itself, so that only
-the internal logic needs to be provided as a function, and the looping
-logic can be left to 'get_thread()'.
+ZDStack runs the following threads:
 
-This means, however, that the provided function should not block
-forever in any circumstance.  It needs to regularly timeout so that
-'get_thread()' can check its termination condition and finish if that
-condition is met.
+  - a Timer that checks that ZServ log links and FIFOs are created
+  - a Timer that checks for crashed zservs and restarts them
+  - a normal Thread that polls zserv FIFOs for output
+  - 5 worker threads that perform Tasks from their Queues
+    - output tasks
+    - generic event tasks
+    - command event tasks
+    - plugin event tasks
+    - persistence tasks
 
-In the same vein, running 'join()' on a thread doesn't instantly
-terminate the thread, in fact, this will block until either the
-thread's termination condition is met or DIE_THREADS_DIE is set.  Thus
-it is critical that the provided function not block forever, indeed it
-is best if the logic 'timeout' at least every second (preferably immediately)
+Getting a Timer is easy, so there's no wrapper logic here for that.
 
-Running 'join()' in a thread that isn't finished will block until its
-termination condition is met, or DIE_THREADS_DIE is set.  This is all
-contingent on the basic 'target' function timing out periodically so
-the termination condition or DIE_THREADS_DIE can be checked.
+For normal threads without Queues to work on, they need termination
+conditions so they don't run forever.  They also need to check these
+termination conditions every so often.  get_thread() handles all this.
+
+For worker threads, we still want to be able to stop them -- but we
+want all their Tasks to be performed first.  So while these threads
+still have termination conditions, these conditions aren't "terminate
+as soon as I say so", but "terminate when all your Tasks are
+performed".  process_queue() handles all this.
+
+I suppose I could go further and create a QueueProcessor that has
+.join() methods and what-not, but that seems like over-engineering.
 
 """
 
 import time
+import Queue
 import logging
+import traceback
 
 from threading import Thread, Lock
 
@@ -123,13 +130,14 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
                     # OK, so we should quit.  This means something has
                     # .join()'d our Queue, and is waiting on us to perform
                     # all the tasks from it.  Since our Queue was just
-                    # empty, this has apparently already done!
+                    # empty, this has apparently already been done!
                     ###
                     s = "[%s]: No more tasks, quitting loop"
                     logging.debug(s % (name))
                     break
             except Exception, e:
                 logging.error("[%s] received error: [%s]" % (name, e))
+                logging.debug(traceback.format_exc())
             if sleep:
                 time.sleep(sleep)
         logging.debug("[%s]: I have quit my loop!" % (name))

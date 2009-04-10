@@ -48,7 +48,7 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
         for the function.
 
         """
-        logging.debug('')
+        # logging.debug('')
         name = name or function.__name__
         self.funcs[name] = function
         if requires_authentication:
@@ -63,6 +63,9 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
                 raise RPCAuthenticationError('<no_username_given>')
             username, password, params = params[0], params[1], params[2:]
             if (username, password) != (self.username, self.password):
+                es = "Auth failed for %s/%s: %s/%s"
+                logging.debug(es % (username, password, self.username,
+                                    self.password))
                 raise RPCAuthenticationError(username)
         else:
             s = "Method %s was not in %s"

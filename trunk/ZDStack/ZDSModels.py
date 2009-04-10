@@ -1,24 +1,69 @@
-from __future__ import with_statement
-
-from elixir import String, DateTime, Integer, Boolean, Entity, Field, \
-                   OneToMany, ManyToOne, ManyToMany, using_options, \
-                   using_table_options, setup_all, create_all, session
-
-from sqlalchemy import UniqueConstraint, MetaData
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exceptions import IntegrityError
-
+import logging
 import datetime
 
-from ZDStack import get_engine, get_db_lock
+from sqlalchemy import Table, Column, ForeignKey, String, DateTime, Integer, \
+                       Boolean, UniqueConstraint
+from sqlalchemy.orm import relation
+from sqlalchemy.ext.declarative import declarative_base
 
-class TeamColor(Entity):
+from ZDStack import get_engine, get_session_class
 
-    color = Field(String(10), primary_key=True)
-    frags = OneToMany('Frag', inverse='fragger_team_color')
-    deaths = OneToMany('Frag', inverse='fraggee_team_color')
-    flag_touches = OneToMany('FlagTouch', inverse='player_team_color')
-    flag_returns = OneToMany('FlagReturn', inverse='player_team_color')
+###
+# Get the DB engine.
+###
+logging.debug("Initializing Database")
+__engine = get_engine()
+
+###
+# Setup the declarative_base base class.
+###
+Base = declarative_base()
+
+###
+# Bind the Base's metadata.
+###
+logging.debug("Binding MetaData")
+Base.metadata.bind = __engine
+
+###
+# Bind the session as well.
+###
+logging.debug("Binding Session")
+get_session_class().configure(bind=__engine)
+
+print "Engine! %s" % (__engine)
+
+_parent_cascades = 'save-update, delete, delete-orphan'
+
+ports_and_gamemodes = \
+Table('ports_and_gamemodes', Base.metadata,
+    Column('port_name', Integer, ForeignKey('ports.name')),
+    Column('game_mode_name', Integer, ForeignKey('game_modes.name'))
+)
+
+rounds_and_aliases = \
+Table('rounds_and_aliases', Base.metadata,
+    Column('round_id', Integer, ForeignKey('rounds.id')),
+    Column('alias_id', Integer, ForeignKey('aliases.id'))
+)
+
+class TeamColor(Base):
+
+    __tablename__ = 'team_colors'
+
+    color = Column(String(10), primary_key=True)
+    frags = \
+      relation('Frag', backref='fragger_team_color',
+               cascade=_parent_cascades,
+               primaryjoin='Frag.fragger_team_color_name == TeamColor.color')
+    deaths = \
+      relation('Frag', backref='fraggee_team_color',
+               cascade=_parent_cascades,
+               primaryjoin='Frag.fraggee_team_color_name == TeamColor.color')
+    flag_touches = relation('FlagTouch', backref='player_team_color',
+                            cascade=_parent_cascades)
+    flag_returns = relation('FlagReturn', backref='player_team_color',
+                            cascade=_parent_cascades)
 
     def __str__(self):
         return '<TeamColor %s>' % (self.color)
@@ -26,14 +71,17 @@ class TeamColor(Entity):
     def __repr__(self):
         return "Team('%s')" % (self.color)
 
-class Map(Entity):
+class Map(Base):
 
-    wad = Field(String(50), required=False)
-    number = Field(Integer)
-    name = Field(String(255))
-    rounds = OneToMany('Round', inverse='map')
+    __tablename__ = 'maps'
 
-    using_table_options(UniqueConstraint('number', 'name'))
+    id = Column(Integer, primary_key=True)
+    wad = Column(String(50))
+    number = Column(Integer, nullable=False)
+    name = Column(String(255), nullable=False)
+    rounds = relation('Round', backref='map', cascade=_parent_cascades)
+
+    UniqueConstraint(number, name)
 
     def __str__(self):
         return "<Map%s: %s>" % (str(self.number).zfill(2), self.name)
@@ -41,22 +89,26 @@ class Map(Entity):
     def __repr__(self):
         return "Map(%s, '%s')" % (self.number, self.name)
 
-class Weapon(Entity):
+class Weapon(Base):
 
-    name = Field(String(50), primary_key=True)
-    is_suicide = Field(Boolean, default=False)
-    frags = OneToMany('Frag', inverse='weapon')
+    __tablename__ = 'weapons'
+
+    name = Column(String(50), primary_key=True)
+    is_suicide = Column(Boolean, default=False)
+    frags = relation('Frag', backref='weapon', cascade=_parent_cascades)
 
     def __str__(self):
         return '<Weapon %s>' % (self.name)
 
     def __repr__(self):
-        return "Weapon('%s', %s)" % (self.name, self.is_suicide)
+        return "Weapon('%s', is_suicide=%s)" % (self.name, self.is_suicide)
 
-class Port(Entity):
+class Port(Base):
 
-    name = Field(String(50), primary_key=True)
-    game_modes = ManyToMany('GameMode', inverse='ports')
+    __tablename__ = 'ports'
+
+    name = Column(String(50), primary_key=True)
+    game_modes = relation('GameMode', secondary=ports_and_gamemodes)
 
     def __str__(self):
         return '<Port %s>' % (self.name)
@@ -64,12 +116,14 @@ class Port(Entity):
     def __repr__(self):
         return "Port('%s')" % (self.name)
 
-class GameMode(Entity):
+class GameMode(Base):
 
-    name = Field(String(30), primary_key=True)
-    ports = ManyToMany('Port', inverse='game_modes')
-    has_teams = Field(Boolean, default=False)
-    rounds = OneToMany('Round', inverse='game_modes')
+    __tablename__ = 'game_modes'
+
+    name = Column(String(30), primary_key=True)
+    ports = relation('Port', secondary=ports_and_gamemodes)
+    has_teams = Column(Boolean, default=False, nullable=False)
+    rounds = relation('Round', backref='game_mode', cascade=_parent_cascades)
 
     def __str__(self):
         return '<GameMode %s>' % (self.name)
@@ -77,19 +131,27 @@ class GameMode(Entity):
     def __repr__(self):
         return "GameMode('%s', %s)" % (self.name, self.has_teams)
 
-class Round(Entity):
+class Round(Base):
 
-    game_modes = ManyToOne('GameMode', inverse='rounds')
-    map = ManyToOne('Map', inverse='rounds')
-    start_time = Field(DateTime, default=datetime.datetime.now)
-    end_time = Field(DateTime, required=False)
-    players = ManyToMany('Alias', inverse='rounds')
-    frags = OneToMany('Frag', inverse='round')
-    flag_touches = OneToMany('FlagTouch', inverse='round')
-    flag_returns = OneToMany('FlagReturn', inverse='round')
-    rcon_accesses = OneToMany('RCONAccess', inverse='round')
-    rcon_denials = OneToMany('RCONDenial', inverse='round')
-    rcon_actions = OneToMany('RCONAction', inverse='round')
+    __tablename__ = 'rounds'
+
+    id = Column(Integer, primary_key=True)
+    game_mode_name = Column(String(30), ForeignKey('game_modes.name'))
+    map_id = Column(Integer, ForeignKey('maps.id'))
+    start_time = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    end_time = Column(DateTime)
+    players = relation('Alias', secondary=rounds_and_aliases)
+    frags = relation('Frag', backref='round', cascade=_parent_cascades)
+    flag_touches = relation('FlagTouch', backref='round',
+                                         cascade=_parent_cascades)
+    flag_returns = relation('FlagReturn', backref='round',
+                                          cascade=_parent_cascades)
+    rcon_accesses = relation('RCONAccess', backref='round',
+                                           cascade=_parent_cascades)
+    rcon_denials = relation('RCONDenial', backref='round',
+                                          cascade=_parent_cascades)
+    rcon_actions = relation('RCONAction', backref='round',
+                                          cascade=_parent_cascades)
 
     def __str__(self):
         s = '<Round on %s at %s>'
@@ -99,9 +161,13 @@ class Round(Entity):
         s = "Round(%s, %s)"
         return s % (self.map, self.start_time)
 
-class StoredPlayer(Entity):
+class StoredPlayer(Base):
 
-    name = Field(String(255), primary_key=True)
+    __tablename__ = 'stored_players'
+
+    name = Column(String(255), primary_key=True)
+    aliases = relation('Alias', backref='stored_player',
+                                cascade=_parent_cascades)
 
     def __str__(self):
         return '<Player %s>' % (self.name)
@@ -109,19 +175,36 @@ class StoredPlayer(Entity):
     def __repr__(self):
         return "Player('%s')" % (self.name)
 
-class Alias(Entity):
+class Alias(Base):
 
-    name = Field(String(255), index=True)
-    ip_address = Field(String(16), index=True)
-    was_namefake = Field(Boolean, default=False, required=False)
-    rounds = ManyToMany('Round', inverse='players')
-    frags = OneToMany('Frag', inverse='fragger')
-    deaths = OneToMany('Frag', inverse='fraggee')
-    flag_touches = OneToMany('FlagTouch', inverse='player')
-    flag_returns = OneToMany('FlagReturn', inverse='player')
-    rcon_accesses = OneToMany('RCONAccess', inverse='player')
-    rcon_denials = OneToMany('RCONDenial', inverse='player')
-    rcon_actions = OneToMany('RCONAction', inverse='player')
+    __tablename__ = 'aliases'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), index=True, nullable=False)
+    ip_address = Column(String(16), index=True, nullable=False)
+    was_namefake = Column(Boolean, default=False)
+    stored_player_name = Column(String(255), ForeignKey('stored_players.name'))
+    rounds = relation('Round', secondary=rounds_and_aliases)
+    frags = relation('Frag', backref='fragger', cascade=_parent_cascades)
+    deaths = relation('Frag', backref='fraggee', cascade=_parent_cascades)
+    frags = \
+      relation('Frag', backref='fragger',
+               cascade=_parent_cascades,
+               primaryjoin='Frag.fragger_id == Alias.id')
+    deaths = \
+      relation('Frag', backref='fraggee',
+               cascade=_parent_cascades,
+               primaryjoin='Frag.fraggee_id == Alias.id')
+    flag_touches = relation('FlagTouch', backref='player',
+                            cascade=_parent_cascades)
+    flag_returns = relation('FlagReturn', backref='player',
+                            cascade=_parent_cascades)
+    rcon_accesses = relation('RCONAccess', backref='player',
+                             cascade=_parent_cascades)
+    rcon_denials = relation('RCONDenial', backref='player',
+                            cascade=_parent_cascades)
+    rcon_actions = relation('RCONAction', backref='player',
+                            cascade=_parent_cascades)
 
     def __str__(self):
         return '<Alias %s>' % (self.name)
@@ -130,223 +213,115 @@ class Alias(Entity):
         s = "Alias('%s', '%s', %s)"
         return s % (self.name, self.ip_address, self.wad_namefake)
 
-class Frag(Entity):
+class Frag(Base):
 
-    fragger = ManyToOne('Alias', inverse='frags')
-    fraggee = ManyToOne('Alias', inverse='deaths')
-    weapon = ManyToOne('Weapon', inverse='frags')
-    round = ManyToOne('Round', inverse='frags')
-    timestamp = Field(DateTime)
-    fragger_was_holding_flag = Field(Boolean, default=False)
-    fraggee_was_holding_flag = Field(Boolean, default=False)
-    fragger_team_color = ManyToOne('TeamColor', inverse='frags')
-    fraggee_team_color = ManyToOne('TeamColor', inverse='deaths')
-    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    red_team_score = Field(Integer, nullable=True)
-    blue_team_score = Field(Integer, nullable=True)
-    green_team_score = Field(Integer, nullable=True)
-    white_team_score = Field(Integer, nullable=True)
+    __tablename__ = 'frags'
+
+    id = Column(Integer, primary_key=True)
+    fragger_id = Column(Integer, ForeignKey('aliases.id'))
+    fraggee_id = Column(Integer, ForeignKey('aliases.id'))
+    weapon_name = Column(String(50), ForeignKey('weapons.name'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    timestamp = Column(DateTime, nullable=False)
+    fragger_was_holding_flag = Column(Boolean, default=False)
+    fraggee_was_holding_flag = Column(Boolean, default=False)
+    fragger_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
+    fraggee_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
+    red_team_holding_flag = Column(Boolean, default=False)
+    blue_team_holding_flag = Column(Boolean, default=False)
+    green_team_holding_flag = Column(Boolean, default=False)
+    white_team_holding_flag = Column(Boolean, default=False)
+    red_team_score = Column(Integer)
+    blue_team_score = Column(Integer)
+    green_team_score = Column(Integer)
+    white_team_score = Column(Integer)
 
     def __str__(self):
         return '<Frag %s>' % (self.weapon)
 
-class FlagTouch(Entity):
+class FlagTouch(Base):
 
-    player = ManyToOne('Alias', inverse='flag_touches')
-    round = ManyToOne('Round', inverse='flag_touches')
-    touch_time = Field(DateTime, default=datetime.datetime.now)
-    loss_time = Field(DateTime, required=False)
-    was_picked = Field(Boolean, default=False)
-    resulted_in_score = Field(Boolean, default=False)
-    player_team_color = ManyToOne('TeamColor', inverse='flag_touches')
-    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    red_team_score = Field(Integer, nullable=True)
-    blue_team_score = Field(Integer, nullable=True)
-    green_team_score = Field(Integer, nullable=True)
-    white_team_score = Field(Integer, nullable=True)
+    __tablename__ = 'flag_touches'
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey('aliases.id'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    touch_time = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    loss_time = Column(DateTime)
+    was_picked = Column(Boolean, default=False, nullable=False)
+    resulted_in_score = Column(Boolean, default=False)
+    player_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
+    red_team_holding_flag = Column(Boolean, default=False)
+    blue_team_holding_flag = Column(Boolean, default=False)
+    green_team_holding_flag = Column(Boolean, default=False)
+    white_team_holding_flag = Column(Boolean, default=False)
+    red_team_score = Column(Integer)
+    blue_team_score = Column(Integer)
+    green_team_score = Column(Integer)
+    white_team_score = Column(Integer)
 
     def __str__(self):
         return '<FlagTouch %s>' % (self.player)
 
-class FlagReturn(Entity):
+class FlagReturn(Base):
 
-    player = ManyToOne('Alias', inverse='flag_returns')
-    round = ManyToOne('Round', inverse='flag_returns')
-    timestamp = Field(DateTime, default=datetime.datetime.now)
-    player_was_holding_flag = Field(Boolean, default=False)
-    player_team_color = ManyToOne('TeamColor', inverse='flag_returns')
-    red_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    blue_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    green_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    white_team_holding_flag = Field(Boolean, default=False, nullable=True)
-    red_team_score = Field(Integer, nullable=True)
-    blue_team_score = Field(Integer, nullable=True)
-    green_team_score = Field(Integer, nullable=True)
-    white_team_score = Field(Integer, nullable=True)
+    __tablename__ = 'flag_returns'
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey('aliases.id'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    timestamp = Column(DateTime, default=datetime.datetime.now)
+    player_was_holding_flag = Column(Boolean, default=False)
+    player_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
+    red_team_holding_flag = Column(Boolean, default=False)
+    blue_team_holding_flag = Column(Boolean, default=False)
+    green_team_holding_flag = Column(Boolean, default=False)
+    white_team_holding_flag = Column(Boolean, default=False)
+    red_team_score = Column(Integer)
+    blue_team_score = Column(Integer)
+    green_team_score = Column(Integer)
+    white_team_score = Column(Integer)
 
     def __str__(self):
         return '<FlagReturn %s>' % (self.player)
 
-class RCONAccess(Entity):
+class RCONAccess(Base):
 
-    player = ManyToOne('Alias', inverse='rcon_accesses')
-    round = ManyToOne('Round', inverse='rcon_accesses')
-    timestamp = Field(DateTime, default=datetime.datetime.now)
+    __tablename__ = 'rcon_accesses'
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey('aliases.id'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
 
     def __str__(self):
         return '<RCON Access %s>' % (self.player)
 
-class RCONDenial(Entity):
+class RCONDenial(Base):
 
-    player = ManyToOne('Alias', inverse='rcon_denials')
-    round = ManyToOne('Round', inverse='rcon_denials')
-    timestamp = Field(DateTime, default=datetime.datetime.now)
+    __tablename__ = 'rcon_denials'
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey('aliases.id'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
 
     def __str__(self):
         return '<RCON Denial %s>' % (self.player)
 
-class RCONAction(Entity):
+class RCONAction(Base):
 
-    player = ManyToOne('Alias', inverse='rcon_actions')
-    round = ManyToOne('Round', inverse='rcon_actions')
-    timestamp = Field(DateTime, default=datetime.datetime.now)
-    action = Field(String(255))
+    __tablename__ = 'rcon_actions'
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey('aliases.id'))
+    round_id = Column(Integer, ForeignKey('rounds.id'))
+    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    action = Column(String(255), nullable=False)
 
     def __str__(self):
         return '<RCON Action %s - %s>' % (self.action, self.player)
 
-###
-# Get the MetaData and bind it
-###
-MetaData.bind = get_engine()
-
-###
-# Setup all the mapping stuff.
-###
-setup_all()
-###
-# Should have some kind of test here that checks if the tables already exist,
-# and create them if they don't.
-###
-create_all()
-
-###
-# What follows is ridiculous, and I can't imagine this is what you are
-# actually supposed to do.  But FUCK if I can't figure out how to get
-# SQLAlchemy to think for itself and not INSERT rows that already exist.
-# Goddamn.
-#
-# It's very simple:
-#
-#   Some stuff I want saved and some stuff I don't, so I can't use autoflush,
-#     autocommit, or save_on_init.  I can see how that's handy though.
-#   I'd rather not manually do a query to see if the object I'm about to create
-#     has ever, in the entire goddamn history of the database, been
-#     instantiated before.
-#   When I do decide I want to save things, I'd rather not manually check the
-#     session AND the database if it has ever been saved before.
-#   I don't want to subclass things or create MixIn junk or find random
-#     configuration "DSL" methods with obscure, random names to do this.
-#
-# OK, rant over.  Shit.
-###
-
-def get_weapon(name, is_suicide):
-    q = session.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
-    try:
-        return q.one()
-    except NoResultFound:
-        with get_db_lock():
-            out = Weapon(name=name, is_suicide=is_suicide)
-            try:
-                session.add(out)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                pass
-        return get_weapon(name, is_suicide)
-
-def get_alias(name, ip_address, round=None):
-    q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
-    out = q.first()
-    if out:
-        return out
-    elif round:
-        with get_db_lock():
-            out = Alias(name=name, ip_address=ip_address, round=round)
-            try:
-                session.add(out)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                pass
-        return get_alias(name, ip_address, round)
-    else:
-        return None
-
-def get_team_color(color):
-    q = session.query(TeamColor).filter_by(color=color)
-    try:
-        return q.one()
-    except NoResultFound:
-        with get_db_lock():
-            out = TeamColor(color=color)
-            try:
-                session.add(out)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                pass
-        return get_team_color(color)
-
-def get_port(name):
-    q = session.query(Port).filter_by(name=name)
-    try:
-        return q.one()
-    except NoResultFound:
-        with get_db_lock():
-            out = Port(name=name)
-            try:
-                session.add(out)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                pass
-        return get_port(name)
-
-def get_game_mode(name, has_teams):
-    q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
-    try:
-        return q.one()
-    except NoResultFound:
-        with get_db_lock():
-            out = GameMode(name=name, has_teams=has_teams)
-            try:
-                session.add(out)
-                session.commit()
-            except IntegrityError:
-                session.rollback()
-                pass
-        return get_game_mode(name, has_teams)
-
-def get_map(number, name):
-    q = session.query(Map).filter_by(number=number, name=name)
-    out = q.first()
-    if out:
-        return out
-    with get_db_lock():
-        out = Map(number=number, name=name)
-        try:
-            session.add(out)
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            pass
-    return get_map(number, name)
+logging.debug("Creating tables")
+Base.metadata.create_all(__engine)
 

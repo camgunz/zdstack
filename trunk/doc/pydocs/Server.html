@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>Server</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/disk-1/data/zdstack/trunk/ZDStack/Server.py">/media/disk-1/data/zdstack/trunk/ZDStack/Server.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/Server.py">/home/cagunyon/Desktop/Code/zdstack/trunk/ZDStack/Server.py</a></font></td></tr></table>
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -17,13 +17,14 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
-<a href="os.html">os</a><br>
-</td><td width="25%" valign=top><a href="signal.html">signal</a><br>
-<a href="socket.html">socket</a><br>
-</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
-<a href="tempfile.html">tempfile</a><br>
-</td><td width="25%" valign=top><a href="time.html">time</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ZDStack.ZDSThreadPool.html">ZDStack.ZDSThreadPool</a><br>
+<a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+<a href="signal.html">signal</a><br>
+</td><td width="25%" valign=top><a href="socket.html">socket</a><br>
+<a href="sys.html">sys</a><br>
+</td><td width="25%" valign=top><a href="tempfile.html">tempfile</a><br>
+<a href="time.html">time</a><br>
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
@@ -32,22 +33,25 @@
     
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
 <dt><font face="helvetica, arial"><a href="Server.html#Server">Server</a>
 </font></dt></dl>
+</dd>
+</dl>
  <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="Server">class <strong>Server</strong></a></font></td></tr>
+<font color="#000000" face="helvetica, arial"><a name="Server">class <strong>Server</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
 <td colspan=2><tt><a href="#Server">Server</a>&nbsp;represents&nbsp;a&nbsp;daemonized&nbsp;process&nbsp;serving&nbsp;network&nbsp;requests.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Server-__init__"><strong>__init__</strong></a>(self, config_file<font color="#909090">=None</font>, debugging<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#Server">Server</a>&nbsp;instance.<br>
+<dl><dt><a name="Server-__init__"><strong>__init__</strong></a>(self, debugging<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#Server">Server</a>&nbsp;instance.<br>
 &nbsp;<br>
-config_file:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;full&nbsp;path&nbsp;to&nbsp;a<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;configuration&nbsp;file<br>
 debugging:&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;debugging&nbsp;is&nbsp;enabled</tt></dd></dl>
 
 <dl><dt><a name="Server-get_logfile"><strong>get_logfile</strong></a>(self)</dt><dd><tt>Returns&nbsp;the&nbsp;contents&nbsp;of&nbsp;this&nbsp;server's&nbsp;logfile.</tt></dd></dl>
@@ -56,14 +60,12 @@ debugging:&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;d
 
 <dl><dt><a name="Server-handle_signal"><strong>handle_signal</strong></a>(self, signum, frame)</dt><dd><tt>Handles&nbsp;a&nbsp;signal.</tt></dd></dl>
 
-<dl><dt><a name="Server-initialize_config"><strong>initialize_config</strong></a>(self, config_file<font color="#909090">=None</font>, reload<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;the&nbsp;server&nbsp;configuration:<br>
+<dl><dt><a name="Server-initialize_config"><strong>initialize_config</strong></a>(self, reload<font color="#909090">=False</font>)</dt><dd><tt>Initializes&nbsp;the&nbsp;server&nbsp;configuration:<br>
 &nbsp;<br>
-config_file:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;full&nbsp;path&nbsp;to&nbsp;a<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;configuration&nbsp;file<br>
 reload:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configuration&nbsp;is<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being&nbsp;reloaded</tt></dd></dl>
 
-<dl><dt><a name="Server-load_config"><strong>load_config</strong></a>(self, reload<font color="#909090">=False</font>)</dt><dd><tt>Loads&nbsp;the&nbsp;config.<br>
+<dl><dt><a name="Server-load_config"><strong>load_config</strong></a>(self, config, reload<font color="#909090">=False</font>)</dt><dd><tt>Loads&nbsp;the&nbsp;config.<br>
 &nbsp;<br>
 reload:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configuration&nbsp;is&nbsp;being<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reloaded</tt></dd></dl>
@@ -74,7 +76,7 @@ reload:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configu
 
 <dl><dt><a name="Server-restart"><strong>restart</strong></a>(self)</dt><dd><tt>Restarts&nbsp;the&nbsp;server.</tt></dd></dl>
 
-<dl><dt><a name="Server-shutdown"><strong>shutdown</strong></a>(self, signum<font color="#909090">=15</font>)</dt><dd><tt>Shuts&nbsp;the&nbsp;server&nbsp;down.</tt></dd></dl>
+<dl><dt><a name="Server-shutdown"><strong>shutdown</strong></a>(self, signum<font color="#909090">=15</font>, retval<font color="#909090">=0</font>)</dt><dd><tt>Shuts&nbsp;the&nbsp;server&nbsp;down.</tt></dd></dl>
 
 <dl><dt><a name="Server-start"><strong>start</strong></a>(self)</dt><dd><tt>Starts&nbsp;serving&nbsp;requests.</tt></dd></dl>
 
@@ -82,6 +84,14 @@ reload:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configu
 
 <dl><dt><a name="Server-stop"><strong>stop</strong></a>(self)</dt><dd><tt>Stops&nbsp;serving&nbsp;requests.</tt></dd></dl>
 
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#55aa55">
@@ -89,5 +99,6 @@ reload:&nbsp;a&nbsp;boolean,&nbsp;whether&nbsp;or&nbsp;not&nbsp;the&nbsp;configu
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>HOSTNAME</strong> = 'min9.camellia.hopto.org'</td></tr></table>
+<td width="100%"><strong>DIE_THREADS_DIE</strong> = False<br>
+<strong>RPC_CLASS</strong> = None</td></tr></table>
 </body></html>

@@ -1,6 +1,9 @@
 - Debug with multiple servers, multiple players, and then both
-- Test with MySQL on idl.org
+- Test with MySQL and PostgreSQL
 - ZDSConfigParser stuff
   - Use a sorted dict class for _sections
   - Add a getlist(section, option, parse_func=None)
 - Make sure non-debugging output is quiet
+- Add 'save log' option
+- Add rapid-restart detection
+- Test all RPC functions

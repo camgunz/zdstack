@@ -321,6 +321,7 @@ HEAD_TEMPLATE = """\
             padding-left: .5em;
             padding-right: .5em;
             padding-bottom: .25em;
+            max-width: 20em;
         }
         th { white-space: nowrap; }
         table#servers { border-spacing: 1em 0em; }

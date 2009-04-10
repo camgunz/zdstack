@@ -1,4 +1,5 @@
 import re
+import logging
 
 from ZDStack.LogEvent import LogEvent
 
@@ -32,7 +33,7 @@ from ZDStack.LogEvent import LogEvent
 
 SERVER_PREFIX = r"^>\s"
 TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])"
-SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r"("
+SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
 
 class Regexp(object):
 
@@ -48,12 +49,16 @@ class Regexp(object):
                     regexp.
         
         """
-        if prefix:
-            self.regexp = re.compile(prefix + regexp)
-        else:
-            self.regexp = re.compile(regexp)
         self.category = category
         self.event_type = event_type
+        try:
+            if prefix:
+                s = prefix + regexp
+            else:
+                s = regexp
+            self.regexp = re.compile(s)
+        except Exception, e:
+            raise Exception("Choked on regexp [%s]: %s" % (s, e))
 
     def match(self, s):
         """Returns a dict of parsed info from a string.
@@ -76,9 +81,11 @@ class Regexp(object):
         """
         if s == 'General logging off':
             d = {'log': 'general'}
+            logging.debug("Returning a log_roll event")
             return LogEvent(now, 'log_roll', d, 'log_roll', s)
         d = self.match(s) # this actually does a 'search', but meh
         if d:
+            # logging.debug("Returning a %s event" % (self.event_type))
             return LogEvent(now, self.event_type, d, self.category, s)
         if s.startswith('<') and '>' in line:
             ###
@@ -90,6 +97,7 @@ class Regexp(object):
                 possible_player_names.append('>'.join(tokens[:x])[1:])
             d = {'contents': line,
                  'possible_player_names': possible_player_names}
+            logging.debug("Returning a message event")
             return LogEvent(now, 'message', d, 'message', s)
 
 class ServerRegexp(Regexp):
@@ -130,7 +138,7 @@ COMMANDS = (
 (r"Cleared (?P<cleared_maps>\d\d\d|\d\d|\d) maps from que.$", 'clearmaplist_command', False),
 (r'"(?P<var_name>.*)" is "(?P<var_value>.*)"$', 'get_command', False),
 (r"\s.\*\*\s*Player (?P<player_num>\d\d|\d) not found!$", 'kick_command', False),
-(r"*(?P<player_name>.*) was kicked from the game (?P<reason>)$", 'kick_command', True),
+(r"(?P<player_name>.*) was kicked from the game (?P<reason>)$", 'kick_command', True),
 (r"(?P<player_ip>(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) unbanned.$", 'killban_command', False),
 (r"No such ban$", 'killban_command', False),
 (r"map(?P<number>\d\d): (?P<name>.*)$", 'map_change', False),
@@ -192,14 +200,10 @@ FLAGS = (
 )
 
 CONNECTIONS = (
-(r"^(?P<ip_address>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?![\d]).*?(?P<port>\d+) connection", 'connection', False),
+(r"(?P<ip_address>(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?![\d]).*?(?P<port>\d+) connection", 'connection', False),
 (r"(?P<player>.*) disconnected$", 'disconnection', True),
 (r"(?P<player_name>.*) has connected.$", "player_lookup", True)
 )
-
-ALL = COMMANDS + RCONS + WEAPONS + DEATHS + JOINS + FLAGS + CONNECTIONS
-CLIENT_REGEXPS = [ClientRegexp(*x) for x in ALL]
-SERVER_REGEXPS = [ServerRegexp(*x) for x in ALL]
 
 __CLIENT_REGEXPS = None
 __SERVER_REGEXPS = None
@@ -210,55 +214,31 @@ __SERVER_REGEXPS = None
 # regexps closer to the left.
 ###
 
+def _get_regexps(regexp_class):
+    out = []
+    for regexp, event_type, requires_prefix in FRAGS:
+        out.append(Regexp(regexp, 'frag', event_type, r"^"))
+    for regexp, event_type, requires_prefix in COMMANDS:
+        out.append(Regexp(regexp, 'command', event_type, r"^"))
+    for regexp, event_type, requires_prefix in JOINS:
+        out.append(Regexp(regexp, 'join', event_type, r"^"))
+    for regexp, event_type, requires_prefix in CONNECTIONS:
+        out.append(Regexp(regexp, 'connection', event_type, r"^"))
+    for regexp, event_type, requires_prefix in FLAGS:
+        out.append(Regexp(regexp, 'flag', event_type, r"^"))
+    for regexp, event_type, requires_prefix in DEATHS:
+        out.append(Regexp(regexp, 'death', event_type, r"^"))
+    for regexp, event_type, requires_prefix in RCONS:
+        out.append(Regexp(regexp, 'rcon', event_type, r"^"))
+    return out
+
 def get_client_regexps():
     global __CLIENT_REGEXPS
-    if __CLIENT_REGEXPS is None:
-        for regexp, event_type, requires_prefix in FRAGS:
-            x = Regexp(regexp, event_type, 'frag', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in COMMANDS:
-            x = Regexp(regexp, event_type, 'command', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in JOINS:
-            x = Regexp(regexp, event_type, 'join', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in CONNECTIONS:
-            x = Regexp(regexp, event_type, 'connection', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in FLAGS:
-            x = Regexp(regexp, event_type, 'flag', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in DEATHS:
-            x = Regexp(regexp, event_type, 'death', r"^")
-            __CLIENT_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in RCONS:
-            x = Regexp(regexp, event_type, 'rcon', r"^")
-            __CLIENT_REGEXPS.append(x)
+    __CLIENT_REGEXPS = __CLIENT_REGEXPS or _get_regexps(Regexp)
     return __CLIENT_REGEXPS
 
 def get_server_regexps():
     global __SERVER_REGEXPS
-    if __SERVER_REGEXPS is None:
-        for regexp, event_type, requires_prefix in FRAGS:
-            x = ServerRegexp(regexp, event_type, 'frag', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in COMMANDS:
-            x = ServerRegexp(regexp, event_type, 'command', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in JOINS:
-            x = ServerRegexp(regexp, event_type, 'join', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in CONNECTIONS:
-            x = ServerRegexp(regexp, event_type, 'connection', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in FLAGS:
-            x = ServerRegexp(regexp, event_type, 'flag', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in DEATHS:
-            x = ServerRegexp(regexp, event_type, 'death', requires_prefix)
-            __SERVER_REGEXPS.append(x)
-        for regexp, event_type, requires_prefix in RCONS:
-            x = ServerRegexp(regexp, event_type, 'rcon', requires_prefix)
-            __SERVER_REGEXPS.append(x)
+    __SERVER_REGEXPS = __SERVER_REGEXPS or _get_regexps(ServerRegexp)
     return __SERVER_REGEXPS
 

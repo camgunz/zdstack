@@ -1,47 +1,44 @@
 import os
-import re
-import sys
 import time
-import urllib
 import socket
 import logging
 import logging.handlers
 
+from threading import Lock
 from decimal import Decimal
-from datetime import datetime, timedelta
-from threading import Thread, Lock
+from contextlib import contextmanager
 from dummy_threading import Lock as DummyLock
-from cStringIO import StringIO
-
-from pyfileutils import read_file, append_file
 
 from ZDStack.Utils import resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 
 ###
-# ORM stuff.
+# ORM Stuff
 ###
-from sqlalchemy.pool import NullPool
+
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import scoped_session, sessionmaker
-import elixir
-Session = scoped_session(sessionmaker(autoflush=False, autocommit=False))
-elixir.session = Session
-elixir.options_defaults.update({'shortnames': True})
-elixir.using_mapper_options(save_on_init=True)
+
+Session = scoped_session(sessionmaker())
+
+# import elixir
+# elixir.session = Session
+# elixir.options_defaults.update({'shortnames': True})
+
 ###
-# End of ORM stuff.
+# End ORM Stuff
 ###
 
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'DEVNULL',
            'CONFIGFILE', 'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS',
-           'DATEFMT', 'DB_LOCK', 'DB_ENGINE', 'DB_METADATA', 'DB_SESSION_CLASS',
-           'JSON_CLASS', 'RPC_CLASS', 'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK',
-           'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'JSONNotFoundError',
-           'PlayerNotFoundError', 'TeamNotFoundError', 'ZServNotFoundError',
-           'RPCAuthenticationError', 'DebugTRFH', 'get_hostname',
-           'get_loopback', 'get_engine', 'get_db_lock', 'get_metadata',
-           'get_session_class', 'get_session', 'get_configfile',
+           'DATEFMT', 'JSON_CLASS', 'RPC_CLASS', 'RPC_PROXY_CLASS',
+           'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT', 'DIE_THREADS_DIE',
+           'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
+           'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
+           'Session', 'get_hostname', 'get_loopback', 'get_engine',
+           'get_db_lock', 'db_is_noop', 'get_session_class', 'get_configfile',
            'set_configfile', 'load_configparser', 'get_configparser',
            'get_server_proxy', 'get_plugins', 'set_debugging', 'log']
 
@@ -83,6 +80,7 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 DB_LOCK = None
 DB_ENGINE = None
 DB_METADATA = None
+DB_NOOP = None
 DB_SESSION_CLASS = None
 JSON_CLASS = None
 RPC_CLASS = None
@@ -133,11 +131,13 @@ class RPCAuthenticationError(Exception):
         Exception.__init__(self, "Authentication failed for [%s]" % (username))
 
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
+
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
         # print >> sys.stderr, record.getMessage().strip()
 
 class JSONNotFoundError(Exception):
+
     def __init__(self):
         es = "Using JSON-RPC requires either Python 2.6 (or higher) or "
         es += "simplejson"
@@ -199,112 +199,6 @@ Where '127.0.0.1' is replaced by the IP address of the loopback interface, and
 Error code/message was: %s, %s"""
             raise Exception(es % e.args)
     return LOOPBACK
-
-def get_engine():
-    ###
-    # At this point, we are assuming that stats have been enabled.
-    ###
-    global DB_ENGINE
-    global DB_LOCK
-    if not DB_ENGINE:
-        d = get_configparser().defaults()
-        db_driver = d.get('zdstack_database_engine', 'sqlite').lower()
-        if db_driver not in SUPPORTED_ENGINE_TYPES:
-            raise ValueError("DB engine %s is not supported" % (db_driver))
-        if db_driver == 'sqlite':
-            DB_LOCK = Lock()
-            db_name = d.get('zdstack_database_name', ':memory:')
-            if db_name == ':memory:':
-                db_str = 'sqlite://:memory:'
-            else:
-                db_name = resolve_path(db_name) # just to be sure
-                if not os.path.isfile(db_name):
-                    es = "SQLite DB file %s not found, will create new DB"
-                    logging.info(es)
-                db_str = 'sqlite:///%s' % (db_name)
-        else:
-            DB_LOCK = DummyLock()
-            db_host = d['zdstack_database_host']
-            if 'port' in d and d['port']:
-                db_port = d['port']
-                try:
-                    db_port = int(db_port)
-                except:
-                    es = "Invalid port number format %s"
-                    raise ValueError(es % (db_port))
-                db_temp = '%%s://%%s:%%s@%%s:%d/%%s' % (db_port)
-                if db_driver == 'mysql' and db_host == 'localhost':
-                    db_host = get_loopback()
-            else:
-                db_port = None
-                db_temp = '%s://%s:%s@%s/%s'
-            if db_driver == 'mysql':
-                ###
-                # MySQL's handing of Unicode is apparently a little dumb,
-                # so we use SQLAlchemy's.
-                ###
-                db_temp += '?charset=utf8&use_unicode=0'
-            ###
-            # Some databases might be configured for user-less/password-less
-            # access (potentially dumb, but w/e).
-            ###
-            db_user = ''
-            db_pass = ''
-            ###
-            # Be a little flexible in the labeling of the db user & pw fields
-            ###
-            if 'zdstack_database_user' in d and d['zdstack_database_user']:
-                db_user = d['zdstack_database_user']
-            elif 'zdstack_database_username' in d and \
-               d['zdstack_database_username']:
-                db_user = d['zdstack_database_username']
-            if 'zdstack_database_pass' in d and d['zdstack_database_pass']:
-                db_pass = d['zdstack_database_pass']
-            elif 'zdstack_database_password' in d and \
-               d['zdstack_database_password']:
-                db_pass = d['zdstack_database_password']
-            elif 'zdstack_database_passwd' in d and \
-               d['zdstack_database_passwd']:
-                db_pass = d['zdstack_database_passwd']
-            db_str = db_temp % (db_driver, db_user, db_pass, db_host, db_name)
-        from sqlalchemy import create_engine
-        logging.debug("Creating engine from DB str: [%s]" % (db_str))
-        if db_driver == 'mysql':
-            ###
-            # We need to recycle connections every hour or so to avoid MySQL's
-            # idle connection timeouts.
-            ###
-            # print "Creating engine from DB str: [%s]" % (db_str)
-            DB_ENGINE = create_engine(db_str, pool_recycle=3600, poolclass=NullPool)
-        else:
-            # print "Creating engine from DB str: [%s]" % (db_str)
-            DB_ENGINE = create_engine(db_str, poolclass=NullPool)
-    return DB_ENGINE
-
-def get_db_lock():
-    global DB_LOCK
-    return DB_LOCK
-
-def get_metadata():
-    global DB_METADATA
-    if not DB_METADATA:
-        from sqlalchemy import MetaData
-        DB_METADATA = MetaData()
-        DB_METADATA.bind = get_engine()
-    return DB_METADATA
-
-def get_session_class():
-    global DB_SESSION_CLASS
-    if not DB_SESSION_CLASS:
-        from sqlalchemy.orm import sessionmaker
-        DB_SESSION_CLASS = sessionmaker(bind=get_engine())
-        DB_SESSION_CLASS = sessionmaker(autoflush=False, autocommit=False,
-                                        bind=get_engine())
-    return DB_SESSION_CLASS
-
-def get_session():
-    Session = get_session_class()
-    return Session()
 
 def get_configfile():
     global CONFIGFILE
@@ -411,6 +305,188 @@ def load_configparser():
     RPC_CLASS = rpc_class
     RPC_PROXY_CLASS = proxy_class
     return cp
+
+def _get_embedded_engine(defaults):
+    """This returns an engine for an embedded database.
+
+    defaults: a dict of the options/values in the configparser's
+              DEFAULT section.
+
+    Certain things need to be set appropriately to ensure error-free 
+    use of embedded databases, and this method sets them.
+
+    """
+    logging.debug("Getting embedded engine")
+    global DB_LOCK
+    d = defaults
+    DB_LOCK = Lock()
+    if d['zdstack_database_engine'] == 'sqlite':
+        db_name = d.get('zdstack_database_name', ':memory:')
+    elif not 'zdstack_database_name' in d:
+        es = "Required global option zdstack_database_name not found"
+        raise ValueError(es)
+    else:
+        db_name = d['zdstack_database_name']
+        if db_name == ':memory:':
+            es = ":memory: is only valid when using the SQLite database engine"
+            raise ValueError(es)
+    db_str = '%s://' % (d['zdstack_database_engine'])
+    if db_name == ':memory:':
+        db_str += ':memory:'
+    else:
+        db_name = resolve_path(db_name) # just to be sure
+        if not os.path.isfile(db_name):
+            es = "Embedded DB file %s not found, will create new DB"
+            logging.info(es % (db_name))
+        db_str += '/' + db_name
+    ###
+    # Set embedded-DB-specific stuff here.
+    ###
+    global DB_NOOP
+    DB_NOOP = False
+    # elixir.using_mapper_options(save_on_init=False)
+    Session.configure(autoflush=False, autocommit=True)
+    logging.debug("No-op is False")
+    logging.debug("save_on_init is False")
+    logging.debug("autoflush is False")
+    logging.debug("autocommit is True")
+    ###
+    # End embedded DB section.
+    ###
+    if d['zdstack_database_engine'] == 'sqlite':
+        cd = {'check_same_thread': False, 'isolation_level': 'IMMEDIATE'}
+        e = create_engine(db_str, poolclass=StaticPool, connect_args=cd)
+    else:
+        e = create_engine(db_str, poolclass=StaticPool)
+    return e
+
+def _get_full_engine(defaults):
+    """This returns an engine for a full RDBMS.
+
+    defaults: a dict of the options/values in the configparser's
+              DEFAULT section.
+
+    Certain things need to be set appropriately to ensure performant
+    use of full databases, and this method sets them.
+
+    """
+    logging.debug("Getting full engine")
+    global DB_LOCK
+    d = defaults
+    DB_LOCK = DummyLock()
+    db_str = '%s://' % (d['zdstack_database_engine'].replace('-', ''))
+    ###
+    # Some databases might be configured for user-less/password-less
+    # access (potentially dumb, but w/e).
+    ###
+    db_user = None
+    db_pass = None
+    ###
+    # Be a little flexible in the labeling of the db user & pw fields
+    ###
+    if 'zdstack_database_user' in d and d['zdstack_database_user']:
+        db_user = d['zdstack_database_user']
+    elif 'zdstack_database_username' in d and \
+       d['zdstack_database_username']:
+        db_user = d['zdstack_database_username']
+    if 'zdstack_database_pass' in d and d['zdstack_database_pass']:
+        db_pass = d['zdstack_database_pass']
+    elif 'zdstack_database_password' in d and \
+       d['zdstack_database_password']:
+        db_pass = d['zdstack_database_password']
+    elif 'zdstack_database_passwd' in d and \
+       d['zdstack_database_passwd']:
+        db_pass = d['zdstack_database_passwd']
+    if db_user:
+        db_str += db_user
+        if db_pass:
+            db_str += ':' + db_pass
+        db_str += '@'
+    elif db_pass:
+        es = "Cannot give a database password without a database user"
+        raise ValueError(es)
+    db_host = d['zdstack_database_host']
+    if db_host == 'localhost':
+        if db_driver != 'mysql':
+            ###
+            # MySQL supports local socket connections.  Everything else needs
+            # a real socket though.
+            ###
+            db_host = get_loopback()
+    db_str += db_host
+    db_port = d.get('zdstack_database_port', False)
+    if db_port:
+        try:
+            int(d['zdstack_database_port'])
+        except ValueError:
+            es = "Invalid port number format %s"
+            raise ValueError(es % (d['zdstack_database_port']))
+        db_str += ':' + d['zdstack_database_port']
+    db_name = d.get('zdstack_database_name', False)
+    if not db_name:
+        es = "Required global option zdstack_database_name not found"
+        raise ValueError(es)
+    db_str += '/' + db_name
+    if db_driver == 'mysql':
+        ###
+        # MySQL's handing of Unicode is apparently a little dumb,
+        # so we use SQLAlchemy's.
+        ###
+        db_str += '?charset=utf8&use_unicode=0'
+    ###
+    # Set full-RDBMS-specific stuff here.
+    ###
+    global DB_NOOP
+    DB_NOOP = True
+    Session.configure(autocommit=True, autoflush=True)
+    elixir.using_mapper_options(save_on_init=True)
+    logging.debug("No-op is True")
+    logging.debug("save_on_init is True")
+    logging.debug("autoflush is True")
+    logging.debug("autocommit is False")
+    ###
+    # End full-RDBMS section.
+    ###
+    logging.debug("Creating engine from DB str: [%s]" % (db_str))
+    if db_driver == 'mysql':
+        ###
+        # We need to recycle connections every hour or so to avoid MySQL's
+        # idle connection timeouts.
+        ###
+        return create_engine(db_str, pool_recycle=3600)
+    else:
+        return create_engine(db_str)
+
+def get_engine():
+    ###
+    # At this point, we are assuming that stats have been enabled.
+    ###
+    logging.debug("Getting engine")
+    global DB_ENGINE
+    if not DB_ENGINE:
+        cp = get_configparser()
+        d = cp.defaults()
+        db_driver = d.get('zdstack_database_engine', 'sqlite').lower()
+        if db_driver not in SUPPORTED_ENGINE_TYPES:
+            raise ValueError("DB engine %s is not supported" % (db_driver))
+        d['zdstack_database_engine'] = db_driver
+        if db_driver in ('sqlite', 'firebird'):
+            DB_ENGINE = _get_embedded_engine(d)
+        else:
+            DB_ENGINE = _get_full_engine(d)
+    return DB_ENGINE
+
+def get_db_lock():
+    global DB_LOCK
+    return DB_LOCK
+
+def db_is_noop():
+    global DB_NOOP
+    return DB_NOOP == True
+
+def get_session_class():
+    global Session
+    return Session
 
 def _load_json():
     global JSON_CLASS
