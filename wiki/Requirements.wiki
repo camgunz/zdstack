@@ -5,7 +5,7 @@
 
 ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
 
-= Basic Requirements =
+= Basic Software Requirements =
 
 In order to run, ZDStack requires the following:
 
@@ -38,3 +38,26 @@ If you don't have Python 2.6, installing simplejson is... simple: run `easy_inst
 == Detached Database ==
 
 By default, ZDStack uses the SQLite ([http://www.sqlite.org]) database engine.  However, SQLite cannot reliably be accessed over a network (including the Internet), and furthermore cannot reliably be accessed by more than one process at a time without complicated locking mechanisms, meaning that any front-end that needs access to the database (a stat viewer, for example) will most likely not function correctly, and may even prevent ZDStack from writing to the database, losing data.  ZDStack supports the use of other database engines without this limitation, but they each require third-party software packages -- many of which are C modules that require compilation.  For more information, visit DatabaseConfiguration.
+
+= Hardware Requirements =
+
+ZDStack has very modest hardware requirements, so it's easier to list its resource usage
+than it is to spec a machine capable of running it.  Note, however, this is only ZDStack's resource usage, not its child zserv processes.
+
+== Memory Usage ==
+
+ZDStack should never use more than 30MB of RAM.  In fact it shouldn't even get close to that unless it's using an in-memory database -- in which case its memory usage can be unlimited if statistics are enabled.  On average it should only use between 11MB and 15MB.
+
+Running ZDSWeb as a standalone webserver will consume an additional 8MB-10MB of RAM.
+
+== Disk Space ==
+
+ZDStack's installation files consume less than 2MB of disk space, and this includes the example configuration file and all HTML developer documentation.
+
+ZDStack by default does not write the output of its zservs to disk, however, it can be configured to do so.  Additionally it generates a log file of its own.  All of these output files are rolled-over at midnight for simple maintenance.
+
+If statistics are enabled and ZDStack is not using an in-memory database, statistics will be saved to disk.  The exact amount of space consumed depends upon the database engine used, and of course, the amount of time for which statistics have been saved.  Administration and maintenance of the database is left up to the user.
+
+== CPU Usage ==
+
+ZDStack is very easy on CPU, using little or no CPU most of the time -- even during RPC responses.  During startup and shutdown, however, ZDStack consumes as much CPU as it can.  ZDStack's startup and shutdown times should never exceed 3 seconds, so this period of high CPU usage is generally kept to a minimum.
