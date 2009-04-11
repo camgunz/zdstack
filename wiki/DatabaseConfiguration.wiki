@@ -31,8 +31,8 @@ Plugins respond to events and can access the database.  Plugins typically restri
 There are 3 ways ZDStack can use its database:
 
   # In-memory SQLite (no file on disk)
-  # On-disk SQLite
-  # Traditional RDBMS system (such as MySQL or PostgreSQL).
+  # On-disk SQLite or Firebird
+  # Traditional RDBMS system (such as MySQL, PostgreSQL, or Firebird).
 
 == Requirements ==
 
