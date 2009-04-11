@@ -149,10 +149,6 @@ class TeamsList(object):
                 blah()
         else:
             blah()
-        logging.debug("%s team contains player: %s" % \
-                        (color, self.contains_player(color, player)))
-        logging.debug("%s team members: %s" % \
-                        (color, str(self.__teams[self.get(color)])))
 
     def contains_player(self, color, player, acquire_lock=True):
         """Returns True if a player is a member of the specified team.

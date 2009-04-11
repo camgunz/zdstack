@@ -14,7 +14,7 @@ from collections import deque
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
                     get_configfile, get_configparser
-from ZDStack.Utils import yes, get_event_from_line
+from ZDStack.Utils import get_event_from_line
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
@@ -71,7 +71,6 @@ class Stack(Server):
         self.plugin_events = Queue.Queue()
         self.generic_events = Queue.Queue()
         self.command_events = Queue.Queue()
-        self.persistence_queue = Queue.Queue()
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
@@ -99,17 +98,11 @@ class Stack(Server):
         ZDSThreadPool.process_queue(self.output_queue, 'ZServ Output Queue',
                                     lambda: self.keep_parsing == True)
         ZDSThreadPool.process_queue(self.command_events, 'ZServ Command Queue',
-                            lambda: self.keep_handling_command_events == True,
-                            self.persistence_queue)
+                            lambda: self.keep_handling_command_events == True)
         ZDSThreadPool.process_queue(self.generic_events, 'ZServ Generic Queue',
-                            lambda: self.keep_handling_generic_events == True,
-                            self.persistence_queue)
+                            lambda: self.keep_handling_generic_events == True)
         ZDSThreadPool.process_queue(self.plugin_events, 'ZServ Plugin Queue',
-                            lambda: self.keep_handling_plugin_events == True,
-                            self.persistence_queue)
-        ZDSThreadPool.process_queue(self.persistence_queue,
-                                    'ZServ Persistence Queue',
-                                    lambda: self.keep_persisting == True)
+                            lambda: self.keep_handling_plugin_events == True)
         ###
         # Start the spawning timer last.
         ###
@@ -146,9 +139,6 @@ class Stack(Server):
         logging.debug("Clearing plugin event queue")
         self.keep_handling_plugin_events = False
         self.plugin_events.join()
-        logging.debug("Clearing persistence queue")
-        self.keep_persisting = False
-        self.persistence_queue.join()
         Server.stop(self)
 
     def start_checking_loglinks(self):
@@ -385,15 +375,14 @@ class Stack(Server):
 
     def load_zservs(self):
         """Instantiates all configured ZServs."""
-        # logging.debug('')
+        logging.debug('Loading ZServs: %s' % (str(self.config.sections())))
         for zserv_name in self.config.sections():
-            zs_config = dict(self.config.items(zserv_name))
             if zserv_name in self.zservs:
                 logging.info("Reloading Config for [%s]" % (zserv_name))
-                self.zservs[zserv_name].reload_config(zs_config)
+                self.zservs[zserv_name].reload_config()
             else:
                 logging.debug("Adding zserv [%s]" % (zserv_name))
-                self.zservs[zserv_name] = ZServ(zserv_name, zs_config, self)
+                self.zservs[zserv_name] = ZServ(zserv_name, self)
 
     def load_config(self, config, reload=False):
         """Loads the configuration.
@@ -402,13 +391,12 @@ class Stack(Server):
                 reloaded.
 
         """
-        # logging.debug('')
-        raw_config = RCP(self.config_file, allow_duplicate_sections=False)
+        logging.debug('')
+        raw_config = RCP(self.config_file)
         for section in raw_config.sections():
             raw_config.set(section, 'name', section)
         self.check_all_zserv_configs(config)
         Server.load_config(self, config, reload)
-        self.config = config
         self.raw_config = raw_config
         if reload:
             self.load_zservs()
@@ -572,16 +560,15 @@ class Stack(Server):
 
         """
         # logging.debug('')
-        cp = RCP()
         sio = StringIO(data)
-        cp.readfp(sio)
+        cp = RCP(sio, dummy=True)
         main_cp = get_configparser()
-        for o, v in cp.items(zserv_name):
-            main_cp.set(zserv_name, o, v)
-        main_cp.save()
+        with main_cp.lock:
+            for o, v in cp.items(zserv_name):
+                main_cp.set(zserv_name, o, v, acquire_lock=False)
+            main_cp.save(acquire_lock=False)
         self.initialize_config(reload=True)
-        zs_config = dict(self.config.items(zserv_name))
-        self.get_zserv(zserv_name).reload_config(zs_config)
+        self.get_zserv(zserv_name).reload_config()
 
     def send_to_zserv(self, zserv_name, message):
         """Sends a command to a running zserv process.

@@ -671,11 +671,13 @@ timelimit = 10
 
 [FFA]
 mode = ffa
+port = 10672
 maps = map01,map02,map03,map04,map05
 fraglimit = 50
 
 [Coop]
 mode = coop
+port = 10673
 maps = map01,map02,map03,map04,map05
 teamdamage = 1
 timelimit = 0

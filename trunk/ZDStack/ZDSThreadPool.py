@@ -15,12 +15,11 @@ ZDStack runs the following threads:
   - a Timer that checks that ZServ log links and FIFOs are created
   - a Timer that checks for crashed zservs and restarts them
   - a normal Thread that polls zserv FIFOs for output
-  - 5 worker threads that perform Tasks from their Queues
+  - 4 worker threads that perform Tasks from their Queues
     - output tasks
     - generic event tasks
     - command event tasks
     - plugin event tasks
-    - persistence tasks
 
 Getting a Timer is easy, so there's no wrapper logic here for that.
 

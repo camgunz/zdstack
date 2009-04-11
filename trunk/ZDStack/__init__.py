@@ -23,10 +23,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 Session = scoped_session(sessionmaker())
 
-# import elixir
-# elixir.session = Session
-# elixir.options_defaults.update({'shortnames': True})
-
 ###
 # End ORM Stuff
 ###
@@ -206,7 +202,8 @@ def get_configfile():
         possible_config_files = ['./zdstackrc', './zdstack.ini',
                                  '~/.zdstackrc', '~/.zdstack.ini',
                                  '~/.zdstack/zdstackrc',
-                                 '~/.zdstack/zdstack.ini', '/etc/zdstackrc', '/etc/zdstack.ini',
+                                 '~/.zdstack/zdstack.ini', '/etc/zdstackrc',
+                                 '/etc/zdstack.ini',
                                  '/etc/zdstack/zdstackrc'
                                  '/etc/zdstack/zdstack.ini']
         possible_config_files = \
@@ -229,20 +226,19 @@ def set_configfile(config_file):
 def load_configparser():
     global RPC_CLASS
     global RPC_PROXY_CLASS
-    cp = CP(get_configfile(), allow_duplicate_sections=False)
-    defaults = cp.defaults()
+    cp = CP(get_configfile())
     for section in cp.sections():
         cp.set(section, 'name', section)
     for x in REQUIRED_GLOBAL_CONFIG_OPTIONS:
-        if x not in defaults or not defaults[x]:
+        if not cp.get('DEFAULT', x, default=False):
             raise ValueError("Required global option %s not found" % (x))
     for fo, m in REQUIRED_GLOBAL_VALID_FOLDERS:
-        f = resolve_path(defaults[fo])
+        f = cp.getpath('DEFAULT', fo)
         if not os.path.isdir(f):
             raise ValueError("Required folder %s not found" % (fo))
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (f))
-        cp.set('DEFAULT', fo, f)
+        # cp.set('DEFAULT', fo, f)
     for s in cp.sections():
         d = dict(cp.items(s))
         for x in REQUIRED_SERVER_CONFIG_OPTIONS:
@@ -250,23 +246,20 @@ def load_configparser():
                 es = "Required server option %s not found for server [%s]"
                 raise ValueError(es % (x, s))
         for fo, m in REQUIRED_SERVER_VALID_FILES:
-            f = resolve_path(cp.get(s, fo))
+            f = cp.getpath(s, fo)
             if not os.access(f, m):
                 raise ValueError("Insufficient access provided for %s" % (f))
-            cp.set(s, fo, f)
+            # cp.set(s, fo, f)
         if d['mode'].lower() not in SUPPORTED_GAME_MODES:
             raise ValueError("Unsupported game mode %s" % (d['mode']))
-    ###
-    # Because we might have changed things, reload defaults
-    ###
-    defaults = cp.defaults()
     ###
     # Below are some checks for specific options & values
     ###
     ###
     # Check RPC protocol is supported
     ###
-    rp = defaults['zdstack_rpc_protocol'].lower()
+    zrp = cp.get('DEFAULT', 'zdstack_rpc_protocol').lower()
+    rp = zrp.lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
         _load_json()
@@ -280,37 +273,34 @@ def load_configparser():
         proxy_class = XMLProxy
     else:
         es = "RPC Protocol [%s] not supported"
-        raise ValueError(es % (defaults['zdstack_rpc_protocol']))
+        raise ValueError(es % (zrp))
     ###
     # Resolve RPC hostname.
     ###
-    if not 'zdstack_rpc_hostname' in defaults or \
-       not defaults['zdstack_rpc_hostname'] or \
-           defaults['zdstack_rpc_hostname'].lower() == 'localhost':
+    if cp.get('DEFAULT', 'zdstack_rpc_hostname', 'localhost') == 'localhost':
         cp.set('DEFAULT', 'zdstack_rpc_hostname', get_loopback())
     ###
     # Make sure the folder for the zserv processes exists.
     ###
-    if not os.path.isdir(defaults['zdstack_zserv_folder']):
+    zserv_folder = cp.get('DEFAULT', 'zdstack_zserv_folder')
+    if not os.path.isdir(zserv_folder):
         try:
-            os.mkdir(defaults['zdstack_zserv_folder'])
+            os.mkdir(zserv_folder)
         except Exception, e:
             es = "Error: ZServ Server folder %s is not valid: %s"
-            raise ValueError(es % (defaults['zdstack_zserv_folder'], e))
+            raise ValueError(es % (zserv_folder, e))
     ###
     # Resolve the PID file location.
     ###
-    cp.set('DEFAULT', 'zdstack_pid_file',
-           resolve_path(defaults['zdstack_pid_file']))
     RPC_CLASS = rpc_class
     RPC_PROXY_CLASS = proxy_class
     return cp
 
-def _get_embedded_engine(defaults):
+def _get_embedded_engine(db_engine, cp):
     """This returns an engine for an embedded database.
 
-    defaults: a dict of the options/values in the configparser's
-              DEFAULT section.
+    db_engine: a string representing the database engine to use.
+    cp:        a ZDSRawConfigParser or subclass.
 
     Certain things need to be set appropriately to ensure error-free 
     use of embedded databases, and this method sets them.
@@ -318,19 +308,18 @@ def _get_embedded_engine(defaults):
     """
     logging.debug("Getting embedded engine")
     global DB_LOCK
-    d = defaults
     DB_LOCK = Lock()
-    if d['zdstack_database_engine'] == 'sqlite':
-        db_name = d.get('zdstack_database_name', ':memory:')
-    elif not 'zdstack_database_name' in d:
-        es = "Required global option zdstack_database_name not found"
-        raise ValueError(es)
+    if db_engine == 'sqlite':
+        db_name = cp.get('DEFAULT', 'zdstack_database_name', ':memory:')
     else:
-        db_name = d['zdstack_database_name']
-        if db_name == ':memory:':
+        db_name = cp.get('DEFAULT', 'zdstack_database_name', False)
+        if not db_name:
+            es = "Required global option zdstack_database_name not found"
+            raise ValueError(es)
+        elif db_name == ':memory:':
             es = ":memory: is only valid when using the SQLite database engine"
             raise ValueError(es)
-    db_str = '%s://' % (d['zdstack_database_engine'])
+    db_str = '%s://' % (db_engine)
     if db_name == ':memory:':
         db_str += ':memory:'
     else:
@@ -344,7 +333,6 @@ def _get_embedded_engine(defaults):
     ###
     global DB_NOOP
     DB_NOOP = False
-    # elixir.using_mapper_options(save_on_init=False)
     Session.configure(autoflush=False, autocommit=True)
     logging.debug("No-op is False")
     logging.debug("save_on_init is False")
@@ -353,18 +341,18 @@ def _get_embedded_engine(defaults):
     ###
     # End embedded DB section.
     ###
-    if d['zdstack_database_engine'] == 'sqlite':
+    if db_engine == 'sqlite':
         cd = {'check_same_thread': False, 'isolation_level': 'IMMEDIATE'}
         e = create_engine(db_str, poolclass=StaticPool, connect_args=cd)
     else:
         e = create_engine(db_str, poolclass=StaticPool)
     return e
 
-def _get_full_engine(defaults):
+def _get_full_engine(db_engine, cp):
     """This returns an engine for a full RDBMS.
 
-    defaults: a dict of the options/values in the configparser's
-              DEFAULT section.
+    db_engine: a string representing the database engine to use.
+    cp:        a ZDSRawConfigParser or subclass.
 
     Certain things need to be set appropriately to ensure performant
     use of full databases, and this method sets them.
@@ -372,9 +360,8 @@ def _get_full_engine(defaults):
     """
     logging.debug("Getting full engine")
     global DB_LOCK
-    d = defaults
     DB_LOCK = DummyLock()
-    db_str = '%s://' % (d['zdstack_database_engine'].replace('-', ''))
+    db_str = '%s://' % (db_engine.replace('-', ''))
     ###
     # Some databases might be configured for user-less/password-less
     # access (potentially dumb, but w/e).
@@ -384,19 +371,16 @@ def _get_full_engine(defaults):
     ###
     # Be a little flexible in the labeling of the db user & pw fields
     ###
-    if 'zdstack_database_user' in d and d['zdstack_database_user']:
-        db_user = d['zdstack_database_user']
-    elif 'zdstack_database_username' in d and \
-       d['zdstack_database_username']:
-        db_user = d['zdstack_database_username']
-    if 'zdstack_database_pass' in d and d['zdstack_database_pass']:
-        db_pass = d['zdstack_database_pass']
-    elif 'zdstack_database_password' in d and \
-       d['zdstack_database_password']:
-        db_pass = d['zdstack_database_password']
-    elif 'zdstack_database_passwd' in d and \
-       d['zdstack_database_passwd']:
-        db_pass = d['zdstack_database_passwd']
+    if cp.get('DEFAULT', 'zdstack_database_user', False):
+        db_user = cp.get('DEFAULT', 'zdstack_database_user')
+    elif cp.get('DEFAULT', 'zdstack_database_username', False):
+        db_user = cp.get('DEFAULT', 'zdstack_database_username')
+    if cp.get('DEFAULT', 'zdstack_database_pass', False):
+        db_pass = cp.get('DEFAULT', 'zdstack_database_pass')
+    elif cp.get('DEFAULT', 'zdstack_database_password', False):
+        db_pass = cp.get('DEFAULT', 'zdstack_database_password')
+    elif cp.get('DEFAULT', 'zdstack_database_passwd', False):
+        db_pass = cp.get('DEFAULT', 'zdstack_database_passwd')
     if db_user:
         db_str += db_user
         if db_pass:
@@ -405,29 +389,24 @@ def _get_full_engine(defaults):
     elif db_pass:
         es = "Cannot give a database password without a database user"
         raise ValueError(es)
-    db_host = d['zdstack_database_host']
+    db_host = cp.get('DEFAULT', 'zdstack_database_host')
     if db_host == 'localhost':
-        if db_driver != 'mysql':
+        if db_engine != 'mysql':
             ###
             # MySQL supports local socket connections.  Everything else needs
             # a real socket though.
             ###
             db_host = get_loopback()
     db_str += db_host
-    db_port = d.get('zdstack_database_port', False)
+    db_port = cp.getint('DEFAULT', 'zdstack_database_port', False)
     if db_port:
-        try:
-            int(d['zdstack_database_port'])
-        except ValueError:
-            es = "Invalid port number format %s"
-            raise ValueError(es % (d['zdstack_database_port']))
-        db_str += ':' + d['zdstack_database_port']
-    db_name = d.get('zdstack_database_name', False)
+        db_str += ':' + str(db_port)
+    db_name = cp.get('DEFAULT', 'zdstack_database_name', False)
     if not db_name:
         es = "Required global option zdstack_database_name not found"
         raise ValueError(es)
     db_str += '/' + db_name
-    if db_driver == 'mysql':
+    if db_engine == 'mysql':
         ###
         # MySQL's handing of Unicode is apparently a little dumb,
         # so we use SQLAlchemy's.
@@ -439,7 +418,6 @@ def _get_full_engine(defaults):
     global DB_NOOP
     DB_NOOP = True
     Session.configure(autocommit=True, autoflush=True)
-    elixir.using_mapper_options(save_on_init=True)
     logging.debug("No-op is True")
     logging.debug("save_on_init is True")
     logging.debug("autoflush is True")
@@ -448,7 +426,7 @@ def _get_full_engine(defaults):
     # End full-RDBMS section.
     ###
     logging.debug("Creating engine from DB str: [%s]" % (db_str))
-    if db_driver == 'mysql':
+    if db_engine == 'mysql':
         ###
         # We need to recycle connections every hour or so to avoid MySQL's
         # idle connection timeouts.
@@ -465,15 +443,18 @@ def get_engine():
     global DB_ENGINE
     if not DB_ENGINE:
         cp = get_configparser()
-        d = cp.defaults()
-        db_driver = d.get('zdstack_database_engine', 'sqlite').lower()
-        if db_driver not in SUPPORTED_ENGINE_TYPES:
-            raise ValueError("DB engine %s is not supported" % (db_driver))
-        d['zdstack_database_engine'] = db_driver
-        if db_driver in ('sqlite', 'firebird'):
-            DB_ENGINE = _get_embedded_engine(d)
+        db_engine = cp.get('DEFAULT', 'zdstack_database_engine', 'sqlite')
+        db_engine = db_engine.lower()
+        if db_engine not in SUPPORTED_ENGINE_TYPES:
+            raise ValueError("DB engine %s is not supported" % (db_engine))
+        if db_engine in ('sqlite', 'firebird'):
+            ###
+            # Firebird isn't necessarily embedded, so we should sort this out
+            # somehow.
+            ###
+            DB_ENGINE = _get_embedded_engine(db_engine, cp)
         else:
-            DB_ENGINE = _get_full_engine(d)
+            DB_ENGINE = _get_full_engine(db_engine, cp)
     return DB_ENGINE
 
 def get_db_lock():
@@ -506,7 +487,7 @@ def _load_json():
 
 def get_configparser(reload=False, raw=False):
     if raw:
-        return RCP(get_configfile(), allow_duplicate_sections=False)
+        return RCP(get_configfile())
     global CONFIGPARSER
     if CONFIGPARSER is None or reload:
         CONFIGPARSER = load_configparser()
@@ -515,26 +496,21 @@ def get_configparser(reload=False, raw=False):
 def get_server_proxy():
     """Returns an object that is a proxy for the running ZDStack."""
     cp = get_configparser() # assuming it's already loaded at this point
-    defaults = cp.defaults()
-    address = 'http://%s:%s' % (defaults['zdstack_rpc_hostname'],
-                                defaults['zdstack_port'])
+    address = 'http://%s:%s' % (cp.get('DEFAULT', 'zdstack_rpc_hostname'),
+                                cp.get('DEFAULT', 'zdstack_port'))
     logging.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
     return RPC_PROXY_CLASS(address)
 
-def get_plugins(plugins='all', config_file=None):
-    global CONFIGPARSER
+def get_plugins(plugins='all'):
     global PLUGINS
     if PLUGINS is None:
-        if CONFIGPARSER is None:
-            get_configparser(config_file)
-        d = CONFIGPARSER.defaults()
-        if not 'plugin_folder' in d:
+        cp = get_configparser()
+        plugin_folder = cp.getpath('DEFAULT', 'plugin_folder', False)
+        if not plugin_folder:
             PLUGINS = []
-        plugin_folder = d['plugin_folder']
-        if not os.path.isdir(resolve_path(plugin_folder)):
-            raise ValueError("Plugin folder [%s] not found" % (plugin_folder))
-        from ZDStack.Plugins import get_plugins
-        PLUGINS = get_plugins(plugin_folder)
+        else:
+            from ZDStack.Plugins import get_plugins
+            PLUGINS = get_plugins(plugin_folder)
     return [x for x in PLUGINS if plugins == 'all' or x.__name__ in plugins]
 
 def set_debugging(debugging, log_file=None, config_file=None):
@@ -554,7 +530,7 @@ def set_debugging(debugging, log_file=None, config_file=None):
         __handler_class = logging.handlers.TimedRotatingFileHandler
         DEBUGGING = False
     cp = get_configparser()
-    log_folder = cp.defaults()['zdstack_log_folder']
+    log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
     log_file = os.path.join(log_folder, 'ZDStack.log')
     formatter = logging.Formatter(__log_format, DATEFMT)
     handler = __handler_class(log_file, when='midnight', backupCount=4)

@@ -3,35 +3,25 @@ import os.path
 
 from datetime import datetime, timedelta
 
-def yes(x):
-    return x.lower() in ('y', 'yes', 't', 'true', '1', 'on', 'absolutely',
-                         "can't live without it", 'god yes', 'jesus christ yes',
-                         'jesus yes', 'fuck yes', 'fuck yeah', 'shit yes',
-                         'shit yeah', 'obviously',
-                         'i would probably kill myself without this')
-
-def no(x):
-    return x.lower() in ('n', 'no', 'f', 'false', '0', 'off', 'never', 'god no',
-                         'jesus no', 'jesus christ no',
-                         'jesus are you joking?',
-                         'jesus are you kidding?',
-                         'jesus are you serious?',
-                         'jesus christ are you joking?',
-                         'jesus christ are you kidding?',
-                         'jesus christ are you serious?',
-                         'fuck no', 'shit no', 'oh man not a chance'
-                    'i would probably kill myself if i had to put up with this')
-
-def to_list(s, sep):
-    """Parses s into a list.
-
-    s:   a string that will be split by separator tokens.
-    sep: a string representing the separator token.
-
-    Omits non-True values.
-
-    """
-    return [x for x in s.split(sep) if x]
+def check_ip(ip):
+    tokens = ip.split('.')
+    if not len(tokens) == 4:
+        raise ValueError("Malformed IP Address")
+    try:
+        int_tokens = [int(t) for t in tokens]
+    except:
+        raise ValueError("Malformed IP Address")
+    for t in int_tokens:
+        if t < 0 or t > 255:
+            raise ValueError("Malformed IP Address")
+    if tokens[3] == 0 or tokens[3] == 255:
+        es = "Cannot advertise a broadcast IP address to master"
+        raise ValueError(es)
+    if tokens[0] == 10 or \
+       (tokens[0] == 172 and tokens[1] in range(16, 32)) or \
+       (tokens[0] == 192 and tokens[1] == 168):
+         es = "Cannot advertise a private IP address to master"
+         raise ValueError(es)
 
 def timedelta_in_seconds(x):
     """Returns the value of a time delta in seconds as an int."""

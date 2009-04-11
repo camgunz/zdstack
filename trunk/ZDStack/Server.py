@@ -58,16 +58,15 @@ class Server(object):
                 reloaded
 
         """
-        # logging.debug('')
-        defaults = config.defaults()
-        hostname = defaults['zdstack_rpc_hostname']
-        port = int(defaults['zdstack_port'])
-        logfile = os.path.join(defaults['zdstack_log_folder'], 'ZDStack.log')
-        pidfile = defaults['zdstack_pid_file']
-        username = defaults['zdstack_username']
-        password = defaults['zdstack_password']
+        logging.debug('')
+        hostname = config.get('DEFAULT', 'zdstack_rpc_hostname')
+        port = config.getint('DEFAULT', 'zdstack_port')
+        log_folder = config.getpath('DEFAULT', 'zdstack_log_folder')
+        logfile = os.path.join(log_folder, 'ZDStack.log')
+        pidfile = config.getpath('DEFAULT', 'zdstack_pid_file')
+        username = config.get('DEFAULT', 'zdstack_username')
+        password = config.get('DEFAULT', 'zdstack_password')
         self.config = config
-        self.defaults = defaults
         self.hostname = hostname
         self.port = port
         self.logfile = logfile

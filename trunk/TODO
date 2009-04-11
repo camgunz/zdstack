@@ -2,6 +2,6 @@
 - Test with MySQL and PostgreSQL
 - ZDSConfigParser stuff
   - Add a getlist(section, option, parse_func=None)
-- Make sure non-debugging output is quiet
 - Test all RPC functions
-- Deadlock in players/teams lists and EventHandler (sort this out)
+- Make sure ZDStack creates all folders it needs to (reasonably)
+
