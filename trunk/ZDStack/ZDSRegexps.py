@@ -214,27 +214,30 @@ __SERVER_REGEXPS = None
 # regexps closer to the left.
 ###
 
-def _get_regexps(regexp_class):
+def _get_regexps(regexp_maker):
     out = []
     for regexp, event_type, requires_prefix in FRAGS:
-        out.append(Regexp(regexp, 'frag', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'frag', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in COMMANDS:
-        out.append(Regexp(regexp, 'command', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'command', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in JOINS:
-        out.append(Regexp(regexp, 'join', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'join', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in CONNECTIONS:
-        out.append(Regexp(regexp, 'connection', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'connection', event_type,
+                                requires_prefix))
     for regexp, event_type, requires_prefix in FLAGS:
-        out.append(Regexp(regexp, 'flag', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'flag', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in DEATHS:
-        out.append(Regexp(regexp, 'death', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'death', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in RCONS:
-        out.append(Regexp(regexp, 'rcon', event_type, r"^"))
+        out.append(regexp_maker(regexp, 'rcon', event_type, requires_prefix))
     return out
 
 def get_client_regexps():
     global __CLIENT_REGEXPS
-    __CLIENT_REGEXPS = __CLIENT_REGEXPS or _get_regexps(Regexp)
+    def get_regexp(regexp, category, event_type, requires_prefix):
+        return Regexp(regexp, category, event_type, prefix=r"^")
+    __CLIENT_REGEXPS = __CLIENT_REGEXPS or _get_regexps(get_regexp)
     return __CLIENT_REGEXPS
 
 def get_server_regexps():

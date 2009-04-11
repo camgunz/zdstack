@@ -107,12 +107,12 @@ def persist(model, update=False, session=None):
         return model
     if update:
         def blah(s):
-            logging.debug("Merging: [%s]" % (model))
+            # logging.debug("Merging: [%s]" % (model))
             s.merge(model)
             return model
     else:
         def blah(s):
-            logging.debug("Adding: [%s]" % (model))
+            # logging.debug("Adding: [%s]" % (model))
             s.add(model)
             return model
     if session:
@@ -132,11 +132,11 @@ def persist(model, update=False, session=None):
 def _wrap_func(func):
     logging.debug("Wrapping %s" % (func.__name__))
     def wrapped_func(*args, **kwargs):
-        logging.debug("Running %s, %s, %s" % (func.__name__, str(args),
-                                              str(kwargs)))
+        # logging.debug("Running %s, %s, %s" % (func.__name__, str(args),
+        #                                       str(kwargs)))
         if not kwargs.get('session', None):
             with global_session() as session:
-                logging.debug("Using session [%s]" % (session))
+                # logging.debug("Using session [%s]" % (session))
                 kwargs['session'] = session
                 return func(*args, **kwargs)
         else:
@@ -175,11 +175,7 @@ def _get_alias(name, ip_address, session, round=None):
     out = q.first()
     if out:
         return out
-    if not round:
-        return None
-    else:
-        return persist(Alias(name=name, ip_address=ip_address, round=round),
-                       session=session)
+    return persist(Alias(name=name, ip_address=ip_address), session=session)
 
 def _get_team_color(color, session):
     q = session.query(TeamColor).filter_by(color=color)
@@ -214,7 +210,6 @@ def _get_round(game_mode, map, session, start_time=None):
     start_time = start_time or datetime.datetime.now()
     r = persist(Round(game_mode=game_mode, map=map, start_time=start_time),
                 session=session)
-    logging.debug("Returning [%s]" % (r))
     return r
 
 get_weapon = _wrap_func(_get_weapon)

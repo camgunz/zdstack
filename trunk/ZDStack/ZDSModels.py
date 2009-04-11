@@ -164,8 +164,8 @@ class StoredPlayer(Base):
     __tablename__ = 'stored_players'
 
     name = Column(String(255), primary_key=True)
-    aliases = relation('Alias', backref='stored_player',
-                                cascade=_parent_cascades)
+    aliases = relation('Alias', backref='stored_player')
+                                # cascade=_parent_cascades)
 
     def __str__(self):
         return '<Player %s>' % (self.name)
@@ -181,7 +181,8 @@ class Alias(Base):
     name = Column(String(255), index=True, nullable=False)
     ip_address = Column(String(16), index=True, nullable=False)
     was_namefake = Column(Boolean, default=False)
-    stored_player_name = Column(String(255), ForeignKey('stored_players.name'))
+    stored_player_name = Column(String(255), ForeignKey('stored_players.name'),
+                                nullable=True)
     rounds = relation('Round', secondary=rounds_and_aliases)
     frags = relation('Frag', backref='fragger', cascade=_parent_cascades)
     deaths = relation('Frag', backref='fraggee', cascade=_parent_cascades)

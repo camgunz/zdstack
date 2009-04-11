@@ -291,6 +291,14 @@ class Stack(Server):
                         # is complete.
                         ###
                         zserv.response_finished.set()
+                        ###
+                        # We want to wait until the ZServ finished processing
+                        # the response, because the current event may depend
+                        # upon it.
+                        ###
+                        logging.debug("Waiting until response is processed")
+                        zserv.finished_processing_response.wait()
+                        logging.debug("Done waiting")
             except Exception, e:
                 es = "Received error while processing event from [%s]: "
                 es += "[%s]"
@@ -323,15 +331,15 @@ class Stack(Server):
         zserv: the ZServ instance that generated the event.
 
         """
-        handler = self.event_handler.get_handler(event.type)
+        handler = self.event_handler.get_handler(event.category)
         if handler:
             s = "Handling %s event (Line: [%s])" % (event.type, event.line)
-            # logging.debug(s)
+            logging.debug(s)
             ###
             # This should return a new model... or nothing.
             ###
             handler(event, zserv)
-            # logging.debug("Finished handling %s event" % (event.type))
+            logging.debug("Finished handling %s event" % (event.type))
         else:
             pass
             # logging.debug("No handler set for %s" % (event.type))
@@ -468,7 +476,15 @@ class Stack(Server):
         """
         # logging.debug('')
         for zserv in self.get_running_zservs():
-            self.stop_zserv(zserv.name)
+            try:
+                self.stop_zserv(zserv.name)
+            except Exception, e:
+                if not str(e).endswith('is not running'):
+                    ###
+                    # We still want to stop the other servers.
+                    ###
+                    continue
+
 
     def restart_all_zservs(self):
         """Restars all ZServs."""

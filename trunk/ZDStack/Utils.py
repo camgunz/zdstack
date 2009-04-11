@@ -209,7 +209,7 @@ def get_event_from_line(line, regexps, now=None):
         if e.category == 'frag':
             e.data['weapon'] = weapon
         elif e.category == 'death':
-            e.data.update({'fragger': d['fraggee'], 'weapon': e.event_type})
+            e.data.update({'fragger': e.data['fraggee'], 'weapon': e.type})
         elif e.category == 'join':
             if 'team' in e.data:
                 e.data['team'] = e.data['team'].lower()

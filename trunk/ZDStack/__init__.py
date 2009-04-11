@@ -282,7 +282,7 @@ def load_configparser():
     ###
     # Make sure the folder for the zserv processes exists.
     ###
-    zserv_folder = cp.get('DEFAULT', 'zdstack_zserv_folder')
+    zserv_folder = cp.getpath('DEFAULT', 'zdstack_zserv_folder')
     if not os.path.isdir(zserv_folder):
         try:
             os.mkdir(zserv_folder)
@@ -321,7 +321,7 @@ def _get_embedded_engine(db_engine, cp):
             raise ValueError(es)
     db_str = '%s://' % (db_engine)
     if db_name == ':memory:':
-        db_str += ':memory:'
+        db_str += '/:memory:'
     else:
         db_name = resolve_path(db_name) # just to be sure
         if not os.path.isfile(db_name):

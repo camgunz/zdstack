@@ -46,10 +46,9 @@ class Player(object):
             return
         self.name = name
         self.tag, self.player_name = parse_player_name(self.name)
-        self.alias = get_alias(name=self.name, ip_address=self.ip,
-                               round=self.zserv.round)
-        if self.alias not in self.zserv.round.players:
-            self.zserv.round.players.append(self.alias)
+        self.alias = get_alias(name=self.name, ip_address=self.ip)
+        # if self.alias not in self.zserv.round.players:
+        #     self.zserv.round.players.append(self.alias)
 
     def __ne__(self, x):
         try:

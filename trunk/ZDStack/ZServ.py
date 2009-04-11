@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 from pyfileutils import write_file
 
-from ZDStack import DEVNULL, TEAM_COLORS, PlayerNotFoundError
+from ZDStack import DEVNULL, MAX_TIMEOUT, TEAM_COLORS, PlayerNotFoundError
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
@@ -65,6 +65,7 @@ class ZServ(object):
         self.event_type_to_watch_for = None
         self.response_events = []
         self.response_finished = Event()
+        self.finished_processing_response = Event()
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
         self.map = DummyMap()
@@ -103,7 +104,7 @@ class ZServ(object):
             self.fragged_runners = list()
             if self.playing_colors:
                 self.team_scores = dict(zip(self.playing_colors,
-                                            ['0'] * len(self.playing_colors)))
+                                            [0] * len(self.playing_colors)))
             else:
                 self.team_scores = dict()
         if acquire_lock:
@@ -122,6 +123,16 @@ class ZServ(object):
         if self.stats_enabled:
             logging.debug("Setting round end_time to [%s]" % (now))
             self.round.end_time = now
+            for player in self.players:
+                if player.alias and player.alias not in self.round.players:
+                    logging.debug("Adding %s to %s" % (player.alias, self.round))
+                    self.round.players.append(player.alias)
+                if self.round not in player.alias.rounds:
+                    logging.debug("Adding %s to %s" % (self.round, player.alias))
+                    player.alias.rounds.append(self.round)
+                logging.debug("Updating %s" % (player.alias))
+                persist(player.alias, update=True)
+            logging.debug("Updating %s" % (self.round))
             persist(self.round, update=True)
         else:
             ###
@@ -145,6 +156,7 @@ class ZServ(object):
                     logging.debug("Deleting %s" % (stat))
                     session.delete(stat)
                 # session.merge(self.round)
+                logging.debug("Deleting %s" % (self.round))
                 session.delete(self.round)
         self.clear_state()
 
@@ -460,10 +472,15 @@ class ZServ(object):
             response = []
             logging.debug("Waiting for response")
             ###
-            # We used to have a 1 second timeout here, let's see what happens
-            # without it.
+            # In case a server is restarted before a non-response event occurs,
+            # we need a timeout here.
             ###
-            self.response_finished.wait()
+            self.response_finished.wait(MAX_TIMEOUT)
+            ###
+            # We want to process this response before any other events, so make
+            # other threads wait until we're finished processing the response.
+            ###
+            self.finished_processing_response.clear()
             try:
                 logging.debug("Processing response events")
                 for event in self.response_events:
@@ -476,6 +493,8 @@ class ZServ(object):
                 logging.debug("Clearing response state")
                 self.response_events = []
                 self.event_type_to_watch_for = None
+                logging.debug("Setting response processing finished")
+                self.finished_processing_response.set()
                 self.response_finished.set()
 
     def zaddban(self, ip_address, reason='rofl'):

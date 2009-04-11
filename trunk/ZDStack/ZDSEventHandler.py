@@ -9,33 +9,37 @@ from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
 from ZDStack.ZDSDatabase import get_weapon, global_session, persist
 
 from sqlalchemy import desc
+from sqlalchemy.orm.exc import NoResultFound
 
 class BaseEventHandler(object):
 
     def __init__(self):
         """Initializes a BaseEventHandler."""
         logging.debug('')
-        self._event_types_to_handlers = dict()
+        self._event_categories_to_handlers = dict()
         self.set_handler('error', self.handle_error_event)
 
-    def get_handler(self, event_type):
-        """Returns a handler method for a given event_type.
+    def get_handler(self, event_category):
+        """Returns a handler method for a given event_category.
 
-        event_type: a string representing thetype of event to handle.
-
-        """
-        return self._event_types_to_handlers.get(event_type,
-                                                 self.handle_unhandled_event)
-
-    def set_handler(self, event_type, handler):
-        """Sets the handler method for a certain event_type.
-
-        event_type: a string representing the type of event to handle.
-        handler:    a function that will handle the event, takes an
-                    event instance as its only argument.
+        event_category: a string representing thetype of event to
+                        handle.
 
         """
-        self._event_types_to_handlers[event_type] = handler
+        return \
+            self._event_categories_to_handlers.get(event_category,
+                                                   self.handle_unhandled_event)
+
+    def set_handler(self, event_category, handler):
+        """Sets the handler method for a certain event_category.
+
+        event_category: a string representing the category of event to
+                        handle.
+        handler:        a function that will handle the event, takes an
+                        event instance as its only argument.
+
+        """
+        self._event_categories_to_handlers[event_category] = handler
 
     def handle_error_event(self, event, zserv=None):
         """Handles an error event.
@@ -49,15 +53,12 @@ class BaseEventHandler(object):
         # code doesn't assume that event handling stops on an error, so we
         # should at least correct that inconsistency.
         ###
-        raise Exception(event.data['error'])
-
-    def handle_error_event(self, event, zserv=None):
-        """Handles an error event.
-
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
-
-        """
+        ###
+        # Nah.
+        #
+        # raise Exception(event.data['error'])
+        #
+        ###
         logging.error("Event error: %s" % (event.data['error']))
         logging.error("Event traceback: \n%s\n" % (event.data['traceback']))
 
@@ -75,31 +76,36 @@ class ZServEventHandler(BaseEventHandler):
     def __init__(self):
         """Initializes a ZServEventHandler."""
         BaseEventHandler.__init__(self)
+        self.set_handler('frag', self.handle_frag_event)
+        self.set_handler('join', self.handle_game_join_event)
+        self.set_handler('connection', self._sync_players)
+        self.set_handler('flag', self.handle_flag_event)
+        self.set_handler('death', self.handle_frag_event)
+        self.set_handler('rcon', self.handle_rcon_event)
+        self.set_handler('command', self.handle_map_change_event)
+
         ###
-        # A 'connection' event has no player name, only an IP address and a
-        # port.  So in order to be meaningful, we must wait until the zserv
-        # process assigns that connection a name.  This happens with game_join,
-        # team_join, and player_lookup events.
+        # Old type-based handler stuff
         #
         # self.set_handler('connection', self._sync_players)
+        # self.set_handler('disconnection', self._sync_players)
+        # self.set_handler('player_lookup', self._sync_players)
+        # self.set_handler('game_join', self.handle_game_join_event)
+        # self.set_handler('team_join', self.handle_game_join_event)
+        # self.set_handler('team_switch', self.handle_game_join_event)
+        # self.set_handler('rcon_denied', self.handle_rcon_event)
+        # self.set_handler('rcon_granted', self.handle_rcon_event)
+        # self.set_handler('rcon_action', self.handle_rcon_event)
+        # self.set_handler('flag_touch', self.handle_flag_event)
+        # self.set_handler('flag_pick', self.handle_flag_event)
+        # self.set_handler('flag_cap', self.handle_flag_event)
+        # self.set_handler('flag_loss', self.handle_flag_event)
+        # self.set_handler('flag_return', self.handle_flag_return_event)
+        # self.set_handler('map_change', self.handle_map_change_event)
+        # self.set_handler('frag', self.handle_frag_event)
+        # self.set_handler('death', self.handle_frag_event)
         #
         ###
-        self.set_handler('disconnection', self._sync_players)
-        self.set_handler('player_lookup', self._sync_players)
-        self.set_handler('game_join', self.handle_game_join_event)
-        self.set_handler('team_join', self.handle_game_join_event)
-        self.set_handler('team_switch', self.handle_game_join_event)
-        self.set_handler('rcon_denied', self.handle_rcon_event)
-        self.set_handler('rcon_granted', self.handle_rcon_event)
-        self.set_handler('rcon_action', self.handle_rcon_event)
-        self.set_handler('flag_touch', self.handle_flag_event)
-        self.set_handler('flag_pick', self.handle_flag_event)
-        self.set_handler('flag_cap', self.handle_flag_event)
-        self.set_handler('flag_loss', self.handle_flag_event)
-        self.set_handler('flag_return', self.handle_flag_return_event)
-        self.set_handler('map_change', self.handle_map_change_event)
-        self.set_handler('frag', self.handle_frag_event)
-        self.set_handler('death', self.handle_frag_event)
 
     def _sync_players(self, event, zserv):
         """Syncs players.
@@ -109,6 +115,14 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         logging.debug("_sync_players(%s)" % (event))
+        if event.type == 'connection':
+            ###
+            # A 'connection' event has no player name, only an IP address and a
+            # port.  So in order to be meaningful, we must wait until the zserv
+            # process assigns that connection a name.  This happens with
+            # game_join, team_join, and player_lookup events.
+            ###
+            return
         ###
         # This used to wait 3 seconds between obtaining the zserv's STDIN lock
         # and sync'ing the players list.  That is way, way too long now.
@@ -117,23 +131,6 @@ class ZServEventHandler(BaseEventHandler):
         #
         ###
         zserv.players.sync()
-
-    def _get_latest_flag_touch(self, player, round):
-        """Returns the latest FlagTouch for a player.
-
-        player: a Player instance.
-        round:  the Round where the FlagTouch occurred.
-
-        """
-        with global_session() as session:
-            try:
-                q = session.query(FlagTouch)
-                q = q.filter(Alias.name==player.name)
-                q = q.filter(Round.id==round.id)
-                q = q.order_by(desc(FlagTouch.touch_time))
-                return q.first() # this should be the runner's latest FlagTouch
-            except NoResultFound:
-                raise Exception("No FlagTouch by %s found" % (player.name))
 
     def handle_game_join_event(self, event, zserv):
         """Handles a game_join event.
@@ -204,22 +201,35 @@ class ZServEventHandler(BaseEventHandler):
             es = "Received a flag touch event for non-existent player [%s]"
             logging.error(es % (event.data['player']))
             return
+        logging.debug("Getting state_lock")
         with zserv.state_lock:
-            with global_session() as session:
-                tc = zserv.teams.get_player_team(runner)
-                logging.debug("Found player's team: %s" % (tc.color))
-                red_holding_flag = 'red' in zserv.teams_holding_flags
-                blue_holding_flag = 'blue' in zserv.teams_holding_flags
-                green_holding_flag = 'green' in zserv.teams_holding_flags
-                white_holding_flag = 'white' in zserv.teams_holding_flags
-                red_score = zserv.team_scores.get('red', None)
-                blue_score = zserv.team_scores.get('blue', None)
-                green_score = zserv.team_scores.get('green', None)
-                white_score = zserv.team_scores.get('white', None)
-                if event.type in ('flag_touch', 'flag_pick'):
-                    update = False
-                    zserv.players_holding_flags.append(runner)
-                    zserv.teams_holding_flags.append(tc.color)
+            logging.debug("Getting global session")
+            tc = zserv.teams.get_player_team(runner)
+            ###
+            # - ZDSTeamsList.contains_player
+            #   - ZDSTeamsList.add
+            #     - ZDSDatabase.get_team_color
+            #   - ZDSTeamsList.get_members
+            #     - ZDSTeamsList.get
+            #       - ZDSTeamsList.add
+            #         - ZDSDatabase.get_team_color
+            ###
+            logging.debug("Getting state")
+            logging.debug("Found player's team: %s" % (tc.color))
+            red_holding_flag = 'red' in zserv.teams_holding_flags
+            blue_holding_flag = 'blue' in zserv.teams_holding_flags
+            green_holding_flag = 'green' in zserv.teams_holding_flags
+            white_holding_flag = 'white' in zserv.teams_holding_flags
+            red_score = zserv.team_scores.get('red', None)
+            blue_score = zserv.team_scores.get('blue', None)
+            green_score = zserv.team_scores.get('green', None)
+            white_score = zserv.team_scores.get('white', None)
+            if event.type in ('flag_touch', 'flag_pick'):
+                update = False
+                zserv.players_holding_flags.append(runner)
+                zserv.teams_holding_flags.append(tc.color)
+                logging.debug("Creating FlagTouch")
+                with global_session() as session:
                     s = FlagTouch(player=runner.alias, round=zserv.round,
                                   touch_time=event.dt,
                                   was_picked=event.type=='flag_pick',
@@ -232,12 +242,21 @@ class ZServEventHandler(BaseEventHandler):
                                   blue_team_score=blue_score,
                                   green_team_score=green_score,
                                   white_team_score=white_score)
-                else:
-                    ###
-                    # At this point, the event is either a flag_cap or flag_loss.
-                    ###
-                    update = True
-                    s = self._get_latest_flag_touch(runner, zserv.round)
+                    persist(s, session=session)
+            else:
+                ###
+                # At this point, the event is either a flag_cap or flag_loss.
+                ###
+                with global_session() as session:
+                    try:
+                        q = session.query(FlagTouch)
+                        q = q.filter(Alias.name==runner.name)
+                        q = q.filter(Round.id==zserv.round.id)
+                        q = q.order_by(desc(FlagTouch.touch_time))
+                        s = q.first()
+                    except NoResultFound:
+                        es = "No FlagTouch by %s found"
+                        raise Exception(es % (runner.name))
                     s.loss_time = event.dt
                     zserv.teams_holding_flags.remove(tc.color)
                     zserv.players_holding_flags.remove(runner)
@@ -247,7 +266,7 @@ class ZServEventHandler(BaseEventHandler):
                     else: # flag_loss!
                         s.resulted_in_score = False
                         zserv.fragged_runners.append(runner)
-                persist(s, update=update, session=session)
+                    persist(s, update=True, session=session)
 
     def handle_flag_return_event(self, event, zserv):
         """Handles a flag_return event.
@@ -312,6 +331,7 @@ class ZServEventHandler(BaseEventHandler):
                     es = "Received a frag event for non-existent player [%s]"
                     logging.error(es % (event.data['fragger']))
                     return
+                fragger_team = zserv.teams.get_player_team(fragger)
                 is_suicide = False
             else:
                 fragger = fraggee
@@ -362,6 +382,8 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         logging.debug("handle_map_change_event(%s)" % (event))
+        if not event.type == 'map_change':
+            return
         zserv.change_map(event.data['number'], event.data['name'])
 
 class FakeEventHandler(ZServEventHandler):
