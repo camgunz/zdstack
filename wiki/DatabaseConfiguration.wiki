@@ -73,13 +73,15 @@ Other `zdstack_database_*` options are not used.
 
 == Configuration 2 ==
 
-Configuration 2 stores the database in a single SQLite file on disk.
+Configuration 2 stores the database in a single database file on disk.
 
 === How to configure ===
 
 {{{
 zdstack_database_engine = sqlite
-zdstack_database_name = /path/to/sqlite/database/file
+# alternately:
+# zdstack_database_engine = firebird
+zdstack_database_name = /path/to/database/file
 }}}
 
 Other `zdstack_database_*` options are not used.  If `zdstack_database_name` is not found, it is created.
@@ -88,15 +90,22 @@ Other `zdstack_database_*` options are not used.  If `zdstack_database_name` is 
 
   * Very low RAM usage, even with Statistics enabled
   * Fast, although not as fast as in-memory SQLite
+  * Data is saved over ZDStack restarts
+
+If SQLite is used as the engine:
+
   * Doesn't require a separate database process or software
   * Doesn't require a database adapter for Python (one is included)
-  * Data is saved over ZDStack restarts
 
 === Limitations ===
 
   * Disk space (if Statistics are enabled)
   * Database is not reliably accessible by other processes
   * Database is not accessible by other machines
+
+If SQLite is not used as the engine:
+
+  * Requires a database adapter for Python
 
 == Configuration 3 ==
 
@@ -105,7 +114,7 @@ Configuration 3 uses a separate RDBMS, which can be located on the same machine 
 === How to configure ===
 
 {{{
-zdstack_database_engine = mysql (postgres, oracle, or mssql)
+zdstack_database_engine = mysql (postgres, oracle, firebird or mssql)
 zdstack_database_host = database.host.org
 zdstack_database_port = 5678 (optional, ZDStack will use the default ports if blank)
 zdstack_database_name = name_of_database
