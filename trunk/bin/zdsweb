@@ -96,19 +96,18 @@ RCP = get_configparser(raw=True)
 ###
 
 __x = [('-a', 'zdsweb_hostname', 'localhost'),
-       ('-p', 'zdsweb_port', 80),
        ('-l', 'zdsweb_logfolder', tempfile.gettempdir()),
        ('-i', 'zdsweb_pidfile', os.path.join(tempfile.gettempdir(),
                                              'ZDSWeb.pid'))]
 
 def __get_vals(index):
     x = __x[index]
-    return __opts.get(x[0], CP.defaults().get(x[1], x[2]))
+    return __opts.get(x[0], CP.get('DEFAULT', x[1], x[2]))
 
 ADDRESS = __get_vals(0)
-PORT = int(__get_vals(1))
-LOG_FOLDER = __get_vals(2)
-PID_FILE = __get_vals(3)
+PORT = int(__opts.get('-p', 0)) or CP.getint('DEFAULT', 'zdsweb_port', 80)
+LOG_FOLDER = __get_vals(1)
+PID_FILE = __get_vals(2)
 
 ###
 # End dumbness

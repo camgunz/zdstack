@@ -160,16 +160,6 @@ class ZServ(object):
         self.map = get_map(number=map_number, name=map_name)
         self.round = get_round(self.game_mode, self.map)
 
-    ###
-    # I have to say that I'm very close to pulling all the config stuff out
-    # into separate classes.  Over 400 lines of code is more than 40% of
-    # ZServ, and it's not even the main point of the class.  I will do it in a
-    # later commit I think.
-    #
-    # TODO: Move all config stuff into separate classes.
-    #
-    ###
-
     def reload_config(self):
         """Reloads the config for the ZServ.
 
@@ -646,44 +636,4 @@ class ZServ(object):
         """Returns a list of the wads in use."""
         # logging.debug('')
         return self.send_to_zserv('wads', 'wads_command')
-
-    def export(self):
-        """Returns a dict of ZServ configuration information."""
-        ###
-        # TODO: update this stuff for recent zservs and new config options
-        ###
-        logging.debug('')
-        d = {'name': self.name,
-             'mode': self.raw_game_mode,
-             'port': self.port,
-             'iwad': self.base_iwad,
-             'wads': [os.path.basename(x) for x in self.wads],
-             'optional_wads': self.optional_wads,
-             'maps': self.maps,
-             'dmflags': self.dmflags,
-             'dmflags2': self.dmflags2,
-             'admin_email': self.admin_email,
-             'website': self.website.replace('\\', '/'),
-             'advertise': self.advertise,
-             'hostname': self.hostname,
-             'motd': self.motd.replace('<br>', '\n'),
-             'remove_bots_when_humans': self.remove_bots_when_humans,
-             'overtime': self.overtime,
-             'skill': self.skill,
-             'gravity': self.gravity,
-             'air_control': self.air_control,
-             'min_players': self.min_players,
-             'max_players': self.max_players,
-             'max_clients': self.max_clients,
-             'deathlimit': self.deathlimit,
-             'timelimit': self.timelimit,
-             'fraglimit': self.fraglimit,
-             'scorelimit': self.scorelimit,
-             'spam_window': self.spam_window,
-             'spam_limit': self.spam_limit,
-             'speed_check': self.speed_check,
-             'restart_empty_map': self.restart_empty_map}
-        for func in self.extra_exportables_funcs:
-            d = func(d)
-        return d
 

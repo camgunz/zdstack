@@ -44,7 +44,7 @@ Usage: %s [ start | stop | restart | reload-config ] [ -c config file ]
 def start(debug=False, restart=False):
     try:
         cp = get_configparser()
-        pid_file = cp.get('DEFAULT', 'zdstack_pid_file')
+        pid_file = cp.getpath('DEFAULT', 'zdstack_pid_file')
         if os.path.isfile(pid_file):
             if restart:
                 es = "\nZDStack is still running: %s\n"
@@ -66,7 +66,7 @@ def start(debug=False, restart=False):
 def stop():
     try:
         cp = get_configparser()
-        pid_file = cp.get('DEFAULT', 'zdstack_pid_file')
+        pid_file = cp.getpath('DEFAULT', 'zdstack_pid_file')
         try:
             os.kill(int(read_file(pid_file)), signal.SIGTERM)
             print "\nStopping ZDStack\n"

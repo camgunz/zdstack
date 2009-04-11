@@ -8,10 +8,7 @@ from threading import Lock
 
 from ConfigParser import RawConfigParser as RCP
 from ConfigParser import SafeConfigParser as SCP
-from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError, \
-                         MAX_INTERPOLATION_DEPTH, InterpolationDepthError, \
-                         InterpolationSyntaxError, \
-                         InterpolationMissingOptionError
+from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError
 
 from ZDStack.Utils import resolve_path
 
@@ -591,43 +588,4 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
                 return SCP.set(self, section, option, value)
         else:
             return SCP.set(self, section, option, value)
-
-    def _interpolate_some(self, option, accum, rest, section, map, depth):
-        if depth > MAX_INTERPOLATION_DEPTH:
-            raise InterpolationDepthError(option, section, rest)
-        while rest:
-            p = rest.find("%")
-            if p < 0:
-                accum.append(rest)
-                return
-            if p > 0:
-                accum.append(rest[:p])
-                rest = rest[p:]
-            # p is no longer used
-            c = rest[1:2]
-            if c == "%":
-                accum.append("%")
-                rest = rest[2:]
-            elif c == "(":
-                m = self._interpvar_match(rest)
-                if m is None:
-                    raise InterpolationSyntaxError(option, section,
-                        "bad interpolation variable reference %r" % rest)
-                var = self.optionxform(m.group(1))
-                rest = rest[m.end():]
-                try:
-                    v = map[var]
-                except KeyError:
-                    print "Map: %s" % (str(map))
-                    raise InterpolationMissingOptionError(
-                        option, section, rest, var)
-                if "%" in v:
-                    self._interpolate_some(option, accum, v,
-                                           section, map, depth + 1)
-                else:
-                    accum.append(v)
-            else:
-                raise InterpolationSyntaxError(
-                    option, section,
-                    "'%%' must be followed by '%%' or '(', found: %r" % (rest,))
 
