@@ -17,3 +17,7 @@
   * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
   * ~~Keep configuration sections sorted~~
   * ~~Make non-debugging output even quieter (no 'Spawning zserv' messages)~~
+  * Should auto-create more folders (if possible):
+    * zdstack_log_folder
+    * zdstack_zserv_folder
+    * zdstack_plugin_folder
