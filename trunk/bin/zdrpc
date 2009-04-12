@@ -4,10 +4,9 @@ import sys
 import getopt
 import pprint
 
-from ZDStack import set_configfile, get_configparser, get_server_proxy
+from ZDStack import NO_AUTH_REQUIRED, set_configfile, get_configparser, \
+                    get_server_proxy
 from ZDStack.Utils import send_proxy_method
-
-NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
 
 def print_usage(msg=None):
     if msg:

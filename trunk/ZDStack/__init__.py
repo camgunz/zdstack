@@ -27,16 +27,17 @@ Session = scoped_session(sessionmaker())
 # End ORM Stuff
 ###
 
-__all__ = ['SUPPORTED_ENGINE_TYPES', 'HOSTNAME', 'LOOPBACK', 'DEVNULL',
-           'CONFIGFILE', 'CONFIGPARSER', 'DATABASE', 'DEBUGGING' 'PLUGINS',
-           'DATEFMT', 'JSON_CLASS', 'RPC_CLASS', 'RPC_PROXY_CLASS',
-           'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT', 'DIE_THREADS_DIE',
-           'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
-           'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
-           'Session', 'get_hostname', 'get_loopback', 'get_engine',
-           'get_db_lock', 'db_is_noop', 'get_session_class', 'get_configfile',
-           'set_configfile', 'load_configparser', 'get_configparser',
-           'get_server_proxy', 'get_plugins', 'set_debugging', 'log']
+__all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
+           'LOOPBACK', 'DEVNULL', 'CONFIGFILE', 'CONFIGPARSER', 'DATABASE',
+           'DEBUGGING' 'PLUGINS', 'DATEFMT', 'JSON_CLASS', 'RPC_CLASS',
+           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT',
+           'DIE_THREADS_DIE', 'JSONNotFoundError', 'PlayerNotFoundError',
+           'TeamNotFoundError', 'ZServNotFoundError',
+           'RPCAuthenticationError', 'DebugTRFH', 'Session', 'get_hostname',
+           'get_loopback', 'get_engine', 'get_db_lock', 'db_is_noop',
+           'get_session_class', 'get_configfile', 'set_configfile',
+           'load_configparser', 'get_configparser', 'get_server_proxy',
+           'get_plugins', 'set_debugging', 'log']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
@@ -63,6 +64,8 @@ SUPPORTED_ENGINE_TYPES = \
     ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql', 'firebird')
 
 SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
+
+NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
 
 HOSTNAME = None
 LOOPBACK = None

@@ -117,5 +117,7 @@ elif action == 'debug':
     start(debug=True)
 elif action == 'reload-config':
     cp = get_configparser() # implicitly loads the configuration file as well
-    get_server_proxy().reload_config()
+    username = cp.get('DEFAULT', 'zdstack_username')
+    password = cp.get('DEFAULT', 'zdstack_password')
+    get_server_proxy().reload_config(username, password)
 

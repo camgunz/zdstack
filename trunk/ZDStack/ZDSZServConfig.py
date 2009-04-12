@@ -516,7 +516,7 @@ class ZServConfigParser(ZDSConfigParser):
         for map in self.zserv.maps:
             add_var_line(map, over_t)
             if self.zserv.add_mapnum_to_hostname:
-                add_line(host_t % (map, map.upper()))
+                add_line(True, host_t % (map, map.upper()))
         add_var_line(self.zserv.skill, 'set skill "%s"')
         add_var_line(self.zserv.gravity, 'set gravity "%s"')
         add_var_line(self.zserv.air_control, 'set sv_aircontrol "%s"')
