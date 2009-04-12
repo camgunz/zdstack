@@ -1,8 +1,8 @@
-- Setup firebird so it's not pigeonholed as an embedded DB
-- DB Testing
-  - Test with MySQL & PostgreSQL... and maybe Firebird
-  - Test with an SQLite in-memory database
-- Debug with multiple players, and then multiple servers and multiple players
 - Test all RPC functions
+    - also test w/ JSON-RPC
+- Setup firebird so it's not pigeonholed as an embedded DB
+- Debug with multiple players, and then multiple servers and multiple players
 - Make sure ZDStack creates all folders it needs to (reasonably)
+- Test other game-modes
+- Test with 1.08.08rc25
 

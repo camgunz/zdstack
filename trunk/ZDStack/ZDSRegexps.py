@@ -192,9 +192,11 @@ JOINS = (
 )
 
 FLAGS = (
+(r"(?P<team>.*) flag returned", 'auto_flag_return', True),
+(r"(?P<player>.*) returned the (?P<team>.*) flag", 'flag_return', True),
 (r"(?P<player>.*) has taken the (?P<team>.*) flag", 'flag_touch', True),
 (r"(?P<player>.*) lost the (?P<team>.*) flag", 'flag_loss', True),
-(r"(?P<player>.*) returned the (?P<team>.*) flag", 'flag_return', True),
+(r"(?P<player>.*) picked up the (?P<team>.*) flag", 'flag_pick', True),
 (r"(?P<player>.*) picked up the (?P<team>.*) flag", 'flag_pick', True),
 (r"(?P<player>.*) scored for the (?P<team>.*) team", 'flag_cap', True)
 )
@@ -212,16 +214,19 @@ __SERVER_REGEXPS = None
 # We specifically order the regexps because they're searched from left to
 # right... so we want the most frequently occurring events to have their
 # regexps closer to the left.
+#
+# Additionally, because the 'set_command' regexp can match team switches,
+# COMMANDS have to be after JOINS.
 ###
 
 def _get_regexps(regexp_maker):
     out = []
     for regexp, event_type, requires_prefix in FRAGS:
         out.append(regexp_maker(regexp, 'frag', event_type, requires_prefix))
-    for regexp, event_type, requires_prefix in COMMANDS:
-        out.append(regexp_maker(regexp, 'command', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in JOINS:
         out.append(regexp_maker(regexp, 'join', event_type, requires_prefix))
+    for regexp, event_type, requires_prefix in COMMANDS:
+        out.append(regexp_maker(regexp, 'command', event_type, requires_prefix))
     for regexp, event_type, requires_prefix in CONNECTIONS:
         out.append(regexp_maker(regexp, 'connection', event_type,
                                 requires_prefix))

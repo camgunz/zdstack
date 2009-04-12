@@ -335,7 +335,6 @@ def _get_embedded_engine(db_engine, cp):
     DB_NOOP = False
     Session.configure(autoflush=False, autocommit=True)
     logging.debug("No-op is False")
-    logging.debug("save_on_init is False")
     logging.debug("autoflush is False")
     logging.debug("autocommit is True")
     ###
@@ -419,9 +418,8 @@ def _get_full_engine(db_engine, cp):
     DB_NOOP = True
     Session.configure(autocommit=True, autoflush=True)
     logging.debug("No-op is True")
-    logging.debug("save_on_init is True")
     logging.debug("autoflush is True")
-    logging.debug("autocommit is False")
+    logging.debug("autocommit is True")
     ###
     # End full-RDBMS section.
     ###

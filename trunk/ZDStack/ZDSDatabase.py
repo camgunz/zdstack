@@ -104,7 +104,8 @@ def persist(model, update=False, session=None):
 
     """
     if db_is_noop():
-        return model
+        logging.debug("Skipping No-op")
+        # return model
     if update:
         def blah(s):
             # logging.debug("Merging: [%s]" % (model))

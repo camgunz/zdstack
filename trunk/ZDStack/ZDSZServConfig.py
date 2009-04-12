@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import os
+import logging
 
 from decimal import Decimal
 from ConfigParser import NoOptionError
@@ -312,6 +313,7 @@ class ZServConfigParser(ZDSConfigParser):
         auto_respawn = self.getint('auto_respawn')
         teamdamage = self.getdecimal('teamdamage')
         max_teams = self.getint('max_teams')
+        logging.debug("Max Teams: %s" % (max_teams))
         playing_colors = max_teams and TEAM_COLORS[:max_teams]
         max_players_per_team = self.getint('max_players_per_team')
         scorelimit = self.getint('team_score_limit')
@@ -503,12 +505,18 @@ class ZServConfigParser(ZDSConfigParser):
         if self.zserv.alternate_wads:
             y = ' '.join(['='.join(x) for x in self.zserv.alternate_wads])
             add_var_line(y, 'setaltwads "%s"')
+        cvar_t = 'add_cvaroverride %%s %s'
         if self.zserv.overtime:
-            t = 'add_cvaroverride %s overtime 1'
+            over_t = cvar_t % ('overtime 1')
         else:
-            t = 'add_cvaroverride %s overtime 0'
+            over_t = cvar_t % ('overtime 0')
+        if self.zserv.add_mapnum_to_hostname:
+            s = 'hostname "%s - %%s"' % (self.zserv.hostname)
+            host_t = cvar_t % (s)
         for map in self.zserv.maps:
-            add_var_line(map, t)
+            add_var_line(map, over_t)
+            if self.zserv.add_mapnum_to_hostname:
+                add_line(host_t % (map, map.upper()))
         add_var_line(self.zserv.skill, 'set skill "%s"')
         add_var_line(self.zserv.gravity, 'set gravity "%s"')
         add_var_line(self.zserv.air_control, 'set sv_aircontrol "%s"')
@@ -525,4 +533,5 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.fraglimit, 'set fraglimit "%s"')
         add_var_line(self.zserv.auto_respawn, 'set sv_autorespawn "%s"')
         add_var_line(self.zserv.teamdamage, 'set teamdamage "%s"')
+        add_var_line(self.zserv.max_teams, 'set maxteams "%s"')
         return self._new_template
