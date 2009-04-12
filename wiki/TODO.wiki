@@ -21,3 +21,4 @@
     * zdstack_log_folder
     * zdstack_zserv_folder
     * zdstack_plugin_folder
+  * Implement zserv logfile saving
