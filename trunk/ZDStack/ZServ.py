@@ -126,17 +126,31 @@ class ZServ(object):
         if self.stats_enabled:
             zdslog.debug("Setting round end_time to [%s]" % (now))
             self.round.end_time = now
-            for player in self.players:
-                if player.alias and player.alias not in self.round.players:
-                    zdslog.debug("Adding %s to %s" % (player.alias, self.round))
-                    self.round.players.append(player.alias)
-                if self.round not in player.alias.rounds:
-                    zdslog.debug("Adding %s to %s" % (self.round, player.alias))
-                    player.alias.rounds.append(self.round)
-                zdslog.debug("Updating %s" % (player.alias))
-                persist(player.alias, update=True)
-            zdslog.debug("Updating %s" % (self.round))
-            persist(self.round, update=True)
+            with global_session() as session:
+                s = "Adding %s to %s"
+                for player in self.players:
+                    if player.alias and player.alias not in self.round.players:
+                        zdslog.debug(s % (player.alias, self.round))
+                        self.round.players.append(player.alias)
+                    if self.round not in player.alias.rounds:
+                        zdslog.debug(s % (self.round, player.alias))
+                        player.alias.rounds.append(self.round)
+                    zdslog.debug("Updating %s" % (player.alias))
+                    persist(player.alias, update=True, session=session)
+                zdslog.debug("Updating %s" % (self.round))
+                persist(self.round, update=True, session=session)
+                for flag_touch in self.round.flag_touches:
+                    ###
+                    # Players can hold flags until a round ends, thus the
+                    # FlagTouch will never have a loss_time.  Technically,
+                    # however, the loss_time would be at the end of a round,
+                    # because you can't hold a flag when there is no round.
+                    ###
+                    zdslog.debug("Checking that %s has a loss_time")
+                    if not flag_touch.loss_time:
+                        flag_touch.loss_time = now
+                        zdslog.debug("Updating %s" % (flag_touch))
+                        persist(flag_touch, update=True, session=session)
         else:
             ###
             # Because statistics are not enabled, all generated stats must be
