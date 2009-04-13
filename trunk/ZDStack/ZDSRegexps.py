@@ -1,6 +1,6 @@
 import re
-import logging
 
+from ZDStack import get_zdslog
 from ZDStack.LogEvent import LogEvent
 
 ###
@@ -27,13 +27,17 @@ from ZDStack.LogEvent import LogEvent
 #
 ###
 
+zdslog = get_zdslog()
+
 ###
 # Also line-length restrictions aren't observed in this file.  Boo regexps.
 ###
 
 SERVER_PREFIX = r"^>\s"
-TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])"
-SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
+OLD_TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])"
+OLD_SERVER_TIMESTAMP_PREFIX = r"(" + OLD_TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
+TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
+SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r">\s|" + SERVER_PREFIX + r")"
 
 class Regexp(object):
 
@@ -81,23 +85,23 @@ class Regexp(object):
         """
         if s == 'General logging off':
             d = {'log': 'general'}
-            logging.debug("Returning a log_roll event")
+            zdslog.debug("Returning a log_roll event")
             return LogEvent(now, 'log_roll', d, 'log_roll', s)
         d = self.match(s) # this actually does a 'search', but meh
         if d:
-            # logging.debug("Returning a %s event" % (self.event_type))
+            # zdslog.debug("Returning a %s event" % (self.event_type))
             return LogEvent(now, self.event_type, d, self.category, s)
-        if s.startswith('<') and '>' in line:
+        if s.startswith('<') and '>' in s:
             ###
             # At this point, the string is probably a message.
             ###
-            tokens = line.split('>')
+            tokens = s.split('>')
             possible_player_names =  [tokens[0][1:]]
             for x in range(1, len(tokens)):
                 possible_player_names.append('>'.join(tokens[:x])[1:])
-            d = {'contents': line,
+            d = {'contents': s,
                  'possible_player_names': possible_player_names}
-            logging.debug("Returning a message event")
+            zdslog.debug("Returning a message event")
             return LogEvent(now, 'message', d, 'message', s)
 
 class ServerRegexp(Regexp):
@@ -105,16 +109,18 @@ class ServerRegexp(Regexp):
     def __init__(self, regexp, category, event_type, requires_prefix=True):
         """Initializes a ServerRegexp.
 
-        requires_prefix: an optional boolean that, if given, sets this
-                         regexp's prefix to SERVER_TIMESTAMP_PREFIX.
-                         True by default, if False, the prefix is set
-                         to r"^" instead.
+        requires_prefix: an optional argument.
+                         If True, prepends SERVER_TIMESTAMP_PREFIX.
+                         If False, prepends TIMESTAMP_PREFIX.
+                         If None, prepends r"^".
 
         All other arguments are the same as Regexp.
 
         """
-        if requires_prefix:
+        if requires_prefix is True:
             prefix = SERVER_TIMESTAMP_PREFIX
+        elif requires_prefix is False:
+            prefix = r"^" + TIMESTAMP_PREFIX
         else:
             prefix = r"^"
         Regexp.__init__(self, regexp, category, event_type, prefix)
@@ -141,7 +147,7 @@ COMMANDS = (
 (r"(?P<player_name>.*) was kicked from the game (?P<reason>)$", 'kick_command', True),
 (r"(?P<player_ip>(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) unbanned.$", 'killban_command', False),
 (r"No such ban$", 'killban_command', False),
-(r"map(?P<number>\d\d): (?P<name>.*)$", 'map_change', False),
+(r"map(?P<number>\d\d): (?P<name>.*)$", 'map_change', None),
 (r"(?P<sequence_number>\d\d\d|\d\d|\d)\. (?P<map_number>.*)$", 'maplist_command', False),
 (r'(?P<player_num>\d\d|\d):\s*(?P<player_name>.*)\s\((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)):(?P<player_port>\d\d\d\d\d|\d\d\d\d|\d\d\d|\d\d|\d)', 'players_command', False),
 (r"Removed all bots.$", 'removebots_command', False),

@@ -40,12 +40,13 @@ I suppose I could go further and create a QueueProcessor that has
 
 import time
 import Queue
-import logging
 import traceback
 
 from threading import Thread, Lock
 
-from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT
+from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, get_zdslog
+
+zdslog = get_zdslog()
 
 __THREAD_POOL = []
 __THREAD_POOL_LOCK = Lock()
@@ -62,7 +63,7 @@ def get_thread(target, name, keep_going, sleep=None):
                 to not sleeping at all.
 
     """
-    logging.debug("Getting thread %s" % (name))
+    zdslog.debug("Getting thread %s" % (name))
     global __THREAD_POOL
     global __THREAD_POOL_LOCK
     with __THREAD_POOL_LOCK:
@@ -70,21 +71,21 @@ def get_thread(target, name, keep_going, sleep=None):
             while 1:
                 if DIE_THREADS_DIE:
                     s = "[%s]: DIE_THREADS_DIE is set, quitting loop"
-                    logging.debug(s % (name))
+                    zdslog.debug(s % (name))
                     break
                 elif not keep_going():
                     s = "[%s]: Termination condition is set, quitting loop"
-                    logging.debug(s % (name))
+                    zdslog.debug(s % (name))
                     break
                 target()
                 if sleep:
                     time.sleep(sleep)
-            logging.debug("[%s]: I have quit my loop!" % (name))
+            zdslog.debug("[%s]: I have quit my loop!" % (name))
         t = Thread(target=tf, name=name)
-        logging.debug("Adding thread [%s]" % (t.getName()))
+        zdslog.debug("Adding thread [%s]" % (t.getName()))
         __THREAD_POOL.append(t)
         s = "%d threads currently in thread pool"
-        logging.debug(s % (len(__THREAD_POOL)))
+        zdslog.debug(s % (len(__THREAD_POOL)))
         t.start()
         return t
 
@@ -107,8 +108,11 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
         while 1:
             if DIE_THREADS_DIE:
                 s = "[%s]: DIE_THREADS_DIE is set, quitting loop"
-                logging.debug(s % (name))
+                zdslog.debug(s % (name))
                 break
+            if not keep_going():
+                s = "[%s]: Quitting, %d tasks remaining in queue"
+                zdslog.debug(s % (name, input_queue.qsize()))
             try:
                 ###
                 # If we're shutting down, this thread will wait forever on
@@ -132,20 +136,20 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
                     # empty, this has apparently already been done!
                     ###
                     s = "[%s]: No more tasks, quitting loop"
-                    logging.debug(s % (name))
+                    zdslog.debug(s % (name))
                     break
             except Exception, e:
-                logging.error("[%s] received error: [%s]" % (name, e))
-                logging.debug(traceback.format_exc())
+                zdslog.error("[%s] received error: [%s]" % (name, e))
+                zdslog.debug(traceback.format_exc())
             if sleep:
                 time.sleep(sleep)
-        logging.debug("[%s]: I have quit my loop!" % (name))
+        zdslog.debug("[%s]: I have quit my loop!" % (name))
     with __THREAD_POOL_LOCK:
         t = Thread(target=tf, name=name + ' Processing Thread')
-        logging.debug("Adding thread [%s]" % (t.getName()))
+        zdslog.debug("Adding thread [%s]" % (t.getName()))
         __THREAD_POOL.append(t)
         s = "%d threads currently in thread pool"
-        logging.debug(s % (len(__THREAD_POOL)))
+        zdslog.debug(s % (len(__THREAD_POOL)))
         t.start()
         return t
 
@@ -161,13 +165,13 @@ def join(thread, acquire_lock=True):
     global __THREAD_POOL
     global __THREAD_POOL_LOCK
     def blah():
-        logging.debug("Joining thread [%s]" % (thread.getName()))
+        zdslog.debug("Joining thread [%s]" % (thread.getName()))
         thread.join()
-        logging.debug("Removing thread [%s]" % (thread.getName()))
+        zdslog.debug("Removing thread [%s]" % (thread.getName()))
         try:
             __THREAD_POOL.remove(thread)
         except ValueError:
-            logging.error("Thread [%s] not found in pool" % (thread.getName()))
+            zdslog.error("Thread [%s] not found in pool" % (thread.getName()))
     if acquire_lock:
         with __THREAD_POOL_LOCK:
             blah()
@@ -176,7 +180,7 @@ def join(thread, acquire_lock=True):
 
 def join_all():
     """Joins all threads."""
-    logging.debug("Joining all threads")
+    zdslog.debug("Joining all threads")
     global __THREAD_POOL
     global __THREAD_POOL_LOCK
     with __THREAD_POOL_LOCK:

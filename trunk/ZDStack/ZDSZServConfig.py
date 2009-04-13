@@ -6,9 +6,11 @@ import logging
 from decimal import Decimal
 from ConfigParser import NoOptionError
 
-from ZDStack import TEAM_COLORS
+from ZDStack import TEAM_COLORS, get_zdslog
 from ZDStack.Utils import check_ip, resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser
+
+zdslog = get_zdslog()
 
 class ZServConfigParser(ZDSConfigParser):
 
@@ -198,32 +200,32 @@ class ZServConfigParser(ZDSConfigParser):
         from ZDStack.ZServ import DUEL_MODES
         zserv_folder = self.getpath('zdstack_zserv_folder')
         zserv_exe = self.getpath('zserv_exe')
-        homedir = os.path.join(zserv_folder, self.zserv.name)
-        configfile = os.path.join(homedir, self.zserv.name + '.cfg')
-        if not os.path.isdir(homedir):
-            os.mkdir(homedir)
-        fifo_path = os.path.join(homedir, 'zdsfifo')
+        home_folder = os.path.join(zserv_folder, self.zserv.name)
+        configfile = os.path.join(home_folder, self.zserv.name + '.cfg')
+        if not os.path.isdir(home_folder):
+            os.mkdir(home_folder)
+        fifo_path = os.path.join(home_folder, 'zdsfifo')
         if os.path.exists(fifo_path):
             if os.path.isdir(fifo_path):
                 es = "[%s]: FIFO [%s] cannot be created, a folder with the "
                 es += "same name already exists"
                 raise Exception(es % (self.zserv.name, fifo_path))
-        waddir = self.getpath('zdstack_wad_folder')
-        iwaddir = self.getpath('zdstack_iwad_folder')
+        wad_folder = self.getpath('zdstack_wad_folder')
+        iwad_folder = self.getpath('zdstack_iwad_folder')
         base_iwad = os.path.expanduser(self.get('iwad'))
         if os.path.isabs(base_iwad):
             iwad = resolve_path(base_iwad)
         else:
-            iwad = os.path.join(iwaddir, os.path.basename(base_iwad))
+            iwad = os.path.join(iwad_folder, os.path.basename(base_iwad))
         wads = self.getlist('wads', default=[])
         for wad in wads:
-            wad_path = os.path.join(waddir, wad)
+            wad_path = os.path.join(wad_folder, wad)
             if not os.path.isfile(wad_path) or os.path.islink(wad_path):
                 es = "%s: WAD [%s] not found"
                 raise ValueError(es % (self.zserv.name, wad_path))
         port = self.getint('port')
-        cmd = [zserv_exe, '-cfg', configfile, '-waddir', waddir, '-iwad', iwad,
-               '-port', str(port), '-log']
+        cmd = [zserv_exe, '-cfg', configfile, '-waddir', wad_folder, '-iwad',
+               iwad, '-port', str(port), '-log']
         for wad in wads:
             cmd.extend(['-file', wad])
         ip = self.get('ip')
@@ -233,6 +235,7 @@ class ZServConfigParser(ZDSConfigParser):
         events_enabled = self.getboolean('enable_events', False)
         stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
+        save_logfile = self.getboolean('save_logfile', False)
         if not events_enabled:
             if stats_enabled:
                 es = "Statistics require events, but they have been disabled"
@@ -284,9 +287,6 @@ class ZServConfigParser(ZDSConfigParser):
         hostname = self.get('hostname')
         website = self.get('website')
         motd = self.get('motd')
-        ###
-        # TODO: actually make it so this does something
-        ###
         add_mapnum_to_hostname = self.getboolean('add_mapnum_to_hostname')
         remove_bots_when_humans = self.getboolean('remove_bots_when_humans')
         maps = self.getlist('maps')
@@ -313,7 +313,7 @@ class ZServConfigParser(ZDSConfigParser):
         auto_respawn = self.getint('auto_respawn')
         teamdamage = self.getdecimal('teamdamage')
         max_teams = self.getint('max_teams')
-        logging.debug("Max Teams: %s" % (max_teams))
+        zdslog.debug("Max Teams: %s" % (max_teams))
         playing_colors = max_teams and TEAM_COLORS[:max_teams]
         max_players_per_team = self.getint('max_players_per_team')
         scorelimit = self.getint('team_score_limit')
@@ -321,12 +321,28 @@ class ZServConfigParser(ZDSConfigParser):
         # At this point, everything parsed OK.  So it's now save to update
         # our ZServ's instance attributes.
         ###
-        self.zserv.homedir = homedir
+        ###
+        # We want to setup the ZServ's logger here too, if applicable.
+        ###
+        if save_logfile:
+            cp = self.zserv.zdstack.config
+            to_keep = self.getint('number_of_zserv_logs_to_backup')
+            to_keep = to_keep or 0
+            log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
+            log_file = os.path.join(log_folder, self.zserv.name + '.log')
+            h = logging.handlers.TimedRotatingFileHandler(log_file,
+                                                          when='midnight',
+                                                          backupCount=to_keep)
+            h.setFormatter(logging.Formatter('%(message)s'))
+            logger = logging.getLogger(self.zserv.name)
+            logger.addHandler(h)
+            logger.setLevel(logging.INFO)
+        self.zserv.home_folder = home_folder
         self.zserv.configfile = configfile
         self.zserv.zserv_exe = zserv_exe
         self.zserv.fifo_path = fifo_path
-        self.zserv.waddir = waddir
-        self.zserv.iwaddir = iwaddir
+        self.zserv.wad_folder = wad_folder
+        self.zserv.iwad_folder = iwad_folder
         self.zserv.base_iwad = base_iwad
         self.zserv.iwad = iwad
         self.zserv.wads = wads
@@ -336,6 +352,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.events_enabled = events_enabled
         self.zserv.stats_enabled = stats_enabled
         self.zserv.plugins_enabled = plugins_enabled
+        self.zserv.save_logfile = save_logfile
         self.zserv.rcon_password = rcon_password
         self.zserv.rcon_enabled = rcon_enabled
         self.zserv.rcon_password_1 = rcon_password_1
@@ -422,8 +439,8 @@ class ZServConfigParser(ZDSConfigParser):
             return add_line(var, line % (var))
         add_line(True, 'set cfg_activated "1"')
         ###
-        # 0: old logs are left in self.zserv.omedir.
-        # 1: old logs are moved to self.zserv.homedir/old-logs.
+        # 0: old logs are left in self.zserv.home_folder.
+        # 1: old logs are moved to self.zserv.home_folder/old-logs.
         # 2: old logs are deleted.
         ###
         add_line(True, 'set log_disposition "2"')

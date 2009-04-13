@@ -1,6 +1,8 @@
-import logging
-
 from threading import Event
+
+from ZDStack import get_zdslog
+
+zdslog = get_zdslog()
 
 class Task(object):
 
@@ -18,11 +20,11 @@ class Task(object):
                 ###
                 # Haha, there are like, 100000000 Parsing Tasks.
                 ###
-                logging.debug("Performing %s Task" % (self.name))
+                zdslog.debug("Performing %s Task" % (self.name))
             self.output = self.func(*self.args, **self.kwargs)
             input_queue.task_done()
             if self.output and output_queue:
-                logging.debug("Putting %s in %s" % (self.output, output_queue))
+                zdslog.debug("Putting %s in %s" % (self.output, output_queue))
                 output_queue.put_nowait(self.output)
             self.is_complete.set()
         return self.output

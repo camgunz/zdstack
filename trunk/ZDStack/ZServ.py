@@ -2,7 +2,6 @@ from __future__ import with_statement
 
 import os
 import time
-import logging
 
 from decimal import Decimal
 from datetime import date, datetime, timedelta
@@ -11,7 +10,8 @@ from subprocess import Popen, PIPE, STDOUT
 
 from pyfileutils import write_file
 
-from ZDStack import DEVNULL, MAX_TIMEOUT, TEAM_COLORS, PlayerNotFoundError
+from ZDStack import DEVNULL, MAX_TIMEOUT, TEAM_COLORS, PlayerNotFoundError, \
+                    get_zdslog
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
@@ -28,6 +28,8 @@ TEAMDM_MODES = ('teamdm', 'team deathmatch', 'tdm')
 CTF_MODES = ('ctf', 'capture the flag', 'capture-the-flag')
 DM_MODES = DUEL_MODES + FFA_MODES + TEAMDM_MODES + CTF_MODES
 TEAM_MODES = TEAMDM_MODES + CTF_MODES
+
+zdslog = get_zdslog()
 
 class ZServ(object):
 
@@ -59,6 +61,7 @@ class ZServ(object):
 
         """
         self.start_time = datetime.now()
+        self.restarts = []
         self.name = name
         self.zdstack = zdstack
         self._fragment = None
@@ -115,24 +118,24 @@ class ZServ(object):
 
     def clean_up(self):
         """Cleans up after a round."""
-        logging.debug('Cleaning up')
+        zdslog.debug('Cleaning up')
         now = datetime.now()
         if not self.round:
-            logging.debug("self.round: [%s]" % (self.round))
+            zdslog.debug("self.round: [%s]" % (self.round))
             return
         if self.stats_enabled:
-            logging.debug("Setting round end_time to [%s]" % (now))
+            zdslog.debug("Setting round end_time to [%s]" % (now))
             self.round.end_time = now
             for player in self.players:
                 if player.alias and player.alias not in self.round.players:
-                    logging.debug("Adding %s to %s" % (player.alias, self.round))
+                    zdslog.debug("Adding %s to %s" % (player.alias, self.round))
                     self.round.players.append(player.alias)
                 if self.round not in player.alias.rounds:
-                    logging.debug("Adding %s to %s" % (self.round, player.alias))
+                    zdslog.debug("Adding %s to %s" % (self.round, player.alias))
                     player.alias.rounds.append(self.round)
-                logging.debug("Updating %s" % (player.alias))
+                zdslog.debug("Updating %s" % (player.alias))
                 persist(player.alias, update=True)
-            logging.debug("Updating %s" % (self.round))
+            zdslog.debug("Updating %s" % (self.round))
             persist(self.round, update=True)
         else:
             ###
@@ -143,7 +146,7 @@ class ZServ(object):
             # memory anyway.  The rest of the stuff, like stats & aliases, can
             # go out the window.
             ###
-            logging.debug("Deleting a bunch of stuff")
+            zdslog.debug("Deleting a bunch of stuff")
             with global_session() as session:
                 for stat in self.round.players + \
                             self.round.frags + \
@@ -153,10 +156,10 @@ class ZServ(object):
                             self.round.rcon_denials + \
                             self.round.rcon_actions:
                     # session.add(stat)
-                    logging.debug("Deleting %s" % (stat))
+                    zdslog.debug("Deleting %s" % (stat))
                     session.delete(stat)
                 # session.merge(self.round)
-                logging.debug("Deleting %s" % (self.round))
+                zdslog.debug("Deleting %s" % (self.round))
                 session.delete(self.round)
         self.clear_state()
 
@@ -167,7 +170,7 @@ class ZServ(object):
         map_name:   a string representing the name of the new map
 
         """
-        logging.debug('Change Map')
+        zdslog.debug('Change Map')
         self.clean_up()
         self.map = get_map(number=map_number, name=map_name)
         self.round = get_round(self.game_mode, self.map)
@@ -178,7 +181,7 @@ class ZServ(object):
         config: a RawZDSConfigParser instance or subclass.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         self.load_config(reload=True)
 
     def load_config(self, reload=False):
@@ -188,7 +191,7 @@ class ZServ(object):
                 by default.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         ###
         # We absolutely have to set the game mode of this ZServ now.
         ###
@@ -202,9 +205,9 @@ class ZServ(object):
                 # and that it's definitely a FIFO.
                 ###
                 os.remove(self.fifo_path)
-            blah = [x for x in os.listdir(self.homedir) if x.endswith('.log')]
-            for x in blah:
-                p = os.path.join(self.homedir, x)
+            b = [x for x in os.listdir(self.home_folder) if x.endswith('.log')]
+            for x in b:
+                p = os.path.join(self.home_folder, x)
                 try:
                     if os.path.isfile(p):
                         os.remove(p)
@@ -233,7 +236,7 @@ class ZServ(object):
         if not self.zserv or not self.zserv.pid:
             return False
         x = self.zserv.poll()
-        # logging.debug('Poll: %s' % (x))
+        # zdslog.debug('Poll: %s' % (x))
         return x is None
 
     def ensure_loglinks_exist(self):
@@ -246,7 +249,7 @@ class ZServ(object):
         for loglink_name in [today.strftime(s),
                              (today + timedelta(days=1)).strftime(s),
                              (today + timedelta(days=2)).strftime(s)]:
-            loglink_path = os.path.join(self.homedir, loglink_name)
+            loglink_path = os.path.join(self.home_folder, loglink_name)
             if os.path.exists(loglink_path):
                 if not os.path.islink(loglink_path):
                     es = "Cannot create log link, something named %s that is "
@@ -254,7 +257,7 @@ class ZServ(object):
                     raise Exception(es % (loglink_path))
             else:
                 # s = "Linking %s to %s"
-                # logging.debug(s % (loglink_path, self.fifo_path))
+                # zdslog.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
     def start(self):
@@ -264,20 +267,21 @@ class ZServ(object):
         self.zserv.
         
         """
-        # logging.debug('Acquiring spawn lock [%s]' % (self.name))
+        # zdslog.debug('Acquiring spawn lock [%s]' % (self.name))
         get_port(name=self.source_port)
         with self.zdstack.spawn_lock:
             if self.is_running():
                 return
+            self.restarts.append(datetime.now())
             write_file(self.config.get_config_data(), self.configfile,
                        overwrite=True)
             self.ensure_loglinks_exist()
             if self.plugins_enabled:
                 for plugin in self.plugins:
-                    logging.info("Loaded plugin [%s]" % (plugin))
+                    zdslog.info("Loaded plugin [%s]" % (plugin))
             else:
                 pass
-                # logging.info("Not loading plugins")
+                # zdslog.info("Not loading plugins")
             ###
             # Should we do something with STDERR here?
             ###
@@ -293,11 +297,11 @@ class ZServ(object):
             #     created.
             #   - Then the zserv can be spawned.
             ###
-            logging.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
+            zdslog.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
             self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
             self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
                                stderr=STDOUT, bufsize=0, close_fds=True,
-                               cwd=self.homedir)
+                               cwd=self.home_folder)
             # self.send_to_zserv('players') # avoids CPU spinning
 
     def stop(self, signum=15):
@@ -309,13 +313,20 @@ class ZServ(object):
         """
         if self.is_running():
             error_stopping = False
-            logging.debug("Killing zserv process")
+            zdslog.debug("Killing zserv process")
             try:
                 os.kill(self.zserv.pid, signum)
+                ###
+                # Python docs say to use communicate() to avoid a wait()
+                # deadlock due to buffers being full.  Because we're
+                # redirecting both STDOUT and STDERR to DEVNULL, nothing will
+                # come from this.  Apparently we still need to do it though...
+                ###
+                self.zserv.communicate() # returns (None, None)
                 retval = self.zserv.wait()
             except Exception, e:
                 es = "Caught exception while stopping: [%s]"
-                logging.error(es % (e))
+                zdslog.error(es % (e))
                 error_stopping = es % (e)
             self.clean_up()
             return error_stopping
@@ -329,7 +340,7 @@ class ZServ(object):
                 zserv process.  15 (TERM) by default.
 
         """
-        logging.debug('')
+        zdslog.debug('')
         error_stopping = self.stop(signum)
         if error_stopping:
             s = 'Caught exception while stopping: [%s] already stopped'
@@ -349,7 +360,7 @@ class ZServ(object):
                players; defaults to not sleeping at all (None)
                
         """
-        logging.debug("ZServ.sync_players")
+        zdslog.debug("ZServ.sync_players")
         if sleep:
             with self.players.lock:
                 zplayers = self.zplayers()
@@ -371,7 +382,7 @@ class ZServ(object):
                                                           d['player_port']))
             except PlayerNotFoundError, pnfe:
                 es = "Players out of sync, %s at %s:%s not found"
-                logging.debug(es % (d['player_name'], d['player_ip'],
+                zdslog.debug(es % (d['player_name'], d['player_ip'],
                                     d['player_port']))
                 ###
                 # Previously, we weren't adding players that weren't found...
@@ -382,13 +393,13 @@ class ZServ(object):
                 self.players.add(p)
                 continue
             except Exception, e:
-                logging.error("Error updating player #s and IPs: %s" % (e))
+                zdslog.error("Error updating player #s and IPs: %s" % (e))
                 continue
             with self.players.lock:
                 p.set_name(d['player_name'])
                 p.number = d['player_num']
                 es = "Set name/number %s/%s to address %s:%s"
-                logging.debug(es % (p.name, p.number, p.ip, p.port))
+                zdslog.debug(es % (p.name, p.number, p.ip, p.port))
         self.players.sync()
 
     def distill_player(self, possible_player_names):
@@ -418,14 +429,14 @@ class ZServ(object):
             self.update_player_numbers_and_ips()
         m = self.players.get_first_matching_player(possible_player_names)
         ###
-        # Some logging stuff...
+        # Some zdslog stuff...
         #
         # if not m:
         #     player_names = ', '.join(names)
         #     ppn = ', '.join(possible_player_names)
-        #     logging.info("No player could be distilled")
-        #     logging.info("Players: [%s]" % (player_names))
-        #     logging.info("Possible: [%s]" % (ppn))
+        #     zdslog.info("No player could be distilled")
+        #     zdslog.info("Players: [%s]" % (player_names))
+        #     zdslog.info("Possible: [%s]" % (ppn))
         #
         ###
         return m
@@ -446,17 +457,17 @@ class ZServ(object):
         This method returns a list of events returned in response.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         if '\n' in message or '\r' in message:
             es = "Message cannot contain newlines or carriage returns"
             raise ValueError(es)
         def _send(message):
-            logging.debug("Writing to STDIN")
+            zdslog.debug("Writing to STDIN")
             self.zserv.stdin.write(message + '\n')
             self.zserv.stdin.flush()
-        logging.debug("Obtaining STDIN lock")
+        zdslog.debug("Obtaining STDIN lock")
         with self._zserv_stdin_lock:
-            logging.debug("Obtained STDIN lock")
+            zdslog.debug("Obtained STDIN lock")
             ###
             # zserv's STDIN is (obviously) not threadsafe, so we need to ensure
             # that access to it is limited to 1 thread at a time, which is both
@@ -464,13 +475,13 @@ class ZServ(object):
             ###
             if not self.events_enabled or event_response_type is None:
                 return _send(message)
-            logging.debug("Setting response type")
+            zdslog.debug("Setting response type")
             self.response_events = []
             self.event_type_to_watch_for = event_response_type
             self.response_finished.clear()
             _send(message)
             response = []
-            logging.debug("Waiting for response")
+            zdslog.debug("Waiting for response")
             ###
             # In case a server is restarted before a non-response event occurs,
             # we need a timeout here.
@@ -482,18 +493,18 @@ class ZServ(object):
             ###
             self.finished_processing_response.clear()
             try:
-                logging.debug("Processing response events")
+                zdslog.debug("Processing response events")
                 for event in self.response_events:
                     d = {'type': event.type, 'line': event.line}
                     d.update(event.data)
                     response.append(d)
-                logging.debug("Send to ZServ response: [%s]" % (response))
+                zdslog.debug("Send to ZServ response: [%s]" % (response))
                 return response
             finally:
-                logging.debug("Clearing response state")
+                zdslog.debug("Clearing response state")
                 self.response_events = []
                 self.event_type_to_watch_for = None
-                logging.debug("Setting response processing finished")
+                zdslog.debug("Setting response processing finished")
                 self.finished_processing_response.set()
                 self.response_finished.set()
 
@@ -504,7 +515,7 @@ class ZServ(object):
         reason:     a string representing the reason for the ban
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('addban %s %s' % (ip_address, reason),
                                   'addban_command')
 
@@ -527,7 +538,7 @@ class ZServ(object):
         bot_name: a string representing the name of the bot to add.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('addbot %s' % (bot_name), 'addbot_command')
 
     def zaddmap(self, map_number):
@@ -536,12 +547,12 @@ class ZServ(object):
         map_number: an int representing the name of the map to add
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('addmap %s' % (map_number))
 
     def zclearmaplist(self):
         """Clears the maplist."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('clearmaplist')
 
     def zget(self, variable_name):
@@ -551,7 +562,7 @@ class ZServ(object):
                        to get
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('get %s', 'get_command')
 
     def zkick(self, player_number, reason='rofl'):
@@ -562,7 +573,7 @@ class ZServ(object):
         reason:        a string representing the reason for the kick
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('kick %s %s' % (player_number, reason))
 
     def zkillban(self, ip_address):
@@ -571,7 +582,7 @@ class ZServ(object):
         ip_address: a string representing the IP address to un-ban
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('killban %s' % (ip_address))
 
     def zmap(self, map_number):
@@ -581,7 +592,7 @@ class ZServ(object):
                     change to
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('map %s' % (map_number))
 
     def zmaplist(self):
@@ -591,22 +602,22 @@ class ZServ(object):
         the maplist.  An example of one of these strings is: "map01".
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('maplist', 'maplist_command')
 
     def zplayers(self):
         """Returns a list of players in the server."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('players', 'players_command')
 
     def zremovebots(self):
         """Removes all bots."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('removebots')
 
     def zresetscores(self):
         """Resets all scores."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('resetscores')
 
     def zsay(self, message):
@@ -615,7 +626,7 @@ class ZServ(object):
         message: a string representing the message to send.
         
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('say %s' % (message))
 
     def zset(self, variable_name, variable_value):
@@ -627,8 +638,8 @@ class ZServ(object):
                         variable to
 
         """
-        # logging.debug('')
-        s = 'set "%s" "%s"' % (variable_name, variable_value)
+        # zdslog.debug('')
+        s = 'set %s "%s"' % (variable_name, variable_value)
         return self.send_to_zserv(s)
 
     def ztoggle(self, boolean_variable):
@@ -638,7 +649,7 @@ class ZServ(object):
                           boolean variable to toggle
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('toggle %s' % (boolean_variable))
 
     def zunset(self, variable_name):
@@ -648,11 +659,11 @@ class ZServ(object):
                        to unset
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('unset %s' % (variable_name))
 
     def zwads(self):
         """Returns a list of the wads in use."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.send_to_zserv('wads', 'wads_command')
 

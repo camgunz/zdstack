@@ -6,14 +6,14 @@ import Queue
 import select
 import logging
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from cStringIO import StringIO
 from threading import Lock, Timer, Thread
 from collections import deque
 
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
-                    get_configfile, get_configparser
+                    get_configfile, get_configparser, get_zdslog
 from ZDStack.Utils import get_event_from_line
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
@@ -23,11 +23,7 @@ from ZDStack.ZDSDatabase import persist
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
 
-class AuthenticationError(Exception):
-
-    def __init__(self, username, method):
-        es = "Error: Access to method [%s] was denied for user [%s]"
-        Exception.__init__(self, es % (method, username))
+zdslog = get_zdslog()
 
 class Stack(Server):
 
@@ -64,7 +60,7 @@ class Stack(Server):
         self.keep_handling_plugin_events = False
         self.keep_persisting = False
         self.regexps = get_server_regexps()
-        Server.__init__(self, debugging)
+        Server.__init__(self)
         self.load_zservs()
         self.event_handler = ZServEventHandler()
         self.output_queue = Queue.Queue()
@@ -80,7 +76,7 @@ class Stack(Server):
 
     def start(self):
         """Starts this Stack."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.keep_spawning_zservs = True
         self.keep_checking_loglinks = True
         self.keep_polling = True
@@ -112,31 +108,31 @@ class Stack(Server):
 
     def stop(self):
         """Stops this Stack."""
-        # logging.debug('')
-        logging.debug("Cancelling check_timer")
+        # zdslog.debug('')
+        zdslog.debug("Cancelling check_timer")
         self.keep_checking_loglinks = False
         if self.loglink_check_timer:
             self.loglink_check_timer.cancel()
         self.keep_spawning_zservs = False
         if self.zserv_check_timer:
             self.zserv_check_timer.cancel()
-        logging.debug("Stopping all ZServs")
+        zdslog.debug("Stopping all ZServs")
         self.stop_all_zservs()
-        logging.debug("Stopping polling thread")
+        zdslog.debug("Stopping polling thread")
         self.keep_polling = False
         if self.polling_thread:
-            logging.debug("Joining polling thread")
+            zdslog.debug("Joining polling thread")
             ZDSThreadPool.join(self.polling_thread)
-        logging.debug("Clearing output queue")
+        zdslog.debug("Clearing output queue")
         self.keep_parsing = False
         self.output_queue.join()
-        logging.debug("Clearing command event queue")
+        zdslog.debug("Clearing command event queue")
         self.keep_handling_command_events = False
         self.command_events.join()
-        logging.debug("Clearing generic event queue")
+        zdslog.debug("Clearing generic event queue")
         self.keep_handling_generic_events = False
         self.generic_events.join()
-        logging.debug("Clearing plugin event queue")
+        zdslog.debug("Clearing plugin event queue")
         self.keep_handling_plugin_events = False
         self.plugin_events.join()
         Server.stop(self)
@@ -149,7 +145,7 @@ class Stack(Server):
                         zserv.ensure_loglinks_exist()
                 except Exception, e:
                     es = "Received error checking log links for [%s]: [%s]"
-                    logging.error(es % (zserv.name, e))
+                    zdslog.error(es % (zserv.name, e))
                     continue
         finally:
             if self.keep_checking_loglinks:
@@ -159,6 +155,7 @@ class Stack(Server):
 
     def spawn_zservs(self):
         """Spawns zservs, respawning if they've crashed."""
+        now = datetime.now()
         try:
             for zserv in self.zservs.values():
                 try:
@@ -169,10 +166,27 @@ class Stack(Server):
                         # already running, in either case we skip it.
                         ###
                         continue
+                    ###
+                    # This timer runs every 500ms.  So if the zserv has 2
+                    # restarts in the last 4 seconds, stop trying to start it.
+                    ###
+                    if len(zserv.restarts) > 1:
+                        second_most_recent_restart = zserv.restarts[-2]
+                        diff = now - second_most_recent_restart
+                        if diff <= timedelta(seconds=4):
+                            es = "ZServ %s respawning too fast, stopping"
+                            zdslog.error(es % (zserv.name))
+                            self.stopped_zserv_nmaes.add(zserv.name)
+                            continue
+                        else:
+                            ###
+                            # Don't want the restart list growing infinitely.
+                            ###
+                            zserv.restarts = zserv.restarts[-2:]
                     zserv.start()
                 except Exception, e:
                     es = "Received error while checking [%s]: [%s]"
-                    logging.error(es % (zserv.name, e))
+                    zdslog.error(es % (zserv.name, e))
                     continue
         finally:
             if self.keep_spawning_zservs:
@@ -194,22 +208,15 @@ class Stack(Server):
         r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
         readable = [(z, f) for z, f in stuff if f in r]
         # if readable:
-        #     logging.debug("Readable: %s" % (str(readable)))
+        #     zdslog.debug("Readable: %s" % (str(readable)))
         for zserv, fd in readable:
-            # logging.debug("Reading data from [%s]" % (zserv.name))
+            # zdslog.debug("Reading data from [%s]" % (zserv.name))
             while 1:
                 try:
                     ###
                     # I guess 1024 bytes should be a big enough chunk.
                     ###
                     data = os.read(fd, 1024)
-                    if not zserv.events_enabled:
-                        ###
-                        # Even if events are disabled, we keep pulling data
-                        # from the zserv's FIFO.  We drop that data on the
-                        # floor, though.
-                        ###
-                        break
                     if data:
                         lines = data.splitlines()
                         if zserv._fragment:
@@ -242,13 +249,20 @@ class Stack(Server):
 
     def parse_zserv_output(self, zserv, dt, lines):
         """Parses ZServ output into events, places them in the event queue."""
-        # logging.debug("Events for [%s]: %s" % (zserv.name, events))
+        # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
+        if zserv.save_logfile:
+            logging.getLogger(zserv.name).info('\n'.join(lines))
+        if not zserv.events_enabled:
+            ###
+            # If events are disabled, this is as far as we go.
+            ###
+            return
         for line in lines:
             try:
                 event = get_event_from_line(line, self.regexps, dt)
             except Exception, e:
                 es = "Received error processing line [%s] from [%s]: [%s]"
-                logging.error(es % (line, zserv.name, e))
+                zdslog.error(es % (line, zserv.name, e))
                 continue
             if not event:
                 ###
@@ -265,25 +279,25 @@ class Stack(Server):
                 continue
             try:
                 if event.type == 'message':
-                    logging.debug("Converting message event")
+                    zdslog.debug("Converting message event")
                     ppn = event.data['possible_player_names']
                     c = event.data['contents'] 
                     player = zserv.distill_player(ppn)
                     if not player:
                         s = "Received a message from a non-existent player"
-                        logging.error(s)
+                        zdslog.error(s)
                     else:
                         message = c.replace(player.name, '', 1)[3:]
                         event.data = {'message': message, 'messenger': player}
                 if zserv.event_type_to_watch_for:
                     s = "%s is watching for %s events"
-                    logging.debug(s % (zserv.name,
+                    zdslog.debug(s % (zserv.name,
                                        zserv.event_type_to_watch_for))
                     if event.type == zserv.event_type_to_watch_for:
-                        logging.debug("Found a response event")
+                        zdslog.debug("Found a response event")
                         zserv.response_events.append(event)
                     elif zserv.response_events:
-                        logging.debug("Response is finished")
+                        zdslog.debug("Response is finished")
                         ###
                         # Received an event that was not a response to the
                         # command after events that were responses to the
@@ -296,13 +310,13 @@ class Stack(Server):
                         # the response, because the current event may depend
                         # upon it.
                         ###
-                        logging.debug("Waiting until response is processed")
+                        zdslog.debug("Waiting until response is processed")
                         zserv.finished_processing_response.wait()
-                        logging.debug("Done waiting")
+                        zdslog.debug("Done waiting")
             except Exception, e:
                 es = "Received error while processing event from [%s]: "
                 es += "[%s]"
-                logging.error(es % (zserv.name, e))
+                zdslog.error(es % (zserv.name, e))
                 continue
             s = "Put [%s] from %s in the %s queue"
             if event.category == 'command':
@@ -316,12 +330,12 @@ class Stack(Server):
             task = Task(self.handle_generic_events, args=[event, zserv],
                         name='%s Event Handling' % (event.type.capitalize()))
             queue.put_nowait(task)
-            # logging.debug(s % (event, zserv.name, queue_name))
+            # zdslog.debug(s % (event, zserv.name, queue_name))
             if zserv.plugins_enabled:
                 f = lambda: self.handle_plugin_events(event, zserv)
                 t = Task(self.handle_plugin_events, args=[event, zserv],
                          name='%s Event Handling' % (event.type.capitalize()))
-                # logging.debug(s % (event.type, zserv.name, 'plugin'))
+                # zdslog.debug(s % (event.type, zserv.name, 'plugin'))
                 self.plugin_events.put_nowait(t)
 
     def handle_generic_events(self, event, zserv):
@@ -334,15 +348,15 @@ class Stack(Server):
         handler = self.event_handler.get_handler(event.category)
         if handler:
             s = "Handling %s event (Line: [%s])" % (event.type, event.line)
-            logging.debug(s)
+            zdslog.debug(s)
             ###
             # This should return a new model... or nothing.
             ###
             handler(event, zserv)
-            logging.debug("Finished handling %s event" % (event.type))
+            zdslog.debug("Finished handling %s event" % (event.type))
         else:
             pass
-            # logging.debug("No handler set for %s" % (event.type))
+            # zdslog.debug("No handler set for %s" % (event.type))
 
     def handle_plugin_events(self, event, zserv):
         """Handles plugin events.
@@ -351,9 +365,9 @@ class Stack(Server):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("Sending %s to %s's plugins" % (event, zserv.name))
+        zdslog.debug("Sending %s to %s's plugins" % (event, zserv.name))
         for plugin in zserv.plugins:
-            logging.debug("Processing %s with %s" % (event, plugin.__name__))
+            zdslog.debug("Processing %s with %s" % (event, plugin.__name__))
             try:
                 ###
                 # If a plugin wants to persist something (God forbid), then
@@ -362,7 +376,7 @@ class Stack(Server):
                 plugin(event, zserv)
             except Exception, e:
                 es = "Exception in plugin %s: [%s]"
-                logging.error(es % (plugin.__name__, e))
+                zdslog.error(es % (plugin.__name__, e))
                 continue
 
     def get_running_zservs(self):
@@ -375,7 +389,7 @@ class Stack(Server):
 
     def check_all_zserv_configs(self, configparser):
         """Ensures that all ZServ configuration sections are correct."""
-        # logging.debug('')
+        # zdslog.debug('')
         for zserv in self.get_running_zservs():
             if not zserv.name in configparser.sections():
                 es = "Cannot remove running zserv [%s] from the config."
@@ -383,13 +397,13 @@ class Stack(Server):
 
     def load_zservs(self):
         """Instantiates all configured ZServs."""
-        logging.debug('Loading ZServs: %s' % (str(self.config.sections())))
+        zdslog.debug('Loading ZServs: %s' % (str(self.config.sections())))
         for zserv_name in self.config.sections():
             if zserv_name in self.zservs:
-                logging.info("Reloading Config for [%s]" % (zserv_name))
+                zdslog.info("Reloading Config for [%s]" % (zserv_name))
                 self.zservs[zserv_name].reload_config()
             else:
-                logging.debug("Adding zserv [%s]" % (zserv_name))
+                zdslog.debug("Adding zserv [%s]" % (zserv_name))
                 self.zservs[zserv_name] = ZServ(zserv_name, self)
 
     def load_config(self, config, reload=False):
@@ -399,7 +413,7 @@ class Stack(Server):
                 reloaded.
 
         """
-        logging.debug('')
+        zdslog.debug('')
         raw_config = RCP(self.config_file)
         for section in raw_config.sections():
             raw_config.set(section, 'name', section)
@@ -415,8 +429,8 @@ class Stack(Server):
         zserv_name: a string representing the name of a ZServ to start
 
         """
-        # logging.debug('')
-        logging.debug("Starting %s" % (zserv_name))
+        # zdslog.debug('')
+        zdslog.debug("Starting %s" % (zserv_name))
         if zserv_name not in self.zservs:
             raise ZServNotFoundError(zserv_name)
         if self.zservs[zserv_name].is_running():
@@ -429,7 +443,7 @@ class Stack(Server):
             # zserv_name wasn't in self.stopped_zserv_names.
             ###
             pass
-        logging.debug("Done starting %s" % (zserv_name))
+        zdslog.debug("Done starting %s" % (zserv_name))
 
     def stop_zserv(self, zserv_name):
         """Stops a ZServ.
@@ -437,15 +451,15 @@ class Stack(Server):
         zserv_name: a string representing the name of a ZServ to stop
 
         """
-        # logging.debug('')
-        logging.debug("Stopping %s" % (zserv_name))
+        # zdslog.debug('')
+        zdslog.debug("Stopping %s" % (zserv_name))
         if zserv_name not in self.zservs:
             raise ZServNotFoundError(zserv_name)
         if not self.zservs[zserv_name].is_running():
             raise Exception("ZServ [%s] is not running" % (zserv_name))
         self.zservs[zserv_name].stop()
         self.stopped_zserv_names.add(zserv_name)
-        logging.debug("Done stopping %s" % (zserv_name))
+        zdslog.debug("Done stopping %s" % (zserv_name))
 
     def restart_zserv(self, zserv_name):
         """Restarts a ZServ.
@@ -454,16 +468,16 @@ class Stack(Server):
                     restart
 
         """
-        # logging.debug('')
-        logging.debug("Restarting %s" % (zserv_name))
+        # zdslog.debug('')
+        zdslog.debug("Restarting %s" % (zserv_name))
         self.stop_zserv(zserv_name)
         time.sleep(1)
         self.start_zserv(zserv_name)
-        logging.debug("Done restarting %s" % (zserv_name))
+        zdslog.debug("Done restarting %s" % (zserv_name))
 
     def start_all_zservs(self):
         """Starts all ZServs."""
-        # logging.debug('')
+        # zdslog.debug('')
         for zserv in self.get_stopped_zservs():
             self.start_zserv(zserv.name)
 
@@ -474,7 +488,7 @@ class Stack(Server):
                        the ZServ as well.  False by default.
         
         """
-        # logging.debug('')
+        # zdslog.debug('')
         for zserv in self.get_running_zservs():
             try:
                 self.stop_zserv(zserv.name)
@@ -488,7 +502,7 @@ class Stack(Server):
 
     def restart_all_zservs(self):
         """Restars all ZServs."""
-        # logging.debug('')
+        # zdslog.debug('')
         for zserv in self.get_running_zservs():
             self.restart_zserv(zserv.name)
 
@@ -499,14 +513,14 @@ class Stack(Server):
                     return
         
         """
-        # logging.debug('')
+        # zdslog.debug('')
         if zserv_name not in self.zservs:
             raise ZServNotFoundError(zserv_name)
         return self.zservs[zserv_name]
 
     def list_zserv_names(self):
         """Returns a list of ZServ names."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.zservs.keys()
 
     def _get_zserv_info(self, zserv):
@@ -563,7 +577,7 @@ class Stack(Server):
         zserv_name: a string representing the ZServ's name
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         self.get_zserv(zserv_name)
         return self._items_to_section(zserv_name,
                                       self.raw_config.items(zserv_name))
@@ -575,7 +589,7 @@ class Stack(Server):
         data:       a string representing the new configuration data
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         sio = StringIO(data)
         cp = RCP(sio, dummy=True)
         main_cp = get_configparser()
@@ -594,7 +608,7 @@ class Stack(Server):
         message:    a string, the message to send
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).send_to_zserv(message)
 
     def addban(self, zserv_name, ip_address, reason='rofl'):
@@ -606,7 +620,7 @@ class Stack(Server):
         reason:     a string representing the reason for the ban
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zaddban(ip_address, reason)
 
     def addbot(self, zserv_name, bot_name=None):
@@ -617,7 +631,7 @@ class Stack(Server):
         bot_name:   a string representing the name of the bot to add
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zaddbot(bot_name)
 
     def addmap(self, zserv_name, map_number):
@@ -628,7 +642,7 @@ class Stack(Server):
         map_number: a string representing the number of the map to add
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zaddmap(map_number)
 
     def clearmaplist(self, zserv_name):
@@ -638,7 +652,7 @@ class Stack(Server):
                     maplist is to be cleared
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zclearmaplist()
 
     def get(self, zserv_name, variable_name):
@@ -650,7 +664,7 @@ class Stack(Server):
                        whose value is to be retrieved
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zget(variable_name)
 
     def kick(self, zserv_name, player_number, reason='rofl'):
@@ -663,7 +677,7 @@ class Stack(Server):
         reason:        a string representing the reason for the kick
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zkick(player_number, reason)
 
     def killban(self, zserv_name, ip_address):
@@ -675,7 +689,7 @@ class Stack(Server):
                     ban for
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zkillban(ip_address)
 
     def map(self, zserv_name, map_number):
@@ -687,7 +701,7 @@ class Stack(Server):
                     change to
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zmap(map_number)
 
     def maplist(self, zserv_name):
@@ -700,7 +714,7 @@ class Stack(Server):
         in the maplist.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zmaplist()
 
     def players(self, zserv_name):
@@ -713,7 +727,7 @@ class Stack(Server):
         IP address of all players.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zplayers()
 
     def removebots(self, zserv_name):
@@ -723,7 +737,7 @@ class Stack(Server):
                     remove the bots from
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zremovebots()
 
     def resetscores(self, zserv_name):
@@ -733,7 +747,7 @@ class Stack(Server):
                     reset the scores for
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zresetscores()
 
     def say(self, zserv_name, message):
@@ -744,7 +758,7 @@ class Stack(Server):
         message:    a string, the message to send
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zsay(message)
 
     def set(self, zserv_name, variable_name, variable_value):
@@ -757,7 +771,7 @@ class Stack(Server):
                         variable
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zset(variable_name, variable_value)
 
     def toggle(self, zserv_name, boolean_variable):
@@ -768,7 +782,7 @@ class Stack(Server):
                           boolean variable to toggle on or off
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).ztoggle(boolean_variable)
 
     def unset(self, zserv_name, variable_name):
@@ -779,7 +793,7 @@ class Stack(Server):
         variable_name: the name of the variable to unset
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zunset(variable_name)
 
     def wads(self, zserv_name):
@@ -792,12 +806,12 @@ class Stack(Server):
         WADs.
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         return self.get_zserv(zserv_name).zwads()
 
     def register_functions(self):
         """Registers RPC functions."""
-        # logging.debug('')
+        # zdslog.debug('')
         Server.register_functions(self)
         ###
         # The following RPC methods are removed because stats will be handled

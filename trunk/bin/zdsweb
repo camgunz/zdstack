@@ -597,7 +597,8 @@ class Page:
             d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
             return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
-            # raise
+            import traceback
+            raise Exception(traceback.format_exc()) # for debugging
             errors.append(str(e))
         try:
             all_zservs = IFACE.get_all_zservs()
@@ -607,7 +608,8 @@ class Page:
             d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
             return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
-            # raise
+            import traceback
+            raise Exception(traceback.format_exc()) # for debugging
             errors.append(str(e))
         if all_zservs:
             server_template = SERVER_TEMPLATE

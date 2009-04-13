@@ -1,12 +1,12 @@
 from __future__ import with_statement
 
-import logging
-
 from threading import Lock
 from collections import deque
 
-from ZDStack import PlayerNotFoundError
+from ZDStack import PlayerNotFoundError, get_zdslog
 from ZDStack.ZDSPlayer import Player
+
+zdslog = get_zdslog()
 
 class PlayersList(object):
 
@@ -56,7 +56,7 @@ class PlayersList(object):
                       taking any action; True by default.
 
         """
-        logging.debug("add(%s, acquire_lock=%s" % (player, acquire_lock))
+        zdslog.debug("add(%s, acquire_lock=%s" % (player, acquire_lock))
         def blah():
             full_list = []
             name_list = []
@@ -72,7 +72,7 @@ class PlayersList(object):
                 #   set .port to new port
                 #   set .disconnected to False
                 ###
-                logging.debug("Player [%s] has reconnected" % (p_name[0]))
+                zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
                 for p in self.__players:
                     if (p.name, p.ip) == p_name:
                         p.port = player.port
@@ -81,7 +81,7 @@ class PlayersList(object):
                 ###
                 # Totally new connection
                 ###
-                logging.debug("Found totally new player [%s]" % (p_name[0]))
+                zdslog.debug("Found totally new player [%s]" % (p_name[0]))
                 self.__players.append(player)
         if acquire_lock:
             with self.lock:
@@ -97,7 +97,7 @@ class PlayersList(object):
                       taking any action; True by default.
 
         """
-        logging.debug("remove(%s, acquire_lock=%s" % (player, acquire_lock))
+        zdslog.debug("remove(%s, acquire_lock=%s" % (player, acquire_lock))
         def blah():
             player.playing = False
             player.disconnected = True
@@ -127,8 +127,8 @@ class PlayersList(object):
         name.
 
         """
-        logging.debug("get(name=%s, ip_address_and_port=%s, acquire_lock=%s" % (name, ip_address_and_port, acquire_lock))
-        # logging.debug('')
+        zdslog.debug("get(name=%s, ip_address_and_port=%s, acquire_lock=%s" % (name, ip_address_and_port, acquire_lock))
+        # zdslog.debug('')
         if name and ip_address_and_port:
             ip_address, port = ip_address_and_port
             def _find_player():
@@ -184,7 +184,7 @@ class PlayersList(object):
         # When setting a player's name, it's important to use 'set_name', so
         # the alias is saved in the DB.
         ###
-        logging.debug("sync(zplayers=%s, acquire_lock=%s" % (zplayers, acquire_lock))
+        zdslog.debug("sync(zplayers=%s, acquire_lock=%s" % (zplayers, acquire_lock))
         def blah():
             players_list = list()
             disconnected_players_list = list()
@@ -202,10 +202,10 @@ class PlayersList(object):
                 z_full_plus_number = (d['player_num'],) + z_full
                 zplayers_list.append(z_full)
                 zplayers_list_plus_numbers.append(z_full_plus_number)
-            logging.debug("Sync: Players List: (%s)" % (players_list))
-            logging.debug("Sync: Disconnected List: (%s)" % (disconnected_players_list))
-            logging.debug("Sync: ZPlayers List: (%s)" % (zplayers_list))
-            logging.debug("Checking for players to add")
+            zdslog.debug("Sync: Players List: (%s)" % (players_list))
+            zdslog.debug("Sync: Disconnected List: (%s)" % (disconnected_players_list))
+            zdslog.debug("Sync: ZPlayers List: (%s)" % (zplayers_list))
+            zdslog.debug("Checking for players to add")
             for z_full in zplayers_list:
                 if z_full not in players_list or \
                    z_full in disconnected_players_list:
@@ -213,10 +213,10 @@ class PlayersList(object):
                     # found a missing or reconnected player
                     ###
                     player = Player(self.zserv, z_full[1], z_full[2], z_full[0])
-                    logging.debug("Adding new player [%s]" % (player.name))
+                    zdslog.debug("Adding new player [%s]" % (player.name))
                     self.add(player, acquire_lock=False)
-                    logging.debug("Added new player [%s]" % (player.name))
-            logging.debug("Checking for players to remove")
+                    zdslog.debug("Added new player [%s]" % (player.name))
+            zdslog.debug("Checking for players to remove")
             for p_full in players_list:
                 if p_full not in zplayers_list:
                     ###
@@ -225,12 +225,12 @@ class PlayersList(object):
                     player = self.get(name=p_full[0],
                                       ip_address_and_port=p_full[1:],
                                       acquire_lock=False)
-                    logging.debug("Removed player [%s]" % (p_full[0]))
+                    zdslog.debug("Removed player [%s]" % (p_full[0]))
                     self.remove(player, acquire_lock=False)
-            logging.debug("Checking for misaligned numbers")
+            zdslog.debug("Checking for misaligned numbers")
             for z_full_num in zplayers_list_plus_numbers:
                 for p in self:
-                    logging.debug("Checking %s" % (p))
+                    zdslog.debug("Checking %s" % (p))
                     if p.name.endswith('s'):
                         ps = "%s'"
                     else:
@@ -247,21 +247,21 @@ class PlayersList(object):
                     else:
                         es = "%s and %s don't match" % (str(x),
                                                         str(z_full_num[1:]))
-                    logging.debug(es)
+                    zdslog.debug(es)
         if acquire_lock:
             with self.lock:
                 if zplayers is None:
-                    logging.debug("Manually populating zplayers")
+                    zdslog.debug("Manually populating zplayers")
                     zplayers = self.zserv.zplayers()
-                logging.debug("Sync: zplayers: (%s)" % (zplayers))
+                zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
                 blah()
         else:
             if zplayers is None:
-                logging.debug("Manually populating zplayers")
+                zdslog.debug("Manually populating zplayers")
                 zplayers = self.zserv.zplayers()
-            logging.debug("Sync: zplayers: (%s)" % (zplayers))
+            zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
             blah()
-        logging.debug("Sync: done")
+        zdslog.debug("Sync: done")
 
     def names(self):
         """Returns a list of player names."""

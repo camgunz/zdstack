@@ -8,7 +8,8 @@ import signal
 
 from pyfileutils import read_file, write_file
 
-from ZDStack import set_configfile, get_configparser, get_server_proxy
+from ZDStack import set_debugging, set_configfile, get_configparser, \
+                    get_server_proxy
 
 def fork(debug=False):
     if hasattr(os, 'devnull'):
@@ -54,7 +55,7 @@ def start(debug=False, restart=False):
             sys.exit(-1)
         print "\nStarting ZDStack\n"
         from ZDStack.Stack import Stack
-        zdstack = Stack(debugging=debug)
+        zdstack = Stack()
         fork(debug)
         zdstack.startup()
     except Exception, e:
@@ -107,14 +108,15 @@ if not '-c' in opts:
 if '-c' in opts:
     print "Setting configuration file to %s" % (config_file)
     set_configfile(opts['-c'])
-if action == 'start':
+if action == 'debug':
+    set_debugging(True)
+    start(debug=True)
+elif action == 'start':
     start()
 elif action == 'stop':
     stop()
 elif action == 'restart':
     restart()
-elif action == 'debug':
-    start(debug=True)
 elif action == 'reload-config':
     cp = get_configparser() # implicitly loads the configuration file as well
     username = cp.get('DEFAULT', 'zdstack_username')

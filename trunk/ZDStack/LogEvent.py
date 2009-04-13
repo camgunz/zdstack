@@ -1,5 +1,3 @@
-import logging
-
 class LogEvent(object):
 
     """LogEvent represents an event occurring in a log file."""
@@ -22,8 +20,6 @@ class LogEvent(object):
         self.data = event_data
         self.category = event_category
         self.line = line
-        if self.type is None:
-            logging.debug("Type is None: %s" % (self))
 
     def __str__(self):
         return "<Event %s at %s>" % (self.type, self.dt)

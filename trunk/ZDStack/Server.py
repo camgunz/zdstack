@@ -3,35 +3,31 @@ import sys
 import time
 import signal
 import socket
-import logging
 import tempfile
 from datetime import datetime
 from pyfileutils import read_file, write_file, append_file, delete_file
 
 from ZDStack import ZDSThreadPool
-from ZDStack import RPC_CLASS, DIE_THREADS_DIE, get_configfile, \
-                    set_configfile, load_configparser, get_configparser, \
-                    set_debugging
+from ZDStack import DIE_THREADS_DIE, get_configfile, set_configfile, \
+                    load_configparser, get_configparser, set_debugging, \
+                    get_rpc_server_class, get_zdslog
 from ZDStack.Utils import resolve_path
+
+zdslog = get_zdslog()
 
 class Server(object):
 
     """Server represents a daemonized process serving network requests."""
 
-    def __init__(self, debugging=False):
-        """Initializes a Server instance.
-
-        debugging:   a boolean, whether or not debugging is enabled
-
-        """
-        set_debugging(debugging)
+    def __init__(self):
+        """Initializes a Server instance."""
         self.initialize_config()
         ###
         # Normally, daemons chdir to '/', but all the daemonizing logic is
         # contained in the 'zdstack' script.  So there's no reason for us
         # to chdir here, except to be really, really tricky.
         ###
-        # os.chdir(self.homedir)
+        # os.chdir(self.home_folder)
         self.stats = {}
         self.status = 'Stopped'
         self.keep_serving = False
@@ -47,7 +43,7 @@ class Server(object):
                      being reloaded
 
         """
-        # logging.debug('')
+        # zdslog.debug('')
         self.config_file = get_configfile()
         self.load_config(get_configparser(reload=reload), reload=reload)
 
@@ -58,7 +54,7 @@ class Server(object):
                 reloaded
 
         """
-        logging.debug('')
+        zdslog.debug('')
         hostname = config.get('DEFAULT', 'zdstack_rpc_hostname')
         port = config.getint('DEFAULT', 'zdstack_port')
         log_folder = config.getpath('DEFAULT', 'zdstack_log_folder')
@@ -76,38 +72,39 @@ class Server(object):
 
     def reload_config(self):
         """Reloads the configuration."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.load_config(get_configparser(reload=True), reload=True)
 
     def startup(self):
         """Starts the server up."""
-        # logging.debug('')
-        logging.info("ZDStack Starting Up")
+        # zdslog.debug('')
+        zdslog.info("ZDStack Starting Up")
         addr = (self.hostname, self.port)
-        self.rpc_server = RPC_CLASS(addr, self.username, self.password)
+        RPCServer = get_rpc_server_class()
+        self.rpc_server = RPCServer(addr, self.username, self.password)
         self.rpc_server.timeout = 1
         self.register_functions()
         self.keep_serving = True
         write_file(str(os.getpid()), self.pidfile)
         self.start()
-        logging.info("ZDStack listening on %s:%s" % addr)
-        logging.info("ZDStack Startup Complete")
+        zdslog.info("ZDStack listening on %s:%s" % addr)
+        zdslog.info("ZDStack Startup Complete")
         while self.keep_serving:
             self.rpc_server.handle_request()
 
     def shutdown(self, signum=15, retval=0):
         """Shuts the server down."""
-        # logging.debug('')
-        logging.info("ZDStack Shutting Down")
+        # zdslog.debug('')
+        zdslog.info("ZDStack Shutting Down")
         self.stop()
-        logging.debug("Setting keep_serving False")
+        zdslog.debug("Setting keep_serving False")
         self.keep_serving = False
-        logging.debug("Setting DIE_THREADS_DIE True")
+        zdslog.debug("Setting DIE_THREADS_DIE True")
         DIE_THREADS_DIE = True
-        logging.debug("Joining all threads")
+        zdslog.debug("Joining all threads")
         ZDSThreadPool.join_all()
         try:
-            logging.debug("Deleting PID file")
+            zdslog.debug("Deleting PID file")
             delete_file(self.pidfile)
         except OSError, e:
             if e.errno != 2:
@@ -115,29 +112,29 @@ class Server(object):
                 # Error code 2: No such file or directory
                 ###
                 es = "Error removing PID file %s: [%s]"
-                logging.error(es % (self.pidfile, e))
-        logging.info("ZDStack Shutdown Complete")
+                zdslog.error(es % (self.pidfile, e))
+        zdslog.info("ZDStack Shutdown Complete")
         sys.exit(retval)
 
     def start(self):
         """Starts serving requests."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.status = "Running"
 
     def stop(self):
         """Stops serving requests."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.status = "Stopped"
 
     def restart(self):
         """Restarts the server."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.stop()
         self.start()
 
     def handle_signal(self, signum, frame):
         """Handles a signal."""
-        # logging.debug('')
+        # zdslog.debug('')
         if signum == signal.SIGHUP:
             self.reload_config()
         else:
@@ -145,7 +142,7 @@ class Server(object):
 
     def register_functions(self):
         """Registers public XML-RPC functions."""
-        # logging.debug('')
+        # zdslog.debug('')
         self.rpc_server.register_function(self.get_status)
         self.rpc_server.register_function(self.get_logfile,
                                           requires_authentication=True)
@@ -160,12 +157,12 @@ class Server(object):
 
     def get_status(self):
         """Returns the current status of the server."""
-        # logging.debug('')
+        # zdslog.debug('')
         return self.status
 
     def get_logfile(self):
         """Returns the contents of this server's logfile."""
-        # logging.debug('')
+        # zdslog.debug('')
         ###
         # This could potentially be quite large, maybe we should make this
         # method a little smarter eh?

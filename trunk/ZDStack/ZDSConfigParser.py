@@ -1,7 +1,6 @@
 from __future__ import with_statement
 
 import os.path
-import logging
 
 from decimal import Decimal
 from threading import Lock
@@ -76,7 +75,6 @@ class RawZDSConfigParser(RCP):
             if self.dummy:
                 return
             f = resolve_path(filename)
-            logging.debug("Setting Configuration File: [%s]" % (f))
             if not os.path.isfile(f):
                 raise ValueError("Config File [%s] not found" % (filename))
             self.filename = f

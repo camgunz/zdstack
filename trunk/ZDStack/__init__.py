@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import socket
 import logging
@@ -7,7 +8,6 @@ import logging.handlers
 from threading import Lock
 from decimal import Decimal
 from contextlib import contextmanager
-from dummy_threading import Lock as DummyLock
 
 from ZDStack.Utils import resolve_path
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
@@ -21,23 +21,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-Session = scoped_session(sessionmaker())
+DB_SESSION_CLASS = scoped_session(sessionmaker())
 
 ###
 # End ORM Stuff
 ###
 
 __all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
-           'LOOPBACK', 'DEVNULL', 'CONFIGFILE', 'CONFIGPARSER', 'DATABASE',
-           'DEBUGGING' 'PLUGINS', 'DATEFMT', 'JSON_CLASS', 'RPC_CLASS',
-           'RPC_PROXY_CLASS', 'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT',
-           'DIE_THREADS_DIE', 'JSONNotFoundError', 'PlayerNotFoundError',
-           'TeamNotFoundError', 'ZServNotFoundError',
-           'RPCAuthenticationError', 'DebugTRFH', 'Session', 'get_hostname',
-           'get_loopback', 'get_engine', 'get_db_lock', 'db_is_noop',
-           'get_session_class', 'get_configfile', 'set_configfile',
-           'load_configparser', 'get_configparser', 'get_server_proxy',
-           'get_plugins', 'set_debugging', 'log']
+           'LOOPBACK', 'DEVNULL', 'CONFIGFILE', 'CONFIGPARSER', 'DEBUGGING',
+           'PLUGINS', 'DATEFMT', 'JSON_MODULE', 'RPC_CLASS', 'RPC_PROXY_CLASS',
+           'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'ZDSLOG',
+           'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
+           'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
+           'DB_SESSION_CLASS', 'get_hostname', 'get_loopback', 'get_engine',
+           'get_db_lock', 'db_is_noop', 'get_session_class', 'get_configfile',
+           'set_configfile', 'load_configparser', 'get_configparser',
+           'get_server_proxy', 'get_plugins', 'set_debugging', 'get_zdslog',
+           'get_debugging']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
@@ -67,27 +67,30 @@ SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 
 NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
 
-HOSTNAME = None
-LOOPBACK = None
 DEVNULL = open(os.devnull, 'w')
-CONFIGFILE = None
-CONFIGPARSER = None
-DATABASE = None
-DEBUGGING = None
-PLUGINS = None
 DATEFMT = '%Y-%m-%d %H:%M:%S'
-DB_LOCK = None
-DB_ENGINE = None
-DB_METADATA = None
-DB_NOOP = None
-DB_SESSION_CLASS = None
-JSON_CLASS = None
-RPC_CLASS = None
-RPC_PROXY_CLASS = None
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
 TICK = Decimal('0.027')
 MAX_TIMEOUT = 1
+
+###
+# These are all internal __init__ globals, and they all have getters that
+# should be used instead of importing them.
+###
+HOSTNAME = None
+LOOPBACK = None
+CONFIGFILE = None
+CONFIGPARSER = None
+DEBUGGING = None
+PLUGINS = None
+DB_LOCK = None
+DB_ENGINE = None
+DB_NOOP = None
+JSON_MODULE = None
+RPC_CLASS = None
+RPC_PROXY_CLASS = None
 DIE_THREADS_DIE = False
+ZDSLOG = None
 
 ###
 # I'm deciding to only have 1 DB engine, and to make all zservs use it.  I
@@ -133,7 +136,7 @@ class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
 
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
-        # print >> sys.stderr, record.getMessage().strip()
+        print >> sys.stderr, self.format(record)
 
 class JSONNotFoundError(Exception):
 
@@ -229,6 +232,7 @@ def set_configfile(config_file):
 def load_configparser():
     global RPC_CLASS
     global RPC_PROXY_CLASS
+    global DEBUGGING
     cp = CP(get_configfile())
     for section in cp.sections():
         cp.set(section, 'name', section)
@@ -238,10 +242,14 @@ def load_configparser():
     for fo, m in REQUIRED_GLOBAL_VALID_FOLDERS:
         f = cp.getpath('DEFAULT', fo)
         if not os.path.isdir(f):
-            raise ValueError("Required folder %s not found" % (fo))
+            try:
+                os.mkdir(f)
+            except Exception, e:
+                raise Exception("Could not make folder %s: %s" % (fo, e))
         if not os.access(f, m):
-            raise ValueError("Insufficient access provided for %s" % (f))
+            raise ValueError("Insufficient access provided for %s" % (fo))
         # cp.set('DEFAULT', fo, f)
+    ports = []
     for s in cp.sections():
         d = dict(cp.items(s))
         for x in REQUIRED_SERVER_CONFIG_OPTIONS:
@@ -255,25 +263,34 @@ def load_configparser():
             # cp.set(s, fo, f)
         if d['mode'].lower() not in SUPPORTED_GAME_MODES:
             raise ValueError("Unsupported game mode %s" % (d['mode']))
+        if d['port'] in ports:
+            raise ValueError("%s's port (%s) is already in use" % (d['name'], d['port']))
     ###
     # Below are some checks for specific options & values
     ###
     ###
     # Check RPC protocol is supported
     ###
-    zrp = cp.get('DEFAULT', 'zdstack_rpc_protocol').lower()
+    zrp = cp.get('DEFAULT', 'zdstack_rpc_protocol', 'xml-rpc').lower()
     rp = zrp.lower()
     if rp in ('jsonrpc', 'json-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'json-rpc')
-        _load_json()
-        from ZDStack.RPCServer import JSONRPCServer, JSONProxy
-        rpc_class = JSONRPCServer
-        proxy_class = JSONProxy
+        global JSON_MODULE
+        ###
+        # Python 2.6 and up have a 'json' module we can use.  Otherwise we
+        # require simplejson.
+        ###
+        try:
+            import json
+            JSON_MODULE = json
+        except ImportError:
+            try:
+                import simplejson
+                JSON_MODULE = simplejson
+            except ImportError:
+                raise JSONNotFoundError
     elif rp in ('xmlrpc', 'xml-rpc'):
         cp.set('DEFAULT', 'zdstack_rpc_protocol', 'xml-rpc')
-        from ZDStack.RPCServer import XMLRPCServer, XMLProxy
-        rpc_class = XMLRPCServer
-        proxy_class = XMLProxy
     else:
         es = "RPC Protocol [%s] not supported"
         raise ValueError(es % (zrp))
@@ -293,10 +310,30 @@ def load_configparser():
             es = "Error: ZServ Server folder %s is not valid: %s"
             raise ValueError(es % (zserv_folder, e))
     ###
+    # Make sure the folder for the log files exists.
+    ###
+    log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
+    if not os.path.isdir(log_folder):
+        try:
+            os.mkdir(log_folder)
+        except Exception, e:
+            es = "Error: ZDStack Log Folder %s is not valid: %s"
+            raise ValueError(es % (log_folder, e))
+    ###
+    # Make sure the folder for the plugins exists.
+    ###
+    plugin_folder = cp.getpath('DEFAULT', 'zdstack_plugin_folder')
+    if not os.path.isdir(plugin_folder):
+        try:
+            os.mkdir(plugin_folder)
+        except Exception, e:
+            es = "Error: ZDStack Plugin Folder %s is not valid: %s"
+            raise ValueError(es % (plugin_folder, e))
+    ###
     # Resolve the PID file location.
     ###
-    RPC_CLASS = rpc_class
-    RPC_PROXY_CLASS = proxy_class
+    if DEBUGGING is None:
+        set_debugging(False, cp)
     return cp
 
 def _get_embedded_engine(db_engine, cp):
@@ -309,7 +346,7 @@ def _get_embedded_engine(db_engine, cp):
     use of embedded databases, and this method sets them.
 
     """
-    logging.debug("Getting embedded engine")
+    ZDSLOG.debug("Getting embedded engine")
     global DB_LOCK
     DB_LOCK = Lock()
     if db_engine == 'sqlite':
@@ -329,17 +366,17 @@ def _get_embedded_engine(db_engine, cp):
         db_name = resolve_path(db_name) # just to be sure
         if not os.path.isfile(db_name):
             es = "Embedded DB file %s not found, will create new DB"
-            logging.info(es % (db_name))
+            ZDSLOG.info(es % (db_name))
         db_str += '/' + db_name
     ###
     # Set embedded-DB-specific stuff here.
     ###
     global DB_NOOP
     DB_NOOP = False
-    Session.configure(autoflush=False, autocommit=True)
-    logging.debug("No-op is False")
-    logging.debug("autoflush is False")
-    logging.debug("autocommit is True")
+    DB_SESSION_CLASS.configure(autoflush=False, autocommit=True)
+    ZDSLOG.debug("No-op is False")
+    ZDSLOG.debug("autoflush is False")
+    ZDSLOG.debug("autocommit is True")
     ###
     # End embedded DB section.
     ###
@@ -360,9 +397,9 @@ def _get_full_engine(db_engine, cp):
     use of full databases, and this method sets them.
 
     """
-    logging.debug("Getting full engine")
+    ZDSLOG.debug("Getting full engine")
     global DB_LOCK
-    DB_LOCK = DummyLock()
+    DB_LOCK = Lock()
     db_str = '%s://' % (db_engine.replace('-', ''))
     ###
     # Some databases might be configured for user-less/password-less
@@ -419,14 +456,14 @@ def _get_full_engine(db_engine, cp):
     ###
     global DB_NOOP
     DB_NOOP = True
-    Session.configure(autocommit=True, autoflush=True)
-    logging.debug("No-op is True")
-    logging.debug("autoflush is True")
-    logging.debug("autocommit is True")
+    DB_SESSION_CLASS.configure(autocommit=True, autoflush=True)
+    ZDSLOG.debug("No-op is True")
+    ZDSLOG.debug("autoflush is True")
+    ZDSLOG.debug("autocommit is True")
     ###
     # End full-RDBMS section.
     ###
-    logging.debug("Creating engine from DB str: [%s]" % (db_str))
+    ZDSLOG.debug("Creating engine from DB str: [%s]" % (db_str))
     if db_engine == 'mysql':
         ###
         # We need to recycle connections every hour or so to avoid MySQL's
@@ -436,11 +473,51 @@ def _get_full_engine(db_engine, cp):
     else:
         return create_engine(db_str)
 
+def get_rpc_server_class():
+    global RPC_CLASS
+    if not RPC_CLASS:
+        cp = get_configparser()
+        if cp.get('DEFAULT', 'zdstack_rpc_protocol') == 'xml-rpc':
+            from ZDStack.RPCServer import XMLRPCServer
+            RPC_CLASS = XMLRPCServer
+        elif cp.get('DEFAULT', 'zdstack_rpc_protocol') == 'json-rpc':
+            from ZDStack.RPCServer import JSONRPCServer
+            RPC_CLASS = JSONRPCServer
+    return RPC_CLASS
+
+def get_rpc_proxy_class():
+    global RPC_PROXY_CLASS
+    if not RPC_PROXY_CLASS:
+        cp = get_configparser()
+        if cp.get('DEFAULT', 'zdstack_rpc_protocol') == 'xml-rpc':
+            from ZDStack.RPCServer import XMLProxy
+            RPC_PROXY_CLASS = XMLProxy
+        elif cp.get('DEFAULT', 'zdstack_rpc_protocol') == 'json-rpc':
+            from ZDStack.RPCServer import JSONProxy
+            RPC_PROXY_CLASS = JSONProxy
+        else:
+            raise ValueError("Unsupported RPC protocol")
+    return RPC_PROXY_CLASS
+
+def get_json_module():
+    global JSON_MODULE
+    if not JSON_MODULE:
+        raise JSONNotFoundError
+    return JSON_MODULE
+
+def get_server_proxy():
+    """Returns an object that is a proxy for the running ZDStack."""
+    cp = get_configparser() # assuming it's already loaded at this point
+    address = 'http://%s:%s' % (cp.get('DEFAULT', 'zdstack_rpc_hostname'),
+                                cp.get('DEFAULT', 'zdstack_port'))
+    ZDSLOG.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
+    return get_rpc_proxy_class()(address)
+
 def get_engine():
     ###
     # At this point, we are assuming that stats have been enabled.
     ###
-    logging.debug("Getting engine")
+    ZDSLOG.debug("Getting engine")
     global DB_ENGINE
     if not DB_ENGINE:
         cp = get_configparser()
@@ -467,24 +544,8 @@ def db_is_noop():
     return DB_NOOP == True
 
 def get_session_class():
-    global Session
-    return Session
-
-def _load_json():
-    global JSON_CLASS
-    ###
-    # Python 2.6 and up have a 'json' module we can use.  Otherwise we require
-    # simplejson.
-    ###
-    try:
-        import json
-        JSON_CLASS = json
-    except ImportError:
-        try:
-            import simplejson
-            JSON_CLASS = simplejson
-        except ImportError:
-            raise JSONNotFoundError
+    global DB_SESSION_CLASS
+    return DB_SESSION_CLASS
 
 def get_configparser(reload=False, raw=False):
     if raw:
@@ -493,14 +554,6 @@ def get_configparser(reload=False, raw=False):
     if CONFIGPARSER is None or reload:
         CONFIGPARSER = load_configparser()
     return CONFIGPARSER
-
-def get_server_proxy():
-    """Returns an object that is a proxy for the running ZDStack."""
-    cp = get_configparser() # assuming it's already loaded at this point
-    address = 'http://%s:%s' % (cp.get('DEFAULT', 'zdstack_rpc_hostname'),
-                                cp.get('DEFAULT', 'zdstack_port'))
-    logging.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
-    return RPC_PROXY_CLASS(address)
 
 def get_plugins(plugins='all'):
     global PLUGINS
@@ -514,31 +567,50 @@ def get_plugins(plugins='all'):
             PLUGINS = get_plugins(plugin_folder)
     return [x for x in PLUGINS if plugins == 'all' or x.__name__ in plugins]
 
-def set_debugging(debugging, log_file=None, config_file=None):
+def set_debugging(debugging, configparser=None):
     global DEBUGGING
-    if debugging:
-        __log_level = logging.DEBUG
-        __log_format = '[%(asctime)s] '
-        __log_format += '%(filename)-18s - %(funcName)-25s '
-        __log_format += '- %(lineno)-4d: '
-        __log_format += '%(levelname)-5s %(message)s'
-        __handler_class = DebugTRFH
-        DEBUGGING = True
+    if DEBUGGING != debugging:
+        needs_reloading = True
     else:
-        __log_level = logging.INFO
-        __log_format = '[%(asctime)s] '
-        __log_format += '%(levelname)-8s %(message)s'
-        __handler_class = logging.handlers.TimedRotatingFileHandler
-        DEBUGGING = False
-    cp = get_configparser()
-    log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
-    log_file = os.path.join(log_folder, 'ZDStack.log')
-    formatter = logging.Formatter(__log_format, DATEFMT)
-    handler = __handler_class(log_file, when='midnight', backupCount=4)
-    handler.setFormatter(formatter)
-    logging.RootLogger.root.addHandler(handler)
-    logging.RootLogger.root.setLevel(__log_level)
-    handler.setLevel(__log_level)
+        needs_reloading = False
+    DEBUGGING = debugging
+    if needs_reloading:
+        get_zdslog(reload=True)
+
+def get_zdslog(reload=False):
+    global ZDSLOG
+    global DEBUGGING
+    if reload or not ZDSLOG:
+        ZDSLOG = logging.getLogger('ZDStack')
+        for handler in ZDSLOG.handlers:
+            ZDSLOG.removeHandler(handler)
+        cp = get_configparser()
+        log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
+        log_file = os.path.join(log_folder, 'ZDStack.log')
+        if DEBUGGING:
+            log_level = logging.DEBUG
+            log_format = '[%(asctime)s] '
+            log_format += '%(filename)-18s - %(funcName)-25s '
+            log_format += '- %(lineno)-4d: '
+            log_format += '%(levelname)-5s %(message)s'
+            handler = DebugTRFH(log_file, when='midnight', backupCount=4)
+        else:
+            log_level = logging.INFO
+            log_format = '[%(asctime)s] '
+            log_format += '%(levelname)-8s %(message)s'
+            handler = logging.handlers.TimedRotatingFileHandler(log_file,
+                                                                when='midnight',
+                                                                backupCount=4)
+        handler.setLevel(log_level)
+        formatter = logging.Formatter(log_format, DATEFMT)
+        handler.setFormatter(formatter)
+        ZDSLOG.addHandler(handler)
+        ZDSLOG.setLevel(log_level)
+    return ZDSLOG
+
+def get_debugging():
+    global DEBUGGING
+    return DEBUGGING == True
 
 # set_debugging(False)
 

@@ -193,7 +193,7 @@
 ;   current working directory is '/') and wad_folder to
 ;   '/home/<username>/wads' (on most systems anyway).  It is usually best to
 ;   use absolute paths when setting values, but ZDStack will handle relative
-;   paths and paths using '~' if a user uses them.
+;   paths and paths using '~'.
 ;
 ;   All paths are checked for existence and proper access.  ZDStack will give
 ;   an error and quit if things are not in order.
@@ -205,15 +205,15 @@
 ;   there are no errors.  However, some changes require server process
 ;   restarts, which ZDStack will not do automatically.  Additionally, the
 ;   options prefixed with 'zdstack_' require a full ZDStack restart to take
-;   effect.  Running the included 'zservctl' script with the 'reload-config'
-;   action ('./zservctl reload-config') simply sends SIGHUP to the running
+;   effect.  Running 'zdstack' with the 'reload-config' action ('./zdstack
+;   reload-config') simply sends the 'reload_config' RPC command to the running
 ;   ZDStack process.
 ;
 ;   Note: Changing the value of 'zdaemon_pid_file' before stopping ZDStack
 ;   prevents the 'zdstack' script from locating the previous PID file, which
 ;   in turn prevents it from finding the PID and sending the appropriate
-;   signals to the running ZDStack process.  Change this value after stopping
-;   ZDStack.
+;   signals to the running ZDStack process.  So avoid changing this value until
+;   after stopping ZDStack.
 ;
 ; Databasing
 ;
@@ -397,6 +397,18 @@ enable_stats = no
 enable_plugins = no
 
 ;;;
+; Whether or not to save zserv output to a file.
+;;;
+save_logfiles = no
+
+;;;
+; The files where zserv output is saved are rolled over at midnight, this
+; option specifies how many of those rolled files to save.  '0' means
+; 'unlimited'.
+;;;
+number_of_zserv_logs_to_backup = 0
+
+;;;
 ; The name of the IWAD to use.  Note that 'doom2.wad' is copyrighted by ID
 ;   Software and you need to purchase the game in order to host a server that
 ;   uses it.
@@ -412,7 +424,7 @@ zserv_exe = %(root_folder)s/bin/zserv
 ; The IP address to report to the master server.  Remove option to have
 ;   zserv autodetect.
 ;;;
-; ip = 127.0.0.1
+ip =
 
 ;;;
 ; The message to display in the server selector (like ZLauncher or IDE)
@@ -473,10 +485,11 @@ rcon_password_1 = zdstacklevel1
 rcon_commands_1 = mapskipto players
 
 ;;;
-; The default password for all passworded servers
-;   If this is not given or blank, the server password will not be enabled
+; The default password for all passworded servers.
+; If this is given, all servers will require a password.  It is more likely
+; that you'll want to configure this individually for specific servers.
 ;;;
-server_password = zdstackpassword
+server_password =
 
 ;;;
 ; Number of seconds in which spamming can occur
@@ -535,8 +548,7 @@ min_players = 0
 remove_bots_when_humans = yes
 
 ;;;
-; Whether to add the map number to the advertised hostname
-;   Note: this is currently unsupported
+; Whether to add the map number to the advertised hostname.
 ;;;
 add_mapnum_to_hostname = no
 
@@ -581,7 +593,7 @@ duel_dmflags = 201796
 duel_dmflags2 = 132608
 ffa_dmflags = 201796
 ffa_dmflags2 = 132608
-ctf_dmflags = 21508
+ctf_dmflags = 283652
 ctf_dmflags2 = 656896
 coop_dmflags = 2418692
 coop_dmflags2 = 137198

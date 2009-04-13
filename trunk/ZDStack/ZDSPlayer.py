@@ -1,7 +1,5 @@
-import logging
-
+from ZDStack import get_zdslog
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
-
 from ZDStack.ZDSDatabase import get_alias
 
 class Player(object):
@@ -18,7 +16,7 @@ class Player(object):
                     player
 
         """
-        logging.debug('name: [%s]' % (name))
+        get_zdslog().debug('name: [%s]' % (name))
         self.zserv = zserv
         self.ip = ip_address
         self.port = port

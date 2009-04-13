@@ -1,4 +1,3 @@
-import logging
 import datetime
 
 from sqlalchemy import Table, Column, ForeignKey, String, DateTime, Integer, \
@@ -6,12 +5,14 @@ from sqlalchemy import Table, Column, ForeignKey, String, DateTime, Integer, \
 from sqlalchemy.orm import relation
 from sqlalchemy.ext.declarative import declarative_base
 
-from ZDStack import get_engine, get_session_class
+from ZDStack import get_engine, get_session_class, get_zdslog
+
+zdslog = get_zdslog()
 
 ###
 # Get the DB engine.
 ###
-logging.debug("Initializing Database")
+zdslog.debug("Initializing Database")
 __engine = get_engine()
 
 ###
@@ -22,13 +23,13 @@ Base = declarative_base()
 ###
 # Bind the Base's metadata.
 ###
-logging.debug("Binding MetaData")
+zdslog.debug("Binding MetaData")
 Base.metadata.bind = __engine
 
 ###
 # Bind the session as well.
 ###
-logging.debug("Binding Session")
+zdslog.debug("Binding Session")
 get_session_class().configure(bind=__engine)
 
 _parent_cascades = 'save-update, delete, delete-orphan'
@@ -321,6 +322,6 @@ class RCONAction(Base):
     def __str__(self):
         return '<RCON Action %s - %s>' % (self.action, self.player)
 
-logging.debug("Creating tables")
+zdslog.debug("Creating tables")
 Base.metadata.create_all(__engine)
 

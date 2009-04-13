@@ -1,9 +1,8 @@
 from __future__ import with_statement
 
-import logging
 import datetime
 
-from ZDStack import PlayerNotFoundError, get_session_class
+from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
 from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
                               RCONAccess, RCONDenial, RCONAction
 from ZDStack.ZDSDatabase import get_weapon, global_session, persist
@@ -11,11 +10,13 @@ from ZDStack.ZDSDatabase import get_weapon, global_session, persist
 from sqlalchemy import desc
 from sqlalchemy.orm.exc import NoResultFound
 
+zdslog = get_zdslog()
+
 class BaseEventHandler(object):
 
     def __init__(self):
         """Initializes a BaseEventHandler."""
-        logging.debug('')
+        zdslog.debug('')
         self._event_categories_to_handlers = dict()
         self.set_handler('error', self.handle_error_event)
 
@@ -59,8 +60,8 @@ class BaseEventHandler(object):
         # raise Exception(event.data['error'])
         #
         ###
-        logging.error("Event error: %s" % (event.data['error']))
-        logging.error("Event traceback: \n%s\n" % (event.data['traceback']))
+        zdslog.error("Event error: %s" % (event.data['error']))
+        zdslog.error("Event traceback: \n%s\n" % (event.data['traceback']))
 
     def handle_unhandled_event(self, event, zserv):
         """Handles an unhandled event.
@@ -114,7 +115,7 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("_sync_players(%s)" % (event))
+        zdslog.debug("_sync_players(%s)" % (event))
         if event.type == 'connection':
             ###
             # A 'connection' event has no player name, only an IP address and a
@@ -139,7 +140,16 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("handle_game_join_event(%s)" % (event))
+        zdslog.debug("handle_game_join_event(%s)" % (event))
+        if event.type == 'team_switch':
+            ###
+            # Team Switches oftentimes occur before player lookup events,
+            # and to make matters worse, the player probably hasn't shown up
+            # in the zserv's player's list yet.  So we have to sync, with a
+            # wait.
+            ###
+            zserv.sync_players(sleep=TICK)
+            # zserv.players.sync()
         try:
             player = zserv.players.get(event.data['player'])
         except PlayerNotFoundError:
@@ -147,7 +157,7 @@ class ZServEventHandler(BaseEventHandler):
                 es = "Received an %s event for non-existent player [%s]"
             else:
                 es = "Received a %s event for non-existent player [%s]"
-            logging.error(es % (event.type, event.data['player']))
+            zdslog.error(es % (event.type, event.data['player']))
             return
         if event.type in ('team_join', 'team_switch'):
             color = event.data['team']
@@ -168,12 +178,12 @@ class ZServEventHandler(BaseEventHandler):
         if event.type not in ('rcon_denied', 'rcon_granted', 'rcon_action'):
             es = 'handle_rcon_event does not handle events of type [%s]'
             raise Exception(es % (event.type))
-        logging.debug('handle_rcon_event(%s)' % (event))
+        zdslog.debug('handle_rcon_event(%s)' % (event))
         try:
             player = zserv.players.get(event.data['player'])
         except PlayerNotFoundError:
             es = 'Received an RCON event for non-existent player [%s]'
-            logging.error(es % (event.data['player']))
+            zdslog.error(es % (event.data['player']))
             return
         with global_session() as session:
             if event.type == 'rcon_denied':
@@ -194,7 +204,7 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("handle_flag_event(%s)" % (event))
+        zdslog.debug("handle_flag_event(%s)" % (event))
         if event.type == 'auto_flag_return':
             ###
             # Nothing really to be done here.
@@ -204,11 +214,11 @@ class ZServEventHandler(BaseEventHandler):
             player = zserv.players.get(event.data['player'])
         except PlayerNotFoundError:
             es = "Received a flag touch event for non-existent player [%s]"
-            logging.error(es % (event.data['player']))
+            zdslog.error(es % (event.data['player']))
             return
-        logging.debug("Getting state_lock")
+        zdslog.debug("Getting state_lock")
         with zserv.state_lock:
-            logging.debug("Getting global session")
+            zdslog.debug("Getting global session")
             tc = zserv.teams.get_player_team(player)
             ###
             # - ZDSTeamsList.contains_player
@@ -219,8 +229,8 @@ class ZServEventHandler(BaseEventHandler):
             #       - ZDSTeamsList.add
             #         - ZDSDatabase.get_team_color
             ###
-            logging.debug("Getting state")
-            logging.debug("Found player's team: %s" % (tc.color))
+            zdslog.debug("Getting state")
+            zdslog.debug("Found player's team: %s" % (tc.color))
             red_holding_flag = 'red' in zserv.teams_holding_flags
             blue_holding_flag = 'blue' in zserv.teams_holding_flags
             green_holding_flag = 'green' in zserv.teams_holding_flags
@@ -234,7 +244,7 @@ class ZServEventHandler(BaseEventHandler):
                 zserv.players_holding_flags.append(player)
                 zserv.teams_holding_flags.append(tc.color)
                 s = "Teams holding flags: %s"
-                logging.debug(s % (str(zserv.teams_holding_flags)))
+                zdslog.debug(s % (str(zserv.teams_holding_flags)))
                 with global_session() as session:
                     s = FlagTouch(player=player.alias, round=zserv.round,
                                   touch_time=event.dt,
@@ -262,7 +272,7 @@ class ZServEventHandler(BaseEventHandler):
                         raise Exception(es % (player.name))
                     s.loss_time = event.dt
                     ds = "Teams holding flags: %s"
-                    logging.debug(ds % (str(zserv.teams_holding_flags)))
+                    zdslog.debug(ds % (str(zserv.teams_holding_flags)))
                     zserv.teams_holding_flags.remove(tc.color)
                     zserv.players_holding_flags.remove(player)
                     if event.type == 'flag_cap':
@@ -305,13 +315,13 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("handle_frag_event(%s)" % (event))
+        zdslog.debug("handle_frag_event(%s)" % (event))
         with zserv.state_lock:
             try:
                 fraggee = zserv.players.get(event.data['fraggee'])
             except PlayerNotFoundError:
                 es = "Received a death event for non-existent player [%s]"
-                logging.error(es % (event.data['fraggee']))
+                zdslog.error(es % (event.data['fraggee']))
                 return
             fraggee_team = zserv.teams.get_player_team(fraggee)
             if 'fragger' in event.data:
@@ -319,7 +329,7 @@ class ZServEventHandler(BaseEventHandler):
                     fragger = zserv.players.get(event.data['fragger'])
                 except PlayerNotFoundError:
                     es = "Received a frag event for non-existent player [%s]"
-                    logging.error(es % (event.data['fragger']))
+                    zdslog.error(es % (event.data['fragger']))
                     return
                 fragger_team = zserv.teams.get_player_team(fragger)
                 is_suicide = False
@@ -389,7 +399,7 @@ class ZServEventHandler(BaseEventHandler):
         zserv: the ZServ instance that generated the event.
 
         """
-        logging.debug("handle_map_change_event(%s)" % (event))
+        zdslog.debug("handle_map_change_event(%s)" % (event))
         if not event.type == 'map_change':
             return
         zserv.change_map(event.data['number'], event.data['name'])

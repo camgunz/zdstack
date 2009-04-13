@@ -1,12 +1,12 @@
 from __future__ import with_statement
 
-import logging
-
 from threading import Lock
 from collections import deque
 
-from ZDStack import TEAM_COLORS, TeamNotFoundError
+from ZDStack import TEAM_COLORS, TeamNotFoundError, get_zdslog
 from ZDStack.ZDSDatabase import get_team_color
+
+zdslog = get_zdslog()
 
 class TeamsList(object):
 
@@ -37,7 +37,7 @@ class TeamsList(object):
                       True by default.
 
         """
-        logging.debug("add(%s, acquire_lock=%s)" % (color, acquire_lock))
+        zdslog.debug("add(%s, acquire_lock=%s)" % (color, acquire_lock))
         def blah():
             if color not in TEAM_COLORS:
                 raise ValueError("Unsupported team color %s" % (color))
@@ -60,7 +60,7 @@ class TeamsList(object):
                       True by default.
 
         """
-        logging.debug("get(%s, acquire_lock=%s)" % (color, acquire_lock))
+        zdslog.debug("get(%s, acquire_lock=%s)" % (color, acquire_lock))
         def blah():
             self.add(color, acquire_lock=False)
             for tc in self.__teams.keys():
@@ -86,7 +86,7 @@ class TeamsList(object):
                       default.
 
         """
-        logging.debug("get_members(%s, acquire_lock=%s)" % (color, acquire_lock))
+        zdslog.debug("get_members(%s, acquire_lock=%s)" % (color, acquire_lock))
         if acquire_lock:
             with self.lock:
                 return self.__teams[self.get(color, acquire_lock=False)]
@@ -102,12 +102,12 @@ class TeamsList(object):
                       default.
 
         """
-        logging.debug("get_player_team(%s, acquire_lock=%s)" % (player, acquire_lock))
+        zdslog.debug("get_player_team(%s, acquire_lock=%s)" % (player, acquire_lock))
         def blah():
             for tc in self.__teams.keys():
-                logging.debug("Checking team %s for %s" % (tc.color, player.name))
+                zdslog.debug("Checking team %s for %s" % (tc.color, player.name))
                 if self.contains_player(tc.color, player, acquire_lock=False):
-                    logging.debug("Found team %s" % (tc.color))
+                    zdslog.debug("Found team %s" % (tc.color))
                     return tc
         if acquire_lock:
             with self.lock:
@@ -126,7 +126,7 @@ class TeamsList(object):
                       Defaults to True.
 
         """
-        logging.debug("set_player_team(%s, %s)" % (player, color))
+        zdslog.debug("set_player_team(%s, %s)" % (player, color))
         def blah():
             current_team = self.get_player_team(player, acquire_lock=False)
             future_team = self.get(color, acquire_lock=False)
@@ -161,7 +161,7 @@ class TeamsList(object):
                       a team.  True by default.
 
         """
-        logging.debug("contains_player(%s, %s, acquire_lock=%s)" % (color, player, acquire_lock))
+        zdslog.debug("contains_player(%s, %s, acquire_lock=%s)" % (color, player, acquire_lock))
         def blah():
             self.add(color, acquire_lock=False)
             return player in self.get_members(color, acquire_lock=False)

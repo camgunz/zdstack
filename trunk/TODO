@@ -1,8 +1,16 @@
-- Test all RPC functions
-    - also test w/ JSON-RPC
-- Setup firebird so it's not pigeonholed as an embedded DB
-- Debug with multiple players, and then multiple servers and multiple players
-- Make sure ZDStack creates all folders it needs to (reasonably)
-- Test other game-modes
-- Test with 1.08.08rc25
+0.11
+  - Setup firebird so it's not pigeonholed as an embedded DB
+  - Figure out banlist management
+    - Add a "send RPC command" function to ZDSWeb
+  - Debug with multiple players, and then multiple servers and multiple players
+
+0.12
+  - Figure something out regarding cvar_overrides
+  - For global options that use cvar_overrides (overtime, add_mapnum), detect
+    changes to maps that are not in the maplist, and manually set those
+    cvar_overrides when the round loads
+  - Detect set_command events, and modify the ZServ's instance variables (and
+    config options) accordingly
+  - Maybe implement some kind of config file logic that strips '_' characters
+    out of option names; trying to remember it for every option is aggravating
 

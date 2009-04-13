@@ -1,6 +1,5 @@
 from __future__ import with_statement
 
-import logging
 import datetime
 
 from contextlib import contextmanager
@@ -8,8 +7,10 @@ from contextlib import contextmanager
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exceptions import IntegrityError
 
-from ZDStack import get_db_lock, db_is_noop, get_session_class
+from ZDStack import get_db_lock, db_is_noop, get_session_class, get_zdslog
 from ZDStack.ZDSModels import *
+
+zdslog = get_zdslog()
 
 __GLOBAL_SESSION = None
 
@@ -55,16 +56,16 @@ def _locked_session(get_global=False, remove=False):
         else:
             s = SessionClass()
         try:
-            # logging.debug("Beginning a transaction")
+            # zdslog.debug("Beginning a transaction")
             with s.begin():
                 ###
                 # Implicitly commits at the end of the block.
                 ###
-                # logging.debug("Inside transaction")
+                # zdslog.debug("Inside transaction")
                 yield s
-            # logging.debug("Transaction completed")
+            # zdslog.debug("Transaction completed")
         except Exception, e:
-            # logging.debug("Error inside transaction: %s" % (e))
+            # zdslog.debug("Error inside transaction: %s" % (e))
             s.rollback()
             raise
         finally:
@@ -104,16 +105,16 @@ def persist(model, update=False, session=None):
 
     """
     if db_is_noop():
-        logging.debug("Skipping No-op")
+        zdslog.debug("Skipping No-op")
         # return model
     if update:
         def blah(s):
-            # logging.debug("Merging: [%s]" % (model))
+            # zdslog.debug("Merging: [%s]" % (model))
             s.merge(model)
             return model
     else:
         def blah(s):
-            # logging.debug("Adding: [%s]" % (model))
+            # zdslog.debug("Adding: [%s]" % (model))
             s.add(model)
             return model
     if session:
@@ -131,13 +132,13 @@ def persist(model, update=False, session=None):
             return blah(session)
 
 def _wrap_func(func):
-    logging.debug("Wrapping %s" % (func.__name__))
+    zdslog.debug("Wrapping %s" % (func.__name__))
     def wrapped_func(*args, **kwargs):
-        # logging.debug("Running %s, %s, %s" % (func.__name__, str(args),
+        # zdslog.debug("Running %s, %s, %s" % (func.__name__, str(args),
         #                                       str(kwargs)))
         if not kwargs.get('session', None):
             with global_session() as session:
-                # logging.debug("Using session [%s]" % (session))
+                # zdslog.debug("Using session [%s]" % (session))
                 kwargs['session'] = session
                 return func(*args, **kwargs)
         else:
