@@ -593,7 +593,11 @@ class Page:
                 else:
                     self._func()
         except socket.error:
-            error = 'Could not connect to ZDStack: %s' % (IFACE.proxy._XMLProxy__host)
+            es = 'Could not connect to ZDStack: %s'
+            try:
+                error = es % (IFACE.proxy._XMLProxy__host)
+            except AttributeError:
+                error = es % (IFACE.proxy._JSONProxy__host)
             d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
             return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
@@ -604,7 +608,10 @@ class Page:
             all_zservs = IFACE.get_all_zservs()
         except socket.error:
             # error = 'Could not connect to ZDStack'
-            error = 'Could not connect to ZDStack: %s' % (IFACE.proxy._XMLProxy__host)
+            try:
+                error = es % (IFACE.proxy._XMLProxy__host)
+            except AttributeError:
+                error = es % (IFACE.proxy._JSONProxy__host)
             d = {'content': content, 'errors': ERROR_TEMPLATE % (error)}
             return HEAD_TEMPLATE + ERRORS_TEMPLATE % d
         except Exception, e:
