@@ -176,7 +176,7 @@ class Stack(Server):
                         if diff <= timedelta(seconds=4):
                             es = "ZServ %s respawning too fast, stopping"
                             zdslog.error(es % (zserv.name))
-                            self.stopped_zserv_nmaes.add(zserv.name)
+                            self.stopped_zserv_names.add(zserv.name)
                             continue
                         else:
                             ###
