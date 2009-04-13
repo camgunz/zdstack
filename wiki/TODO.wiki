@@ -12,13 +12,13 @@
     * anti-teamswitch
       * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
   * Test plugins (again, because everything's different now)
-  * Disallow duplicate ports in server config sections
-  * Detect rapid server crashing: stop the server and log an error
+  * ~~Disallow duplicate ports in server config sections~~
+  * ~~Detect rapid server crashing: stop the server and log an error~~
   * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
   * ~~Keep configuration sections sorted~~
   * ~~Make non-debugging output even quieter (no 'Spawning zserv' messages)~~
-  * Should auto-create more folders (if possible):
-    * zdstack_log_folder
-    * zdstack_zserv_folder
-    * zdstack_plugin_folder
-  * Implement zserv logfile saving
+  * ~~Should auto-create more folders (if possible):~~
+    * ~~zdstack_log_folder~~
+    * ~~zdstack_zserv_folder~~
+    * ~~zdstack_plugin_folder~~
+  * ~~Implement zserv logfile saving~~
