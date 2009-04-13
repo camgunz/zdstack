@@ -418,6 +418,30 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.playing_colors = playing_colors
         self.zserv.max_players_per_team = max_players_per_team
         self.zserv.team_score_limit = scorelimit
+        ###
+        # Stuff still missing
+        #
+        # sv_fineticks
+        #
+        ###
+        ###
+        # Stuff added in 1.09 (and maybe 1.08.08 RCs
+        ###
+        # sv_specteamblock
+        # sv_oldthrust
+        # sv_allowzoom
+        # item_respawn_time
+        # cl_interp (0 is equivalent to 1.08) 0 - 5
+        #
+        # sv_fineticks is replaced (sorta) by cl_updatemod:
+        #
+        # 1: updates all positions on every tick: best accuracy, but also
+        #    highest bandwith -- equivalent to sv_fineticks "1"
+        # 2: updates all positions every 2 ticks: medium accuracy, lower
+        #    bandwidth
+        # 3: updates all postions every 3 ticks: lower accuracy, lowest
+        #    bandwidth 
+        ###
 
     def get_config_data(self):
         from ZDStack.ZServ import DUEL_MODES, DM_MODES, TEAM_MODES, CTF_MODES

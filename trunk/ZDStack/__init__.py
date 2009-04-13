@@ -437,9 +437,10 @@ def _get_full_engine(db_engine, cp):
             ###
             db_host = get_loopback()
     db_str += db_host
-    db_port = cp.getint('DEFAULT', 'zdstack_database_port', False)
+    db_port = cp.get('DEFAULT', 'zdstack_database_port', False)
     if db_port:
-        db_str += ':' + str(db_port)
+        int(db_port) # will give an error if the port is malformed
+        db_str += ':' + db_port
     db_name = cp.get('DEFAULT', 'zdstack_database_name', False)
     if not db_name:
         es = "Required global option zdstack_database_name not found"
