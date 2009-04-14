@@ -34,7 +34,7 @@ __all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
            'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
            'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
            'DB_SESSION_CLASS', 'get_hostname', 'get_loopback', 'get_engine',
-           'get_db_lock', 'db_is_noop', 'get_session_class', 'get_configfile',
+           'get_db_lock', 'get_session_class', 'get_configfile',
            'set_configfile', 'load_configparser', 'get_configparser',
            'get_server_proxy', 'get_plugins', 'set_debugging', 'get_zdslog',
            'get_debugging']
@@ -85,7 +85,6 @@ DEBUGGING = None
 PLUGINS = None
 DB_LOCK = None
 DB_ENGINE = None
-DB_NOOP = None
 JSON_MODULE = None
 RPC_CLASS = None
 RPC_PROXY_CLASS = None
@@ -371,8 +370,6 @@ def _get_embedded_engine(db_engine, cp):
     ###
     # Set embedded-DB-specific stuff here.
     ###
-    global DB_NOOP
-    DB_NOOP = False
     DB_SESSION_CLASS.configure(autoflush=False, autocommit=True)
     ZDSLOG.debug("No-op is False")
     ZDSLOG.debug("autoflush is False")
@@ -455,8 +452,6 @@ def _get_full_engine(db_engine, cp):
     ###
     # Set full-RDBMS-specific stuff here.
     ###
-    global DB_NOOP
-    DB_NOOP = True
     DB_SESSION_CLASS.configure(autocommit=True, autoflush=True)
     ZDSLOG.debug("No-op is True")
     ZDSLOG.debug("autoflush is True")
@@ -539,10 +534,6 @@ def get_engine():
 def get_db_lock():
     global DB_LOCK
     return DB_LOCK
-
-def db_is_noop():
-    global DB_NOOP
-    return DB_NOOP == True
 
 def get_session_class():
     global DB_SESSION_CLASS

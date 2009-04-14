@@ -12,6 +12,7 @@ from pyfileutils import write_file
 
 from ZDStack import DEVNULL, MAX_TIMEOUT, TEAM_COLORS, PlayerNotFoundError, \
                     get_zdslog
+from ZDStack.Utils import requires_lock
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
@@ -92,6 +93,7 @@ class ZServ(object):
         else:
             self.plugins = list()
 
+    @requires_lock(self.state_lock)
     def clear_state(self, acquire_lock=True):
         """Clears the current state of the round.
         
@@ -99,22 +101,16 @@ class ZServ(object):
                       lock before clearing state.  True by default.
         
         """
-        def blah():
-            self.players.clear()
-            self.teams.clear()
-            self.players_holding_flags = list()
-            self.teams_holding_flags = list()
-            self.fragged_runners = list()
-            if self.playing_colors:
-                self.team_scores = dict(zip(self.playing_colors,
-                                            [0] * len(self.playing_colors)))
-            else:
-                self.team_scores = dict()
-        if acquire_lock:
-            with self.state_lock:
-                blah()
+        self.players.clear()
+        self.teams.clear()
+        self.players_holding_flags = list()
+        self.teams_holding_flags = list()
+        self.fragged_runners = list()
+        if self.playing_colors:
+            self.team_scores = dict(zip(self.playing_colors,
+                                        [0] * len(self.playing_colors)))
         else:
-            blah()
+            self.team_scores = dict()
 
     def clean_up(self):
         """Cleans up after a round."""
@@ -211,6 +207,9 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
+        ###
+        # TODO: add zserv.config_lock
+        ###
         ###
         # We absolutely have to set the game mode of this ZServ now.
         ###
@@ -370,23 +369,6 @@ class ZServ(object):
                 ###
                 raise Exception(error_stopping)
         self.start()
-
-    def sync_players(self, sleep=None):
-        """Ensures that self.players matches up with self.zplayers().
-        
-        sleep: a float representing how much time to sleep between
-               acquiring the _players_lock and creating the list of
-               players; defaults to not sleeping at all (None)
-               
-        """
-        zdslog.debug("ZServ.sync_players")
-        if sleep:
-            with self.players.lock:
-                zplayers = self.zplayers()
-                time.sleep(sleep)
-                self.players.sync(zplayers, acquire_lock=False)
-        else:
-            self.players.sync()
 
     def update_player_numbers_and_ips(self):
         """Sets player numbers and IP addresses.

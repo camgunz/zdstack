@@ -7,7 +7,8 @@ from contextlib import contextmanager
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exceptions import IntegrityError
 
-from ZDStack import get_db_lock, db_is_noop, get_session_class, get_zdslog
+from ZDStack import get_db_lock, get_session_class, get_zdslog
+from ZDStack.Utils import requires_lock
 from ZDStack.ZDSModels import *
 
 zdslog = get_zdslog()
@@ -46,6 +47,7 @@ __GLOBAL_SESSION = None
 ###
 
 @contextmanager
+@requires_lock(get_db_lock())
 def _locked_session(get_global=False, remove=False):
     global __GLOBAL_SESSION
     SessionClass = get_session_class()
@@ -100,13 +102,7 @@ def persist(model, update=False, session=None):
     session: optional, if given uses the session instead of acquiring
              the global DB lock and creating its own.
 
-    This is a no-op if DB_NOOP is set, and DB_NOOP is set when
-    using a full RDBMS.
-
     """
-    if db_is_noop():
-        zdslog.debug("Skipping No-op")
-        # return model
     if update:
         def blah(s):
             # zdslog.debug("Merging: [%s]" % (model))
@@ -131,18 +127,18 @@ def persist(model, update=False, session=None):
         with global_session() as session:
             return blah(session)
 
-def _wrap_func(func):
+def requires_session(func):
     zdslog.debug("Wrapping %s" % (func.__name__))
     def wrapped_func(*args, **kwargs):
         # zdslog.debug("Running %s, %s, %s" % (func.__name__, str(args),
         #                                       str(kwargs)))
-        if not kwargs.get('session', None):
+        if kwargs.get('session', None):
+            return func(*args, **kwargs)
+        else:
             with global_session() as session:
                 # zdslog.debug("Using session [%s]" % (session))
                 kwargs['session'] = session
                 return func(*args, **kwargs)
-        else:
-            return func(*args, **kwargs)
     return wrapped_func
 
 ###
@@ -164,7 +160,18 @@ def _wrap_func(func):
 # OK, rant over.  Shit.
 ###
 
-def _get_weapon(name, is_suicide, session):
+###
+# TODO:
+#
+#   Because Sessions freak out when their database connection dies, we simply
+#   can't hold onto models anymore.  Fortunately, the only things we hold onto
+#   at this point are Rounds and Aliases (ZServ and ZDSPlayer respectively),
+#   so these attributes need to be replaced with methods, and those methods
+#   need to call functions here... which don't exist yet.
+###
+
+@requires_session
+def get_weapon(name, is_suicide, session):
     q = session.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
     try:
         return q.one()
@@ -172,28 +179,32 @@ def _get_weapon(name, is_suicide, session):
         return persist(Weapon(name=name, is_suicide=is_suicide),
                        session=session)
 
-def _get_alias(name, ip_address, session, round=None):
+@requires_session
+def get_alias(name, ip_address, session, round=None):
     q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
     out = q.first()
     if out:
         return out
     return persist(Alias(name=name, ip_address=ip_address), session=session)
 
-def _get_team_color(color, session):
+@requires_session
+def get_team_color(color, session):
     q = session.query(TeamColor).filter_by(color=color)
     try:
         return q.one()
     except NoResultFound:
         return persist(TeamColor(color=color), session=session)
 
-def _get_port(name, session):
+@requires_session
+def get_port(name, session):
     q = session.query(Port).filter_by(name=name)
     try:
         return q.one()
     except NoResultFound:
         return persist(Port(name=name), session=session)
 
-def _get_game_mode(name, has_teams, session):
+@requires_session
+def get_game_mode(name, has_teams, session):
     q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
     try:
         return q.one()
@@ -201,24 +212,18 @@ def _get_game_mode(name, has_teams, session):
         return persist(GameMode(name=name, has_teams=has_teams),
                        session=session)
 
-def _get_map(number, name, session):
+@requires_session
+def get_map(number, name, session):
     q = session.query(Map).filter_by(number=number, name=name)
     out = q.first()
     if out:
         return out
     return persist(Map(number=number, name=name), session=session)
 
-def _get_round(game_mode, map, session, start_time=None):
+@requires_session
+def get_round(game_mode, map, session, start_time=None):
     start_time = start_time or datetime.datetime.now()
     r = persist(Round(game_mode=game_mode, map=map, start_time=start_time),
                 session=session)
     return r
-
-get_weapon = _wrap_func(_get_weapon)
-get_alias = _wrap_func(_get_alias)
-get_team_color = _wrap_func(_get_team_color)
-get_port = _wrap_func(_get_port)
-get_game_mode = _wrap_func(_get_game_mode)
-get_map = _wrap_func(_get_map)
-get_round = _wrap_func(_get_round)
 

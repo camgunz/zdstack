@@ -148,8 +148,7 @@ class ZServEventHandler(BaseEventHandler):
             # in the zserv's player's list yet.  So we have to sync, with a
             # wait.
             ###
-            zserv.sync_players(sleep=TICK)
-            # zserv.players.sync()
+            zserv.players.sync(sleep=TICK)
         try:
             player = zserv.players.get(event.data['player'])
         except PlayerNotFoundError:

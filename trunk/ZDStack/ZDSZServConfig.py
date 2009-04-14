@@ -7,7 +7,7 @@ from decimal import Decimal
 from ConfigParser import NoOptionError
 
 from ZDStack import TEAM_COLORS, get_zdslog
-from ZDStack.Utils import check_ip, resolve_path
+from ZDStack.Utils import check_ip, resolve_path, requires_lock
 from ZDStack.ZDSConfigParser import ZDSConfigParser
 
 zdslog = get_zdslog()
@@ -39,89 +39,57 @@ class ZServConfigParser(ZDSConfigParser):
     def remove_section(self, *args, **kwargs):
         raise NotImplementedError()
 
-    def has_option(self, option, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return ZDSConfigParser.has_option(self, self.zserv.name, option,
-                                                  acquire_lock=False)
-        else:
-            return ZDSConfigParser.has_option(self, self.zserv.name, option,
-                                              acquire_lock=False)
+    @requires_lock(self.lock)
+    def has_option(self, option):
+        return ZDSConfigParser.has_option(self, self.zserv.name, option,
+                                          acquire_lock=False)
 
-    def options(self, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return ZDSConfigParser.options(self, self.zserv.name,
-                                               acquire_lock=False)
-        else:
-            return ZDSConfigParser.options(self, self.zserv.name,
-                                           acquire_lock=False)
-
-    def remove_option(self, option, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return ZDSConfigParser.remove_option(self, self.zserv.name,
-                                                     acquire_lock=False)
-        else:
-            return ZDSConfigParser.remove_option(self, self.zserv.name,
-                                                 acquire_lock=False)
-
-    def get_raw(self, section, option, default=None, acquire_lock=True):
-        def blah():
-            opt = self.optionxform(option)
-            game_mode_opt = '_'.join([self.game_mode, opt])
-            section = self.zserv.name
-            if opt in self._sections[section]:
-                return self._sections[section][opt]
-            elif game_mode_opt in self._sections[section]:
-                return self._sections[section][game_mode_opt]
-            elif game_mode_opt in self._defaults:
-                return self._defaults[game_mode_opt]
-            elif opt in self._defaults:
-                return self._defaults[opt]
-            else:
-                return default
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
-
-    def get(self, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return ZDSConfigParser.get(self, self.zserv.name, option,
-                                           default, acquire_lock=False)
-        else:
-            return ZDSConfigParser.get(self, self.zserv.name, option, default,
+    @requires_lock(self.lock)
+    def options(self):
+        return ZDSConfigParser.options(self, self.zserv.name,
                                        acquire_lock=False)
 
-    def _get(self, conv, option, default=None, acquire_lock=True):
-        def blah():
-            val = self.get(option, default, acquire_lock=False)
-            if val:
-                return conv(val)
-            else:
-                return val
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def remove_option(self, option):
+        return ZDSConfigParser.remove_option(self, self.zserv.name,
+                                             acquire_lock=False)
 
-    def getint(self, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(int, option, default, acquire_lock=False)
+    @requires_lock(self.lock)
+    def get_raw(self, section, option, default=None):
+        opt = self.optionxform(option)
+        game_mode_opt = '_'.join([self.game_mode, opt])
+        section = self.zserv.name
+        if opt in self._sections[section]:
+            return self._sections[section][opt]
+        elif game_mode_opt in self._sections[section]:
+            return self._sections[section][game_mode_opt]
+        elif game_mode_opt in self._defaults:
+            return self._defaults[game_mode_opt]
+        elif opt in self._defaults:
+            return self._defaults[opt]
         else:
-            return self._get(int, option, default, acquire_lock=False)
+            return default
 
-    def getfloat(self, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(float, option, default, acquire_lock=False)
+    @requires_lock(self.lock)
+    def get(self, option, default=None):
+        return ZDSConfigParser.get(self, self.zserv.name, option, default,
+                                   acquire_lock=False)
+
+    @requires_lock(self.lock)
+    def _get(self, conv, option, default=None):
+        val = self.get(option, default, acquire_lock=False)
+        if val:
+            return conv(val)
         else:
-            return self._get(float, option, default, acquire_lock=False)
+            return val
+
+    @requires_lock(self.lock)
+    def getint(self, option, default=None):
+        return self._get(int, option, default, acquire_lock=False)
+
+    @requires_lock(self.lock)
+    def getfloat(self, option, default=None):
+        return self._get(float, option, default, acquire_lock=False)
 
     def _getpercent(self, x):
         d = Decimal(x)
@@ -129,67 +97,41 @@ class ZServConfigParser(ZDSConfigParser):
             d = d * Decimal(100)
         return d
 
-    def getpercent(self, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(self._getpercent, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(self._getpercent, option, default,
-                             acquire_lock=False)
+    @requires_lock(self.lock)
+    def getpercent(self, option, default=None):
+        return self._get(self._getpercent, option, default, acquire_lock=False)
 
-    def getdecimal(self, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(Decimal, option, default, acquire_lock=False)
-        else:
-            return self._get(Decimal, option, default, acquire_lock=False)
+    @requires_lock(self.lock)
+    def getdecimal(self, option, default=None):
+        return self._get(Decimal, option, default, acquire_lock=False)
 
-    def getlist(self, option, default=None, parse_func=None,
-                                            acquire_lock=True):
+    @requires_lock(self.lock)
+    def getlist(self, option, default=None, parse_func=None):
         if not parse_func:
             parse_func = lambda x: [y.strip() for y in x.split(',')]
-        if acquire_lock:
-            with self.lock:
-                return self._get(parse_func, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(parse_func, option, default, acquire_lock=False)
+        return self._get(parse_func, option, default, acquire_lock=False)
 
-    def getboolean(self, option, default=None, acquire_lock=True):
-        def blah():
-            try:
-                v = self.get(option, default, acquire_lock=False)
-                if v == default or not v:
-                    return default
-                if isinstance(v, basestring):
-                    lv = v.lower()
-                if lv not in self._boolean_states:
-                    raise ValueError("Not a boolean: %s" % (v))
-                return self._boolean_states[lv]
-            except NoOptionError:
+    @requires_lock(self.lock)
+    def getboolean(self, option, default=None):
+        try:
+            v = self.get(option, default, acquire_lock=False)
+            if v == default or not v:
                 return default
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+            if isinstance(v, basestring):
+                lv = v.lower()
+            if lv not in self._boolean_states:
+                raise ValueError("Not a boolean: %s" % (v))
+            return self._boolean_states[lv]
+        except NoOptionError:
+            return default
 
-    def getpath(self, option, default=None, acquire_lock=True):
-        def blah():
-            return self._get(resolve_path, option, default, acquire_lock=False)
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def getpath(self, option, default=None):
+        return self._get(resolve_path, option, default, acquire_lock=False)
 
-    def items(self, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._sections[self.zserv.name].items()
-        else:
-            return self._sections[self.zserv.name].items()
+    @requires_lock(self.lock)
+    def items(self):
+        return self._sections[self.zserv.name].items()
 
     def process_config(self):
         """Process a config

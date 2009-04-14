@@ -9,7 +9,7 @@ from ConfigParser import RawConfigParser as RCP
 from ConfigParser import SafeConfigParser as SCP
 from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError
 
-from ZDStack.Utils import resolve_path
+from ZDStack.Utils import resolve_path, requires_lock
 
 class RawZDSConfigParser(RCP):
 
@@ -62,151 +62,95 @@ class RawZDSConfigParser(RCP):
                 es = "Unsupported type for 'filename': [%s]"
                 raise ValueError(es % (type(filename)))
 
-    def set_file(self, filename, acquire_lock=True):
+    @requires_lock(self.lock)
+    def set_file(self, filename):
         """Sets the location of the configuration file.
 
         filename:     a string representing the new location of the
                       configuration file
-        acquire_lock: a boolean that, if True, will acquire this BCP's
-                      lock before setting the file.  True by default.
 
         """
-        def blah():
-            if self.dummy:
-                return
-            f = resolve_path(filename)
-            if not os.path.isfile(f):
-                raise ValueError("Config File [%s] not found" % (filename))
-            self.filename = f
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+        if self.dummy:
+            return
+        f = resolve_path(filename)
+        if not os.path.isfile(f):
+            raise ValueError("Config File [%s] not found" % (filename))
+        self.filename = f
 
-    def defaults(self, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return dict(RCP.defaults(self).items())
-        else:
-            return dict(RCP.defaults(self).items())
+    @requires_lock(self.lock)
+    def defaults(self):
+        return dict(RCP.defaults(self).items())
 
-    def sections(self, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return [x for x in self._section_list]
-        else:
-            return [x for x in self._section_list]
+    @requires_lock(self.lock)
+    def sections(self):
+        return [x for x in self._section_list]
 
-    def add_section(self, section, acquire_lock=True):
-        def blah():
-            RCP.add_section(self, section)
-            self._section_list.append(section)
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+    @requires_lock(self.lock)
+    def add_section(self, section):
+        RCP.add_section(self, section)
+        self._section_list.append(section)
 
-    def has_section(self, section, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return section in self._section_list
-        else:
-            return section in self._section_list
+    @requires_lock(self.lock)
+    def has_section(self, section):
+        return section in self._section_list
 
-    def options(self, section, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return RCP.options(self, section)
-        else:
-            return RCP.options(self, section)
+    @requires_lock(self.lock)
+    def options(self, section):
+        return RCP.options(self, section)
 
-    def read(self, filenames, acquire_lock=True):
+    def read(self, filenames):
         raise Exception("Don't use this method")
 
     def readfp(self, fp, filename=None):
         raise Exception("Don't use this method")
 
-    def get(self, section, option, default=None, acquire_lock=True):
-        def blah():
-            opt = self.optionxform(option)
-            if section in self._sections:
-                if opt in self._sections[section]:
-                    return self._sections[section][opt]
-                elif opt in self._defaults:
-                    return self._defaults[opt]
-                elif default is not None:
-                    return default
-                else:
-                    raise NoOptionError(section, option)
-            elif section != DEFAULTSECT:
-                raise NoSectionError(section)
+    @requires_lock(self.lock)
+    def get(self, section, option, default=None):
+        opt = self.optionxform(option)
+        if section in self._sections:
+            if opt in self._sections[section]:
+                return self._sections[section][opt]
             elif opt in self._defaults:
                 return self._defaults[opt]
             elif default is not None:
                 return default
             else:
                 raise NoOptionError(section, option)
-        if acquire_lock:
-            with self.lock:
-                return blah()
+        elif section != DEFAULTSECT:
+            raise NoSectionError(section)
+        elif opt in self._defaults:
+            return self._defaults[opt]
+        elif default is not None:
+            return default
         else:
-            return blah()
+            raise NoOptionError(section, option)
 
-    def items(self, section, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return RCP.items(self, section)
-        else:
-            return RCP.items(self, section)
+    @requires_lock(self.lock)
+    def items(self, section):
+        return RCP.items(self, section)
 
-    def _get(self, section, conv, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return conv(self.get(section, option, default,
-                                     acquire_lock=False))
-        else:
-            return conv(self.get(section, option, default, acquire_lock=False))
+    @requires_lock(self.lock)
+    def _get(self, section, conv, option, default=None):
+        return conv(self.get(section, option, default, acquire_lock=False))
 
-    def getint(self, section, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(section, int, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(section, int, option, default,
-                             acquire_lock=False)
+    @requires_lock(self.lock)
+    def getint(self, section, option, default=None):
+        return self._get(section, int, option, default, acquire_lock=False)
 
-    def getfloat(self, section, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(section, float, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(section, float, option, default,
-                             acquire_lock=False)
+    @requires_lock(self.lock)
+    def getfloat(self, section, option, default=None):
+        return self._get(section, float, option, default, acquire_lock=False)
 
-    def getdecimal(self, section, option, default=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return self._get(section, Decimal, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(section, Decimal, option, default,
-                             acquire_lock=False)
+    @requires_lock(self.lock)
+    def getdecimal(self, section, option, default=None):
+        return self._get(section, Decimal, option, default, acquire_lock=False)
 
-    def getlist(self, section, option, default=None, parse_func=None,
-                                                     acquire_lock=True):
+    @requires_lock(self.lock)
+    def getlist(self, section, option, default=None, parse_func=None):
         if not parse_func:
             parse_func = lambda x: [y.strip() for y in x.split(',')]
-        if acquire_lock:
-            with self.lock:
-                return self._get(section, parse_func, option, default,
-                                 acquire_lock=False)
-        else:
-            return self._get(section, parse_func, option, default,
-                             acquire_lock=False)
+        return self._get(section, parse_func, option, default,
+                         acquire_lock=False)
 
     _boolean_states = RCP._boolean_states
 
@@ -226,157 +170,99 @@ class RawZDSConfigParser(RCP):
                   'no way', 'no way jose', 'not a chance', 'definitely not'):
         _boolean_states[state] = False
 
-    def getboolean(self, section, option, default=None, acquire_lock=True):
-        def blah():
-            v = self.get(section, option, default, acquire_lock=False)
-            lv = v.lower()
-            if lv not in self._boolean_states:
-                raise ValueError("Not a boolean: %s" % (v))
-            return self._boolean_states[lv]
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def getboolean(self, section, option, default=None):
+        v = self.get(section, option, default, acquire_lock=False)
+        lv = v.lower()
+        if lv not in self._boolean_states:
+            raise ValueError("Not a boolean: %s" % (v))
+        return self._boolean_states[lv]
 
-    def getpath(self, section, option, default=None, acquire_lock=True):
-        def blah():
-            return self._get(section, resolve_path, option, default,
-                             acquire_lock=False)
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def getpath(self, section, option, default=None):
+        return self._get(section, resolve_path, option, default,
+                         acquire_lock=False)
 
-    def has_option(self, section, option, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return RCP.has_option(self, section, option)
-        else:
-            return RCP.has_option(self, section, option)
+    @requires_lock(self.lock)
+    def has_option(self, section, option):
+        return RCP.has_option(self, section, option)
 
-    def set(self, section, option, value, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                RCP.set(self, section, option, value)
-        else:
-            RCP.set(self, section, option, value)
+    @requires_lock(self.lock)
+    def set(self, section, option, value):
+        RCP.set(self, section, option, value)
 
-    def write(self, fp, acquire_lock=True):
-        def blah():
-            if self._defaults:
-                fp.write("[%s]\n" % DEFAULTSECT)
-                for (key, value) in self._defaults.items():
-                    s = "%s = %s\n"
-                    fp.write(s % (key, str(value).replace('\n', '\n\t')))
-                fp.write("\n")
-            for section in self._section_list:
-                fp.write("[%s]\n" % section)
-                for (key, value) in self._sections[section].items():
-                    if key != "__name__":
-                        fp.write("%s = %s\n" %
-                                 (key, str(value).replace('\n', '\n\t')))
-                fp.write("\n")
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+    @requires_lock(self.lock)
+    def write(self, fp):
+        if self._defaults:
+            fp.write("[%s]\n" % DEFAULTSECT)
+            for (key, value) in self._defaults.items():
+                s = "%s = %s\n"
+                fp.write(s % (key, str(value).replace('\n', '\n\t')))
+            fp.write("\n")
+        for section in self._section_list:
+            fp.write("[%s]\n" % section)
+            for (key, value) in self._sections[section].items():
+                if key != "__name__":
+                    fp.write("%s = %s\n" %
+                             (key, str(value).replace('\n', '\n\t')))
+            fp.write("\n")
 
-    def remove_option(self, section, option, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return RCP.remove_option(self, section, option)
-        else:
-            return RCP.remove_option(self, section, option)
+    @requires_lock(self.lock)
+    def remove_option(self, section, option):
+        return RCP.remove_option(self, section, option)
 
-    def remove_section(self, section, acquire_lock=True):
-        def blah():
-            if RCP.remove_section(self, section):
-                self._section_list.remove(section)
-                return True
-            return False
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def remove_section(self, section):
+        if RCP.remove_section(self, section):
+            self._section_list.remove(section)
+            return True
+        return False
 
-    def clear(self, acquire_lock=True):
-        """Removes all sections, including the DEFAULT section.
-        
-        acquire_lock: a boolean that, if True, will acquire this BCP's
-                      lock before clearing data.  True by default.
+    @requires_lock(self.lock)
+    def clear(self):
+        """Removes all sections, including the DEFAULT section."""
+        sections = self.sections(acquire_lock=False) + [DEFAULTSECT]
+        for s in sections:
+            self.remove_section(s, acquire_lock=False)
 
-        """
-        def blah():
-            sections = self.sections(acquire_lock=False) + [DEFAULTSECT]
-            for s in sections:
-                self.remove_section(s, acquire_lock=False)
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
-
-    def load(self, acquire_lock=True):
-        """Loads the data from the configuration file.
-        
-        acquire_lock: a boolean that, if True, will acquire this BCP's
-                      lock before loading data.  True by default.
-
-        """
+    @requires_lock(self.lock)
+    def load(self):
+        """Loads the data from the configuration file."""
         if self.dummy:
             raise Exception("Can't load() a dummy configparser")
-        if acquire_lock:
-            with self.lock:
-                self._read(open(self.filename), self.filename)
-        else:
-            self._read(open(self.filename), self.filename)
+        self._read(open(self.filename), self.filename)
 
-    def loadfp(self, fobj, acquire_lock=True):
+    @requires_lock(self.lock)
+    def loadfp(self, fobj):
         """Loads configuration data from a file object.
         
         fobj:         a file object containing configuration data
-        acquire_lock: a boolean that, if True, will acquire this BCP's
-                      lock before loading data.  True by default.
 
         This BCP's filename will also be set to the resolved value of
         the file object's .name attribute, so the passed file object
         must have a .name attribute.
         
         """
-        def blah():
-            if not self.dummy:
-                if not hasattr(fobj, 'name'):
-                    es = "File objects passed to loadfp must have a .name "
-                    es += "attribute"
-                    raise ValueError(es)
-                self.set_file(fobj.name, acquire_lock=False)
-            if self.dummy:
-                filename = '<???>' # Haha, I used to hate this
-            else:
-                filename = self.filename
-            self._read(fobj, filename)
-        if acquire_lock:
-            with self.lock:
-                blah()
+        if not self.dummy:
+            if not hasattr(fobj, 'name'):
+                es = "File objects passed to loadfp must have a .name "
+                es += "attribute"
+                raise ValueError(es)
+            self.set_file(fobj.name, acquire_lock=False)
+        if self.dummy:
+            filename = '<???>' # Haha, I used to hate this
         else:
-            blah()
+            filename = self.filename
+        self._read(fobj, filename)
 
-    def reload(self, acquire_lock=True):
+    @requires_lock(self.lock)
+    def reload(self):
         """Reloads configuration data from the configuration file."""
-        def blah():
-            self.clear(acquire_lock=False)
-            self.load(acquire_lock=False)
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+        self.clear(acquire_lock=False)
+        self.load(acquire_lock=False)
 
-    def reloadfp(self, fobj, acquire_lock=True):
+    @requires_lock(self.lock)
+    def reloadfp(self, fobj):
         """Reloads configuration data from a file object.
 
         fobj: a file object containing configuration data
@@ -386,55 +272,34 @@ class RawZDSConfigParser(RCP):
         must have a .name attribute.
         
         """
-        def blah():
-            self.clear(acquire_lock=False)
-            self.loadfp(fobj, acquire_lock=False)
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+        self.clear(acquire_lock=False)
+        self.loadfp(fobj, acquire_lock=False)
 
-    def save(self, acquire_lock=True):
+    @requires_lock(self.lock)
+    def save(self):
         """Writes configuration data to the configuration file."""
-        def blah():
-            fobj = open(self.filename, 'w')
-            try:
-                self.write(fobj, acquire_lock=False)
-                fobj.flush()
-            finally:
-                fobj.close()
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+        fobj = open(self.filename, 'w')
+        try:
+            self.write(fobj, acquire_lock=False)
+            fobj.flush()
+        finally:
+            fobj.close()
 
-    def get_if_valid(self, section, option, acquire_lock=True):
-        def blah():
-            try:
-                val = self.get(section, option, acquire_lock=False)
-                if not val:
-                    return None
-            except NoOptionError:
+    @requires_lock(self.lock)
+    def get_if_valid(self, section, option):
+        try:
+            val = self.get(section, option, acquire_lock=False)
+            if not val:
                 return None
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+        except NoOptionError:
+            return None
 
-    def get_if_true(self, section, option, acquire_lock=True):
-        def blah():
-            try:
-                return self.getboolean(section, option, acquire_lock=False)
-            except NoOptionError:
-                return None
-        if acquire_lock:
-            with self.lock:
-                return blah()
-        else:
-            return blah()
+    @requires_lock(self.lock)
+    def get_if_true(self, section, option):
+        try:
+            return self.getboolean(section, option, acquire_lock=False)
+        except NoOptionError:
+            return None
 
     def _read(self, fp, fpname):
         """Parse a sectioned setup file.
@@ -527,63 +392,50 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
         SCP.__init__(self)
         RawZDSConfigParser.__init__(self, filename)
 
-    def get_raw(self, section, option, default=None, acquire_lock=True):
-        return RawZDSConfigParser.get(self, section, option, default,
-                                      acquire_lock)
+    @requires_lock(self.lock)
+    def get_raw(self, section, option, default=None):
+        RawZDSConfigParser.get(self, section, option, default,
+                               acquire_lock=False)
 
-    def get(self, section, option, default=None, raw=False, vars=None,
-                                                            acquire_lock=True):
-        def blah(rawval, option):
+    @requires_lock(self.lock)
+    def get(self, section, option, default=None, raw=False, vars=None):
+        ###
+        # Get the option value to be interpolated.
+        ###
+        rawval = self.get_raw(section, option, default, acquire_lock=False)
+        if raw:
             ###
-            # Get the option value to be interpolated.
+            # Don't do all this crap if we're just gonna return the
+            # regular 'ol value.
             ###
-            if raw:
-                ###
-                # Don't do all this crap if we're just gonna return the
-                # regular 'ol value.
-                ###
-                return rawval
-            ###
-            # The first step is to get all the interpolation values
-            # into a dict, even if they may need to be interpolated as well.
-            ###
-            d = self._defaults.copy()
-            try:
-                d.update(self._sections[section])
-            except KeyError:
-                if section != DEFAULTSECT:
-                    raise NoSectionError(section)
-            ###
-            # There might be specific variables set, so add those too.
-            ###
-            if vars:
-                for key, value in vars.items():
-                    d[self.optionxform(key)] = value
-            option = self.optionxform(option)
-            ###
-            # Finally, try and interpolate this mofkr.
-            ###
-            return self._interpolate(section, option, rawval, d)
-        if acquire_lock:
-            with self.lock:
-                rawval = self.get_raw(section, option, default,
-                                      acquire_lock=False)
-                return blah(rawval, option)
-        else:
-            rawval = self.get_raw(section, option, default, acquire_lock=False)
-            return blah(rawval, option)
+            return rawval
+        ###
+        # The first step is to get all the interpolation values
+        # into a dict, even if they may need to be interpolated as well.
+        ###
+        d = self._defaults.copy()
+        try:
+            d.update(self._sections[section])
+        except KeyError:
+            if section != DEFAULTSECT:
+                raise NoSectionError(section)
+        ###
+        # There might be specific variables set, so add those too.
+        ###
+        if vars:
+            for key, value in vars.items():
+                d[self.optionxform(key)] = value
+        option = self.optionxform(option)
+        ###
+        # Finally, try and interpolate this mofkr.
+        ###
+        return self._interpolate(section, option, rawval, d)
 
-    def items(self, section, raw=False, vars=None, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return SCP.items(self, section, raw, vars)
-        else:
-            return SCP.items(self, section, raw, vars)
+    @requires_lock(self.lock)
+    def items(self, section, raw=False, vars=None):
+        return SCP.items(self, section, raw, vars)
 
-    def set(self, section, option, value, acquire_lock=True):
-        if acquire_lock:
-            with self.lock:
-                return SCP.set(self, section, option, value)
-        else:
-            return SCP.set(self, section, option, value)
+    @requires_lock(self.lock)
+    def set(self, section, option, value):
+        return SCP.set(self, section, option, value)
 

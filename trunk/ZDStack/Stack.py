@@ -31,11 +31,6 @@ class Stack(Server):
 
     """Stack represents the main ZDStack class."""
 
-    ###
-    # TODO: a lot of the zserv-related methods can be accessed via RPC, and
-    #       none of the access to self.zservs is threadsafe, add lock!
-    ###
-
     def __init__(self, debugging=False, stopping=False):
         """Initializes a Stack instance.
 
@@ -47,6 +42,7 @@ class Stack(Server):
 
         """
         self.spawn_lock = Lock()
+        self.szn_lock = Lock()
         # self.poller = select.poll()
         self.zservs = {}
         self.stopped_zserv_names = set()
@@ -153,6 +149,7 @@ class Stack(Server):
                 self.loglink_check_timer = t
                 self.loglink_check_timer.start()
 
+    @requires_lock(self.szn_lock)
     def spawn_zservs(self):
         """Spawns zservs, respawning if they've crashed."""
         now = datetime.now()
@@ -161,7 +158,7 @@ class Stack(Server):
                 try:
                     if zserv.name in self.stopped_zserv_names or \
                        zserv.is_running():
-                        ##
+                        ###
                         # The zserv is supposed to be stopped, or the zserv is
                         # already running, in either case we skip it.
                         ###
@@ -423,6 +420,7 @@ class Stack(Server):
         if reload:
             self.load_zservs()
 
+    @requires_lock(self.szn_lock)
     def start_zserv(self, zserv_name):
         """Starts a ZServ.
 
@@ -445,6 +443,7 @@ class Stack(Server):
             pass
         zdslog.debug("Done starting %s" % (zserv_name))
 
+    @requires_lock(self.szn_lock)
     def stop_zserv(self, zserv_name):
         """Stops a ZServ.
 

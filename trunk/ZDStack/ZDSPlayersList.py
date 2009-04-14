@@ -1,9 +1,12 @@
 from __future__ import with_statement
 
+import time
+
 from threading import Lock
 from collections import deque
 
 from ZDStack import PlayerNotFoundError, get_zdslog
+from ZDStack.Utils import requires_lock
 from ZDStack.ZDSPlayer import Player
 
 zdslog = get_zdslog()
@@ -36,10 +39,10 @@ class PlayersList(object):
         self.lock = Lock()
         self.__players = deque()
 
+    @requires_lock(self.lock)
     def clear(self):
         """Clears the list of players."""
-        with self.lock:
-            self.__players.clear()
+        self.__players.clear()
 
     def __iter__(self):
         return self.__players.__iter__()
@@ -48,67 +51,57 @@ class PlayersList(object):
         """Returns True if the player is not in the players list."""
         return (player.ip, player.port) not in self.addresses()
 
-    def add(self, player, acquire_lock=True):
-        """Adds a player - threadsafe if lock acquired.
+    @requires_lock(self.lock)
+    def add(self, player):
+        """Adds a player.
 
         player:       a Player instance.
-        acquire_lock: if True, will acquire self.lock before
-                      taking any action; True by default.
 
         """
-        zdslog.debug("add(%s, acquire_lock=%s" % (player, acquire_lock))
-        def blah():
-            full_list = []
-            name_list = []
-            p_full = (player.name, player.ip, player.port)
-            p_name = (player.name, player.ip)
+        zdslog.debug("add(%s)" % (player))
+        full_list = []
+        name_list = []
+        p_full = (player.name, player.ip, player.port)
+        p_name = (player.name, player.ip)
+        for p in self.__players:
+            full_list.append((p.name, p.ip, p.port))
+            name_list.append((p.name, p.ip))
+        if p_name in name_list:
+            ###
+            # Player reconnected
+            # # Find this player in self.__players and:
+            #   set .port to new port
+            #   set .disconnected to False
+            ###
+            zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
             for p in self.__players:
-                full_list.append((p.name, p.ip, p.port))
-                name_list.append((p.name, p.ip))
-            if p_name in name_list:
-                ###
-                # Player reconnected
-                # # Find this player in self.__players and:
-                #   set .port to new port
-                #   set .disconnected to False
-                ###
-                zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
-                for p in self.__players:
-                    if (p.name, p.ip) == p_name:
-                        p.port = player.port
-                        p.disconnected = False
-            else:
-                ###
-                # Totally new connection
-                ###
-                zdslog.debug("Found totally new player [%s]" % (p_name[0]))
-                self.__players.append(player)
-        if acquire_lock:
-            with self.lock:
-                blah()
+                if (p.name, p.ip) == p_name:
+                    p.port = player.port
+                    p.disconnected = False
         else:
-            blah()
+            ###
+            # Totally new connection
+            ###
+            zdslog.debug("Found totally new player [%s]" % (p_name[0]))
+            self.__players.append(player)
 
-    def remove(self, player, acquire_lock=True):
-        """Disconnects a player - threadsafe if lock acquired.
+    @requires_lock(self.lock)
+    def remove(self, player):
+        """Disconnects a player.
 
         player:       a Player instance.
-        acquire_lock: if True, will acquire self.lock before
-                      taking any action; True by default.
 
         """
-        zdslog.debug("remove(%s, acquire_lock=%s" % (player, acquire_lock))
-        def blah():
-            player.playing = False
-            player.disconnected = True
-        if acquire_lock:
-            with self.lock:
-                blah()
-        else:
-            blah()
+        zdslog.debug("remove(%s)" % (player))
+        self.set_playing(player, False, acquire_lock=False)
+        player.disconnected = True
 
-    def get(self, name=None, ip_address_and_port=None, sync=True,
-                  acquire_lock=True):
+    @requires_lock(self.lock)
+    def set_playing(self, player, playing):
+        player.playing = playing
+
+    @requires_lock(self.lock)
+    def get(self, name=None, ip_address_and_port=None, sync=True):
         """Returns a Player instance.
 
         name:                the name of the player to return.
@@ -117,9 +110,6 @@ class PlayersList(object):
                              not initially found.  True by default.
         ip_address_and_port: a 2-Tuple (ip_address, port), both
                              strings.
-        acquire_lock:        a boolean that, if given, acquires the
-                             players lock before looking a player up.
-                             True by default.
 
         Either name or ip_address_and_port is optional, but at least
         one must be given.  Note that only giving name can potentially
@@ -127,43 +117,38 @@ class PlayersList(object):
         name.
 
         """
-        zdslog.debug("get(name=%s, ip_address_and_port=%s, acquire_lock=%s" % (name, ip_address_and_port, acquire_lock))
+        ds = "get(name=%s, ip_address_and_port=%s)"
+        zdslog.debug(ds % (name, ip_address_and_port))
         # zdslog.debug('')
         if name and ip_address_and_port:
             ip_address, port = ip_address_and_port
-            def _find_player():
+            def find_player():
                 for player in self:
                     if player.name == name and \
                        player.ip == ip_address and \
                        player.port == port:
                         return player
         elif name:
-            def _find_player():
+            def find_player():
                 for player in self:
                     if player.name == name:
                         return player
         elif ip_address_and_port:
             ip_address, port = ip_address_and_port
-            def _find_player():
+            def find_player():
                 for player in self:
                     if player.ip == ip_address and player.port == port:
                         return player
         else:
-            raise ValueError("One of name or ip_address_and_port is required")
-        def find_player(acquire_lock=True):
-            if acquire_lock:
-                with self.lock:
-                    return _find_player()
-            else:
-                return _find_player()
+            raise TypeError("One of name or ip_address_and_port is required")
         p = None
-        p = find_player(acquire_lock=acquire_lock)
+        p = find_player()
         if p is None and sync:
             ###
             # Didn't find the player, sync & try again.
             ###
-            self.sync(acquire_lock=acquire_lock)
-            p = find_player(acquire_lock=acquire_lock)
+            self.sync(acquire_lock=False)
+            p = find_player()
         if p is None:
             ###
             # Freak out
@@ -171,96 +156,93 @@ class PlayersList(object):
             raise PlayerNotFoundError(name, ip_address_and_port)
         return p
 
-    def sync(self, zplayers=None, acquire_lock=True):
+    @requires_lock(self.lock)
+    def sync(self, zplayers=None, sleep=None):
         """Syncs the internal players list with the running zserv.
 
         zplayers:     a list of dicts representing zserv's players.
                       If not given, it is acquired from self.zserv.
-        acquire_lock: an optional boolean whether or not to acquire
-                      self.lock, True by default.
+        sleep:        an int/Decimal/float representing the number of
+                      seconds to sleep before manually acquiring the
+                      list of players from self.zserv.  Defaults to not
+                      sleeping at all, and is only used when zplayers
+                      is None.
 
         """
         ###
         # When setting a player's name, it's important to use 'set_name', so
         # the alias is saved in the DB.
         ###
-        zdslog.debug("sync(zplayers=%s, acquire_lock=%s" % (zplayers, acquire_lock))
-        def blah():
-            players_list = list()
-            disconnected_players_list = list()
-            zplayers_list = list()
-            zplayers_list_plus_numbers = list()
-            players_list = []
-            for x in [x for x in self if x.name]:
-                z_full = (x.name, x.ip, x.port)
-                players_list.append(z_full)
-                if x.disconnected:
-                    disconnected_players_list.append(z_full)
-            # for d in [x for x in zplayers if x['player_name']]:
-            for d in zplayers:
-                z_full = (d['player_name'], d['player_ip'], d['player_port'])
-                z_full_plus_number = (d['player_num'],) + z_full
-                zplayers_list.append(z_full)
-                zplayers_list_plus_numbers.append(z_full_plus_number)
-            zdslog.debug("Sync: Players List: (%s)" % (players_list))
-            zdslog.debug("Sync: Disconnected List: (%s)" % (disconnected_players_list))
-            zdslog.debug("Sync: ZPlayers List: (%s)" % (zplayers_list))
-            zdslog.debug("Checking for players to add")
-            for z_full in zplayers_list:
-                if z_full not in players_list or \
-                   z_full in disconnected_players_list:
-                    ###
-                    # found a missing or reconnected player
-                    ###
-                    player = Player(self.zserv, z_full[1], z_full[2], z_full[0])
-                    zdslog.debug("Adding new player [%s]" % (player.name))
-                    self.add(player, acquire_lock=False)
-                    zdslog.debug("Added new player [%s]" % (player.name))
-            zdslog.debug("Checking for players to remove")
-            for p_full in players_list:
-                if p_full not in zplayers_list:
-                    ###
-                    # Found a ghost player...?
-                    ###
-                    player = self.get(name=p_full[0],
-                                      ip_address_and_port=p_full[1:],
-                                      acquire_lock=False)
-                    zdslog.debug("Removed player [%s]" % (p_full[0]))
-                    self.remove(player, acquire_lock=False)
-            zdslog.debug("Checking for misaligned numbers")
-            for z_full_num in zplayers_list_plus_numbers:
-                for p in self:
-                    zdslog.debug("Checking %s" % (p))
-                    if p.name.endswith('s'):
-                        ps = "%s'"
+        ds = "sync(zplayers=%s, acquire_lock=%s)"
+        zdslog.debug(ds % (zplayers, acquire_lock))
+        if zplayers is None:
+            if sleep:
+                time.sleep(sleep)
+            zdslog.debug("Manually populating zplayers")
+            zplayers = self.zserv.zplayers()
+        zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
+        players_list = list()
+        disconnected_players_list = list()
+        zplayers_list = list()
+        zplayers_list_plus_numbers = list()
+        players_list = []
+        for x in [x for x in self if x.name]:
+            z_full = (x.name, x.ip, x.port)
+            players_list.append(z_full)
+            if x.disconnected:
+                disconnected_players_list.append(z_full)
+        # for d in [x for x in zplayers if x['player_name']]:
+        for d in zplayers:
+            z_full = (d['player_name'], d['player_ip'], d['player_port'])
+            z_full_plus_number = (d['player_num'],) + z_full
+            zplayers_list.append(z_full)
+            zplayers_list_plus_numbers.append(z_full_plus_number)
+        zdslog.debug("Sync: Players List: (%s)" % (players_list))
+        zdslog.debug("Sync: Disconnected List: (%s)" % (disconnected_players_list))
+        zdslog.debug("Sync: ZPlayers List: (%s)" % (zplayers_list))
+        zdslog.debug("Checking for players to add")
+        for z_full in zplayers_list:
+            if z_full not in players_list or \
+               z_full in disconnected_players_list:
+                ###
+                # found a missing or reconnected player
+                ###
+                player = Player(self.zserv, z_full[1], z_full[2], z_full[0])
+                zdslog.debug("Adding new player [%s]" % (player.name))
+                self.add(player, acquire_lock=False)
+                zdslog.debug("Added new player [%s]" % (player.name))
+        zdslog.debug("Checking for players to remove")
+        for p_full in players_list:
+            if p_full not in zplayers_list:
+                ###
+                # Found a ghost player...?
+                ###
+                player = self.get(name=p_full[0],
+                                  ip_address_and_port=p_full[1:],
+                                  acquire_lock=False)
+                zdslog.debug("Removed player [%s]" % (p_full[0]))
+                self.remove(player, acquire_lock=False)
+        zdslog.debug("Checking for misaligned numbers")
+        for z_full_num in zplayers_list_plus_numbers:
+            for p in self:
+                zdslog.debug("Checking %s" % (p))
+                if p.name.endswith('s'):
+                    ps = "%s'"
+                else:
+                    ps = "%s's"
+                x = (p.name, p.ip, p.port)
+                if x == z_full_num[1:]:
+                    if p.number != z_full_num[0]:
+                        es = "Set %s number to %%s" % (ps)
+                        es = es % (p.name, z_full_num[0])
+                        p.number = z_full_num[0]
                     else:
-                        ps = "%s's"
-                    x = (p.name, p.ip, p.port)
-                    if x == z_full_num[1:]:
-                        if p.number != z_full_num[0]:
-                            es = "Set %s number to %%s" % (ps)
-                            es = es % (p.name, z_full_num[0])
-                            p.number = z_full_num[0]
-                        else:
-                            es = "%s number was aligned properly" % (ps)
-                            es = es % (p.name)
-                    else:
-                        es = "%s and %s don't match" % (str(x),
-                                                        str(z_full_num[1:]))
-                    zdslog.debug(es)
-        if acquire_lock:
-            with self.lock:
-                if zplayers is None:
-                    zdslog.debug("Manually populating zplayers")
-                    zplayers = self.zserv.zplayers()
-                zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
-                blah()
-        else:
-            if zplayers is None:
-                zdslog.debug("Manually populating zplayers")
-                zplayers = self.zserv.zplayers()
-            zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
-            blah()
+                        es = "%s number was aligned properly" % (ps)
+                        es = es % (p.name)
+                else:
+                    es = "%s and %s don't match" % (str(x),
+                                                    str(z_full_num[1:]))
+                zdslog.debug(es)
         zdslog.debug("Sync: done")
 
     def names(self):
@@ -271,6 +253,7 @@ class PlayersList(object):
         """Returns a list of 2-Tuples (ip, port) for all players."""
         return [(x.ip, x.port) for x in self]
 
+    @requires_lock(self.lock)
     def get_first_matching_player(self, possible_player_names):
         """Returns the player whose name matches a list of names.
 
@@ -283,13 +266,8 @@ class PlayersList(object):
         is returned.
 
         """
-        with self.lock:
-            ###
-            # Don't want the lists changing on us in the middle of matching
-            # players to names.
-            ###
-            names = self.names()
-            for pn in possible_player_names:
-                if pn in names:
-                    return self.get(name=name, sync=False, acquire_lock=False)
+        names = self.names()
+        for pn in possible_player_names:
+            if pn in names:
+                return self.get(name=name, sync=False, acquire_lock=False)
 

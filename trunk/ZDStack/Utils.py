@@ -217,4 +217,24 @@ def get_event_from_line(line, regexps, now=None):
             e.data['number'] = int(e.data['number'])
     return e
 
+def requires_lock(lck):
+    ###
+    # Owes pretty heavily to Philip J. Eby's article on function decorators.
+    ###
+    def decorator(f):
+        def wrapper(*__args, **__kwargs):
+            __can_skip_lock = False
+            if 'acquire_lock' in kwargs:
+                __can_skip_lock = not __kwargs['acquire_lock']
+                del __kwargs['acquire_lock']
+            if not __can_skip_lock:
+                with lck:
+                    return f(*__args, **__kwargs)
+            else:
+                return f(*__args, **__kwargs)
+        wrapper.__name__ = f.__name__
+        wrapper.__dict__ = f.__dict__
+        wrapper.__doc__ = f.__doc__
+        return wrapper
+    return decorator
 
