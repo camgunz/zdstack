@@ -1,4 +1,6 @@
 0.11
+  - Setting the IP for zserv advertising doesn't change the 'zds://' links in
+    ZDSWeb
   - Figure out banlist management
     - Add a "send RPC command" function to ZDSWeb
   - Setup firebird so it's not pigeonholed as an embedded DB

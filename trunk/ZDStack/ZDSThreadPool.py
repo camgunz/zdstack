@@ -139,8 +139,8 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
                     zdslog.debug(s % (name))
                     break
             except Exception, e:
-                zdslog.error("[%s] received error: [%s]" % (name, e))
-                zdslog.debug(traceback.format_exc())
+                es = "[%s] received error: [%s]\n%s"
+                zdslog.error(es % (name, e, traceback.format_exc()))
             if sleep:
                 time.sleep(sleep)
         zdslog.debug("[%s]: I have quit my loop!" % (name))

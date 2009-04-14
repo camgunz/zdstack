@@ -38,6 +38,9 @@ CGI_CONFIGFILE = None
 # That's it, don't change anything else!
 ###
 
+MAX_NAME_LENGTH = 35
+MAX_MAP_NAME_LENGTH = 25
+
 def __print_usage(msg=None):
     if msg:
         print >> sys.stderr, "\nError: %s" % (msg)
@@ -176,6 +179,12 @@ class ZDSInterface:
         # zserv_info['name'] = zserv_info['name
         zserv_name = zserv_info['name']
         zserv_info['html_name'] = html_escape(zserv_name)
+        if len(zserv_info['html_name']) > MAX_NAME_LENGTH:
+            zserv_info['html_name'] = \
+                            zserv_info['html_name'][:MAX_NAME_LENGTH] + '...'
+        if len(zserv_info['map_name']) > MAX_MAP_NAME_LENGTH:
+            zserv_info['map_name'] = \
+                        zserv_info['map_name'][:MAX_MAP_NAME_LENGTH] + '...'
         zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
         zserv_info['hostname'] = CP.get(zserv_name, 'hostname')
         zserv_info['mode'] = CP.get(zserv_name, 'mode')
@@ -589,6 +598,8 @@ class Page:
                     d = {'name': self.name, 'config': config,
                          'html_name': html_escape(self.name),
                          'height': config.count('\n') + 1}
+                    if len(d['html_name']) > 35:
+                        d['html_name'] = d['html_name'][:35] + '...'
                     bottom_content += CONFIG_TEMPLATE % d
                 else:
                     self._func()
