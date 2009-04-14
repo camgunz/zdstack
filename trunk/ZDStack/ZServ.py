@@ -129,14 +129,19 @@ class ZServ(object):
             with global_session() as session:
                 s = "Adding %s to %s"
                 for player in self.players:
-                    if player.alias and player.alias not in self.round.players:
-                        zdslog.debug(s % (player.alias, self.round))
-                        self.round.players.append(player.alias)
-                    if self.round not in player.alias.rounds:
-                        zdslog.debug(s % (self.round, player.alias))
-                        player.alias.rounds.append(self.round)
-                    zdslog.debug("Updating %s" % (player.alias))
-                    persist(player.alias, update=True, session=session)
+                    if player.alias:
+                        ###
+                        # I guess it's possible for a player not to have an
+                        # alias... somehow.
+                        ###
+                        if player.alias not in self.round.players:
+                            zdslog.debug(s % (player.alias, self.round))
+                            self.round.players.append(player.alias)
+                        if self.round not in player.alias.rounds:
+                            zdslog.debug(s % (self.round, player.alias))
+                            player.alias.rounds.append(self.round)
+                        zdslog.debug("Updating %s" % (player.alias))
+                        persist(player.alias, update=True, session=session)
                 zdslog.debug("Updating %s" % (self.round))
                 persist(self.round, update=True, session=session)
                 for flag_touch in self.round.flag_touches:
