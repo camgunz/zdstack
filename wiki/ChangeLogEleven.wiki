@@ -26,7 +26,7 @@ The following problems/issues/bugs were fixed.
   * If an option was defined in the `DEFAULT` section, as a game_mode default, and in the server's own configuration section, the game_mode default would take precedent.
   * Only some options were supported as game_mode defaults.  Now the logic is applied to all server-specific options.
   * Random problems while dealing with a running ZDStack process were fixed (including changing the configuration file, starting/stopping/removing/adding servers, etc.).
-  * `reload-config` is now a `zdstack` action, not a `zservctl` action... as that didn't make any sense.
+  * `reload-config` was a `zservctl` action... which didn't make any sense.
   * Impossible to change the game mode of a server.
   * If errors were present in the configuration and it was reloaded, the current configuration could be overwritten with bad values.
   * getting/setting zserv configs did not work.
