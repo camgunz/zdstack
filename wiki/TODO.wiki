@@ -22,3 +22,4 @@
     * ~~zdstack_zserv_folder~~
     * ~~zdstack_plugin_folder~~
   * ~~Implement zserv logfile saving~~
+  * Duplicate ports are still allowed - fix
