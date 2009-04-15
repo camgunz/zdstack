@@ -21,14 +21,14 @@ class ZServConfigParser(ZDSConfigParser):
 
     """
 
-    def __init__(self, zserv, filename):
-        ZDSConfigParser.__init__(self, filename)
-        self.zserv = zserv
-        self.game_mode = self.zserv.raw_game_mode.lower()
-        self.set(self.zserv.name, 'name', self.zserv.name)
-        if not self.zserv.name in self.sections():
+    def __init__(self, zserv):
+        ZDSConfigParser.__init__(self, zserv.zdstack.config.filename)
+        if not zserv.name in self.sections():
             es = "Configuration file contains no configuration data for %s"
-            raise ValueError(es % (self.zserv.name))
+            raise ValueError(es % (zserv.name))
+        self.zserv = zserv
+        self.game_mode = zserv.zdstack.config.get(zserv.name, 'mode').lower()
+        self.set(self.zserv.name, 'name', self.zserv.name)
 
     def add_section(self, *args, **kwargs):
         raise NotImplementedError()
@@ -140,6 +140,8 @@ class ZServConfigParser(ZDSConfigParser):
 
         """
         from ZDStack.ZServ import DUEL_MODES
+        game_mode = self.zserv.zdstack.config.get(zserv.name, 'mode').lower()
+        self.game_mode = game_mode
         zserv_folder = self.getpath('zdstack_zserv_folder')
         zserv_exe = self.getpath('zserv_exe')
         home_folder = os.path.join(zserv_folder, self.zserv.name)
@@ -291,6 +293,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.port = port
         self.zserv.cmd = cmd
         self.zserv.ip = ip
+        self.zserv.raw_game_mode = self.game_mode
         self.zserv.events_enabled = events_enabled
         self.zserv.stats_enabled = stats_enabled
         self.zserv.plugins_enabled = plugins_enabled

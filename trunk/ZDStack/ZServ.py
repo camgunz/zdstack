@@ -10,8 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 from pyfileutils import write_file
 
-from ZDStack import DEVNULL, MAX_TIMEOUT, TEAM_COLORS, PlayerNotFoundError, \
-                    get_zdslog
+from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, get_zdslog
 from ZDStack.Utils import requires_lock
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
@@ -72,6 +71,7 @@ class ZServ(object):
         self.finished_processing_response = Event()
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
+        self.config_lock = Lock()
         self.map = DummyMap()
         self.round = None
         self.players = PlayersList(self)
@@ -83,6 +83,7 @@ class ZServ(object):
         self._template = ''
         self.zserv = None
         self.fifo = None
+        self.config = ZServConfigParser(self)
         self.load_config()
         has_teams = self.raw_game_mode in TEAM_MODES
         self.game_mode = get_game_mode(name=self.raw_game_mode,
@@ -199,6 +200,7 @@ class ZServ(object):
         # zdslog.debug('')
         self.load_config(reload=True)
 
+    @requires_lock(self.config_lock)
     def load_config(self, reload=False):
         """Loads this ZServ's config.
 
@@ -207,15 +209,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        ###
-        # TODO: add zserv.config_lock
-        ###
-        ###
-        # We absolutely have to set the game mode of this ZServ now.
-        ###
-        self.raw_game_mode = self.zdstack.config.get(self.name, 'mode')
-        cp = ZServConfigParser(self, self.zdstack.config.filename)
-        cp.process_config() # does tons and tons of ugly, ugly stuff
+        self.config.process_config() # does tons and tons of ugly, ugly stuff
         if not reload and not self.is_running():
             if os.path.exists(self.fifo_path):
                 ###
@@ -239,7 +233,6 @@ class ZServ(object):
                     raise Exception(es % (self.name, p, e))
         if not os.path.exists(self.fifo_path):
             os.mkfifo(self.fifo_path)
-        self.config = cp
 
     def __str__(self):
         return "<ZServ [%s:%d]>" % (self.name, self.port)
@@ -278,6 +271,7 @@ class ZServ(object):
                 # zdslog.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
+    @requires_lock(self.config_lock)
     def start(self):
         """Starts the zserv process.
         
@@ -338,7 +332,7 @@ class ZServ(object):
                 # Python docs say to use communicate() to avoid a wait()
                 # deadlock due to buffers being full.  Because we're
                 # redirecting both STDOUT and STDERR to DEVNULL, nothing will
-                # come from this.  Apparently we still need to do it though...
+                # come from this.  Apparently we still need to do it though....
                 ###
                 self.zserv.communicate() # returns (None, None)
                 retval = self.zserv.wait()
@@ -487,7 +481,7 @@ class ZServ(object):
             # In case a server is restarted before a non-response event occurs,
             # we need a timeout here.
             ###
-            self.response_finished.wait(MAX_TIMEOUT)
+            self.response_finished.wait(TICK*4)
             ###
             # We want to process this response before any other events, so make
             # other threads wait until we're finished processing the response.
