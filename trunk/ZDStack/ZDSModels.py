@@ -37,7 +37,8 @@ _parent_cascades = 'save-update, delete, delete-orphan'
 ports_and_gamemodes = \
 Table('ports_and_gamemodes', Base.metadata,
     Column('port_name', String(50), ForeignKey('ports.name')),
-    Column('game_mode_name', String(30), ForeignKey('game_modes.name'))
+    Column('game_mode_name', String(30), ForeignKey('game_modes.name')),
+    UniqueConstraint('port_name', 'game_mode_name')
 )
 
 rounds_and_aliases = \

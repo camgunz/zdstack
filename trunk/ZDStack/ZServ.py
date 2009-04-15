@@ -84,9 +84,6 @@ class ZServ(object):
         self.fifo = None
         self.config = ZServConfigParser(self)
         self.load_config()
-        has_teams = self.raw_game_mode in TEAM_MODES
-        self.game_mode = get_game_mode(name=self.raw_game_mode,
-                                       has_teams=has_teams)
         self.clear_state()
         if self.events_enabled and self.plugins_enabled:
             self.plugins = self.config.getlist('plugins', default=list())
@@ -193,6 +190,8 @@ class ZServ(object):
         """
         # zdslog.debug('')
         self.load_config(reload=True)
+        self.game_mode = get_game_mode(name=self.raw_game_mode,
+                                       has_teams=has_teams)
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.
@@ -204,6 +203,16 @@ class ZServ(object):
         with self.config_lock:
             # zdslog.debug('')
             self.config.process_config() # does tons of ugly, ugly stuff
+            gm = get_game_mode(name=self.raw_game_mode,
+                               has_teams=self.raw_game_mode in TEAM_MODES)
+            self.game_mode = gm
+            source_port = get_port(name=self.source_port)
+            if self.game_mode not in source_port.game_modes:
+                source_port.game_modes.append(self.game_mode)
+                persist(source_port, update=True)
+            if source_port not in self.game_mode.ports:
+                self.game_mode.ports.append(source_port)
+                persist(self.game_mode, update=True)
             if not reload and not self.is_running():
                 if os.path.exists(self.fifo_path):
                     ###
@@ -274,7 +283,6 @@ class ZServ(object):
         """
         # zdslog.debug('Acquiring spawn lock [%s]' % (self.name))
         with self.config_lock:
-            get_port(name=self.source_port)
             with self.zdstack.spawn_lock:
                 if self.is_running():
                     return
