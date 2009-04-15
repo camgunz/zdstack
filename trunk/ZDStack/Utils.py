@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import sys
 import os.path
 
@@ -224,7 +226,7 @@ def requires_lock(lck):
     def decorator(f):
         def wrapper(*__args, **__kwargs):
             __can_skip_lock = False
-            if 'acquire_lock' in kwargs:
+            if 'acquire_lock' in __kwargs:
                 __can_skip_lock = not __kwargs['acquire_lock']
                 del __kwargs['acquire_lock']
             if not __can_skip_lock:
@@ -232,6 +234,24 @@ def requires_lock(lck):
                     return f(*__args, **__kwargs)
             else:
                 return f(*__args, **__kwargs)
+        wrapper.__name__ = f.__name__
+        wrapper.__dict__ = f.__dict__
+        wrapper.__doc__ = f.__doc__
+        return wrapper
+    return decorator
+
+def requires_instance_lock():
+    def decorator(f):
+        def wrapper(self, *__args, **__kwargs):
+            __can_skip_lock = False
+            if 'acquire_lock' in __kwargs:
+                __can_skip_lock = not __kwargs['acquire_lock']
+                del __kwargs['acquire_lock']
+            if not __can_skip_lock:
+                with self.lock:
+                    return f(self, *__args, **__kwargs)
+            else:
+                return f(self, *__args, **__kwargs)
         wrapper.__name__ = f.__name__
         wrapper.__dict__ = f.__dict__
         wrapper.__doc__ = f.__doc__

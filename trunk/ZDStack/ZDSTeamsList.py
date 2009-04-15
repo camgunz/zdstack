@@ -4,6 +4,7 @@ from threading import Lock
 from collections import deque
 
 from ZDStack import TEAM_COLORS, TeamNotFoundError, get_zdslog
+from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSDatabase import get_team_color
 
 zdslog = get_zdslog()
@@ -23,12 +24,12 @@ class TeamsList(object):
     def __iter__(self):
         return self.__teams.__iter__()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def clear(self):
         """Clears the team list."""
         self.__teams = dict()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def add(self, color):
         """Adds a team.
 
@@ -42,7 +43,7 @@ class TeamsList(object):
         if tc not in self.__teams.keys():
             self.__teams[tc] = deque()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get(self, color):
         """Returns a team.
 
@@ -60,7 +61,7 @@ class TeamsList(object):
         ###
         raise TeamNotFoundError(color)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_members(self, color):
         """Returns a deque of a team's members.
 
@@ -71,7 +72,7 @@ class TeamsList(object):
         zdslog.debug("get_members(%s)" % (color))
         return self.__teams[self.get(color, acquire_lock=False)]
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_player_team(self, player):
         """Returns a player's team.
 
@@ -85,7 +86,7 @@ class TeamsList(object):
                 zdslog.debug("Found team %s" % (tc.color))
                 return tc
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def set_player_team(self, player, color):
         """Sets the player's team.
 
@@ -112,7 +113,7 @@ class TeamsList(object):
         is_playing = future_team.color in self.zserv.playing_colors
         self.zserv.players.set_playing(player, is_playing)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def contains_player(self, color, player):
         """Returns True if a player is a member of the specified team.
 

@@ -7,7 +7,7 @@ from decimal import Decimal
 from ConfigParser import NoOptionError
 
 from ZDStack import TEAM_COLORS, get_zdslog
-from ZDStack.Utils import check_ip, resolve_path, requires_lock
+from ZDStack.Utils import check_ip, resolve_path, requires_instance_lock
 from ZDStack.ZDSConfigParser import ZDSConfigParser
 
 zdslog = get_zdslog()
@@ -39,22 +39,22 @@ class ZServConfigParser(ZDSConfigParser):
     def remove_section(self, *args, **kwargs):
         raise NotImplementedError()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def has_option(self, option):
         return ZDSConfigParser.has_option(self, self.zserv.name, option,
                                           acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def options(self):
         return ZDSConfigParser.options(self, self.zserv.name,
                                        acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def remove_option(self, option):
         return ZDSConfigParser.remove_option(self, self.zserv.name,
                                              acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_raw(self, section, option, default=None):
         opt = self.optionxform(option)
         game_mode_opt = '_'.join([self.game_mode, opt])
@@ -70,12 +70,12 @@ class ZServConfigParser(ZDSConfigParser):
         else:
             return default
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get(self, option, default=None):
         return ZDSConfigParser.get(self, self.zserv.name, option, default,
                                    acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def _get(self, conv, option, default=None):
         val = self.get(option, default, acquire_lock=False)
         if val:
@@ -83,11 +83,11 @@ class ZServConfigParser(ZDSConfigParser):
         else:
             return val
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getint(self, option, default=None):
         return self._get(int, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getfloat(self, option, default=None):
         return self._get(float, option, default, acquire_lock=False)
 
@@ -97,21 +97,21 @@ class ZServConfigParser(ZDSConfigParser):
             d = d * Decimal(100)
         return d
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getpercent(self, option, default=None):
         return self._get(self._getpercent, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getdecimal(self, option, default=None):
         return self._get(Decimal, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getlist(self, option, default=None, parse_func=None):
         if not parse_func:
             parse_func = lambda x: [y.strip() for y in x.split(',')]
         return self._get(parse_func, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getboolean(self, option, default=None):
         try:
             v = self.get(option, default, acquire_lock=False)
@@ -125,11 +125,11 @@ class ZServConfigParser(ZDSConfigParser):
         except NoOptionError:
             return default
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getpath(self, option, default=None):
         return self._get(resolve_path, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def items(self):
         return self._sections[self.zserv.name].items()
 
@@ -140,8 +140,8 @@ class ZServConfigParser(ZDSConfigParser):
 
         """
         from ZDStack.ZServ import DUEL_MODES
-        game_mode = self.zserv.zdstack.config.get(zserv.name, 'mode').lower()
-        self.game_mode = game_mode
+        game_mode = self.zserv.zdstack.config.get(self.zserv.name, 'mode')
+        self.game_mode = game_mode.lower()
         zserv_folder = self.getpath('zdstack_zserv_folder')
         zserv_exe = self.getpath('zserv_exe')
         home_folder = os.path.join(zserv_folder, self.zserv.name)

@@ -11,7 +11,6 @@ from subprocess import Popen, PIPE, STDOUT
 from pyfileutils import write_file
 
 from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, get_zdslog
-from ZDStack.Utils import requires_lock
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
@@ -94,24 +93,19 @@ class ZServ(object):
         else:
             self.plugins = list()
 
-    @requires_lock(self.state_lock)
-    def clear_state(self, acquire_lock=True):
-        """Clears the current state of the round.
-        
-        acquire_lock: a boolean that, if True, will acquire the state
-                      lock before clearing state.  True by default.
-        
-        """
-        self.players.clear()
-        self.teams.clear()
-        self.players_holding_flags = list()
-        self.teams_holding_flags = list()
-        self.fragged_runners = list()
-        if self.playing_colors:
-            self.team_scores = dict(zip(self.playing_colors,
-                                        [0] * len(self.playing_colors)))
-        else:
-            self.team_scores = dict()
+    def clear_state(self):
+        """Clears the current state of the round."""
+        with self.state_lock:
+            self.players.clear()
+            self.teams.clear()
+            self.players_holding_flags = list()
+            self.teams_holding_flags = list()
+            self.fragged_runners = list()
+            if self.playing_colors:
+                self.team_scores = dict(zip(self.playing_colors,
+                                            [0] * len(self.playing_colors)))
+            else:
+                self.team_scores = dict()
 
     def clean_up(self):
         """Cleans up after a round."""
@@ -200,7 +194,6 @@ class ZServ(object):
         # zdslog.debug('')
         self.load_config(reload=True)
 
-    @requires_lock(self.config_lock)
     def load_config(self, reload=False):
         """Loads this ZServ's config.
 
@@ -208,31 +201,32 @@ class ZServ(object):
                 by default.
 
         """
-        # zdslog.debug('')
-        self.config.process_config() # does tons and tons of ugly, ugly stuff
-        if not reload and not self.is_running():
-            if os.path.exists(self.fifo_path):
-                ###
-                # Re-create the FIFO so we know there are no mode problems,
-                # and that it's definitely a FIFO.
-                ###
-                os.remove(self.fifo_path)
-            b = [x for x in os.listdir(self.home_folder) if x.endswith('.log')]
-            for x in b:
-                p = os.path.join(self.home_folder, x)
-                try:
-                    if os.path.isfile(p):
-                        os.remove(p)
-                    elif os.path.islink(p):
-                        os.remove(p)
-                    else:
-                        es = "%s: Cannot start, cannot remove old log file %s"
-                        raise Exception(es % (self.name, p))
-                except Exception, e:
-                    es = "%s: Cannot start, cannot remove old log file %s: %s"
-                    raise Exception(es % (self.name, p, e))
-        if not os.path.exists(self.fifo_path):
-            os.mkfifo(self.fifo_path)
+        with self.config_lock:
+            # zdslog.debug('')
+            self.config.process_config() # does tons of ugly, ugly stuff
+            if not reload and not self.is_running():
+                if os.path.exists(self.fifo_path):
+                    ###
+                    # Re-create the FIFO so we know there are no mode problems,
+                    # and that it's definitely a FIFO.
+                    ###
+                    os.remove(self.fifo_path)
+                b = [x for x in os.listdir(self.home_folder)]
+                for x in [x for x in b if x.endswith('.log')]:
+                    p = os.path.join(self.home_folder, x)
+                    try:
+                        if os.path.isfile(p):
+                            os.remove(p)
+                        elif os.path.islink(p):
+                            os.remove(p)
+                        else:
+                            es = "%s: Cannot start, cannot remove old log file %s"
+                            raise Exception(es % (self.name, p))
+                    except Exception, e:
+                        es = "%s: Cannot start, cannot remove old log file %s: %s"
+                        raise Exception(es % (self.name, p, e))
+            if not os.path.exists(self.fifo_path):
+                os.mkfifo(self.fifo_path)
 
     def __str__(self):
         return "<ZServ [%s:%d]>" % (self.name, self.port)
@@ -271,7 +265,6 @@ class ZServ(object):
                 # zdslog.debug(s % (loglink_path, self.fifo_path))
                 os.symlink(self.fifo_path, loglink_path)
 
-    @requires_lock(self.config_lock)
     def start(self):
         """Starts the zserv process.
         
@@ -280,41 +273,46 @@ class ZServ(object):
         
         """
         # zdslog.debug('Acquiring spawn lock [%s]' % (self.name))
-        get_port(name=self.source_port)
-        with self.zdstack.spawn_lock:
-            if self.is_running():
-                return
-            self.restarts.append(datetime.now())
-            write_file(self.config.get_config_data(), self.configfile,
-                       overwrite=True)
-            self.ensure_loglinks_exist()
-            if self.plugins_enabled:
-                for plugin in self.plugins:
-                    zdslog.info("Loaded plugin [%s]" % (plugin))
-            else:
-                pass
-                # zdslog.info("Not loading plugins")
-            ###
-            # Should we do something with STDERR here?
-            ###
-            ###
-            # Due to the semi-complicated blocking structure of FIFOs, there
-            # is a specific order in which this has to be done.
-            #
-            #   - Writing to a FIFO blocks until there is something
-            #     listening, so self.zdstack.polling_thread has to be
-            #     spawned.
-            #   - The polling thread only handles ZServs with .fifo
-            #     attributes that are non-False, so self.fifo has to be
-            #     created.
-            #   - Then the zserv can be spawned.
-            ###
-            zdslog.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
-            self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
-            self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
-                               stderr=STDOUT, bufsize=0, close_fds=True,
-                               cwd=self.home_folder)
-            # self.send_to_zserv('players') # avoids CPU spinning
+        with self.config_lock:
+            get_port(name=self.source_port)
+            with self.zdstack.spawn_lock:
+                if self.is_running():
+                    return
+                self.restarts.append(datetime.now())
+                write_file(self.config.get_config_data(), self.configfile,
+                           overwrite=True)
+                self.ensure_loglinks_exist()
+                if self.plugins_enabled:
+                    for plugin in self.plugins:
+                        zdslog.info("Loaded plugin [%s]" % (plugin))
+                else:
+                    pass
+                    # zdslog.info("Not loading plugins")
+                ###
+                # Should we do something with STDERR here?
+                ###
+                ###
+                # Due to the semi-complicated blocking structure of FIFOs,
+                # there is a specific order in which this has to be done.
+                #
+                #   - Writing to a FIFO blocks until there is something
+                #     listening, so self.zdstack.polling_thread has to be
+                #     spawned.
+                #   - The polling thread only handles ZServs with .fifo
+                #     attributes that are non-False, so self.fifo has to be
+                #     created.
+                #   - Then the zserv can be spawned.
+                ###
+                zdslog.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
+                ###
+                # TODO: put os.close(self.fifo) somewhere, so we don't leak
+                #       fd's like crazy.
+                ###
+                self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
+                self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
+                                   stderr=STDOUT, bufsize=0, close_fds=True,
+                                   cwd=self.home_folder)
+                # self.send_to_zserv('players') # avoids CPU spinning
 
     def stop(self, signum=15):
         """Stops the zserv process.
@@ -481,7 +479,7 @@ class ZServ(object):
             # In case a server is restarted before a non-response event occurs,
             # we need a timeout here.
             ###
-            self.response_finished.wait(TICK*4)
+            self.response_finished.wait(float(TICK*4))
             ###
             # We want to process this response before any other events, so make
             # other threads wait until we're finished processing the response.

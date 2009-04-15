@@ -6,7 +6,7 @@ from threading import Lock
 from collections import deque
 
 from ZDStack import PlayerNotFoundError, get_zdslog
-from ZDStack.Utils import requires_lock
+from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSPlayer import Player
 
 zdslog = get_zdslog()
@@ -39,7 +39,7 @@ class PlayersList(object):
         self.lock = Lock()
         self.__players = deque()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def clear(self):
         """Clears the list of players."""
         self.__players.clear()
@@ -51,7 +51,7 @@ class PlayersList(object):
         """Returns True if the player is not in the players list."""
         return (player.ip, player.port) not in self.addresses()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def add(self, player):
         """Adds a player.
 
@@ -90,7 +90,7 @@ class PlayersList(object):
             self.__players.append(player)
             return False
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def remove(self, player):
         """Disconnects a player.
 
@@ -101,11 +101,11 @@ class PlayersList(object):
         self.set_playing(player, False, acquire_lock=False)
         player.disconnected = True
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def set_playing(self, player, playing):
         player.playing = playing
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get(self, name=None, ip_address_and_port=None, sync=True):
         """Returns a Player instance.
 
@@ -161,7 +161,7 @@ class PlayersList(object):
             raise PlayerNotFoundError(name, ip_address_and_port)
         return p
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def sync(self, zplayers=None, sleep=None):
         """Syncs the internal players list with the running zserv.
 
@@ -178,8 +178,8 @@ class PlayersList(object):
         # When setting a player's name, it's important to use 'set_name', so
         # the alias is saved in the DB.
         ###
-        ds = "sync(zplayers=%s, acquire_lock=%s)"
-        zdslog.debug(ds % (zplayers, acquire_lock))
+        ds = "sync(zplayers=%s)"
+        zdslog.debug(ds % (zplayers))
         if zplayers is None:
             if sleep:
                 time.sleep(sleep)
@@ -236,7 +236,7 @@ class PlayersList(object):
                 ###
                 player = Player(self.zserv, z_full[1], z_full[2], z_full[0])
                 zdslog.debug("Adding new player [%s]" % (player.name))
-                self.add(player, acquire_lock=False):
+                self.add(player, acquire_lock=False)
                 zdslog.debug("Added new player [%s]" % (player.name))
         ###
         # Re-create the players & disconnected_players lists, so we don't
@@ -294,7 +294,7 @@ class PlayersList(object):
         """Returns a list of 2-Tuples (ip, port) for all players."""
         return [(x.ip, x.port) for x in self]
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_first_matching_player(self, possible_player_names):
         """Returns the player whose name matches a list of names.
 

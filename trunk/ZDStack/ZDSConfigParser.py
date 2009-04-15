@@ -9,7 +9,7 @@ from ConfigParser import RawConfigParser as RCP
 from ConfigParser import SafeConfigParser as SCP
 from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError
 
-from ZDStack.Utils import resolve_path, requires_lock
+from ZDStack.Utils import resolve_path, requires_instance_lock
 
 class RawZDSConfigParser(RCP):
 
@@ -32,7 +32,7 @@ class RawZDSConfigParser(RCP):
     """
 
     def __init__(self, filename=None, dummy=False):
-        """Initializes a BaseConfigParser.
+        """Initializes a RawZDSConfigParser.
 
         filename:                 a string representing the name of a
                                   a file to parse initially
@@ -62,7 +62,7 @@ class RawZDSConfigParser(RCP):
                 es = "Unsupported type for 'filename': [%s]"
                 raise ValueError(es % (type(filename)))
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def set_file(self, filename):
         """Sets the location of the configuration file.
 
@@ -77,24 +77,24 @@ class RawZDSConfigParser(RCP):
             raise ValueError("Config File [%s] not found" % (filename))
         self.filename = f
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def defaults(self):
         return dict(RCP.defaults(self).items())
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def sections(self):
         return [x for x in self._section_list]
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def add_section(self, section):
         RCP.add_section(self, section)
         self._section_list.append(section)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def has_section(self, section):
         return section in self._section_list
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def options(self, section):
         return RCP.options(self, section)
 
@@ -104,7 +104,7 @@ class RawZDSConfigParser(RCP):
     def readfp(self, fp, filename=None):
         raise Exception("Don't use this method")
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get(self, section, option, default=None):
         opt = self.optionxform(option)
         if section in self._sections:
@@ -125,27 +125,27 @@ class RawZDSConfigParser(RCP):
         else:
             raise NoOptionError(section, option)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def items(self, section):
         return RCP.items(self, section)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def _get(self, section, conv, option, default=None):
         return conv(self.get(section, option, default, acquire_lock=False))
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getint(self, section, option, default=None):
         return self._get(section, int, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getfloat(self, section, option, default=None):
         return self._get(section, float, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getdecimal(self, section, option, default=None):
         return self._get(section, Decimal, option, default, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getlist(self, section, option, default=None, parse_func=None):
         if not parse_func:
             parse_func = lambda x: [y.strip() for y in x.split(',')]
@@ -170,7 +170,7 @@ class RawZDSConfigParser(RCP):
                   'no way', 'no way jose', 'not a chance', 'definitely not'):
         _boolean_states[state] = False
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getboolean(self, section, option, default=None):
         v = self.get(section, option, default, acquire_lock=False)
         lv = v.lower()
@@ -178,20 +178,20 @@ class RawZDSConfigParser(RCP):
             raise ValueError("Not a boolean: %s" % (v))
         return self._boolean_states[lv]
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def getpath(self, section, option, default=None):
         return self._get(section, resolve_path, option, default,
                          acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def has_option(self, section, option):
         return RCP.has_option(self, section, option)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def set(self, section, option, value):
         RCP.set(self, section, option, value)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def write(self, fp):
         if self._defaults:
             fp.write("[%s]\n" % DEFAULTSECT)
@@ -207,32 +207,32 @@ class RawZDSConfigParser(RCP):
                              (key, str(value).replace('\n', '\n\t')))
             fp.write("\n")
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def remove_option(self, section, option):
         return RCP.remove_option(self, section, option)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def remove_section(self, section):
         if RCP.remove_section(self, section):
             self._section_list.remove(section)
             return True
         return False
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def clear(self):
         """Removes all sections, including the DEFAULT section."""
         sections = self.sections(acquire_lock=False) + [DEFAULTSECT]
         for s in sections:
             self.remove_section(s, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def load(self):
         """Loads the data from the configuration file."""
         if self.dummy:
             raise Exception("Can't load() a dummy configparser")
         self._read(open(self.filename), self.filename)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def loadfp(self, fobj):
         """Loads configuration data from a file object.
         
@@ -255,13 +255,13 @@ class RawZDSConfigParser(RCP):
             filename = self.filename
         self._read(fobj, filename)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def reload(self):
         """Reloads configuration data from the configuration file."""
         self.clear(acquire_lock=False)
         self.load(acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def reloadfp(self, fobj):
         """Reloads configuration data from a file object.
 
@@ -275,7 +275,7 @@ class RawZDSConfigParser(RCP):
         self.clear(acquire_lock=False)
         self.loadfp(fobj, acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def save(self):
         """Writes configuration data to the configuration file."""
         fobj = open(self.filename, 'w')
@@ -285,7 +285,7 @@ class RawZDSConfigParser(RCP):
         finally:
             fobj.close()
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_if_valid(self, section, option):
         try:
             val = self.get(section, option, acquire_lock=False)
@@ -294,7 +294,7 @@ class RawZDSConfigParser(RCP):
         except NoOptionError:
             return None
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_if_true(self, section, option):
         try:
             return self.getboolean(section, option, acquire_lock=False)
@@ -392,12 +392,12 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
         SCP.__init__(self)
         RawZDSConfigParser.__init__(self, filename)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get_raw(self, section, option, default=None):
-        RawZDSConfigParser.get(self, section, option, default,
-                               acquire_lock=False)
+        return RawZDSConfigParser.get(self, section, option, default,
+                                      acquire_lock=False)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def get(self, section, option, default=None, raw=False, vars=None):
         ###
         # Get the option value to be interpolated.
@@ -431,11 +431,11 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
         ###
         return self._interpolate(section, option, rawval, d)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def items(self, section, raw=False, vars=None):
         return SCP.items(self, section, raw, vars)
 
-    @requires_lock(self.lock)
+    @requires_instance_lock()
     def set(self, section, option, value):
         return SCP.set(self, section, option, value)
 

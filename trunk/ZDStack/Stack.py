@@ -14,7 +14,7 @@ from collections import deque
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
                     get_configfile, get_configparser, get_zdslog
-from ZDStack.Utils import get_event_from_line
+from ZDStack.Utils import get_event_from_line, requires_instance_lock
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
@@ -149,37 +149,39 @@ class Stack(Server):
                 self.loglink_check_timer = t
                 self.loglink_check_timer.start()
 
-    @requires_lock(self.szn_lock)
     def spawn_zservs(self):
         """Spawns zservs, respawning if they've crashed."""
         now = datetime.now()
         try:
             for zserv in self.zservs.values():
                 try:
-                    if zserv.name in self.stopped_zserv_names or \
-                       zserv.is_running():
-                        ###
-                        # The zserv is supposed to be stopped, or the zserv is
-                        # already running, in either case we skip it.
-                        ###
-                        continue
+                    with self.szn_lock:
+                        if zserv.name in self.stopped_zserv_names or \
+                           zserv.is_running():
+                            ###
+                            # The zserv is supposed to be stopped, or the zserv
+                            # is already running, in either case we skip it.
+                            ###
+                            continue
                     ###
                     # This timer runs every 500ms.  So if the zserv has 2
                     # restarts in the last 4 seconds, stop trying to start it.
                     ###
                     if len(zserv.restarts) > 1:
-                        second_most_recent_restart = zserv.restarts[-2]
-                        diff = now - second_most_recent_restart
-                        if diff <= timedelta(seconds=4):
-                            es = "ZServ %s respawning too fast, stopping"
-                            zdslog.error(es % (zserv.name))
-                            self.stopped_zserv_names.add(zserv.name)
-                            continue
-                        else:
-                            ###
-                            # Don't want the restart list growing infinitely.
-                            ###
-                            zserv.restarts = zserv.restarts[-2:]
+                        with self.szn_lock:
+                            second_most_recent_restart = zserv.restarts[-2]
+                            diff = now - second_most_recent_restart
+                            if diff <= timedelta(seconds=4):
+                                es = "ZServ %s respawning too fast, stopping"
+                                zdslog.error(es % (zserv.name))
+                                self.stopped_zserv_names.add(zserv.name)
+                                continue
+                            else:
+                                ###
+                                # Don't want the restart list growing
+                                # infinitely.
+                                ###
+                                zserv.restarts = zserv.restarts[-2:]
                     zserv.start()
                 except Exception, e:
                     es = "Received error while checking [%s]: [%s]"
@@ -420,7 +422,6 @@ class Stack(Server):
         if reload:
             self.load_zservs()
 
-    @requires_lock(self.szn_lock)
     def start_zserv(self, zserv_name):
         """Starts a ZServ.
 
@@ -433,17 +434,17 @@ class Stack(Server):
             raise ZServNotFoundError(zserv_name)
         if self.zservs[zserv_name].is_running():
             raise Exception("ZServ [%s] is already running" % (zserv_name))
-        self.zservs[zserv_name].start()
-        try:
-            self.stopped_zserv_names.remove(zserv_name)
-        except KeyError:
-            ###
-            # zserv_name wasn't in self.stopped_zserv_names.
-            ###
-            pass
+        with self.szn_lock:
+            self.zservs[zserv_name].start()
+            try:
+                self.stopped_zserv_names.remove(zserv_name)
+            except KeyError:
+                ###
+                # zserv_name wasn't in self.stopped_zserv_names.
+                ###
+                pass
         zdslog.debug("Done starting %s" % (zserv_name))
 
-    @requires_lock(self.szn_lock)
     def stop_zserv(self, zserv_name):
         """Stops a ZServ.
 
@@ -456,8 +457,9 @@ class Stack(Server):
             raise ZServNotFoundError(zserv_name)
         if not self.zservs[zserv_name].is_running():
             raise Exception("ZServ [%s] is not running" % (zserv_name))
-        self.zservs[zserv_name].stop()
-        self.stopped_zserv_names.add(zserv_name)
+        with self.szn_lock:
+            self.zservs[zserv_name].stop()
+            self.stopped_zserv_names.add(zserv_name)
         zdslog.debug("Done stopping %s" % (zserv_name))
 
     def restart_zserv(self, zserv_name):
