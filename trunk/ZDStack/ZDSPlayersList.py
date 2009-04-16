@@ -152,14 +152,19 @@ class PlayersList(object):
             ###
             # Didn't find the player, sync & try again.
             ###
+            zdslog.debug("Player not found, re-syncing")
             self.sync(acquire_lock=False)
             p = find_player()
-        if p is None:
-            ###
-            # Freak out
-            ###
-            raise PlayerNotFoundError(name, ip_address_and_port)
-        return p
+        if p:
+            return p
+        ###
+        # Freak out.
+        ###
+        if sync:
+            zdslog.debug("Player still not found, erroring")
+        else:
+            zdslog.debug("Player not found, erroring")
+        raise PlayerNotFoundError(name, ip_address_and_port)
 
     @requires_instance_lock()
     def sync(self, zplayers=None, sleep=None):
@@ -185,105 +190,54 @@ class PlayersList(object):
                 time.sleep(sleep)
             zdslog.debug("Manually populating zplayers")
             zplayers = self.zserv.zplayers()
+        pl = [x for x in self if not x.disconnected]
+        dpl = [x for x in self if x.disconnected]
         zdslog.debug("Sync: zplayers: (%s)" % (zplayers))
-        players_list = list()
-        disconnected_players_list = list()
-        zplayers_list = list()
-        zplayers_list_plus_numbers = list()
-        players_list = []
-        # for d in [x for x in zplayers if x['player_name']]:
-        for d in zplayers:
-            z_full = (d['player_name'], d['player_ip'], d['player_port'])
-            z_full_plus_number = (d['player_num'],) + z_full
-            zplayers_list.append(z_full)
-            zplayers_list_plus_numbers.append(z_full_plus_number)
-        zdslog.debug("Sync: Players List: (%s)" % (players_list))
-        zdslog.debug("Sync: Disconnected List: (%s)" % (disconnected_players_list))
-        zdslog.debug("Sync: ZPlayers List: (%s)" % (zplayers_list))
-        zdslog.debug("Checking for players to update")
-        for p_name, p_ip, p_port in players_list:
-            if p_name:
-                ###
-                # If the player has a name, then it doesn't need updating
-                ###
-                return
-            for z_name, z_ip, z_port in zplayers_list:
-                if (p_ip == z_ip) and (p_port == z_port):
-                    ###
-                    # This player matches and can be updated with a name.
-                    ###
-                    if z_name:
-                        ds = "Found name for %s:%s: %s"
-                        zdslog.debug(ds % (z_ip, z_port, z_name))
-                        try:
-                            p = self.get(ip_address_and_port=(p_ip, p_port),
-                                         sync=False, acquire_lock=False)
-                            p.set_name(z_name)
-                            break
-                        except PlayerNotFoundError:
-                            ds = "Player %s:%s disconnected before their name "
-                            es += "could be updated"
-                            zdslog.error(ds % (p_ip, p_port))
-                    else:
-                        ds = "Can't update %s:%s, no name yet"
-                        zdslog.debug(ds % (z_ip, z_port))
-        zdslog.debug("Checking for players to add")
-        for z_full in zplayers_list:
-            if z_full not in players_list or \
-               z_full in disconnected_players_list:
-                ###
-                # found a missing or reconnected player
-                ###
-                player = Player(self.zserv, z_full[1], z_full[2], z_full[0])
-                zdslog.debug("Adding new player [%s]" % (player.name))
-                self.add(player, acquire_lock=False)
-                zdslog.debug("Added new player [%s]" % (player.name))
+        zdslog.debug("Sync: Players List: (%s)" % (pl))
+        zdslog.debug("Sync: Disconnected List: (%s)" % (dpl))
         ###
-        # Re-create the players & disconnected_players lists, so we don't
-        # do something dumb.
+        # - Check for players to update (reconnected)
+        # - Check for players to remove (disconnected)
+        # - Check for players to add    (connected)
         ###
-        players_list = list()
-        disconnected_players_list = list()
-        for x in self:
-            z_full = (x.name, x.ip, x.port)
-            players_list.append(z_full)
-            if x.disconnected:
-                disconnected_players_list.append(z_full)
-        zdslog.debug("Checking for players to remove")
-        for p_full in players_list:
-            if p_full not in zplayers_list:
-                player = self.get(name=p_full[0],
-                                  ip_address_and_port=p_full[1:],
-                                  acquire_lock=False)
-                if not player.disconnected:
-                    zdslog.debug("Disconnecting player [%s]" % (p_full[0]))
-                    self.remove(player, acquire_lock=False)
-                else:
+        for p in self:
+            current_status = 'disconnected'
+            current_match = None
+            current_port = p.port
+            for d in z_players:
+                if not p.ip == d['player_ip'] or \
+                   not player.name == d['player_name']:
                     ###
-                    # Player is disconnected, but is also in the zplayers list?
+                    # Players do not match.
                     ###
-                    zdslog.debug("Found a ghost player [%s]" % (p_full[0]))
-        zdslog.debug("Checking for misaligned numbers")
-        for z_full_num in zplayers_list_plus_numbers:
-            for p in self:
-                zdslog.debug("Checking %s" % (p))
-                if p.name.endswith('s'):
-                    ps = "%s'"
+                    continue
+                current_match = d
+                if player.port == d['player_port']:
+                    current_status = 'connected'
                 else:
-                    ps = "%s's"
-                x = (p.name, p.ip, p.port)
-                if x == z_full_num[1:]:
-                    if p.number != z_full_num[0]:
-                        es = "Set %s number to %%s" % (ps)
-                        es = es % (p.name, z_full_num[0])
-                        p.number = z_full_num[0]
-                    else:
-                        es = "%s number was aligned properly" % (ps)
-                        es = es % (p.name)
-                else:
-                    es = "%s and %s don't match" % (str(x),
-                                                    str(z_full_num[1:]))
-                zdslog.debug(es)
+                    current_status = 'reconnected'
+            if current_status == 'disconnected':
+                player.disconnected = True
+            else:
+                player.disconnected = False
+                if player.number != current_match['number']:
+                    player.number = current_match['number']
+                if current_status == 'reconnected':
+                    player.port = current_match['player_port']
+        for d in z_players:
+            addr = (d['player_ip'], d['player_port'])
+            try:
+                p = self.get(name=d['player_name'], ip_address_and_port=addr,
+                             sync=False, acquire_lock=False)
+            except PlayerNotFoundError:
+                ###
+                # Found a new player!
+                ###
+                p = Player(self.zserv, d['player_ip'], d['player_port'],
+                           d['player_name'] or None,
+                           d['player_number'])
+                zdslog.debug("Adding new player [%s]" % (p.name))
+                self.__players.append(player)
         zdslog.debug("Sync: done")
 
     def names(self):

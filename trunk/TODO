@@ -1,4 +1,6 @@
 0.11
+  - Actually, just get ZDSWeb to use the server's conf file.  Using anything
+    else is just dumb
   - Setting the IP for zserv advertising doesn't change the 'zds://' links in
     ZDSWeb
   - You can probably add some sections when you Set Config in ZDSWeb, Stack
@@ -17,4 +19,5 @@
     config options) accordingly
   - Maybe implement some kind of config file logic that strips '_' characters
     out of option names; trying to remember it for every option is aggravating
+  - Skulltag & Odamex support (investigate at least)
 
