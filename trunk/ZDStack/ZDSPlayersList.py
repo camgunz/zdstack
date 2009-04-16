@@ -308,7 +308,11 @@ class PlayersList(object):
 
         """
         names = self.names()
+        if isinstance(possible_player_names, basestring):
+            possible_player_names = [possible_player_names]
         for pn in possible_player_names:
             if pn in names:
-                return self.get(name=name, sync=False, acquire_lock=False)
+                return self.get(name=pn, sync=False, acquire_lock=False)
+        zdslog.debug("Names: [%s]" % (names))
+        zdslog.debug("PPN: [%s]" % (possible_player_names))
 

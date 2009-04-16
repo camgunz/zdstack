@@ -281,7 +281,13 @@ class Stack(Server):
                     zdslog.debug("Converting message event")
                     ppn = event.data['possible_player_names']
                     c = event.data['contents'] 
-                    player = zserv.distill_player(ppn)
+                    ###
+                    # Let's try and avoid this for now.
+                    #
+                    # player = zserv.distill_player(ppn)
+                    #
+                    ###
+                    player = zserv.players.get_first_matching_player(ppn)
                     if not player:
                         s = "Received a message from a non-existent player"
                         zdslog.error(s)

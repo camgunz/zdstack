@@ -39,6 +39,37 @@ OLD_SERVER_TIMESTAMP_PREFIX = r"(" + OLD_TIMESTAMP_PREFIX + r" >\s|" + SERVER_PR
 TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
 SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r">\s|" + SERVER_PREFIX + r")"
 
+__SR = re.compile(r'(<.*?>\s)')
+__SB = re.compile(r'(<.*>\s)')
+__SD = '> '
+__ST = re.compile(TIMESTAMP_PREFIX)
+
+def get_possible_player_names(s):
+    ###
+    # First lop off the timestamp if it matches
+    ###
+    ppn = list()
+    m = __ST.match(s)
+    if m:
+        ws = s[m.end():]
+    else:
+        ws = s
+    sm = __SR.match(ws)
+    bm = __SB.match(ws)
+    if not sm and not bm:
+        return ppn
+    sm = sm.group(1)
+    bm = bm.group(1)
+    diff = bm.replace(sm, '')
+    if not __SD in diff:
+        return sm[1:-2]
+    for token in diff.split(__SD)[:-1]:
+        if not ppn:
+            ppn.append(token)
+        else:
+            ppn.append(sm + __SD.join([ppn[-1], token]))
+    return [sm[1:] + x for x in [''] + ppn]
+
 class Regexp(object):
 
     def __init__(self, regexp, category, event_type, prefix=None):
@@ -91,18 +122,22 @@ class Regexp(object):
         if d:
             # zdslog.debug("Returning a %s event" % (self.event_type))
             return LogEvent(now, self.event_type, d, self.category, s)
-        if s.startswith('<') and '>' in s:
-            ###
-            # At this point, the string is probably a message.
-            ###
-            tokens = s.split('>')
-            possible_player_names =  [tokens[0][1:]]
-            for x in range(1, len(tokens)):
-                possible_player_names.append('>'.join(tokens[:x])[1:])
-            d = {'contents': s,
-                 'possible_player_names': possible_player_names}
-            zdslog.debug("Returning a message event")
+        ppn = get_possible_player_names(s)
+        if ppn:
+            d = {'contents': s, 'possible_player_names': ppn}
             return LogEvent(now, 'message', d, 'message', s)
+        ###
+        # if (s.startswith('<') or (len(s) >= 20 and s[20] == '<')) and '>' in s:
+        #     ###
+        #     # At this point, the string is probably a message.
+        #     ###
+        #     tokens = s.split('>')
+        #     possible_player_names =  [tokens[0][1:]]
+        #     for x in range(1, len(tokens)):
+        #         possible_player_names.append('>'.join(tokens[:x])[1:])
+        #     zdslog.debug("Returning a message event")
+        #     return LogEvent(now, 'message', d, 'message', s)
+        ###
 
 class ServerRegexp(Regexp):
 
@@ -158,9 +193,9 @@ COMMANDS = (
 )
 
 RCONS = (
-(r"RCON for (?P<player>.*) is denied!$", 'rcon_denied', True),
-(r"RCON for (?P<player>.*) is granted!$", 'rcon_granted', True),
-(r"(?P<player>.*) RCON \((?P<action>.*) \)$", 'rcon_action', True)
+(r"RCON for (?P<player>.*) is denied!$", 'rcon_denied', False),
+(r"RCON for (?P<player>.*) is granted!$", 'rcon_granted', False),
+(r"(?P<player>.*) RCON \((?P<action>.*) \)$", 'rcon_action', False)
 )
 
 FRAGS = (

@@ -2,6 +2,8 @@ from ZDStack import get_zdslog
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
 from ZDStack.ZDSDatabase import get_alias
 
+zdslog = get_zdslog()
+
 class Player(object):
 
     def __init__(self, zserv, ip_address, port, name=None, number=None):
@@ -16,7 +18,7 @@ class Player(object):
                     player
 
         """
-        get_zdslog().debug('name: [%s]' % (name))
+        zdslog.debug('name: [%s]' % (name))
         self.zserv = zserv
         self.ip = ip_address
         self.port = port
@@ -24,7 +26,6 @@ class Player(object):
         self.name = ''
         self.tag = None
         self.player_name = ''
-        self.alias = None
         if name:
             self.set_name(name)
         self.playing = False
@@ -36,6 +37,7 @@ class Player(object):
         name: a string representing the new name of this player
 
         """
+        zdslog.debug("setting name to [%s]" % (name))
         if self.name == name or not name:
             ###
             # Why go through all this work if name is None... or there's been
@@ -44,9 +46,17 @@ class Player(object):
             return
         self.name = name
         self.tag, self.player_name = parse_player_name(self.name)
-        self.alias = get_alias(name=self.name, ip_address=self.ip)
-        # if self.alias not in self.zserv.round.players:
-        #     self.zserv.round.players.append(self.alias)
+
+    def get_alias(self, session=None):
+        """Returns an alias representing this player.
+        
+        session: a session instance, if none is given, the global
+                 session will be used.
+        
+        """
+        zdslog.debug("Getting Alias for %s, %s" % (self.name, self.ip))
+        return get_alias(name=self.name, ip_address=self.ip,
+                         round=self.zserv.round, session=session)
 
     def __ne__(self, x):
         try:

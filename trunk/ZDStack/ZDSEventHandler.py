@@ -5,7 +5,7 @@ import datetime
 from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
 from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
                               RCONAccess, RCONDenial, RCONAction
-from ZDStack.ZDSDatabase import get_weapon, global_session, persist
+from ZDStack.ZDSDatabase import get_weapon, get_alias, global_session, persist
 
 from sqlalchemy import desc
 from sqlalchemy.orm.exc import NoResultFound
@@ -185,14 +185,16 @@ class ZServEventHandler(BaseEventHandler):
             zdslog.error(es % (event.data['player']))
             return
         with global_session() as session:
+            alias = get_alias(player.name, player.ip, round=zserv.round,
+                              session=session)
             if event.type == 'rcon_denied':
-                s = RCONDenial(player=player.alias, round=zserv.round,
+                s = RCONDenial(player=alias, round=zserv.round,
                                timestamp=event.dt)
             elif event.type == 'rcon_granted':
-                s = RCONAccess(player=player.alias, round=zserv.round,
+                s = RCONAccess(player=alias, round=zserv.round,
                                timestamp=event.dt)
             elif event.type == 'rcon_action':
-                s = RCONAction(player=player.alias, round=zserv.round,
+                s = RCONAction(player=alias, round=zserv.round,
                                timestamp=event.dt, action=event.data['action'])
             persist(s, session=session)
 
@@ -245,7 +247,9 @@ class ZServEventHandler(BaseEventHandler):
                 s = "Teams holding flags: %s"
                 zdslog.debug(s % (str(zserv.teams_holding_flags)))
                 with global_session() as session:
-                    s = FlagTouch(player=player.alias, round=zserv.round,
+                    alias = get_alias(player.name, player.ip,
+                                      round=zserv.round, session=session)
+                    s = FlagTouch(player=alias, round=zserv.round,
                                   touch_time=event.dt,
                                   was_picked=event.type=='flag_pick',
                                   player_team_color=tc,
@@ -293,7 +297,9 @@ class ZServEventHandler(BaseEventHandler):
                 green_score = zserv.team_scores.get('green', None)
                 white_score = zserv.team_scores.get('white', None)
                 with global_session() as session:
-                    s = FlagReturn(player=player.alias, round=zserv.round,
+                    alias = get_alias(player.name, player.ip,
+                                      round=zserv.round, session=session)
+                    s = FlagReturn(player=alias, round=zserv.round,
                                    timestamp=event.dt,
                                    player_was_holding_flag=player_holding_flag,
                                    player_team_color=tc,
@@ -375,7 +381,15 @@ class ZServEventHandler(BaseEventHandler):
             green_score = zserv.team_scores.get('green', None)
             white_score = zserv.team_scores.get('white', None)
             with global_session() as session:
-                s = Frag(fragger=fragger.alias, fraggee=fraggee.alias,
+                fraggee_alias = get_alias(fraggee.name, fraggee.ip,
+                                          round=zserv.round, session=session)
+                if fraggee == fragger:
+                    fragger_alias = fraggee_alias
+                else:
+                    fragger_alias = get_alias(fragger.name, fragger.ip,
+                                              round=zserv.round,
+                                              session=session)
+                s = Frag(fragger=fragger_alias, fraggee=fraggee_alias,
                          weapon=weapon, round=zserv.round, timestamp=event.dt,
                          fragger_was_holding_flag=fragger_was_holding_flag,
                          fraggee_was_holding_flag=fraggee_was_holding_flag,

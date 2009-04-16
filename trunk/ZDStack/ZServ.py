@@ -14,7 +14,7 @@ from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, get_zdslog
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
-                                persist, global_session
+                                get_alias, persist, global_session
 from ZDStack.ZDSDummyMap import DummyMap
 from ZDStack.ZDSTeamsList import TeamsList
 from ZDStack.ZDSPlayersList import PlayersList
@@ -117,19 +117,21 @@ class ZServ(object):
             with global_session() as session:
                 s = "Adding %s to %s"
                 for player in self.players:
-                    if player.alias:
-                        ###
-                        # I guess it's possible for a player not to have an
-                        # alias... somehow.
-                        ###
-                        if player.alias not in self.round.players:
-                            zdslog.debug(s % (player.alias, self.round))
-                            self.round.players.append(player.alias)
-                        if self.round not in player.alias.rounds:
-                            zdslog.debug(s % (self.round, player.alias))
-                            player.alias.rounds.append(self.round)
-                        zdslog.debug("Updating %s" % (player.alias))
-                        persist(player.alias, update=True, session=session)
+                    alias = get_alias(player.name, player.ip, round=self.round,
+                                      session=session)
+                    if self.round not in alias.rounds:
+                        zdslog.debug(s % (self.round, alias))
+                        alias.rounds.append(self.round)
+                ###
+                #     if alias not in self.round.players:
+                #         zdslog.debug(s % (alias, self.round))
+                #         self.round.players.append(alias)
+                #     if self.round not in alias.rounds:
+                #         zdslog.debug(s % (self.round, alias))
+                #         alias.rounds.append(self.round)
+                #         zdslog.debug("Updating %s" % (alias))
+                #         # persist(alias, update=True, session=session)
+                ###
                 zdslog.debug("Updating %s" % (self.round))
                 persist(self.round, update=True, session=session)
                 for flag_touch in self.round.flag_touches:
@@ -181,6 +183,11 @@ class ZServ(object):
         self.clean_up()
         self.map = get_map(number=map_number, name=map_name)
         self.round = get_round(self.game_mode, self.map)
+        ###
+        # Because there are no player reconnections at the beginning of rounds
+        # in 1.08.08, we need to manually do a sync() here.
+        ###
+        self.players.sync()
 
     def reload_config(self):
         """Reloads the config for the ZServ.

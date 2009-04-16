@@ -105,12 +105,12 @@ def persist(model, update=False, session=None):
     """
     if update:
         def blah(s):
-            # zdslog.debug("Merging: [%s]" % (model))
+            zdslog.debug("Merging: [%s]" % (model))
             s.merge(model)
             return model
     else:
         def blah(s):
-            # zdslog.debug("Adding: [%s]" % (model))
+            zdslog.debug("Adding: [%s]" % (model))
             s.add(model)
             return model
     if session:
@@ -129,7 +129,7 @@ def persist(model, update=False, session=None):
 
 def requires_session(func):
     zdslog.debug("Wrapping %s" % (func.__name__))
-    def wrapped_func(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         # zdslog.debug("Running %s, %s, %s" % (func.__name__, str(args),
         #                                       str(kwargs)))
         if kwargs.get('session', None):
@@ -139,7 +139,10 @@ def requires_session(func):
                 # zdslog.debug("Using session [%s]" % (session))
                 kwargs['session'] = session
                 return func(*args, **kwargs)
-    return wrapped_func
+    wrapper.__name__ = func.__name__
+    wrapper.__dict__ = func.__dict__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
 
 ###
 # What follows is ridiculous, and I can't imagine this is what you are
@@ -185,7 +188,10 @@ def get_alias(name, ip_address, session, round=None):
     out = q.first()
     if out:
         return out
-    return persist(Alias(name=name, ip_address=ip_address), session=session)
+    alias = Alias(name=name, ip_address=ip_address)
+    if round and not round in alias.rounds:
+        alias.rounds.append(round)
+    return persist(alias, session=session)
 
 @requires_session
 def get_team_color(color, session):
