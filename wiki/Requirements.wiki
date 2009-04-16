@@ -46,7 +46,7 @@ than it is to spec a machine capable of running it.  Note, however, this is only
 
 == Memory Usage ==
 
-ZDStack should never use more than 30MB of RAM.  In fact it shouldn't even get close to that unless it's using an in-memory database -- in which case its memory usage can be unlimited if statistics are enabled.  On average it should only use between 11MB and 15MB.
+ZDStack should never use more than 40MB of RAM.  In fact it shouldn't even get close to that unless it's using an in-memory database -- in which case its memory usage can be unlimited if statistics are enabled.  On average it should only use between 15MB and 30MB.
 
 Running ZDSWeb as a standalone webserver will consume an additional 8MB-10MB of RAM.
 
