@@ -11,7 +11,7 @@ In order to run, ZDStack requires the following:
 
   * zserv ([http://www.zdaemon.org])
     * zserv requires a file called an IWAD.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.).  The awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
-  * Python 2.5 or greater ([http://www.python.org])
+  * Python 2.5 or greater ([http://www.python.org]) -- note: Python 3.0 or greater will not work
   * pyfileutils 0.8.4 or greater ([http://pyfileutils.googlecode.com])
   * SQLAlchemy 0.5 or greater ([http://www.sqlalchemy.org])
 
