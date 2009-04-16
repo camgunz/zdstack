@@ -204,7 +204,7 @@ class PlayersList(object):
             current_status = 'disconnected'
             current_match = None
             current_port = p.port
-            for d in z_players:
+            for d in zplayers:
                 if not p.ip == d['player_ip'] or \
                    not player.name == d['player_name']:
                     ###
@@ -224,7 +224,7 @@ class PlayersList(object):
                     player.number = current_match['number']
                 if current_status == 'reconnected':
                     player.port = current_match['player_port']
-        for d in z_players:
+        for d in zplayers:
             addr = (d['player_ip'], d['player_port'])
             try:
                 p = self.get(name=d['player_name'], ip_address_and_port=addr,

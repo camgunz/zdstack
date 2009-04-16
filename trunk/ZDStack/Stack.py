@@ -209,14 +209,15 @@ class Stack(Server):
         # if readable:
         #     zdslog.debug("Readable: %s" % (str(readable)))
         for zserv, fd in readable:
-            # zdslog.debug("Reading data from [%s]" % (zserv.name))
             while 1:
+                # zdslog.debug("Reading data from [%s]" % (zserv.name))
                 try:
                     ###
                     # I guess 1024 bytes should be a big enough chunk.
                     ###
                     data = os.read(fd, 1024)
                     if data:
+                        # zdslog.debug("Got %d bytes" % (len(data)))
                         lines = data.splitlines()
                         if zserv._fragment:
                             lines[0] = zserv._fragment + lines[0]
@@ -232,6 +233,7 @@ class Stack(Server):
                         # Non-blocking FDs should raise exceptions instead of
                         # returning nothing, but just for the hell of it.
                         ###
+                        # zdslog.debug("No data")
                         break
                 except OSError, e:
                     if e.errno == 11:
@@ -239,11 +241,13 @@ class Stack(Server):
                         # Error code 11: FD would have blocked... meaning
                         # we're at the end of the data stream.
                         ###
+                        # zdslog.debug("FD would have blocked")
                         break
                     else:
                         ###
                         # We want other stuff to bubble up.
                         ###
+                        # zdslog.debug("Raising exception")
                         raise
 
     def parse_zserv_output(self, zserv, dt, lines):
@@ -537,12 +541,43 @@ class Stack(Server):
 
         zserv: a ZServ instance for which info is to be returned.
 
+        The returned dict is formatted as follows:
+
+          {'name': <string: internal name of ZServ>,
+           'hostname': <string: hostname of ZServ>,
+           'mode': <string: Game mode of ZServ>,
+           'wads': <strings: list of ZServ's WADs>,
+           'optional_wads': <strings: list of ZServ's optional WADs>,
+           'ip': <string: the ZServ's IP address>,
+           'port': <int: ZServ's port>,
+           'players': <int: number of connected players>,
+           'max_players': <int: maximum number of connected players>,
+           'map_name': <string: name of the current map>,
+           'map_number': <int: number of the current map>,
+           'is_running': <boolean: whether ZServ is currently running>}
+
         """
         players = len([x for x in zserv.players if not x.disconnected])
-        map_name, map_number = (zserv.map.name, zserv.map.number)
-        running = zserv.is_running()
-        return {'name': zserv.name, 'players': players, 'map_name': map_name,
-                'map_number': map_number, 'is_running': running}
+        if hasattr(zserv, 'ip'):
+            ip_address = zserv.ip
+        else:
+            ip_address = self.hostname
+        if hasattr(zserv, 'max_players'):
+            max_players = zserv.max_players
+        else:
+            max_players = 16
+        return {'name': zserv.name,
+                'hostname': zserv.hostname,
+                'mode': zserv.raw_game_mode,
+                'wads': zserv.wads,
+                'optional_wads': zserv.optional_wads,
+                'ip': ip_address,
+                'port': zserv.port,
+                'players': players,
+                'max_players': max_players,
+                'map_name': zserv.map.name,
+                'map_number': zserv.map.number,
+                'is_running': zserv.is_running()}
 
     def get_zserv_info(self, zserv_name):
         """Returns a dict of zserv info.
@@ -550,13 +585,7 @@ class Stack(Server):
         zserv_name: a string representing the name of the ZServ for
                     which info is to be returned.
 
-        The returned dict is formatted as follows:
-
-        {'name': <internal name of zserv instance as string>,
-         'players': <current number of players as int>,
-         'map_name': <current name of map as string>,
-         'map_number': <current number of map as int>,
-         'is_running': <boolean whether or not ZServ is running>}
+        See _get_zserv_info() for more information.
 
         """
         zserv = self.get_zserv(zserv_name)
@@ -565,7 +594,7 @@ class Stack(Server):
     def get_all_zserv_info(self):
         """Returns a list of zserv info dicts.
 
-        See get_zserv_info() for more information.
+        See _get_zserv_info() for more information.
 
         """
         return [self._get_zserv_info(x) for x in self.zservs.values()]
@@ -577,8 +606,22 @@ class Stack(Server):
                generate.
         items: a list of option, value pairs (strings).
 
+        This strips out the global and game-mode specific options.
+
         """
-        return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in items])
+        new_items = []
+        for option, value in items:
+            if not option.startswith('zdstack') and \
+               not option.startswith('zdsweb') and \
+               not option.startswith('ctf') and \
+               not option.startswith('ffa') and \
+               not option.startswith('teamdm') and \
+               not option.startswith('coop') and \
+               not option.startswith('duel') and \
+               not option == 'root_folder':
+                new_items.append((option, value))
+        new_items.sort()
+        return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in new_items])
 
     def get_zserv_config(self, zserv_name):
         """Returns a ZServ's configuration as a string.

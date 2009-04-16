@@ -13,25 +13,37 @@ def print_usage(msg=None):
         print >> sys.stderr, "\nError: %s" % (msg)
     print >> sys.stderr, """\nzdrpc\n
 Usage:
-    zdrpc -m [ rpc_method_name ] -a [ args ] -c [ config_file ]
+    zdrpc -m [ rpc_method_name ] -a [ args ] -c [ config_file ] [ -e ]
 
-    args are separated by commas, for example:
+    args are separated by semicolons, for example:
 
         zdrpc -m get_config -a "Great CTF"
-        zdrpc -m addban -a "Great CTF,12.226.97.20,rofl"
+        zdrpc -m addban -a "Great CTF;12.226.97.20;rofl"
+
+    If the '-e' flag is used, the raw event dict are printed, not just
+    the lines the events were made from.
+
 """
     sys.exit(-1)
 
-def handle_response(response):
+def handle_response(response, return_events):
     if isinstance(response, str):
         print response
     elif isinstance(response, list):
-        print '\n'.join([str(x) for x in response])
+        ###
+        # This would be a list of events.
+        ###
+        for x in response:
+            if return_events:
+                print str(x)
+            else:
+                print str(x['line'])
+        # print '\n'.join([str(x) for x in response])
     else:
         pprint.pprint(response) # actually prints
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'm:a:c:', [])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'm:a:c:e', [])
 except getopt.GetoptError, ge:
     print_usage(ge)
 if len(opts) not in (1, 2, 3):
@@ -55,7 +67,7 @@ call_string = opts['-m'] + "(" + function_kwarg_str + ")"
 print "Running %s" % (call_string)
 response = send_proxy_method(proxy, opts['-m'], *args)
 if response:
-    handle_response(response)
+    handle_response(response, '-e' in opts)
 else:
     print 'No response'
 

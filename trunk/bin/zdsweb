@@ -186,29 +186,16 @@ class ZDSInterface:
             zserv_info['map_name'] = \
                         zserv_info['map_name'][:MAX_MAP_NAME_LENGTH] + '...'
         zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
-        zserv_info['hostname'] = CP.get(zserv_name, 'hostname')
-        zserv_info['mode'] = CP.get(zserv_name, 'mode')
-        max_players = 16
-        try:
-            max_players = CP.getint(zserv_name, 'max_players')
-        except ConfigParser.NoOptionError:
-            try:
-                max_players = \
-                    CP.getint(zserv_name, zserv_info['mode'] + '_max_players')
-            except ConfigParser.NoOptionError:
-                pass
-        zserv_info['max_players'] = max_players
         optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
         wads = list()
-        stuff = sorted(_parse_list(CP.get(zserv_name, 'wads')))
+        stuff = sorted(zserv_info['wads'])
         for wad in stuff:
-            if wad not in optional_wads:
+            if wad not in zserv_info['optional_wads']:
                 wads.append(wad)
         for wad in stuff:
-            if wad in optional_wads:
+            if wad in zserv_info['optional_wads']:
                 wads.append(wad.join(['[', ']']))
         zserv_info['wads'] = ', '.join(wads)
-        zserv_info['port'] = CP.getint(zserv_name, 'port')
         return zserv_info
 
     def _get_all_zserv_dicts(self):
@@ -235,7 +222,7 @@ class ZDSInterface:
         return self.proxy.restart_all_zservs(USERNAME, PASSWORD)
 
     def get_zserv_names(self):
-        return CP.sections()
+        return self.proxy.list_zserv_names()
 
     def get_zserv(self, zserv_name):
         zserv_info = self._get_zserv_info(zserv_name)
@@ -251,7 +238,7 @@ class ZDSInterface:
         return [x for x in self.get_all_zservs() if not x['is_running']]
 
     def get_zserv_config(self, zserv_name):
-        return _items_to_section(zserv_name, RCP.items(zserv_name))
+        return self.proxy.get_zserv_config(USERNAME, PASSWORD, zserv_name)
 
     def set_zserv_config(self, zserv_name, d):
         return self.proxy.set_zserv_config(USERNAME, PASSWORD, zserv_name, d)
@@ -290,6 +277,7 @@ HEAD_TEMPLATE = """\
         thead { margin-top:1em; }
         tbody { margin-bottom: 1em; }
         tr.greybg, td.greybg { background-color: #353535; }
+        tr.blackbg, td.blackbg { background-color: black; }
         button {
             background-color: black;
             color: white;
@@ -453,11 +441,6 @@ CONTROL_TEMPLATE = """\
                              <button class="control" type="submit" name="action" value="%(action)s">%(cap_action)s</button>"""
 
 ###
-# port
-###
-JOIN_TEMPLATE = '<a href="zds://%s:%%(port)s">Join</a>' % (ZDS_HOSTNAME)
-
-###
 # name, players, max_players, mode, wads, map_name, map_number, port
 ###
 SERVER_TEMPLATE = """    <tr>
@@ -481,16 +464,16 @@ SERVER_TEMPLATE = """    <tr>
 ###
 # name, players, max_players, mode, wads, map_name, map_number, port
 ###
-SERVER_TEMPLATE_GREY = """    <tr class="greybg">
-                    <td class="nolinebreak left greybg">
+SERVER_TEMPLATE = """    <tr class="%%(color)sbg">
+                    <td class="nolinebreak left %%(color)sbg">
                         <a href="zds://%s:%%(port)s">%%(html_name)s</a>
                     </td>
-                    <td class="centered greybg">%%(players)s / %%(max_players)s</td>
-                    <td class="centered greybg">%%(mode)s</td>
-                    <td class="left greybg">%%(wads)s</td>
-                    <td class="nolinebreak left greybg">%%(map_name)s :: MAP%%(map_number)s</td>
-                    <td class="centered greybg">%%(port)s</td>
-                    <td class="centered greybg">
+                    <td class="centered %%(color)sbg">%%(players)s / %%(max_players)s</td>
+                    <td class="centered %%(color)sbg">%%(mode)s</td>
+                    <td class="left %%(color)sbg">%%(wads)s</td>
+                    <td class="nolinebreak left %%(color)sbg">%%(map_name)s :: MAP%%(map_number)s</td>
+                    <td class="centered %%(color)sbg">%%(port)s</td>
+                    <td class="centered %%(color)sbg">
                         <form name="%%(name)s" action="%s" method="POST"
                               enctype="application/x-www-form-urlencoded">
                             <input type="hidden" name="name" value="%%(name)s"/>
@@ -498,6 +481,25 @@ SERVER_TEMPLATE_GREY = """    <tr class="greybg">
                         </form>
                     </td>
                 </tr>""" % (ZDS_HOSTNAME, SCRIPT_NAME)
+
+###
+# name, players, max_players, mode, wads, map_name, map_number, port
+###
+STOPPED_SERVER_TEMPLATE = """    <tr class="%%(color)sbg">
+                    <td class="nolinebreak left %%(color)sbg">%%(html_name)s</td>
+                    <td class="centered %%(color)sbg">- / %%(max_players)s</td>
+                    <td class="centered %%(color)sbg">%%(mode)s</td>
+                    <td class="left %%(color)sbg">%%(wads)s</td>
+                    <td class="nolinebreak centered %%(color)sbg">::</td>
+                    <td class="centered %%(color)sbg">%%(port)s</td>
+                    <td class="centered %%(color)sbg">
+                        <form name="%%(name)s" action="%s" method="POST"
+                              enctype="application/x-www-form-urlencoded">
+                            <input type="hidden" name="name" value="%%(name)s"/>
+%%(controls)s
+                        </form>
+                    </td>
+                </tr>""" % (SCRIPT_NAME)
 
 NO_SERVERS_TEMPLATE = '<div class="centered">No Servers Configured</div>'
 
@@ -527,7 +529,6 @@ def _add_controls(zserv_dict):
     else:
         _add_control(controls, 'start', zserv_dict['name'])
     _add_control(controls, 'get_config', zserv_dict['name'])
-    # controls.append(JOIN_TEMPLATE % zserv_dict)
     zserv_dict['controls'] = '\n'.join(controls)
     return zserv_dict
 
@@ -630,12 +631,14 @@ class Page:
             raise Exception(traceback.format_exc()) # for debugging
             errors.append(str(e))
         if all_zservs:
-            server_template = SERVER_TEMPLATE
+            current_color = 'grey'
             for zserv_dict in all_zservs:
-                if server_template == SERVER_TEMPLATE:
-                    server_template = SERVER_TEMPLATE_GREY
-                elif server_template == SERVER_TEMPLATE_GREY:
+                if zserv_dict['is_running']:
                     server_template = SERVER_TEMPLATE
+                else:
+                    server_template = STOPPED_SERVER_TEMPLATE
+                zserv_dict['color'] = current_color
+                current_color = current_color is 'grey' and 'black' or 'grey'
                 servers.append(server_template % _add_controls(zserv_dict))
             content += SERVERS_TEMPLATE % {'servers': '\n'.join(servers)}
         else:

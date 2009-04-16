@@ -319,10 +319,6 @@ class ZServ(object):
                 #   - Then the zserv can be spawned.
                 ###
                 zdslog.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
-                ###
-                # TODO: put os.close(self.fifo) somewhere, so we don't leak
-                #       fd's like crazy.
-                ###
                 self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
                 self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
                                    stderr=STDOUT, bufsize=0, close_fds=True,
@@ -353,6 +349,9 @@ class ZServ(object):
                 es = "Caught exception while stopping: [%s]"
                 zdslog.error(es % (e))
                 error_stopping = es % (e)
+            os.close(self.fifo)
+            self.fifo = None
+            self.zserv = None
             self.clean_up()
             return error_stopping
         else:
