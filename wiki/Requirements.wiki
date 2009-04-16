@@ -67,11 +67,15 @@ ZDStack is very easy on CPU, using little or no CPU most of the time -- even dur
 Here's a top shot of a ZDStack instance running 1 zserv.  A new round has been started roughly 20 times (no stat events occurred in these rounds, however), statistics are enabled, and an in-memory database is being used.  The zserv itself is running the IDL2009 WAD.
 
 {{{
-  PID USER   PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-19519 devel  20   0  261m 113m  26m S    2 11.4   4:29.86 firefox
-25975 devel  20   0 42788  13m 1464 S    0  1.3   0:01.30 zserv
-25968 devel  20   0 81808  11m 2096 S    0  1.1   0:03.32 zdstack debug
- 6173 devel  20   0 12156 8344 1528 S    0  0.8   0:00.06 zdsweb -p 8080
+  PID USER  PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+19519 doom  20   0  261m 113m  26m S    2 11.4   4:29.86 firefox
+25975 doom  20   0 42788  13m 1464 S    0  1.3   0:01.30 zserv
+25968 doom  20   0 81808  11m 2096 S    0  1.1   0:03.32 zdstack debug
+ 6173 doom  20   0 12156 8344 1528 S    0  0.8   0:00.06 zdsweb -p 8080
 }}}
 
 Firefox is included for perspective, even though it's a notorious RAM hog (evidently).
+
+== But mine is using a lot more VIRT than that top shot ==
+
+That's because ZDStack and its spawned zservs are sharing the same "memory".  So your ZDStack process is going to use a specific amount of VMEM, and every `zserv` it spawns will add to that amount.  The good news is that the memory isn't consumed twice, so you can safely disregard that huge VIRT number.
