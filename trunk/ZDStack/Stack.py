@@ -12,8 +12,9 @@ from threading import Lock, Timer, Thread
 from collections import deque
 
 from ZDStack import ZDSThreadPool
-from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, ZServNotFoundError, \
-                    get_configfile, get_configparser, get_zdslog
+from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, PlayerNotFoundError, \
+                    ZServNotFoundError, get_configfile, get_configparser, \
+                    get_zdslog
 from ZDStack.Utils import get_event_from_line, requires_instance_lock
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server

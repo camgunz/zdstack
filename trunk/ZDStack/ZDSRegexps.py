@@ -61,14 +61,13 @@ def get_possible_player_names(s):
     sm = sm.group(1)
     bm = bm.group(1)
     diff = bm.replace(sm, '')
+    sm = sm[1:-2]
     if not __SD in diff:
-        return sm[1:-2]
+        return sm
+    ppn.append(sm)
     for token in diff.split(__SD)[:-1]:
-        if not ppn:
-            ppn.append(token)
-        else:
-            ppn.append(sm + __SD.join([ppn[-1], token]))
-    return [sm[1:] + x for x in [''] + ppn]
+        ppn.append(sm + __SD.join([ppn[-1], token]))
+    return sm
 
 class Regexp(object):
 

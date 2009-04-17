@@ -206,24 +206,24 @@ class PlayersList(object):
             current_port = p.port
             for d in zplayers:
                 if not p.ip == d['player_ip'] or \
-                   not player.name == d['player_name']:
+                   not p.name == d['player_name']:
                     ###
                     # Players do not match.
                     ###
                     continue
                 current_match = d
-                if player.port == d['player_port']:
+                if p.port == d['player_port']:
                     current_status = 'connected'
                 else:
                     current_status = 'reconnected'
             if current_status == 'disconnected':
-                player.disconnected = True
+                p.disconnected = True
             else:
-                player.disconnected = False
-                if player.number != current_match['number']:
-                    player.number = current_match['number']
+                p.disconnected = False
+                if p.number != current_match['player_num']:
+                    p.number = current_match['player_num']
                 if current_status == 'reconnected':
-                    player.port = current_match['player_port']
+                    p.port = current_match['player_port']
         for d in zplayers:
             addr = (d['player_ip'], d['player_port'])
             try:
@@ -235,9 +235,9 @@ class PlayersList(object):
                 ###
                 p = Player(self.zserv, d['player_ip'], d['player_port'],
                            d['player_name'] or None,
-                           d['player_number'])
+                           d['player_num'])
                 zdslog.debug("Adding new player [%s]" % (p.name))
-                self.__players.append(player)
+                self.__players.append(p)
         zdslog.debug("Sync: done")
 
     def names(self):
