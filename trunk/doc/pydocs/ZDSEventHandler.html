@@ -18,8 +18,7 @@
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="datetime.html">datetime</a><br>
-</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
-</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -54,9 +53,10 @@
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="BaseEventHandler-__init__"><strong>__init__</strong></a>(self)</dt><dd><tt>Initializes&nbsp;a&nbsp;<a href="#BaseEventHandler">BaseEventHandler</a>.</tt></dd></dl>
 
-<dl><dt><a name="BaseEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_type)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_type.<br>
+<dl><dt><a name="BaseEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_category)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.</tt></dd></dl>
 
 <dl><dt><a name="BaseEventHandler-handle_error_event"><strong>handle_error_event</strong></a>(self, event, zserv<font color="#909090">=None</font>)</dt><dd><tt>Handles&nbsp;an&nbsp;error&nbsp;event.<br>
 &nbsp;<br>
@@ -68,11 +68,12 @@ zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
 zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
 
-<dl><dt><a name="BaseEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_type, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_type.<br>
+<dl><dt><a name="BaseEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_category, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.<br>
-handler:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;category&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.<br>
+handler:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
@@ -120,11 +121,6 @@ Methods inherited from <a href="ZDSEventHandler.html#ZServEventHandler">ZServEve
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
 zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
 
-<dl><dt><a name="FakeEventHandler-handle_flag_return_event"><strong>handle_flag_return_event</strong></a>(self, event, zserv)</dt><dd><tt>Handles&nbsp;a&nbsp;flag_return&nbsp;event.<br>
-&nbsp;<br>
-event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
-zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
-
 <dl><dt><a name="FakeEventHandler-handle_frag_event"><strong>handle_frag_event</strong></a>(self, event, zserv)</dt><dd><tt>Handles&nbsp;a&nbsp;frag&nbsp;event.<br>
 &nbsp;<br>
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
@@ -147,20 +143,22 @@ zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;
 
 <hr>
 Methods inherited from <a href="ZDSEventHandler.html#BaseEventHandler">BaseEventHandler</a>:<br>
-<dl><dt><a name="FakeEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_type)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_type.<br>
+<dl><dt><a name="FakeEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_category)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.</tt></dd></dl>
 
 <dl><dt><a name="FakeEventHandler-handle_error_event"><strong>handle_error_event</strong></a>(self, event, zserv<font color="#909090">=None</font>)</dt><dd><tt>Handles&nbsp;an&nbsp;error&nbsp;event.<br>
 &nbsp;<br>
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
 zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
 
-<dl><dt><a name="FakeEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_type, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_type.<br>
+<dl><dt><a name="FakeEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_category, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.<br>
-handler:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;category&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.<br>
+handler:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
 
 <hr>
 Data descriptors inherited from <a href="ZDSEventHandler.html#BaseEventHandler">BaseEventHandler</a>:<br>
@@ -191,11 +189,6 @@ Methods defined here:<br>
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
 zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
 
-<dl><dt><a name="ZServEventHandler-handle_flag_return_event"><strong>handle_flag_return_event</strong></a>(self, event, zserv)</dt><dd><tt>Handles&nbsp;a&nbsp;flag_return&nbsp;event.<br>
-&nbsp;<br>
-event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
-zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
-
 <dl><dt><a name="ZServEventHandler-handle_frag_event"><strong>handle_frag_event</strong></a>(self, event, zserv)</dt><dd><tt>Handles&nbsp;a&nbsp;frag&nbsp;event.<br>
 &nbsp;<br>
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
@@ -218,9 +211,10 @@ zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;
 
 <hr>
 Methods inherited from <a href="ZDSEventHandler.html#BaseEventHandler">BaseEventHandler</a>:<br>
-<dl><dt><a name="ZServEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_type)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_type.<br>
+<dl><dt><a name="ZServEventHandler-get_handler"><strong>get_handler</strong></a>(self, event_category)</dt><dd><tt>Returns&nbsp;a&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;given&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;thetype&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.</tt></dd></dl>
 
 <dl><dt><a name="ZServEventHandler-handle_error_event"><strong>handle_error_event</strong></a>(self, event, zserv<font color="#909090">=None</font>)</dt><dd><tt>Handles&nbsp;an&nbsp;error&nbsp;event.<br>
 &nbsp;<br>
@@ -232,11 +226,12 @@ zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;
 event:&nbsp;a&nbsp;LogEvent&nbsp;instance.<br>
 zserv:&nbsp;the&nbsp;ZServ&nbsp;instance&nbsp;that&nbsp;generated&nbsp;the&nbsp;event.</tt></dd></dl>
 
-<dl><dt><a name="ZServEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_type, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_type.<br>
+<dl><dt><a name="ZServEventHandler-set_handler"><strong>set_handler</strong></a>(self, event_category, handler)</dt><dd><tt>Sets&nbsp;the&nbsp;handler&nbsp;method&nbsp;for&nbsp;a&nbsp;certain&nbsp;event_category.<br>
 &nbsp;<br>
-event_type:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;event&nbsp;to&nbsp;handle.<br>
-handler:&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
+event_category:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;category&nbsp;of&nbsp;event&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;handle.<br>
+handler:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;that&nbsp;will&nbsp;handle&nbsp;the&nbsp;event,&nbsp;takes&nbsp;an<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event&nbsp;instance&nbsp;as&nbsp;its&nbsp;only&nbsp;argument.</tt></dd></dl>
 
 <hr>
 Data descriptors inherited from <a href="ZDSEventHandler.html#BaseEventHandler">BaseEventHandler</a>:<br>
@@ -253,5 +248,7 @@ Data descriptors inherited from <a href="ZDSEventHandler.html#BaseEventHandler">
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)</td></tr></table>
+<td width="100%"><strong>TICK</strong> = Decimal("0.027")<br>
+<strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)<br>
+<strong>zdslog</strong> = &lt;logging.Logger instance at 0x9ddbfcc&gt;</td></tr></table>
 </body></html>

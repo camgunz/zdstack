@@ -12,14 +12,6 @@
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#aa55cc">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
-</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
@@ -47,55 +39,37 @@ zserv:&nbsp;a&nbsp;zserv&nbsp;instance&nbsp;to&nbsp;hold&nbsp;teams&nbsp;for.</t
 
 <dl><dt><a name="TeamsList-__iter__"><strong>__iter__</strong></a>(self)</dt></dl>
 
-<dl><dt><a name="TeamsList-add"><strong>add</strong></a>(self, color, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Adds&nbsp;a&nbsp;team.<br>
+<dl><dt><a name="TeamsList-add"><strong>add</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Adds&nbsp;a&nbsp;team.<br>
 &nbsp;<br>
-color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;new&nbsp;team.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;causes&nbsp;this&nbsp;method&nbsp;to<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acquire&nbsp;the&nbsp;team&nbsp;lock&nbsp;before&nbsp;adding&nbsp;a&nbsp;team.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;new&nbsp;team.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-clear"><strong>clear</strong></a>(self)</dt><dd><tt>Clears&nbsp;the&nbsp;team&nbsp;list.</tt></dd></dl>
+<dl><dt><a name="TeamsList-clear"><strong>clear</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Clears&nbsp;the&nbsp;team&nbsp;list.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-contains_player"><strong>contains_player</strong></a>(self, color, player, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;True&nbsp;if&nbsp;a&nbsp;player&nbsp;is&nbsp;a&nbsp;member&nbsp;of&nbsp;the&nbsp;specified&nbsp;team.<br>
+<dl><dt><a name="TeamsList-contains_player"><strong>contains_player</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Returns&nbsp;True&nbsp;if&nbsp;a&nbsp;player&nbsp;is&nbsp;a&nbsp;member&nbsp;of&nbsp;the&nbsp;specified&nbsp;team.<br>
 &nbsp;<br>
 color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;team&nbsp;to&nbsp;be<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;checked&nbsp;for&nbsp;membership.<br>
-player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;will&nbsp;acquire&nbsp;the&nbsp;team<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lock&nbsp;before&nbsp;checking&nbsp;if&nbsp;a&nbsp;player&nbsp;is&nbsp;a&nbsp;member&nbsp;of<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;team.&nbsp;&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-get"><strong>get</strong></a>(self, color, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;team.<br>
+<dl><dt><a name="TeamsList-get"><strong>get</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Returns&nbsp;a&nbsp;team.<br>
 &nbsp;<br>
 color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;team&nbsp;to<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;causes&nbsp;this&nbsp;method&nbsp;to<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acquire&nbsp;the&nbsp;team&nbsp;lock&nbsp;before&nbsp;getting&nbsp;a&nbsp;team.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;True&nbsp;by&nbsp;default.</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-get_members"><strong>get_members</strong></a>(self, color, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;deque&nbsp;of&nbsp;a&nbsp;team's&nbsp;members.<br>
+<dl><dt><a name="TeamsList-get_members"><strong>get_members</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Returns&nbsp;a&nbsp;deque&nbsp;of&nbsp;a&nbsp;team's&nbsp;members.<br>
 &nbsp;<br>
 color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;team&nbsp;whose&nbsp;members&nbsp;are&nbsp;to&nbsp;be<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;returned.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;will&nbsp;acquire&nbsp;the&nbsp;team<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lock&nbsp;before&nbsp;getting&nbsp;a&nbsp;team's&nbsp;members.&nbsp;&nbsp;True&nbsp;by<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default.</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;returned.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-get_player_team"><strong>get_player_team</strong></a>(self, player, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;player's&nbsp;team.<br>
+<dl><dt><a name="TeamsList-get_player_team"><strong>get_player_team</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Returns&nbsp;a&nbsp;player's&nbsp;team.<br>
 &nbsp;<br>
-player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;true,&nbsp;will&nbsp;acquire&nbsp;the&nbsp;team<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lock&nbsp;before&nbsp;getting&nbsp;a&nbsp;player's&nbsp;team.&nbsp;&nbsp;True&nbsp;by<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default.</tt></dd></dl>
+player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;Player&nbsp;instance.</tt></dd></dl>
 
-<dl><dt><a name="TeamsList-set_player_team"><strong>set_player_team</strong></a>(self, player, color, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Sets&nbsp;the&nbsp;player's&nbsp;team.<br>
+<dl><dt><a name="TeamsList-set_player_team"><strong>set_player_team</strong></a>(self, *__args, **__kwargs)</dt><dd><tt>Sets&nbsp;the&nbsp;player's&nbsp;team.<br>
 &nbsp;<br>
 player:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;player&nbsp;instance.<br>
 color:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;color&nbsp;of&nbsp;the&nbsp;team&nbsp;to<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;player&nbsp;is&nbsp;to&nbsp;be&nbsp;added.<br>
-acquire_lock:&nbsp;an&nbsp;optional&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;True,&nbsp;acquires&nbsp;this<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#TeamsList">TeamsList</a>'s&nbsp;lock&nbsp;before&nbsp;setting&nbsp;a&nbsp;player's&nbsp;team.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Defaults&nbsp;to&nbsp;True.</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;player&nbsp;is&nbsp;to&nbsp;be&nbsp;added.</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
@@ -124,5 +98,6 @@ Create&nbsp;a&nbsp;new&nbsp;lock&nbsp;<a href="__builtin__.html#object">object</
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><strong>TEAM_COLORS</strong> = ('red', 'blue', 'green', 'white')<br>
-<strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)</td></tr></table>
+<strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)<br>
+<strong>zdslog</strong> = &lt;logging.Logger instance at 0x9c65ccc&gt;</td></tr></table>
 </body></html>

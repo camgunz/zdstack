@@ -18,8 +18,7 @@
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="datetime.html">datetime</a><br>
-</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
-</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -27,11 +26,16 @@
     
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
-<dt><font face="helvetica, arial">sqlalchemy.ext.declarative.Base(<a href="__builtin__.html#object">__builtin__.object</a>)
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
 </font></dt><dd>
 <dl>
 <dt><font face="helvetica, arial"><a href="ZDSModels.html#Alias">Alias</a>
-</font></dt><dt><font face="helvetica, arial"><a href="ZDSModels.html#FlagReturn">FlagReturn</a>
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">sqlalchemy.ext.declarative.Base(<a href="__builtin__.html#object">__builtin__.object</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ZDSModels.html#FlagReturn">FlagReturn</a>
 </font></dt><dt><font face="helvetica, arial"><a href="ZDSModels.html#FlagTouch">FlagTouch</a>
 </font></dt><dt><font face="helvetica, arial"><a href="ZDSModels.html#Frag">Frag</a>
 </font></dt><dt><font face="helvetica, arial"><a href="ZDSModels.html#GameMode">GameMode</a>
@@ -51,21 +55,11 @@
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="Alias">class <strong>Alias</strong></a>(sqlalchemy.ext.declarative.Base)</font></td></tr>
+<font color="#000000" face="helvetica, arial"><a name="Alias">class <strong>Alias</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
     
 <tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt>Method resolution order:</dt>
-<dd><a href="ZDSModels.html#Alias">Alias</a></dd>
-<dd>sqlalchemy.ext.declarative.Base</dd>
-<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
-</dl>
-<hr>
-Methods defined here:<br>
-<dl><dt><a name="Alias-__init__"><strong>__init__</strong></a>(self, **kwargs)</dt><dd><tt>A&nbsp;simple&nbsp;constructor&nbsp;that&nbsp;allows&nbsp;initialization&nbsp;from&nbsp;kwargs.<br>
-&nbsp;<br>
-Sets&nbsp;kwargs&nbsp;on&nbsp;the&nbsp;constructed&nbsp;instance.&nbsp;&nbsp;Only&nbsp;keys&nbsp;that&nbsp;are&nbsp;present&nbsp;as<br>
-attributes&nbsp;of&nbsp;type(self)&nbsp;are&nbsp;allowed&nbsp;(for&nbsp;example,&nbsp;any&nbsp;mapped&nbsp;column&nbsp;or<br>
-relation).</tt></dd></dl>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Alias-__init__"><strong>__init__</strong></a>(self, name, ip_address)</dt></dl>
 
 <dl><dt><a name="Alias-__repr__"><strong>__repr__</strong></a>(self)</dt></dl>
 
@@ -73,6 +67,12 @@ relation).</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
 <dl><dt><strong>deaths</strong></dt>
 <dd><tt>Public-facing&nbsp;descriptor,&nbsp;placed&nbsp;in&nbsp;the&nbsp;mapped&nbsp;class&nbsp;dictionary.</tt></dd>
 </dl>
@@ -112,26 +112,6 @@ Data descriptors defined here:<br>
 <dl><dt><strong>was_namefake</strong></dt>
 <dd><tt>Public-facing&nbsp;descriptor,&nbsp;placed&nbsp;in&nbsp;the&nbsp;mapped&nbsp;class&nbsp;dictionary.</tt></dd>
 </dl>
-<hr>
-Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98969ec; Alias&gt;</dl>
-
-<dl><dt><strong>__table__</strong> = Table('aliases', MetaData(Engine(sqlite:////home...ed_players.name'), table=&lt;aliases&gt;), schema=None)</dl>
-
-<dl><dt><strong>__tablename__</strong> = 'aliases'</dl>
-
-<hr>
-Data descriptors inherited from sqlalchemy.ext.declarative.Base:<br>
-<dl><dt><strong>__dict__</strong></dt>
-<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<dl><dt><strong>__weakref__</strong></dt>
-<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<hr>
-Data and other attributes inherited from sqlalchemy.ext.declarative.Base:<br>
-<dl><dt><strong>metadata</strong> = MetaData(Engine(sqlite:////home/cagunyon/ZDStack/zdsdbfile.db))</dl>
-
 </td></tr></table> <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
@@ -200,7 +180,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98afaac; FlagReturn&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8af234c; FlagReturn&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('flag_returns', MetaData(Engine(sqlite:///...', Integer(), table=&lt;flag_returns&gt;), schema=None)</dl>
 
@@ -292,7 +272,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98aa66c; FlagTouch&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8ae5ecc; FlagTouch&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('flag_touches', MetaData(Engine(sqlite:///...', Integer(), table=&lt;flag_touches&gt;), schema=None)</dl>
 
@@ -390,7 +370,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x989cd8c; Frag&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8adf5cc; Frag&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('frags', MetaData(Engine(sqlite:////home/c...m_score', Integer(), table=&lt;frags&gt;), schema=None)</dl>
 
@@ -448,7 +428,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x988556c; GameMode&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8aa302c; GameMode&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('game_modes', MetaData(Engine(sqlite:////h...alse, default=ColumnDefault(False)), schema=None)</dl>
 
@@ -509,7 +489,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x987c1ec; Map&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8a91c8c; Map&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('maps', MetaData(Engine(sqlite:////home/ca...one), table=&lt;maps&gt;, nullable=False), schema=None)</dl>
 
@@ -561,7 +541,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x987cf6c; Port&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8a99a2c; Port&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('ports', MetaData(Engine(sqlite:////home/c..., primary_key=True, nullable=False), schema=None)</dl>
 
@@ -617,9 +597,9 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98f990c; RCONAccess&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8af91ac; RCONAccess&gt;</dl>
 
-<dl><dt><strong>__table__</strong> = Table('rcon_accesses', MetaData(Engine(sqlite://...(&lt;function &lt;lambda&gt; at 0x988ed14&gt;)), schema=None)</dl>
+<dl><dt><strong>__table__</strong> = Table('rcon_accesses', MetaData(Engine(sqlite://...(&lt;function &lt;lambda&gt; at 0x8a93d14&gt;)), schema=None)</dl>
 
 <dl><dt><strong>__tablename__</strong> = 'rcon_accesses'</dl>
 
@@ -676,7 +656,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98ffbec; RCONAction&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8b0048c; RCONAction&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('rcon_actions', MetaData(Engine(sqlite:///...ble=&lt;rcon_actions&gt;, nullable=False), schema=None)</dl>
 
@@ -732,9 +712,9 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x98ff24c; RCONDenial&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8af9acc; RCONDenial&gt;</dl>
 
-<dl><dt><strong>__table__</strong> = Table('rcon_denials', MetaData(Engine(sqlite:///...(&lt;function &lt;lambda&gt; at 0x988edbc&gt;)), schema=None)</dl>
+<dl><dt><strong>__table__</strong> = Table('rcon_denials', MetaData(Engine(sqlite:///...(&lt;function &lt;lambda&gt; at 0x8a93dbc&gt;)), schema=None)</dl>
 
 <dl><dt><strong>__tablename__</strong> = 'rcon_denials'</dl>
 
@@ -814,7 +794,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x988c18c; Round&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8aa3c2c; Round&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('rounds', MetaData(Engine(sqlite:////home/...me(timezone=False), table=&lt;rounds&gt;), schema=None)</dl>
 
@@ -866,7 +846,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x988cccc; StoredPlayer&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8aaa7ac; StoredPlayer&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('stored_players', MetaData(Engine(sqlite:/..., primary_key=True, nullable=False), schema=None)</dl>
 
@@ -927,7 +907,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x987770c; TeamColor&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8a9114c; TeamColor&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('team_colors', MetaData(Engine(sqlite:////..., primary_key=True, nullable=False), schema=None)</dl>
 
@@ -982,7 +962,7 @@ Data descriptors defined here:<br>
 </dl>
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x987c90c; Weapon&gt;</dl>
+<dl><dt><strong>__mapper__</strong> = &lt;Mapper at 0x8a993cc; Weapon&gt;</dl>
 
 <dl><dt><strong>__table__</strong> = Table('weapons', MetaData(Engine(sqlite:////home...ons&gt;, default=ColumnDefault(False)), schema=None)</dl>
 
@@ -1007,6 +987,8 @@ Data and other attributes inherited from sqlalchemy.ext.declarative.Base:<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>ports_and_gamemodes</strong> = Table('ports_and_gamemodes', MetaData(Engine(sql...ame'), table=&lt;ports_and_gamemodes&gt;), schema=None)<br>
-<strong>rounds_and_aliases</strong> = Table('rounds_and_aliases', MetaData(Engine(sqli...s.id'), table=&lt;rounds_and_aliases&gt;), schema=None)</td></tr></table>
+<td width="100%"><strong>aliases_table</strong> = Table('aliases', MetaData(Engine(sqlite:////home...ed_players.name'), table=&lt;aliases&gt;), schema=None)<br>
+<strong>ports_and_gamemodes</strong> = Table('ports_and_gamemodes', MetaData(Engine(sql...ame'), table=&lt;ports_and_gamemodes&gt;), schema=None)<br>
+<strong>rounds_and_aliases</strong> = Table('rounds_and_aliases', MetaData(Engine(sqli...s.id'), table=&lt;rounds_and_aliases&gt;), schema=None)<br>
+<strong>zdslog</strong> = &lt;logging.Logger instance at 0x89968ac&gt;</td></tr></table>
 </body></html>

@@ -26,7 +26,8 @@
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-get_event_from_line"><strong>get_event_from_line</strong></a>(line, regexps, now<font color="#909090">=None</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;LogEvent&nbsp;from&nbsp;a&nbsp;line.<br>
+<td width="100%"><dl><dt><a name="-check_ip"><strong>check_ip</strong></a>(ip)</dt></dl>
+ <dl><dt><a name="-get_event_from_line"><strong>get_event_from_line</strong></a>(line, regexps, now<font color="#909090">=None</font>)</dt><dd><tt>Returns&nbsp;a&nbsp;LogEvent&nbsp;from&nbsp;a&nbsp;line.<br>
 &nbsp;<br>
 line:&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;line&nbsp;from&nbsp;which&nbsp;to&nbsp;return&nbsp;an&nbsp;event&nbsp;-&nbsp;a&nbsp;string.<br>
 regexps:&nbsp;a&nbsp;sequence&nbsp;of&nbsp;Regexp&nbsp;instances&nbsp;which&nbsp;will&nbsp;be&nbsp;used&nbsp;to<br>
@@ -54,10 +55,11 @@ s:&nbsp;a&nbsp;string&nbsp;representing&nbsp;a&nbsp;string&nbsp;to&nbsp;escape<b
 This&nbsp;function&nbsp;is&nbsp;basically&nbsp;ripped&nbsp;from&nbsp;web.py,&nbsp;with&nbsp;any&nbsp;luck,<br>
 the&nbsp;MIT&nbsp;and&nbsp;BSD&nbsp;licenses&nbsp;are&nbsp;compatible...&nbsp;:)&nbsp;&nbsp;I&nbsp;don't&nbsp;think<br>
 Mr.&nbsp;Swartz&nbsp;would&nbsp;have&nbsp;a&nbsp;cow,&nbsp;tho.</tt></dd></dl>
- <dl><dt><a name="-no"><strong>no</strong></a>(x)</dt></dl>
  <dl><dt><a name="-parse_player_name"><strong>parse_player_name</strong></a>(name)</dt><dd><tt>Parses&nbsp;a&nbsp;player's&nbsp;name&nbsp;into&nbsp;a&nbsp;tag&nbsp;and&nbsp;a&nbsp;base&nbsp;player&nbsp;name.<br>
 &nbsp;<br>
 name:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;player&nbsp;name&nbsp;to&nbsp;parse</tt></dd></dl>
+ <dl><dt><a name="-requires_instance_lock"><strong>requires_instance_lock</strong></a>()</dt></dl>
+ <dl><dt><a name="-requires_lock"><strong>requires_lock</strong></a>(lck)</dt></dl>
  <dl><dt><a name="-resolve_path"><strong>resolve_path</strong></a>(f)</dt><dd><tt>Returns&nbsp;the&nbsp;expanded,&nbsp;absolute&nbsp;path&nbsp;of&nbsp;a&nbsp;given&nbsp;file/folder.<br>
 &nbsp;<br>
 f:&nbsp;a&nbsp;path&nbsp;to&nbsp;expand.</tt></dd></dl>
@@ -73,12 +75,12 @@ If&nbsp;an&nbsp;error&nbsp;occurs,&nbsp;it&nbsp;will&nbsp;be&nbsp;printed&nbsp;t
 this&nbsp;method&nbsp;is&nbsp;primarily&nbsp;for&nbsp;use&nbsp;by&nbsp;scripts&nbsp;trying&nbsp;to&nbsp;interact<br>
 with&nbsp;a&nbsp;running&nbsp;ZDStack.</tt></dd></dl>
  <dl><dt><a name="-timedelta_in_seconds"><strong>timedelta_in_seconds</strong></a>(x)</dt><dd><tt>Returns&nbsp;the&nbsp;value&nbsp;of&nbsp;a&nbsp;time&nbsp;delta&nbsp;in&nbsp;seconds&nbsp;as&nbsp;an&nbsp;int.</tt></dd></dl>
- <dl><dt><a name="-to_list"><strong>to_list</strong></a>(s, sep)</dt><dd><tt>Parses&nbsp;s&nbsp;into&nbsp;a&nbsp;list.<br>
-&nbsp;<br>
-s:&nbsp;&nbsp;&nbsp;a&nbsp;string&nbsp;that&nbsp;will&nbsp;be&nbsp;split&nbsp;by&nbsp;separator&nbsp;tokens.<br>
-sep:&nbsp;a&nbsp;string&nbsp;representing&nbsp;the&nbsp;separator&nbsp;token.<br>
-&nbsp;<br>
-Omits&nbsp;non-True&nbsp;values.</tt></dd></dl>
- <dl><dt><a name="-yes"><strong>yes</strong></a>(x)</dt></dl>
-</td></tr></table>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)</td></tr></table>
 </body></html>

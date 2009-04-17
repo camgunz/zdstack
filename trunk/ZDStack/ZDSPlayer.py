@@ -80,5 +80,5 @@ class Player(object):
         if self.name:
             return "Player(%s)" % (self.name)
         else:
-            return "Player(%s, %s)" % (self.ip_address, self.port)
+            return "Player(%s, %s)" % (self.ip, self.port)
 

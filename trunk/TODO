@@ -1,6 +1,16 @@
 0.11
   - Figure out banlist management
-    - Add a "send RPC command" function to ZDSWeb
+    - Ban
+      - User/Users
+      - Specific server/All servers
+      - With/Without timelimit
+    - Unban
+      - User/Users
+      - Specific server/All servers
+    - Whitelist (doesn't skip ZD master ban)
+      - User/Users
+      - Specific server/All servers
+  - Add a "send RPC command" function to ZDSWeb
   - Setup firebird so it's not pigeonholed as an embedded DB
   - Debug with multiple players, and then multiple servers and multiple players
 

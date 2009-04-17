@@ -18,10 +18,9 @@
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Queue.html">Queue</a><br>
-</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
 </td><td width="25%" valign=top><a href="time.html">time</a><br>
 </td><td width="25%" valign=top><a href="traceback.html">traceback</a><br>
-</td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#eeaa77">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -41,13 +40,6 @@ keep_going:&nbsp;a&nbsp;function&nbsp;that&nbsp;returns&nbsp;a&nbsp;boolean.&nbs
 sleep:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;an&nbsp;int/float/Decimal&nbsp;representing&nbsp;the&nbsp;amount&nbsp;of&nbsp;time<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;sleep&nbsp;between&nbsp;loop&nbsp;iterations.&nbsp;&nbsp;Optional,&nbsp;defaults<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;not&nbsp;sleeping&nbsp;at&nbsp;all.</tt></dd></dl>
- <dl><dt><a name="-join"><strong>join</strong></a>(thread, acquire_lock<font color="#909090">=True</font>)</dt><dd><tt>Joins&nbsp;a&nbsp;thread,&nbsp;removing&nbsp;it&nbsp;from&nbsp;the&nbsp;global&nbsp;pool.<br>
-&nbsp;<br>
-thread:&nbsp;a&nbsp;thread&nbsp;instance.<br>
-acquire_lock:&nbsp;a&nbsp;boolean&nbsp;that,&nbsp;if&nbsp;given,&nbsp;will&nbsp;acquire&nbsp;the&nbsp;thread<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pool&nbsp;lock&nbsp;before&nbsp;joining&nbsp;the&nbsp;thread.&nbsp;&nbsp;True&nbsp;by<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default.</tt></dd></dl>
- <dl><dt><a name="-join_all"><strong>join_all</strong></a>()</dt><dd><tt>Joins&nbsp;all&nbsp;threads.</tt></dd></dl>
  <dl><dt><a name="-process_queue"><strong>process_queue</strong></a>(input_queue, name, keep_going, output_queue<font color="#909090">=None</font>, sleep<font color="#909090">=None</font>)</dt><dd><tt>Creates&nbsp;a&nbsp;thread&nbsp;that&nbsp;processes&nbsp;tasks&nbsp;in&nbsp;a&nbsp;Queue.<br>
 &nbsp;<br>
 target:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;function&nbsp;to&nbsp;run&nbsp;continuously&nbsp;in&nbsp;a&nbsp;while&nbsp;loop.<br>
@@ -69,5 +61,6 @@ sleep:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;an&nbsp;int/float/Decimal&
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><strong>DIE_THREADS_DIE</strong> = False<br>
 <strong>MAX_TIMEOUT</strong> = 1<br>
-<strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)</td></tr></table>
+<strong>with_statement</strong> = _Feature((2, 5, 0, 'alpha', 1), (2, 6, 0, 'alpha', 0), 32768)<br>
+<strong>zdslog</strong> = &lt;logging.Logger instance at 0x929f82c&gt;</td></tr></table>
 </body></html>
