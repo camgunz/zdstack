@@ -61,7 +61,7 @@ if opts['-m'] not in NO_AUTH_REQUIRED:
 else:
     args = []
 if '-a'in opts:
-    args.extend([x for x in opts['-a'].split(',') if x])
+    args.extend([x for x in opts['-a'].split(';') if x])
 function_kwarg_str = ', '.join(args)
 call_string = opts['-m'] + "(" + function_kwarg_str + ")"
 print "Running %s" % (call_string)
