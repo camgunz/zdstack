@@ -17,3 +17,29 @@ Most likely you are using an old configuration file and the new version of ZDSta
 *address in use*
 
 If this message is appearing in the `ZDStack.log` file, it means that the socket ZDStack listens for RPC requests on is still open.  This will happen if ZDStack is stopped abruptly or, in rare cases, restarted too quickly.  If it does occur, stop ZDStack, stop all zserv processes (`killall -9 zserv`) and wait a while.  If that's too ambiguous, you can run `netstat -anp | grep <port>`, where `<port>` is the port number you've configured ZDStack to listen on (default is 8080).  When nothing shows up after that command, you can start ZDStack again.
+
+*MySQL server has gone away*
+
+MySQL enforces connection timeouts; the default being 3600 seconds (1 hour).  ZDStack will use a connection for a lot longer than an hour, and if you're only running Duel servers that no one connects to for an hour, MySQL will close ZDStack's connections.
+
+ZDStack combats this itself by recycling connections every hour.  Anything more frequent than that is ridiculous.  What you can do is edit the `my.cnf` file and set the `wait_timeout` option under `[mysqld]` to something larger than 3600, and `connect_timeout` to something larger than that.  Alternately you could use PostgreSQL, which is easily 5000% more awesome.
+
+*ZDStack Segmentation Fault*
+
+There are 2 things that can potentially cause ZDStack to segfault.
+
+  _The database driver you're using (such as mysql-python or psycopg2) segfaults_
+
+Database drivers typically should not segfault, however, if you're using mysql-python, please note that its developer still hasn't released a full version for Python 2.6, so if you do suspect the database driver it might be worth a temporary downgrade to Python 2.5.
+
+  _You're running ZDStack in debug mode, and you've somehow stopped its output_
+
+While running ZDStack in debug mode on [http://totaltrash.org TT], I often times use Ctrl-A-Esc in Screen to scroll up through its debugging output.  Sometimes I forget to re-enable the flow.  Othertimes I've noticed in Mrxvt that switching away from that tab (while ZDStack is debugging in a Screen session) will cause the flow to stop as well.  You can easily spot this:
+
+{{{
+[2009-04-21 11:35:27] Stack.py - handle_generic_events - 363 : DEBUG Handling flag_return event (Line: [2009/04/21 11:25:30 > MoCheese returned the Red flag])
+}}}
+
+Note how the two timestamps are way off.  This actually prevents ZDStack from processing events, and after a while it just crashes.
+
+So if ZDStack is segfaulting, please try not running it in debug mode (which seems counterintuitive) -- and if you're using MySQL and Python 2.6, consider downgrading to Python 2.5.
