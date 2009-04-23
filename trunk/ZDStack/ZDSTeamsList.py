@@ -11,10 +11,22 @@ zdslog = get_zdslog()
 
 class TeamsList(object):
 
+    """TeamsList is a threadsafe list of teams.
+
+    .. attribute:: zserv
+        This TeamsList's containing ZServ instance.
+
+    .. attribute:: lock
+        A lock that must be acquired before the internal list of teams
+        can be modified
+
+    """
+
     def __init__(self, zserv):
         """Initializes a TeamsList.
 
-        zserv: a zserv instance to hold teams for.
+        :param zserv: this TeamsList's containing ZServ
+        :type zserv: ZServ
 
         """
         self.zserv = zserv
@@ -33,7 +45,8 @@ class TeamsList(object):
     def add(self, color):
         """Adds a team.
 
-        color:        a string representing the color of the new team.
+        :param color: the color of the new team.
+        :type color: string
 
         """
         zdslog.debug("add(%s)" % (color))
@@ -45,10 +58,11 @@ class TeamsList(object):
 
     @requires_instance_lock()
     def get(self, color):
-        """Returns a team.
+        """Gets a team.
 
-        color:        a string representing the color of the team to
-                      return.
+        :param color: the color of the team to return
+        :type color: string
+        :rtype: TeamColor
 
         """
         zdslog.debug("get(%s)" % (color))
@@ -63,20 +77,24 @@ class TeamsList(object):
 
     @requires_instance_lock()
     def get_members(self, color):
-        """Returns a deque of a team's members.
+        """Gets a team's members.
 
-        color:        the color of the team whose members are to be
-                      returned.
+        :param color: the color of the team whose members are to be
+                      returned
+        :type color: string
+        :rtype: list of Players
 
         """
         zdslog.debug("get_members(%s)" % (color))
-        return self.__teams[self.get(color, acquire_lock=False)]
+        return [x for x in self.__teams[self.get(color, acquire_lock=False)]]
 
     @requires_instance_lock()
     def get_player_team(self, player):
-        """Returns a player's team.
+        """Gets a player's team.
 
-        player:       a Player instance.
+        :param player: the player whose team is to be returned.
+        :type player: Player
+        :rtype: TeamColor
 
         """
         zdslog.debug("get_player_team(%s)" % (player))
@@ -88,11 +106,13 @@ class TeamsList(object):
 
     @requires_instance_lock()
     def set_player_team(self, player, color):
-        """Sets the player's team.
+        """Sets a player's team.
 
-        player:       a player instance.
-        color:        a string representing the color of the team to
-                      which player is to be added.
+        :param player: the player whose team is to be set
+        :type player: Player
+        :param color: the color of the team to which the player will
+                      be added
+        :type color: string
 
         """
         zdslog.debug("set_player_team(%s, %s)" % (player, color))
@@ -115,11 +135,12 @@ class TeamsList(object):
 
     @requires_instance_lock()
     def contains_player(self, color, player):
-        """Returns True if a player is a member of the specified team.
+        """Tests whether or not a team contains a player.
 
-        color:        a string representing the color of the team to be
-                      checked for membership.
-        player:       a Player instance.
+        :param color: the color of the team to be checked
+        :type color: string
+        :param player: the player to check for
+        :type player: Player
 
         """
         zdslog.debug("contains_player(%s, %s)" % (color, player))

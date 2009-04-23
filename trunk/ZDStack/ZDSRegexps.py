@@ -45,6 +45,14 @@ __SD = '> '
 __ST = re.compile(TIMESTAMP_PREFIX)
 
 def get_possible_player_names(s):
+    """Parses a message, extracting potential names of the sender.
+
+    :param s: the message to parse
+    :type s: string
+    :rtype: list of strings
+    :returns: a list of potential names of the sender
+
+    """
     ###
     # First lop off the timestamp if it matches
     ###
@@ -71,16 +79,30 @@ def get_possible_player_names(s):
 
 class Regexp(object):
 
+    """A Regexp is a wrapper around a raw regular expression string.
+
+    Regexp is useful because it allows prefixes, and the ability to
+    create an Event from a line.
+
+    .. attribute:: category
+        A string representing the category of event this regexp matches
+
+    .. attribute:: event_type
+        A string representing the type of event this string matches
+
+    """
+
     def __init__(self, regexp, category, event_type, prefix=None):
         """Initializes a Regexp object.
         
-        regexp:     a raw string representing the regexp itself.
-        category:   a string representing the category of event this
-                    regexp matches.
-        event_type: a string representing the type of event this regexp
-                    matches.
-        prefix:     an optional raw string to be prepended to the
-                    regexp.
+        :param regexp: a regular expression
+        :type regexp: raw string
+        :param category: the category of event this regexp matches
+        :type category: string
+        :param event_type: the type of event this string matches
+        :type event_type: string
+        :param prefix: if given, will be prepended to 'regexp'
+        :type prefix: raw string
         
         """
         self.category = category
@@ -95,9 +117,15 @@ class Regexp(object):
             raise Exception("Choked on regexp [%s]: %s" % (s, e))
 
     def match(self, s):
-        """Returns a dict of parsed info from a string.
+        """Tests whether a string matches this Regexp.
 
-        s:   a string to parse.
+        :param s: a string to match
+        :type s: string
+        :rtype: boolean or dict
+        :returns: A dict of group names and values if the string
+                  matches, False otherwise
+
+        This method actually uses '.search()', so be wary.
 
         """
         m = self.regexp.search(s)
@@ -106,11 +134,14 @@ class Regexp(object):
         return False
 
     def get_event(self, s, now=None):
-        """Returns an event.
+        """Gets an event.
 
-        s:   a string to parse into an event.
-        now: a datetime instance representing the time the string was
-             generated.
+        :param s: a string from which to extract an event.
+        :type s: string
+        :param now: optional, the time the string was generated;
+                    defaults to 'datetime.datetime.now()'
+        :type now: datetime.datetime
+        :rtype: LogEvent
 
         """
         if s == 'General logging off':
@@ -140,16 +171,32 @@ class Regexp(object):
 
 class ServerRegexp(Regexp):
 
+    """ServerRegexp matches lines from a zserv's log output.
+
+    .. attribute:: category
+        A string representing the category of event this regexp matches
+
+    .. attribute:: event_type
+        A string representing the type of event this string matches
+
+    """
+
     def __init__(self, regexp, category, event_type, requires_prefix=True):
         """Initializes a ServerRegexp.
-
-        requires_prefix: an optional argument.
-                         If True, prepends SERVER_TIMESTAMP_PREFIX.
-                         If False, prepends TIMESTAMP_PREFIX.
-                         If None, prepends r"^".
-
-        All other arguments are the same as Regexp.
-
+        
+        :param regexp: a regular expression
+        :type regexp: raw string
+        :param category: the category of event this regexp matches
+        :type category: string
+        :param event_type: the type of event this string matches
+        :type event_type: string
+        :param requires_prefix:
+           an optional argument -
+             if True (default), prepends SERVER_TIMESTAMP_PREFIX
+             if False, prepends TIMESTAMP_PREFIX
+             if None, prepends r"^"
+        :type requires_prefix: boolean or None
+        
         """
         if requires_prefix is True:
             prefix = SERVER_TIMESTAMP_PREFIX
@@ -158,17 +205,6 @@ class ServerRegexp(Regexp):
         else:
             prefix = r"^"
         Regexp.__init__(self, regexp, category, event_type, prefix)
-
-class ClientRegexp(Regexp):
-
-    def __init__(self, regexp, category, event_type, server_junk=True):
-        """Initializes a ClientRegexp.
-
-        Works the same as ServerRegexp, except the prefix is always
-        r"^".
-
-        """
-        Regexp.__init__(self, regexp, category, event_type, r"^")
 
 COMMANDS = (
 (r'Unknown command "(?P<command>.*)"$', 'unknown_command', False),

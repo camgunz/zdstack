@@ -28,20 +28,12 @@ zdslog = get_zdslog()
 
 class Stack(Server):
 
+    """Generating documentation for this class doesn't work..."""
+
     methods_requiring_authentication = []
 
-    """Stack represents the main ZDStack class."""
-
-    def __init__(self, debugging=False, stopping=False):
-        """Initializes a Stack instance.
-
-        debugging:   a boolean, whether or not debugging is enabled.
-                     False by default.
-        stopping:    a boolean that indicates whether or not the Stack
-                     was initialized just to shutdown a running
-                     ZDStack.  False by defalut.
-
-        """
+    def __init__(self):
+        """Initializes a Stack instance."""
         self.spawn_lock = Lock()
         self.szn_lock = Lock()
         # self.poller = select.poll()
@@ -55,7 +47,6 @@ class Stack(Server):
         self.keep_handling_command_events = False
         self.keep_handling_generic_events = False
         self.keep_handling_plugin_events = False
-        self.keep_persisting = False
         self.regexps = get_server_regexps()
         Server.__init__(self)
         self.load_zservs()
@@ -81,7 +72,6 @@ class Stack(Server):
         self.keep_handling_generic_events = True
         self.keep_handling_command_events = True
         self.keep_handling_plugin_events = True
-        self.keep_persisting = True
         if not self.loglink_check_timer:
             self.start_checking_loglinks()
         self.polling_thread = \
@@ -139,7 +129,7 @@ class Stack(Server):
         try:
             for zserv in self.zservs.values():
                 try:
-                        zserv.ensure_loglinks_exist()
+                    zserv.ensure_loglinks_exist()
                 except Exception, e:
                     es = "Received error checking log links for [%s]: [%s]"
                     zdslog.error(es % (zserv.name, e))
@@ -175,6 +165,7 @@ class Stack(Server):
                             if diff <= timedelta(seconds=4):
                                 es = "ZServ %s respawning too fast, stopping"
                                 zdslog.error(es % (zserv.name))
+                                zserv.stop(check_if_running=False)
                                 self.stopped_zserv_names.add(zserv.name)
                                 continue
                             else:
@@ -204,55 +195,64 @@ class Stack(Server):
         # Also the select call gives up every second, which allows it to check
         # whether or not it should keep polling.
         ###
-        stuff = [(z, z.fifo) for z in self.zservs.values() if z.fifo]
-        r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
-        readable = [(z, f) for z, f in stuff if f in r]
+        with self.szn_lock:
+            stuff = [(z, z.fifo) for z in self.zservs.values() if z.fifo]
+            r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
+            readable = [(z, f) for z, f in stuff if f in r]
         # if readable:
         #     zdslog.debug("Readable: %s" % (str(readable)))
-        for zserv, fd in readable:
-            while 1:
-                # zdslog.debug("Reading data from [%s]" % (zserv.name))
-                try:
-                    ###
-                    # I guess 1024 bytes should be a big enough chunk.
-                    ###
-                    data = os.read(fd, 1024)
-                    if data:
-                        # zdslog.debug("Got %d bytes" % (len(data)))
-                        lines = data.splitlines()
-                        if zserv._fragment:
-                            lines[0] = zserv._fragment + lines[0]
-                            zserv._fragment = None
-                        if not data.endswith('\n'):
-                            lines, zserv._fragment = lines[:-1], lines[-1]
-                        output = (zserv, datetime.now(), lines)
-                        task = Task(self.parse_zserv_output, args=output,
-                                    name='Parsing')
-                        self.output_queue.put_nowait(task)
-                    else:
+            for zserv, fd in readable:
+                while 1:
+                    # zdslog.debug("Reading data from [%s]" % (zserv.name))
+                    try:
                         ###
-                        # Non-blocking FDs should raise exceptions instead of
-                        # returning nothing, but just for the hell of it.
+                        # I guess 1024 bytes should be a big enough chunk.
                         ###
-                        # zdslog.debug("No data")
-                        break
-                except OSError, e:
-                    if e.errno == 11:
-                        ###
-                        # Error code 11: FD would have blocked... meaning
-                        # we're at the end of the data stream.
-                        ###
-                        # zdslog.debug("FD would have blocked")
-                        break
-                    else:
-                        ###
-                        # We want other stuff to bubble up.
-                        ###
-                        # zdslog.debug("Raising exception")
-                        raise
+                        data = os.read(fd, 1024)
+                        if data:
+                            # zdslog.debug("Got %d bytes" % (len(data)))
+                            lines = data.splitlines()
+                            if zserv._fragment:
+                                lines[0] = zserv._fragment + lines[0]
+                                zserv._fragment = None
+                            if not data.endswith('\n'):
+                                lines, zserv._fragment = lines[:-1], lines[-1]
+                            output = (zserv, datetime.now(), lines)
+                            task = Task(self.parse_zserv_output, args=output,
+                                        name='Parsing')
+                            self.output_queue.put_nowait(task)
+                        else:
+                            ###
+                            # Non-blocking FDs should raise exceptions instead
+                            # of returning nothing, but just for the hell of
+                            # it.
+                            ###
+                            # zdslog.debug("No data")
+                            break
+                    except OSError, e:
+                        if e.errno == 11:
+                            ###
+                            # Error code 11: FD would have blocked... meaning
+                            # we're at the end of the data stream.
+                            ###
+                            # zdslog.debug("FD would have blocked")
+                            break
+                        else:
+                            ###
+                            # We want other stuff to bubble up.
+                            ###
+                            # zdslog.debug("Raising exception")
+                            raise
 
     def parse_zserv_output(self, zserv, dt, lines):
-        """Parses ZServ output into events, places them in the event queue."""
+        """Parses ZServ output into events, places them in the event queue.
+        
+        :param dt: the time when the lines were generated
+        :type dt: datetime
+        :param lines: the output lines
+        :type lines: list of strings
+        
+        """
         # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
         if zserv.save_logfile:
             logging.getLogger(zserv.name).info('\n'.join(lines))
@@ -353,8 +353,10 @@ class Stack(Server):
     def handle_generic_events(self, event, zserv):
         """Handles generic events.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the event to handle
+        :type event: :class:`~ZDStack.LogEvent`
+        :param zserv: the ZServ instance that generated the event.
+        :type zserv: :class:`~ZDStack.LogEvent`
 
         """
         handler = self.event_handler.get_handler(event.category)
@@ -373,8 +375,10 @@ class Stack(Server):
     def handle_plugin_events(self, event, zserv):
         """Handles plugin events.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the event to handle
+        :type event: :class:`~ZDStack.LogEvent`
+        :param zserv: the ZServ instance that generated the event.
+        :type zserv: :class:`~ZDStack.LogEvent`
 
         """
         zdslog.debug("Sending %s to %s's plugins" % (event, zserv.name))
@@ -400,7 +404,12 @@ class Stack(Server):
         return [x for x in self.zservs.values() if not x.is_running()]
 
     def check_all_zserv_configs(self, configparser):
-        """Ensures that all ZServ configuration sections are correct."""
+        """Ensures that all ZServ configuration sections are correct.
+        
+        :param configparser: the configuration to check
+        :type configparser: :class:`~ZDStack.ZDSConfigParser`
+        
+        """
         # zdslog.debug('')
         for zserv in self.get_running_zservs():
             if not zserv.name in configparser.sections():
@@ -421,8 +430,10 @@ class Stack(Server):
     def load_config(self, config, reload=False):
         """Loads the configuration.
 
-        reload: a boolean, whether or not the configuration is being
-                reloaded.
+        :param config: the configuration to load
+        :type config: :class:`~ZDStack.ZDSConfigParser`
+        :param reload: whether or not the config is being reloaded
+        :type reload: boolean
 
         """
         zdslog.debug('')
@@ -438,7 +449,8 @@ class Stack(Server):
     def start_zserv(self, zserv_name):
         """Starts a ZServ.
 
-        zserv_name: a string representing the name of a ZServ to start
+        :param zserv_name: the name of the ZServ to start
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -461,7 +473,8 @@ class Stack(Server):
     def stop_zserv(self, zserv_name):
         """Stops a ZServ.
 
-        zserv_name: a string representing the name of a ZServ to stop
+        :param zserv_name: the name of the ZServ to start
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -478,8 +491,8 @@ class Stack(Server):
     def restart_zserv(self, zserv_name):
         """Restarts a ZServ.
 
-        zserv_name: a string representing the name of a ZServ to
-                    restart
+        :param zserv_name: the name of the ZServ to start
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -495,13 +508,8 @@ class Stack(Server):
         for zserv in self.get_stopped_zservs():
             self.start_zserv(zserv.name)
 
-    def stop_all_zservs(self, stop_logfiles=False):
-        """Stops all ZServs.
-        
-        stop_logfiles: a boolean that, if True, stops the logfiles of
-                       the ZServ as well.  False by default.
-        
-        """
+    def stop_all_zservs(self):
+        """Stops all ZServs."""
         # zdslog.debug('')
         for zserv in self.get_running_zservs():
             try:
@@ -513,7 +521,6 @@ class Stack(Server):
                     ###
                     continue
 
-
     def restart_all_zservs(self):
         """Restars all ZServs."""
         # zdslog.debug('')
@@ -523,8 +530,8 @@ class Stack(Server):
     def get_zserv(self, zserv_name):
         """Returns a ZServ instance.
         
-        zserv_name: a string representing the name of the ZServ to
-                    return
+        :param zserv_name: the name of the ZServ to start
+        :type zserv_name: string
         
         """
         # zdslog.debug('')
@@ -540,22 +547,21 @@ class Stack(Server):
     def _get_zserv_info(self, zserv):
         """Returns a dict of zserv info.
 
-        zserv: a ZServ instance for which info is to be returned.
-
-        The returned dict is formatted as follows:
-
-          {'name': <string: internal name of ZServ>,
-           'hostname': <string: hostname of ZServ>,
-           'mode': <string: Game mode of ZServ>,
-           'wads': <strings: list of ZServ's WADs>,
-           'optional_wads': <strings: list of ZServ's optional WADs>,
-           'ip': <string: the ZServ's IP address>,
-           'port': <int: ZServ's port>,
-           'players': <int: number of connected players>,
-           'max_players': <int: maximum number of connected players>,
-           'map_name': <string: name of the current map>,
-           'map_number': <int: number of the current map>,
-           'is_running': <boolean: whether ZServ is currently running>}
+        :param zserv: the name of the ZServ to get info for
+        :type zserv: string
+        :rtype: dict
+        :returns: {'name': <string: internal name of ZServ>,
+                   'hostname': <string: hostname of ZServ>,
+                   'mode': <string: Game mode of ZServ>,
+                   'wads': <strings: list of ZServ's WADs>,
+                   'optional_wads': <strings: list of ZServ's optional WADs>,
+                   'ip': <string: the ZServ's IP address>,
+                   'port': <int: ZServ's port>,
+                   'players': <int: number of connected players>,
+                   'max_players': <int: maximum number of connected players>,
+                   'map_name': <string: name of the current map>,
+                   'map_number': <int: number of the current map>,
+                   'is_running': <boolean: whether ZServ is currently running>}
 
         """
         players = len([x for x in zserv.players if not x.disconnected])
@@ -583,8 +589,8 @@ class Stack(Server):
     def get_zserv_info(self, zserv_name):
         """Returns a dict of zserv info.
 
-        zserv_name: a string representing the name of the ZServ for
-                    which info is to be returned.
+        :param zserv_name: the name of the ZServ to get info for
+        :type zserv_name: string
 
         See _get_zserv_info() for more information.
 
@@ -603,11 +609,14 @@ class Stack(Server):
     def _items_to_section(self, name, items):
         """Converts a list of items into a ConfigParser section.
 
-        name:  a string representing the name of the section to
-               generate.
-        items: a list of option, value pairs (strings).
+        :param name: the name of the section to generate
+        :type name: string
+        :param items: options and values
+        :type: list of 2-tuples ('option', 'value')
+        :rtype: string
 
-        This strips out the global and game-mode specific options.
+        :returns: string representation of a configparser section, with
+                  global and game-mode specific options stripped out
 
         """
         new_items = []
@@ -627,7 +636,8 @@ class Stack(Server):
     def get_zserv_config(self, zserv_name):
         """Returns a ZServ's configuration as a string.
 
-        zserv_name: a string representing the ZServ's name
+        :param zserv_name: the zserv's name
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -638,8 +648,10 @@ class Stack(Server):
     def set_zserv_config(self, zserv_name, data):
         """Sets a ZServ's config.
 
-        zserv_name: a string representing the ZServ's name
-        data:       a string representing the new configuration data
+        :param zserv_name: the zserv's name
+        :type zserv_name: string
+        :param data: the new configuration data
+        :type data: string
 
         """
         # zdslog.debug('')
@@ -656,9 +668,10 @@ class Stack(Server):
     def send_to_zserv(self, zserv_name, message):
         """Sends a command to a running zserv process.
 
-        zserv_name: a string representing the name of the ZServ to
-                    send the message to
-        message:    a string, the message to send
+        :param zserv_name: the name of the ZServ to send the message to
+        :type zserv_name: string
+        :param message: the message to send
+        :type message: string
 
         """
         # zdslog.debug('')
@@ -667,10 +680,12 @@ class Stack(Server):
     def addban(self, zserv_name, ip_address, reason='rofl'):
         """Adds a ban.
 
-        zserv_name: a string representing the name of the ZServ to add
-                    the ban to
-        ip_address: a string representing the IP address to ban
-        reason:     a string representing the reason for the ban
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param ip_address: the IP address to ban
+        :type ip_address: string
+        :param reason: the reason for the ban
+        :type reason: string
 
         """
         # zdslog.debug('')
@@ -679,9 +694,10 @@ class Stack(Server):
     def addbot(self, zserv_name, bot_name=None):
         """Adds a bot.
 
-        zserv_name: a string representing the name of the ZServ to add
-                    the bot to
-        bot_name:   a string representing the name of the bot to add
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param bot_name: the name of the bot to add
+        :type bot_name: string
 
         """
         # zdslog.debug('')
@@ -690,9 +706,10 @@ class Stack(Server):
     def addmap(self, zserv_name, map_number):
         """Adds a map to the maplist.
 
-        zserv_name: a string representing the name of the ZServ to add
-                    the map to
-        map_number: a string representing the number of the map to add
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param map_number: the number of the map to add
+        :type map_number: string
 
         """
         # zdslog.debug('')
@@ -701,8 +718,8 @@ class Stack(Server):
     def clearmaplist(self, zserv_name):
         """Clears the maplist.
 
-        zserv_name: a string representing the name of the ZServ whose
-                    maplist is to be cleared
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -711,10 +728,12 @@ class Stack(Server):
     def get(self, zserv_name, variable_name):
         """Gets the value of a variable.
 
-        zserv_name:    a string representing the name of the ZServ to
-                       retrieve the variable value from
-        variable_name: a string representing the name of the variable
-                       whose value is to be retrieved
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param variable_name: the name of the variable
+        :type variable_name: string
+        :rtype: string
+        :returns: the value of the variable as a string
 
         """
         # zdslog.debug('')
@@ -723,11 +742,12 @@ class Stack(Server):
     def kick(self, zserv_name, player_number, reason='rofl'):
         """Kicks a player from the zserv.
 
-        zserv_name:    a string representing the name of the ZServ to
-                       kick the player from
-        player_number: a string representing the number of the player
-                       to kick
-        reason:        a string representing the reason for the kick
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param player_number: the numer of the player to kick
+        :type player_number: string
+        :param reason: the reason for the kick
+        :type reason: string
 
         """
         # zdslog.debug('')
@@ -736,10 +756,10 @@ class Stack(Server):
     def killban(self, zserv_name, ip_address):
         """Removes a ban.
 
-        zserv_name: a string representing the name of the ZServ to
-                    remove the ban from
-        ip_address: a string representing the IP address to remove the
-                    ban for
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param ip_address: the ip address to un ban
+        :type ip_address: string
 
         """
         # zdslog.debug('')
@@ -748,10 +768,10 @@ class Stack(Server):
     def map(self, zserv_name, map_number):
         """Changes the current map.
 
-        zserv_name: a string representing the name of the ZServ to
-                    change the map on
-        map_number: a string representing the number of the map to
-                    change to
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param map_number: the number of the map to change to
+        :type map_number: string
 
         """
         # zdslog.debug('')
@@ -760,8 +780,8 @@ class Stack(Server):
     def maplist(self, zserv_name):
         """Returns the maplist.
 
-        zserv_name: a string representing the name of the ZServ to
-                    retrieve the maplist for
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
 
         Returns a list of strings representing the numbers of the maps
         in the maplist.
@@ -773,11 +793,14 @@ class Stack(Server):
     def players(self, zserv_name):
         """Returns a list of players and their info.
 
-        zserv_name: a string representing the name of the ZServ to
-                    list the players for
-
-        Returns a list of strings representing the number, name, and
-        IP address of all players.
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :rtype: list of :class:`~LogEvent` instances
+        :returns:
+          Each :class:`~LogEvent` instance represents one line of the
+          of the zserv's response.  The dict looks like:
+          {'player_num': 0, 'player_name': 'superman',
+           'player_ip': '127.0.0.1', 'player_port': 40667}
 
         """
         # zdslog.debug('')
@@ -786,8 +809,8 @@ class Stack(Server):
     def removebots(self, zserv_name):
         """Removes all bots.
 
-        zserv_name: a string representing the name of the ZServ to
-                    remove the bots from
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -796,8 +819,8 @@ class Stack(Server):
     def resetscores(self, zserv_name):
         """Resets all scores.
 
-        zserv_name: a string representing the name of the ZServ to
-                    reset the scores for
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
 
         """
         # zdslog.debug('')
@@ -806,9 +829,10 @@ class Stack(Server):
     def say(self, zserv_name, message):
         """Sends a message from "] CONSOLE [".
 
-        zserv_name: a string representing the name of the ZServ to
-                    send the message to
-        message:    a string, the message to send
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param message: the message to send
+        :type message: string
 
         """
         # zdslog.debug('')
@@ -817,11 +841,12 @@ class Stack(Server):
     def set(self, zserv_name, variable_name, variable_value):
         """Sets the value of a variable
 
-        zserv_name:     a string representing the name of the ZServ
-        variable_name:  a string representing the name of the variable
-                        to set
-        variable_value: a string representing the new value of the
-                        variable
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param variable_name: the name of the variable
+        :type variable_name: string
+        :param variable_value: the new value of the variable
+        :type variable_value: string
 
         """
         # zdslog.debug('')
@@ -830,9 +855,10 @@ class Stack(Server):
     def toggle(self, zserv_name, boolean_variable):
         """Toggles a boolean option.
 
-        zserv_name:       a string representing the name of the ZServ
-        boolean_variable: a string representing the name of the
-                          boolean variable to toggle on or off
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param boolean_variable: the name of the variable
+        :type boolean_variable: string
 
         """
         # zdslog.debug('')
@@ -841,9 +867,10 @@ class Stack(Server):
     def unset(self, zserv_name, variable_name):
         """Unsets a variable (removes it).
 
-        zserv_name:    a string representing the name of the ZServ to
-                       remove the variable from
-        variable_name: the name of the variable to unset
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :param variable_name: the name of the variable
+        :type variable_name: string
 
         """
         # zdslog.debug('')
@@ -852,11 +879,10 @@ class Stack(Server):
     def wads(self, zserv_name):
         """Returns a list of the used WADs.
 
-        zserv_name: a string representing the name of the ZServ to add
-                    the bot to
-
-        Returns a list of strings representing the names of the used
-        WADs.
+        :param zserv_name: the name of the ZServ
+        :type zserv_name: string
+        :rtype: list of strings
+        :returns: Each list member is the name of a used WAD.
 
         """
         # zdslog.debug('')

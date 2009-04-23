@@ -8,18 +8,21 @@ import compileall
 ###
 
 def is_plugin(p):
-    """Returns True if 'p' is a plugin.
+    """Test if something is a plugin.
 
-    p: a string representing the filename of a potential plugin file
+    :param p: a string representing the filename of a potential plugin
+              file
+    :rtype: Boolean
 
     """
     return not p.startswith('__init__.py') and p.endswith('.pyc')
 
 def get_modules(plugin_path):
-    """Returns a list of compiled plugin modules.
+    """Get compiled plugin modules.
 
-    plugin_path: a string representing the full path to the plugin
-                 folder
+    :param plugin_path: a string representing the full path to the
+                        plugin folder
+    :rtype: list of compiled plugin module objects
 
     """
     modules = []
@@ -37,9 +40,11 @@ def get_modules(plugin_path):
     return modules
 
 def extract_module_callables(module):
-    """Returns a list of functions contained in a plugin module.
+    """Extract the functions from a plugin module.
 
-    module: a plugin module.  get_modules returns a list of these.
+    :param module: a plugin module.  get_modules returns a list of
+                   these.
+    :rtype: a list of function objects
 
     """
     functions = []
@@ -53,10 +58,11 @@ def extract_module_callables(module):
     return functions
 
 def get_plugins(plugin_path):
-    """Returns a list of plugin functions.
+    """Get all plugin functions.
 
-    plugin_path: a string representing the full path to the plugin
-                 folder
+    :param plugin_path: a string representing the full path to the
+                        plugin folder.
+    :rtype: a list of functions
 
     """
     plugins = []

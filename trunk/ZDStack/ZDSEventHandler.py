@@ -14,6 +14,19 @@ zdslog = get_zdslog()
 
 class BaseEventHandler(object):
 
+    """The base EventHandler class.
+
+    An EventHandler maps event categories to handler functions.  These
+    functions use the signature 'handler(event, zserv)'.
+
+    .. attribute:: _event_categories_to_handlers
+        A dict mapping event categories to handler functions
+
+    Don't use _event_categories_to_handlers directly, instead use
+    get_handler() and set_handler()
+
+    """
+
     def __init__(self):
         """Initializes a BaseEventHandler."""
         zdslog.debug('')
@@ -23,8 +36,9 @@ class BaseEventHandler(object):
     def get_handler(self, event_category):
         """Returns a handler method for a given event_category.
 
-        event_category: a string representing thetype of event to
-                        handle.
+        :param event_category: the category of an event for which to
+                               return a handler.
+        :type event_category: string
 
         """
         return \
@@ -34,10 +48,11 @@ class BaseEventHandler(object):
     def set_handler(self, event_category, handler):
         """Sets the handler method for a certain event_category.
 
-        event_category: a string representing the category of event to
-                        handle.
-        handler:        a function that will handle the event, takes an
-                        event instance as its only argument.
+        :param event_category: the category of an event for which to
+                               return a handler.
+        :type event_category: string
+        :param handler: the event handler
+        :type handler: a function
 
         """
         self._event_categories_to_handlers[event_category] = handler
@@ -45,8 +60,10 @@ class BaseEventHandler(object):
     def handle_error_event(self, event, zserv=None):
         """Handles an error event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the error event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         ###
@@ -66,8 +83,10 @@ class BaseEventHandler(object):
     def handle_unhandled_event(self, event, zserv):
         """Handles an unhandled event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the unhandled event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         pass # do nothing... actually do not handle the event
@@ -111,8 +130,10 @@ class ZServEventHandler(BaseEventHandler):
     def _sync_players(self, event, zserv):
         """Syncs players.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: an event indicating that players should be sync'd
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         zdslog.debug("_sync_players(%s)" % (event))
@@ -136,8 +157,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_game_join_event(self, event, zserv):
         """Handles a game_join event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the game_join event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         zdslog.debug("handle_game_join_event(%s)" % (event))
@@ -170,8 +193,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_rcon_event(self, event, zserv):
         """Handles an RCON-related event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the rcon event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         if event.type not in ('rcon_denied', 'rcon_granted', 'rcon_action'):
@@ -201,8 +226,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_flag_event(self, event, zserv):
         """Handles a flag_touch event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the flag event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         zdslog.debug("handle_flag_event(%s)" % (event))
@@ -316,8 +343,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_frag_event(self, event, zserv):
         """Handles a frag event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the frag event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         zdslog.debug("handle_frag_event(%s)" % (event))
@@ -408,8 +437,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.
 
-        event: a LogEvent instance.
-        zserv: the ZServ instance that generated the event.
+        :param event: the map_change event
+        :type event: LogEvent
+        :param zserv: the event's generating ZServ
+        :type zserv: ZServ
 
         """
         zdslog.debug("handle_map_change_event(%s)" % (event))

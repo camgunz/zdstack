@@ -31,9 +31,11 @@ class ZServConfigParser(ZDSConfigParser):
         self.set(self.zserv.name, 'name', self.zserv.name)
 
     def add_section(self, *args, **kwargs):
+        """ZServConfigParsers don't support adding sections."""
         raise NotImplementedError()
 
     def has_section(self, *args, **kwargs):
+        """ZServConfigParsers don't support sections."""
         raise NotImplementedError()
 
     def remove_section(self, *args, **kwargs):
@@ -41,21 +43,64 @@ class ZServConfigParser(ZDSConfigParser):
 
     @requires_instance_lock()
     def has_option(self, option):
+        """Checks if this ZServ's config contains a specific option.
+
+        :param option: the option to check for
+        :type option: string
+        :rtype: boolean
+
+        """
         return ZDSConfigParser.has_option(self, self.zserv.name, option,
                                           acquire_lock=False)
 
     @requires_instance_lock()
     def options(self):
+        """Gets this ZServ's config's options.
+
+        :rtype: list of strings
+        :returns: a list of strings representing the names of the
+                  options
+
+        """
         return ZDSConfigParser.options(self, self.zserv.name,
                                        acquire_lock=False)
 
     @requires_instance_lock()
     def remove_option(self, option):
+        """Removes an option from this ZServ's config.
+
+        :param option: the option to be removed
+        :type option: string
+        :rtype: boolean
+        :returns: True if the option existed
+
+        """
         return ZDSConfigParser.remove_option(self, self.zserv.name,
                                              acquire_lock=False)
 
     @requires_instance_lock()
     def get_raw(self, section, option, default=None):
+        """Gets an option's value without interpolation.
+
+        :param section: the name of the section in which to look for
+                        the option
+        :type section: string
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: string
+        :returns: the string value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        The 'section' parameter is ignored, replaced by
+        self.zserv.name.  The signature is as it is because it's called
+        by other methods that aren't overridden here.
+
+        """
         opt = self.optionxform(option)
         game_mode_opt = '_'.join([self.game_mode, opt])
         section = self.zserv.name
@@ -72,6 +117,20 @@ class ZServConfigParser(ZDSConfigParser):
 
     @requires_instance_lock()
     def get(self, option, default=None):
+        """Gets an option's value.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: string
+        :returns: the string value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         return ZDSConfigParser.get(self, self.zserv.name, option, default,
                                    acquire_lock=False)
 
@@ -85,10 +144,38 @@ class ZServConfigParser(ZDSConfigParser):
 
     @requires_instance_lock()
     def getint(self, option, default=None):
+        """Gets an option's value as an int.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: int
+        :returns: the int value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         return self._get(int, option, default, acquire_lock=False)
 
     @requires_instance_lock()
     def getfloat(self, option, default=None):
+        """Gets an option's value as a float.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: float
+        :returns: the float value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         return self._get(float, option, default, acquire_lock=False)
 
     def _getpercent(self, x):
@@ -99,20 +186,83 @@ class ZServConfigParser(ZDSConfigParser):
 
     @requires_instance_lock()
     def getpercent(self, option, default=None):
+        """Gets an option's value as a percentage.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: string
+        :returns: the string value of the option (as a percentage) if
+                  found.  If the option is not found, but 'default' is
+                  not None, the value of the 'default' argument will be
+                  returned.  Otherwise a NoOptionError is raised.
+
+        The returned percentage will never be higher than 100%, use
+        'getdecimal()' for that.
+
+        """
         return self._get(self._getpercent, option, default, acquire_lock=False)
 
     @requires_instance_lock()
     def getdecimal(self, option, default=None):
+        """Gets an option's value as a Decimal.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: Decimal
+        :returns: the Decimal value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         return self._get(Decimal, option, default, acquire_lock=False)
 
     @requires_instance_lock()
     def getlist(self, option, default=None, parse_func=None):
+        """Gets an option's value as a list.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :param parse_func: a function used to parse the option's value
+                           into a list.  optional, the default is:
+                           'lambda x: [y.strip() for y in x.split(',')]'
+        :type parse_func: function
+        :rtype: list
+        :returns: the parsed list value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         if not parse_func:
             parse_func = lambda x: [y.strip() for y in x.split(',')]
         return self._get(parse_func, option, default, acquire_lock=False)
 
     @requires_instance_lock()
     def getboolean(self, option, default=None):
+        """Gets an option's value as a boolean.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: boolean
+        :returns: the boolean value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.
+
+        """
         try:
             v = self.get(option, default, acquire_lock=False)
             if v == default or not v:
@@ -127,16 +277,40 @@ class ZServConfigParser(ZDSConfigParser):
 
     @requires_instance_lock()
     def getpath(self, option, default=None):
+        """Gets an option's value as a resolved path.
+
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: string
+        :returns: the string value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.  The value will
+                  be passed through
+                  os.path.abspath(os.path.expanduser(v)).
+
+        """
         return self._get(resolve_path, option, default, acquire_lock=False)
 
     @requires_instance_lock()
     def items(self):
+        """Gets this ZServ's config's items.
+
+        :rtype: list of 2-Tuples
+        :returns: a list of a section's options and values, i.e.
+                  [('option', 'value1'), ('option2', 'value2')]
+
+        """
         return self._sections[self.zserv.name].items()
 
     def process_config(self):
-        """Process a config
-
-        config: a RawZDSConfigParser instance or subclass.
+        """Process a config.
+        
+        After the config has been successfully processed, this
+        ZServConfig updates its ZServ's instance variables
 
         """
         from ZDStack.ZServ import DUEL_MODES
@@ -389,6 +563,12 @@ class ZServConfigParser(ZDSConfigParser):
         ###
 
     def get_config_data(self):
+        """Gets configuration data.
+
+        :rtype: string
+        :returns: configuration data as a string in zserv configuration format
+
+        """
         from ZDStack.ZServ import DUEL_MODES, DM_MODES, TEAM_MODES, CTF_MODES
         self._new_template = ''
         def add_line(should_add, line):
@@ -521,3 +701,4 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.teamdamage, 'set teamdamage "%s"')
         add_var_line(self.zserv.max_teams, 'set maxteams "%s"')
         return self._new_template
+

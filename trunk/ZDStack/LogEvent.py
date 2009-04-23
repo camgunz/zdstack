@@ -1,18 +1,22 @@
 class LogEvent(object):
 
-    """LogEvent represents an event occurring in a log file."""
+    """LogEvent represents an event occurring in a log file.
+    
+    .. attribute:: dt
+        A datetime representing the time at which the event occurred.
+    .. attribute:: type
+        A string representing the type of the event.
+    .. attribute:: data
+        A dict containing event-specific data.
+    .. attribute:: category
+        A string representing the category of the event.
+    
+    """
 
     def __init__(self, event_dt, event_type, event_data, event_category,
                        line=''):
         """Initializes a LogEvent instance.
 
-        event_dt:       a datetime representing the time at which the
-                        event occurred.
-        event_type:     a string representing the type of the event.
-        event_data:     a dict of event data.
-        event_category: the category this event belongs to.
-        line:           optional, a string representing the line this
-                        event was created to represent.
 
         """
         self.dt = event_dt

@@ -33,6 +33,17 @@ zdslog = get_zdslog()
 
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
+    """Adds authentication to RPC dispatching.
+
+    .. attribute:: encoding
+        A string representing the encoding of the RPC data.
+    .. attribute:: username
+        A string representing the authenticating username
+    .. attribute:: password
+        A string representing the authenticating password
+
+    """
+
     def __init__(self, encoding, username, password):
         zdslog.debug('')
         SimpleXMLRPCDispatcher.__init__(self, True, encoding)
@@ -44,8 +55,14 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
                           requires_authentication=False):
         """Registers a function to respond to RPC requests.
 
-        The optional name argument can be used to set a Unicode name
-        for the function.
+        :param function: the function to register
+        :type function: function
+        :param name: the name to register the function under; uses the
+                     function's current name by default.
+        :type name: string
+        :param requires_authentication: whether or not the function
+                                        requires authentication.
+        :type requires_authentication: boolean
 
         """
         # zdslog.debug('')
@@ -55,6 +72,14 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
             self.methods_requiring_authentication.add(name)
 
     def _dispatch(self, method, params):
+        """Dispatches an RPC call.
+
+        :param method: the name of the function to call
+        :type method: string
+        :param params: the arguments to pass to method
+        :type params: list
+
+        """
         requires_auth = method in self.methods_requiring_authentication
         s = 'Dispatching %s, requires_authentication: %s'
         zdslog.debug(s % (method, requires_auth))
@@ -70,6 +95,8 @@ class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
         return SimpleXMLRPCDispatcher._dispatch(self, method, params)
 
 class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
+
+    """BaseRPCRequestHandler allows a configurable transport MIME-Type."""
 
     def __init__(self, transport_mimetype):
         zdslog.debug('')
@@ -149,6 +176,15 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             self.connection.shutdown(1)
 
     def log_message(self, format, *args):
+        """Logs a message
+
+        :param format: a format string
+        :type format: string
+        :param args: the arguments to interpolate into the format
+                     string
+        :type args: list
+
+        """
         zdslog.debug('')
         zdslog.info("%s - - [%s] %s\n" % (self.address_string(),
                                            self.log_date_time_string(),
@@ -156,12 +192,15 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
 
 class XMLRPCRequestHandler(BaseRPCRequestHandler):
 
+    """XMLRPCRequestHandler handles XML-RPC requests."""
+
     def __init__(self):
         zdslog.debug('')
         BaseRPCRequestHandler.__init__(self, 'text/xml')
 
 class JSONRPCRequestHandler(BaseRPCRequestHandler):
 
+    """JSONRPCRequestHandler handles JSON-RPC requests."""
     def __init__(self):
         zdslog.debug('')
         BaseRPCRequestHandler.__init__(self, 'application/json')
@@ -238,6 +277,12 @@ class JSONRPCServer(XMLRPCServer):
         return self.generate_response(result, None, id)
 
     def datetime_to_seconds(self, dt):
+        """Converts a datetime instance into seconds since the epoch.
+
+        :param dt: the datetime instance
+        :type dt: datetime
+
+        """
         ###
         # There's probably something in the 'time' module for this, but fuck
         # it.
@@ -250,6 +295,15 @@ class JSONRPCServer(XMLRPCServer):
         return (td.days * 86400) + td.seconds
 
     def generate_response(self, result=None, error=None, id=None):
+        """Generates a JSON response.
+
+        :param result: the output of the RPC method call
+        :param error: error information
+        :type error: dict
+        :param id: the id number of the request
+        :type id: integer
+
+        """
         zdslog.debug('')
         # print >> sys.stderr, "generate_response got %s, %s, %s" % (result,
                                                                    # error, id)
@@ -266,6 +320,16 @@ class JSONRPCServer(XMLRPCServer):
         return out
 
     def exception_to_dict(self, e, code, context):
+        """Converts an exception into a serializable dict.
+
+        :param e: an exception to convert
+        :type e: exception
+        :param code: the 3-digit error code
+        :type code: string
+        :context: a message to go along with the exception
+        :type context: string
+
+        """
         zdslog.debug('')
         out = {}
         out['name'] = "JSONRPCError"
@@ -276,17 +340,32 @@ class JSONRPCServer(XMLRPCServer):
         return out
 
     def set_summary(self, summary):
-        """Sets this server's summary."""
+        """Sets this server's summary.
+        
+        :param summary: the summary to set
+        :type summary: string
+        
+        """
         zdslog.debug('')
         self.summary = summary
 
     def set_help_url(self, help_url):
-        """Sets this server's help URL."""
+        """Sets this server's help URL.
+        
+        :param help_url: the help URL
+        :type help_url: string
+        
+        """
         zdslog.debug('')
         self.help_url = help_url
 
     def set_address(self, address):
-        """Sets this server's address."""
+        """Sets this server's address.
+        
+        :param address: the address to set
+        :type address: string
+        
+        """
         zdslog.debug('')
         self.address = address
 

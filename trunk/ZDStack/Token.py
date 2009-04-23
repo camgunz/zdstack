@@ -7,9 +7,12 @@ class Token(object):
     def __init__(self, contents, opener='', closer=''):
         """Initializes a Token instance.
 
-        contents: a string representing the main contents of the Token
-        opener:   a string representing the opener of a player's tag
-        closer:   a string representing the closer of a player's tag
+        :param contents: the main contents of the Token
+        :type contents: string
+        :param opener: the opener of a player's tag
+        :type opener: string
+        :param closer: the closer of a player's tag
+        :type opener: string
 
         """
         self.contents = contents

@@ -86,21 +86,24 @@ def _locked_session(get_global=False, remove=False):
         
 
 def new_session():
+    """Returns a new Session instance."""
     return _locked_session(get_global=False, remove=True)
 
 def global_session():
+    """Returns the global Session instance."""
     return _locked_session(get_global=True, remove=False)
 
 def persist(model, update=False, session=None):
     """Persists a model.
 
-    model:   an instance of an Entity subclass.
-    update:  an optional boolean that, if given, indicates that the
-             model already exists in the database and just needs to be
-             updated.  False by default, meaning the model will be
-             INSERTed.
-    session: optional, if given uses the session instead of acquiring
-             the global DB lock and creating its own.
+    :param model: the model to persist.
+    :type model: sqlalchemy.ext.declarative.Base
+    :param update: whether or not to UPDATE the model, or INSERT it as
+                   completely new; False by default
+    :type update: boolean
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
 
     """
     if update:
@@ -175,6 +178,17 @@ def requires_session(func):
 
 @requires_session
 def get_weapon(name, is_suicide, session):
+    """Gets a Weapon.
+    
+    :param name: the name of the Weapon to get
+    :type name: string
+    :param is_suicide: whether or not the Weapon is a suicide
+    :type is_suicide: boolean
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     q = session.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
     try:
         return q.one()
@@ -184,6 +198,17 @@ def get_weapon(name, is_suicide, session):
 
 @requires_session
 def get_alias(name, ip_address, session, round=None):
+    """Gets an Alias.
+    
+    :param name: the name of the Alias to get
+    :type name: string
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+    :param round: optional, the round to which this alias belongs
+    :type round: Round
+
+    """
     q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
     out = q.first()
     if out:
@@ -195,6 +220,15 @@ def get_alias(name, ip_address, session, round=None):
 
 @requires_session
 def get_team_color(color, session):
+    """Gets a TeamColor.
+    
+    :param color: the color of the TeamColor to get
+    :type color: string
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     q = session.query(TeamColor).filter_by(color=color)
     try:
         return q.one()
@@ -203,6 +237,15 @@ def get_team_color(color, session):
 
 @requires_session
 def get_port(name, session):
+    """Gets a Port.
+    
+    :param name: the name of the Port to get
+    :type name: string
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     q = session.query(Port).filter_by(name=name)
     try:
         return q.one()
@@ -211,6 +254,15 @@ def get_port(name, session):
 
 @requires_session
 def get_game_mode(name, has_teams, session):
+    """Gets a GameMode.
+    
+    :param name: the name of the GameMode to get
+    :type name: string
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
     try:
         return q.one()
@@ -220,6 +272,17 @@ def get_game_mode(name, has_teams, session):
 
 @requires_session
 def get_map(number, name, session):
+    """Gets a Map.
+    
+    :param number: the number of the Map to get
+    :type number: int
+    :param name: the name of the Map to get
+    :type name: string
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     q = session.query(Map).filter_by(number=number, name=name)
     out = q.first()
     if out:
@@ -228,6 +291,17 @@ def get_map(number, name, session):
 
 @requires_session
 def get_round(game_mode, map, session, start_time=None):
+    """Gets a Round.
+    
+    :param game_mode: the GameMode of the Round to get
+    :type game_mode: GameMode
+    :param map: the Map of the Round to get
+    :type map: Map
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+
+    """
     start_time = start_time or datetime.datetime.now()
     r = persist(Round(game_mode=game_mode, map=map, start_time=start_time),
                 session=session)

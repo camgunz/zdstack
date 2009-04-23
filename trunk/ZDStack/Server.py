@@ -5,7 +5,6 @@ import signal
 import socket
 import tempfile
 from datetime import datetime
-from pyfileutils import read_file, write_file, append_file, delete_file
 
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, get_configfile, set_configfile, \
@@ -17,7 +16,33 @@ zdslog = get_zdslog()
 
 class Server(object):
 
-    """Server represents a daemonized process serving network requests."""
+    """Server represents a daemonized process serving network requests.
+    
+    .. attribute:: stats
+        A dict of server stats.
+
+    .. attribute:: status
+        A string representing the server's status.
+
+    .. attribute:: hostname
+        A string representing the server's hostname.
+
+    .. attribute:: port
+        An int representing the server's port.
+
+    .. attribute:: logfile
+        A string representing the server's logfile
+
+    .. attribute:: pidfile
+        A string representing the server's PID file
+
+    .. attribute:: username
+        A string representing the authenticating username
+
+    .. attribute:: password
+        A string representing the authenticating password
+    
+    """
 
     def __init__(self):
         """Initializes a Server instance."""
@@ -39,8 +64,8 @@ class Server(object):
     def initialize_config(self, reload=False):
         """Initializes the server configuration:
 
-        reload:      a boolean, whether or not the configuration is
-                     being reloaded
+        :param reload: whether or not the config is being reloaded
+        :type reload: boolean
 
         """
         # zdslog.debug('')
@@ -50,8 +75,10 @@ class Server(object):
     def load_config(self, config, reload=False):
         """Loads the config.
 
-        reload: a boolean, whether or not the configuration is being
-                reloaded
+        :param config: the config to load
+        :type config: :class:`~ZDStack.ZDSConfigParser`
+        :param reload: whether or not the config is being reloaded
+        :type reload: boolean
 
         """
         zdslog.debug('')
@@ -85,7 +112,13 @@ class Server(object):
         self.rpc_server.timeout = 1
         self.register_functions()
         self.keep_serving = True
-        write_file(str(os.getpid()), self.pidfile)
+        if os.path.isfile(self.pidfile):
+            es = "PID file [%s] already exists, is ZDStack already running?"
+            raise Exception(es % (self.pidfile))
+        fobj = open(self.pidfile, 'w')
+        fobj.write(str(os.getpid()))
+        fobj.flush()
+        fobj.close()
         self.start()
         zdslog.info("ZDStack listening on %s:%s" % addr)
         zdslog.info("ZDStack Startup Complete")
@@ -93,7 +126,13 @@ class Server(object):
             self.rpc_server.handle_request()
 
     def shutdown(self, signum=15, retval=0):
-        """Shuts the server down."""
+        """Shuts the server down.
+        
+        :param signum: unused
+        :param retval: the exit code to use if exit was successful
+        :type retval: integer
+        
+        """
         # zdslog.debug('')
         zdslog.info("ZDStack Shutting Down")
         self.stop()
@@ -105,7 +144,7 @@ class Server(object):
         ZDSThreadPool.join_all()
         try:
             zdslog.debug("Deleting PID file")
-            delete_file(self.pidfile)
+            os.unlink(self.pidfile)
         except OSError, e:
             if e.errno != 2:
                 ###
@@ -167,5 +206,8 @@ class Server(object):
         # This could potentially be quite large, maybe we should make this
         # method a little smarter eh?
         ###
-        return read_file(self.logfile)
+        fobj = open(self.logfile)
+        data = fobj.read()
+        fobj.close()
+        return data
 

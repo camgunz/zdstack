@@ -6,16 +6,53 @@ zdslog = get_zdslog()
 
 class Player(object):
 
+    """A Player represents a player who's connected to a server.
+
+    .. attribute:: zserv
+        This player's containing ZServ instance
+
+    .. attribute:: ip
+        A string represenging this player's IP address
+
+    .. attribute:: port
+        An int representing the port this player is connecting from
+
+    .. attribute:: number
+        An int representing this player's position in the ZServ's list
+        of players
+
+    .. attribute:: name
+        A string representing this player's complete name
+
+    .. attribute:: tag
+        A string representing this player's tag, can be None
+
+    .. attribute:: player_name
+        A string representing this player's name without the tag, can
+        be the same as 'name'
+
+    .. attribute:: playing
+        A boolean, whether or not the player is currently playing
+
+    .. attribute:: disconnected
+        A boolean, whether or not the player is currently disconnected
+
+    """
+
     def __init__(self, zserv, ip_address, port, name=None, number=None):
         """Initializes a BasePlayer.
 
-        zserv:      a ZServ instance.
-        ip_address: a string representing the IP address of the player
-        port:       a string representing the port of the player
-        name:       optional, a string representing the name of the
-                    player
-        number:     optional, a string representing the number of the
-                    player
+        :param zserv: This player's containing ZServ instance
+        :type zserv: ZServ
+        :param ip_address: This player's IP address
+        :type ip_address: string
+        :param port: The port this player is connecting from
+        :type port: int
+        :param name: This player's name
+        :type name: string
+        :param number: The player's position in its ZServ's list of
+                       players
+        :type number: int
 
         """
         zdslog.debug('name: [%s]' % (name))
@@ -34,7 +71,8 @@ class Player(object):
     def set_name(self, name):
         """Sets this player's name.
 
-        name: a string representing the new name of this player
+        :param name: the new name of this player
+        :type name: string
 
         """
         zdslog.debug("setting name to [%s]" % (name))
@@ -50,8 +88,10 @@ class Player(object):
     def get_alias(self, session=None):
         """Returns an alias representing this player.
         
-        session: a session instance, if none is given, the global
-                 session will be used.
+        :param session: a Session instance, if none is given, the global
+                        session will be used
+        :type session: Session
+        :rtype: Alias
         
         """
         zdslog.debug("Getting Alias for %s, %s" % (self.name, self.ip))

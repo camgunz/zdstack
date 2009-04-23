@@ -279,6 +279,7 @@ HEAD_TEMPLATE = """\
         tr.greybg, td.greybg { background-color: #353535; }
         tr.blackbg, td.blackbg { background-color: black; }
         button {
+            font-size: .8em;
             background-color: black;
             color: white;
             border: 1px solid white;
@@ -404,7 +405,7 @@ CONFIG_TEMPLATE = """\
           enctype="application/x-www-form-urlencoded">
         <input type="hidden" name="name" value="%%(name)s"/>
         <textarea name="config" rows="%%(height)s"
-                  cols="120">%%(config)s</textarea>
+                  cols="145">%%(config)s</textarea>
         <br/>
         <button class="control set_config" name="action"
                 value="set_config" type="submit">Set Config</button>
@@ -592,6 +593,7 @@ class Page:
         servers = []
         content = ''
         bottom_content = ''
+        es = 'Could not connect to ZDStack: %s'
         try:
             if self._func:
                 if self.action == 'get_config':
@@ -605,7 +607,6 @@ class Page:
                 else:
                     self._func()
         except socket.error:
-            es = 'Could not connect to ZDStack: %s'
             try:
                 error = es % (IFACE.proxy._XMLProxy__host)
             except AttributeError:

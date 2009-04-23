@@ -145,6 +145,12 @@ class JSONNotFoundError(Exception):
         Exception.__init__(self, es)
 
 def get_hostname():
+    """Gets this machine's public-facing hostname.
+
+    :rtype: string
+    :returns: the machine's public-facing hostname.
+
+    """
     global HOSTNAME
     if not HOSTNAME:
         try:
@@ -182,6 +188,12 @@ command).
     return HOSTNAME
 
 def get_loopback():
+    """Gets this machine's private loopback address.
+
+    :rtype: string
+    :returns: the machine's private loopback address
+
+    """
     global LOOPBACK
     if not LOOPBACK:
         try:
@@ -202,6 +214,12 @@ Error code/message was: %s, %s"""
     return LOOPBACK
 
 def get_configfile():
+    """Gets the location of the ZDStack configuration file.
+
+    :rtype: string
+    :returns: the full resolved path to the ZDStack configuration file
+
+    """
     global CONFIGFILE
     if not CONFIGFILE:
         possible_config_files = ['./zdstackrc', './zdstack.ini',
@@ -221,6 +239,14 @@ def get_configfile():
     return CONFIGFILE
 
 def set_configfile(config_file):
+    """Sets the location of the ZDStack configuration file.
+
+    :param config_file: the new configuration file
+    :type config_file: string
+
+    'config_file' will be run through 'resolve_file()'
+
+    """
     global CONFIGFILE
     config_file = resolve_path(config_file)
     if not os.path.isfile(config_file):
@@ -229,6 +255,11 @@ def set_configfile(config_file):
     CONFIGFILE = config_file
 
 def load_configparser():
+    """Loads the ZDStack configuration file into a ConfigParser.
+    
+    :rtype: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser`
+    
+    """
     global RPC_CLASS
     global RPC_PROXY_CLASS
     global DEBUGGING
@@ -328,11 +359,19 @@ def load_configparser():
         except Exception, e:
             es = "Error: ZDStack Plugin Folder %s is not valid: %s"
             raise ValueError(es % (plugin_folder, e))
-    ###
-    # Resolve the PID file location.
-    ###
     if DEBUGGING is None:
-        set_debugging(False, cp)
+        set_debugging(False)
+    ###
+    # Check for duplicate ports.
+    ###
+    seen_ports = set()
+    for section in cp.sections():
+        port = cp.getint(section, 'port')
+        if port in seen_ports:
+            es = "Server [%s] has duplicate port [%s]"
+            raise ValueError(es % (section, port))
+        else:
+            seen_ports.add(port)
     return cp
 
 def _get_embedded_engine(db_engine, cp):
@@ -470,6 +509,12 @@ def _get_full_engine(db_engine, cp):
         return create_engine(db_str)
 
 def get_rpc_server_class():
+    """Gets the RPC server class.
+
+    :rtype: either :class:`~ZDStack.RPCServer.XMLRPCServer` or
+                   :class:`~ZDStack.RPCServer.JSONRPCServer`
+
+    """
     global RPC_CLASS
     if not RPC_CLASS:
         cp = get_configparser()
@@ -482,6 +527,12 @@ def get_rpc_server_class():
     return RPC_CLASS
 
 def get_rpc_proxy_class():
+    """Gets the RPC proxy class.
+
+    :rtype: either :class:`~ZDStack.RPCServer.XMLProxy` or
+                   :class:`~ZDStack.RPCServer.JSONProxy`
+
+    """
     global RPC_PROXY_CLASS
     if not RPC_PROXY_CLASS:
         cp = get_configparser()
@@ -496,13 +547,25 @@ def get_rpc_proxy_class():
     return RPC_PROXY_CLASS
 
 def get_json_module():
+    """Gets the json module.
+
+    :rtype: module
+    :returns: either the json module included with Python 2.6, or the
+              simplejson module.
+
+    """
     global JSON_MODULE
     if not JSON_MODULE:
         raise JSONNotFoundError
     return JSON_MODULE
 
 def get_server_proxy():
-    """Returns an object that is a proxy for the running ZDStack."""
+    """Gets a ZDStack server proxy.
+    
+    :rtype: an instance of either :class:`~ZDStack.RPCServer.XMLProxy`
+                               or :class:`~ZDStack.RPCServer.JSONProxy`
+    
+    """
     cp = get_configparser() # assuming it's already loaded at this point
     address = 'http://%s:%s' % (cp.get('DEFAULT', 'zdstack_rpc_hostname'),
                                 cp.get('DEFAULT', 'zdstack_port'))
@@ -510,6 +573,11 @@ def get_server_proxy():
     return get_rpc_proxy_class()(address)
 
 def get_engine():
+    """Gets the database engine.
+
+    :rtype: an SQLAlchemy Engine instance.
+
+    """
     ###
     # At this point, we are assuming that stats have been enabled.
     ###
@@ -532,14 +600,35 @@ def get_engine():
     return DB_ENGINE
 
 def get_db_lock():
+    """Gets the global DB lock.
+
+    :rtype: threading.Lock
+    :returns: the global database lock, although doesn't acquire it
+
+    """
     global DB_LOCK
     return DB_LOCK
 
 def get_session_class():
+    """Gets the database Session class.
+
+    :rtype: an SQLAlchemy Session class.
+
+    """
     global DB_SESSION_CLASS
     return DB_SESSION_CLASS
 
 def get_configparser(reload=False, raw=False):
+    """Gets ZDStack's ConfigParser.
+
+    :param reload: whether or not to reload the configuration file
+    :type reload: boolean
+    :param raw: disables value interpolation
+    :type raw: boolean
+    :rtype: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser` or
+            :class:`~ZDStack.ZDSConfigParser.RawZDSConfigParser`
+
+    """
     if raw:
         return RCP(get_configfile())
     global CONFIGPARSER
@@ -548,6 +637,14 @@ def get_configparser(reload=False, raw=False):
     return CONFIGPARSER
 
 def get_plugins(plugins='all'):
+    """Gets the installed plugins.
+
+    :param plugins: the names of the plugins to get, if 'all', returns
+                    all plugins.
+    :type plugins: list of strings or string
+    :rtype: a list of modules
+
+    """
     global PLUGINS
     if PLUGINS is None:
         cp = get_configparser()
@@ -559,7 +656,13 @@ def get_plugins(plugins='all'):
             PLUGINS = get_plugins(plugin_folder)
     return [x for x in PLUGINS if plugins == 'all' or x.__name__ in plugins]
 
-def set_debugging(debugging, configparser=None):
+def set_debugging(debugging):
+    """Turns debugging on or off.
+    
+    :param debugging: whether or not debugging is enabled
+    :type debugging: boolean
+    
+    """
     global DEBUGGING
     if DEBUGGING != debugging:
         needs_reloading = True
@@ -570,6 +673,13 @@ def set_debugging(debugging, configparser=None):
         get_zdslog(reload=True)
 
 def get_zdslog(reload=False):
+    """Gets the ZDStack logger.
+
+    :param reload: whether or not to reload the logger
+    :type reload: boolean
+    :rtype: Logger
+
+    """
     global ZDSLOG
     global DEBUGGING
     if reload or not ZDSLOG:
@@ -601,6 +711,11 @@ def get_zdslog(reload=False):
     return ZDSLOG
 
 def get_debugging():
+    """Gets whether debugging is set or not.
+
+    :rtype: boolean.
+
+    """
     global DEBUGGING
     return DEBUGGING == True
 

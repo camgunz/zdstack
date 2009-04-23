@@ -8,4 +8,6 @@ echo "=== Generating documentation"
 # cd $HOMEDIR/doc/pydocs
 # rm -rf .doctrees/ _static/ _sources/ searchindex.js search.html objects.inv index.html genindex.html .buildinfo
 # cd $HOMEDIR
-sphinx-build -a -b html $HOMEDIR/ZDStack $HOMEDIR/doc/pydocs
+echo "sphinx-build -a -E -b html $HOMEDIR/sphinx/source $HOMEDIR/doc/pydocs"
+sphinx-build -a -E -b html $HOMEDIR/sphinx/source $HOMEDIR/doc/pydocs
+

@@ -8,8 +8,6 @@ from datetime import date, datetime, timedelta
 from threading import Timer, Lock, Event
 from subprocess import Popen, PIPE, STDOUT
 
-from pyfileutils import write_file
-
 from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, get_zdslog
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
@@ -294,8 +292,10 @@ class ZServ(object):
                 if self.is_running():
                     return
                 self.restarts.append(datetime.now())
-                write_file(self.config.get_config_data(), self.configfile,
-                           overwrite=True)
+                fobj = open(self.configfile, 'w')
+                fobj.write(self.config.get_config_data())
+                fobj.flush()
+                fobj.close()
                 self.ensure_loglinks_exist()
                 if self.plugins_enabled:
                     for plugin in self.plugins:
@@ -325,30 +325,37 @@ class ZServ(object):
                                    cwd=self.home_folder)
                 # self.send_to_zserv('players') # avoids CPU spinning
 
-    def stop(self, signum=15):
+    def stop(self, check_if_running=True, signum=15):
         """Stops the zserv process.
 
-        signum:       an int representing the signal number to send to
-                      the zserv process.  15 (TERM) by default.
+        :param check_if_running: whether or not to check if the
+                                 internal zserv process is running
+        :type check_if_running: boolean
+        :param signum: the signal number to send to the zserv process,
+                       15 (SIGTERM) by default
+        :type signum: int
 
         """
-        if self.is_running():
+        is_running = self.is_running()
+        if not check_if_running or is_running:
             error_stopping = False
             zdslog.debug("Killing zserv process")
-            try:
-                os.kill(self.zserv.pid, signum)
-                ###
-                # Python docs say to use communicate() to avoid a wait()
-                # deadlock due to buffers being full.  Because we're
-                # redirecting both STDOUT and STDERR to DEVNULL, nothing will
-                # come from this.  Apparently we still need to do it though....
-                ###
-                self.zserv.communicate() # returns (None, None)
-                retval = self.zserv.wait()
-            except Exception, e:
-                es = "Caught exception while stopping: [%s]"
-                zdslog.error(es % (e))
-                error_stopping = es % (e)
+            if is_running:
+                try:
+                    os.kill(self.zserv.pid, signum)
+                    ###
+                    # Python docs say to use communicate() to avoid a wait()
+                    # deadlock due to buffers being full.  Because we're
+                    # redirecting both STDOUT and STDERR to DEVNULL, nothing
+                    # will come from this.  Apparently we still need to do it
+                    # though....
+                    ###
+                    self.zserv.communicate()   # returns (None, None)
+                    retval = self.zserv.wait() # we don't actually use this
+                except Exception, e:
+                    es = "Caught exception while stopping: [%s]" % (e)
+                    zdslog.error(es)
+                    error_stopping = es
             os.close(self.fifo)
             self.fifo = None
             self.zserv = None

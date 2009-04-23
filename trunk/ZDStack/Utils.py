@@ -2,10 +2,17 @@ from __future__ import with_statement
 
 import sys
 import os.path
+import decimal
 
 from datetime import datetime, timedelta
 
 def check_ip(ip):
+    """Checks that a string is a properly formed IP address.
+
+    :param ip: the string to check
+    :type ip: string
+
+    """
     tokens = ip.split('.')
     if not len(tokens) == 4:
         raise ValueError("Malformed IP Address")
@@ -25,54 +32,35 @@ def check_ip(ip):
          es = "Cannot advertise a private IP address to master"
          raise ValueError(es)
 
-def timedelta_in_seconds(x):
-    """Returns the value of a time delta in seconds as an int."""
-    return (x.days * 86400) + x.seconds
-
-def get_logfile_suffix(roll=False):
-    """Returns today's logfile suffix.
-
-    roll:  a boolean that, if given, does the following:
-            - If the time is 11pm, generates a logfile name for the
-              upcoming day.
-           Otherwise, the name generated is for the current day.
-
+def timedelta_in_seconds(td):
+    """Converts a timedelta into seconds.
+    
+    :param td: a timedelta to convert
+    :type td: timedelta
+    :rtype: int
+    
     """
-    now = datetime.now()
-    today = datetime(now.year, now.month, now.day)
-    if roll and now.hour == 23:
-        today += timedelta(days=1)
-    return today.strftime('-%Y%m%d') + '.log'
+    return (td.days * 86400) + td.seconds
 
 def resolve_path(f):
-    """Returns the expanded, absolute path of a given file/folder.
+    """Resolves a path.
 
-    f: a path to expand.
+    :param f: a path to resolve
+    :type f: string
+    :rtype: string
+    :returns: The expanded, absolute path of a given file/folder.
 
     """
     return os.path.abspath(os.path.expanduser(f))
 
-def get_ratio(n, d):
-    """Returns a ratio as a string percentage.
-
-    n: numerator
-    d: denominator
-
-    """
-    t = '%1.1f%%'
-    if d < 1:
-        if n < 1:
-            r = t % 0
-        else:
-            r = 'inf'
-    else:
-        r = t % ((float(n) / float(d)) * 100.0)
-    return r
-
 def homogenize(s):
     """Homogenizes a string.
 
-    s: a string to homogenize
+    :param s: a string to homogenize
+    :type s: string
+    :rtype: string
+    :returns: a homogenized string, with spaces, newlines, and tabs
+              removed
 
     """
     return s.replace(' ', '').lower().replace('\n', '').replace('\t', '')
@@ -80,7 +68,10 @@ def homogenize(s):
 def parse_player_name(name):
     """Parses a player's name into a tag and a base player name.
 
-    name: a string representing the player name to parse
+    :param name: the raw name to parse
+    :type name: string
+    :rtype: tuple
+    :returns: ('tag', 'string')
 
     """
     ###
@@ -141,9 +132,12 @@ def parse_player_name(name):
 def html_escape(s):
     """Escapes HTML.
 
-    s: a string representing a string to escape
+    :param s: a string to escape
+    :type s: string
+    :rtype: string
+    :returns: an escaped string
 
-    This function is basically ripped from web.py, with any luck,
+    This function is basically ripped from web.py; with any luck,
     the MIT and BSD licenses are compatible... :)  I don't think
     Mr. Swartz would have a cow, tho.
 
@@ -162,11 +156,11 @@ def html_escape(s):
 def send_proxy_method(proxy, method_name, *args):
     """Sends an RPC request, returning the result or printing an error.
 
-    proxy:       an RPC proxy instance, either JSON or XML
-    method_name: a string representing the name of the method to
-                 remotely execute.
-    *args:       a *expanded list of arguments to pass to the method
-                 specified by method_name.
+    :param proxy: an RPC proxy, either JSON or XML
+    :type proxy: XMLProxy or JSONProxy
+    :param method_name: the name of the method to remotely execute
+    :type method_name: string
+    :param args: other positional arguments to pass to the RPC method
 
     If an error occurs, it will be printed to STDERR.  This is because
     this method is primarily for use by scripts trying to interact
@@ -193,12 +187,13 @@ def send_proxy_method(proxy, method_name, *args):
 def get_event_from_line(line, regexps, now=None):
     """Returns a LogEvent from a line.
 
-    line:    the line from which to return an event - a string.
-    regexps: a sequence of Regexp instances which will be used to
-             parse the line.
-    now:     an optional datetime instance that will be used for the
-             event's event_dt parameter.  If not given, 'now()' is
-             used.
+    :param line: the line from which to return an event
+    :type line: string
+    :param regexps: the regexps with which to parse the line
+    :type regexps: list of compiled regexp instances
+    :param now: the time to use for the event's event_dt parameter, if
+                not given, datetime.datetime.now() is used.
+    :type now: datetime
 
     """
     now = now or datetime.now()

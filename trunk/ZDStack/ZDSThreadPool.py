@@ -54,9 +54,10 @@ __THREAD_POOL_LOCK = Lock()
 
 @requires_lock(__THREAD_POOL_LOCK)
 def _add_thread(t):
-    """Adds a thread to the threadpool.
+    """Adds a thread to the thread pool.
 
-    t: a Thread instance to add to the threadpool.
+    :param t: a thread to add to the thread pool
+    :type t: threading.Thread
 
     """
     global __THREAD_POOL
@@ -68,13 +69,19 @@ def _add_thread(t):
 def get_thread(target, name, keep_going, sleep=None):
     """Creates a thread.
 
-    target:     a function to run continuously in a while loop.
-    name:       a string representing the name to give to the new thread.
-    keep_going: a function that returns a boolean.  if the boolean is
-                false, the thread will stop running target().
-    sleep:      an int/float/Decimal representing the amount of time
-                to sleep between loop iterations.  Optional, defaults
-                to not sleeping at all.
+    :param target: a function to run continuously in a while loop.
+    :type target: function
+    :param name: the name to give to the new thread.
+    :type name: string
+    :param keep_going: a function that returns a boolean; if the
+                       boolean is false, the thread will stop running
+                       target().
+    :type keep_going: function
+    :param sleep: the amount of time to sleep between loop iterations;
+                  optional, defaults to not sleeping at all
+    :type sleep: int, float or Decimal
+    :rtype: threading.Thread
+    :returns: the newly created Thread
 
     """
     zdslog.debug("Getting thread %s" % (name))
@@ -100,16 +107,22 @@ def get_thread(target, name, keep_going, sleep=None):
 def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
     """Creates a thread that processes tasks in a Queue.
 
-    target:       a function to run continuously in a while loop.
-    name:         a string representing the name to give to the new
-                  thread.
-    keep_going:   a function that returns a boolean.  if the boolean is
-                  false, the thread will stop running target().
-    input_queue:  a queue from which to obtain tasks.
-    output_queue: a queue in which to place task output.  Optional.
-    sleep:        an int/float/Decimal representing the amount of time
-                  to sleep between loop iterations.  Optional, defaults
-                  to not sleeping at all.
+    :param input_queue: the queue from which to obtain Tasks to perform
+    :type input_queue: Queue.Queue
+    :param name: the name to give to the new thread.
+    :type name: string
+    :param keep_going: a function that returns a boolean; if the
+                       boolean is false, the thread will stop running
+                       target().
+    :type keep_going: function
+    :param output_queue: optional, the queue into which the output of
+                         the performed Tasks will be placed
+    :type output_queue: Queue.Queue
+    :param sleep: the amount of time to sleep between loop iterations;
+                  optional, defaults to not sleeping at all
+    :type sleep: int, float or Decimal
+    :rtype: threading.Thread
+    :returns: the newly created Thread
 
     """
     def tf():
@@ -161,7 +174,8 @@ def process_queue(input_queue, name, keep_going, output_queue=None, sleep=None):
 def join(thread):
     """Joins a thread, removing it from the global pool.
 
-    thread: a thread instance.
+    :param thread: the thread to join
+    :type thread: threading.Thread
 
     """
     global __THREAD_POOL

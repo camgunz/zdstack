@@ -15,24 +15,26 @@ class PlayersList(object):
 
     """PlayersList is a threadsafe list of players.
 
+    .. attribute:: zserv
+        This PlayersList's containing ZServ instance.
+
+    .. attribute: lock
+        A Lock that must be acquired before the internal list of
+        players can be modified
+
     It is possible that many threads will try and modify the players
     list at the same time, with unpredictible results.  PlayersList
-    serializes access to its internal list of players so that any
+    synchronizes access to its internal list of players so that any
     addition or removal of players is done atomically, and so that the
     internal list doesn't change during these operations.
 
     """
 
-    ###
-    # PlayersList was moved out of ZServ because it had taken on a life
-    # of its own.  The code is way clearer with this separated out.
-    ###
-
     def __init__(self, zserv):
         """Initializes a PlayersList.
         
-        zserv: the ZServ instance this PlayersList is holding players
-               for.
+        :param zserv: this PlayersList's containing zserv
+        :type zserv: ZServ
         
         """
         self.zserv = zserv
@@ -55,10 +57,12 @@ class PlayersList(object):
     def add(self, player):
         """Adds a player.
 
-        player:       a Player instance.
-
-        Returns True if the player was previously connected this round,
-        i.e., the connection is in fact a re-connection.
+        :param player: the player to add
+        :type player: Player
+        :rtype: boolean
+        :returns: True if the player was previously connected this
+                  round, i.e., the connection is in fact a
+                  re-connection
 
         """
         zdslog.debug("add(%s)" % (player))
@@ -94,7 +98,8 @@ class PlayersList(object):
     def remove(self, player):
         """Disconnects a player.
 
-        player:       a Player instance.
+        :param player: the player to remove
+        :type player: Player
 
         """
         zdslog.debug("remove(%s)" % (player))
@@ -103,18 +108,29 @@ class PlayersList(object):
 
     @requires_instance_lock()
     def set_playing(self, player, playing):
+        """Sets whether or not a player is playing.
+
+        :param player: the player to modify
+        :type player: Player
+        :param playing: whether or not the player is playing
+        :type playing: boolean
+
+        """
         player.playing = playing
 
     @requires_instance_lock()
     def get(self, name=None, ip_address_and_port=None, sync=True):
         """Returns a Player instance.
 
-        name:                the name of the player to return.
-        sync:                a boolean that, if given, performs a sync
-                             and reattempts to lookup a player if it is
-                             not initially found.  True by default.
-        ip_address_and_port: a 2-Tuple (ip_address, port), both
-                             strings.
+        :param name: the name of the player to return
+        :type name: string
+        :param ip_address_and_port: the IP address and port of the
+                                    player to return
+        :type ip_address_and_port: tuple, i.e. ('ip_address', port)
+        :param sync: a boolean, if True this method performs a sync and
+                     reattempts to lookup a player if it is not
+                     initially found; True by default
+        :rtype: Player
 
         Either name or ip_address_and_port is optional, but at least
         one must be given.  Note that only giving name can potentially
@@ -170,13 +186,14 @@ class PlayersList(object):
     def sync(self, zplayers=None, sleep=None):
         """Syncs the internal players list with the running zserv.
 
-        zplayers:     a list of dicts representing zserv's players.
-                      If not given, it is acquired from self.zserv.
-        sleep:        an int/Decimal/float representing the number of
-                      seconds to sleep before manually acquiring the
-                      list of players from self.zserv.  Defaults to not
-                      sleeping at all, and is only used when zplayers
-                      is None.
+        :param zplayers: optional, the output from
+                         self.zserv.zplayers()
+        :type zplayers: a list of dicts
+        :param sleep: optional, the amount of time to sleep before
+                      manually acquiring the list of players from
+                      self.zserv; defaults to None, and is only used
+                      when zplayers is None
+        :type sleep: int or Decimal or float
 
         """
         ###
@@ -241,24 +258,32 @@ class PlayersList(object):
         zdslog.debug("Sync: done")
 
     def names(self):
-        """Returns a list of player names."""
+        """The names of all this PlayersList's Players.
+
+        :rtype: a list of strings
+        :returns: the names of all the players in this PlayersList
+
+        """
         return [x.name for x in self if x.name]
 
     def addresses(self):
-        """Returns a list of 2-Tuples (ip, port) for all players."""
+        """The addresses of all this PlayersList's Players.
+
+        :rtype: a list of tuples
+        :returns: a list of 2-Tuples (ip, port) for all players.
+        
+        """
         return [(x.ip, x.port) for x in self]
 
     @requires_instance_lock()
     def get_first_matching_player(self, possible_player_names):
         """Returns the player whose name matches a list of names.
 
-        possible_player_names: a list of strings representing player
-                               names.
-
-        Given a list of names, get_first_matching_player will return
-        a player whose name matches a name in the list.  Each name in
-        the list is tested, when a name matches, the matching player
-        is returned.
+        :param possible_player_names: the player names to check
+        :type possible_player_names: a list of strings
+        :rtype: Player
+        :returns: the player whose name matches the earliest name in
+                  'possible_player_names'
 
         """
         names = self.names()
