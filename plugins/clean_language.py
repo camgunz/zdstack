@@ -1,29 +1,28 @@
-RACIST_WORDS = ['nigger', 'kike', 'wop', 'spic', 'cracker', 'honky', 'porchmonkey', 'beaner', 'gook']
-
+RACIST_WORDS = ['nigger', 'kike', 'wop', 'spic', 'cracker', 'honky',
+                'porchmonkey', 'beaner', 'gook', 'wetback']
 EXPLITIVES = ['fuck', 'shit', 'damn', 'ass', 'bitch', 'faggot', 'fag', 'phag']
-
-VULGAR_WORDS = ['cock', 'cunt', 'pussy', 'dick', 'anus', 'asshole', 'vagina', 'penis']
-
+VULGAR_WORDS = ['cock', 'cunt', 'pussy', 'dick', 'anus', 'asshole', 'vagina',
+                'penis']
 BAD_WORDS = RACIST_WORDS + EXPLITIVES + VULGAR_WORDS
-
 BAD_LANGUAGE_LIMIT = 2
+BAN_LENGTH = 15 # 15 minutes
 
 def clean_language(event, zserv):
     if not event.type == 'message':
         return
-    message, messenger = (event.data['message'], event.data['messenger'])
+    contents = event.data['message'].lower()
+    p = event.data['messenger']
     for w in BAD_WORDS:
-        if w in message:
-            if not hasattr(messenger, 'bad_language'):
-                messenger.bad_language = 0
-            messenger.bad_language += 1
-            if messenger.bad_language >= BAD_LANGUAGE_LIMIT:
-                messenger.bad_language = 0
-                ###
-                # This should be switched to addtempban sometime soon
-                zserv.zkick(messenger.number, "Bad language")
+        if w in contents:
+            if not hasattr(p, 'bad_language'):
+                p.bad_language = 0
+            p.bad_language += 1
+            if p.bad_language >= BAD_LANGUAGE_LIMIT:
+                p.bad_language = 0
+                zserv.zaddtimedban(BAN_LENGTH, p.ip, reason="Language")
             else:
-                s = "%s, this is a clean language server."
-                s += "  %d more violations and you will be kicked."
-                zserv.zsay(s % (messenger.name,
-                                BAD_LANGUAGE_LIMIT - messenger.bad_language))
+                zs = "%s, this is a clean language server.  %d more violations"
+                zs += " and you will be temporarily banned."
+                zserv.zsay(zs % (p.name, BAD_LANGUAGE_LIMIT - p.bad_language))
+            break
+

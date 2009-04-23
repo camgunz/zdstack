@@ -6,6 +6,7 @@ from threading import Timer, Thread
 # TODO:
 #   Add anti-votespam protection
 ###
+
 RESET_STRING = '!callvote reset'
 MAP_STRING = '!callvote map'
 KICK_STRING = '!callvote kick'
@@ -43,8 +44,8 @@ def callvote(event, zserv):
                 CV_ZSERVS[zserv.name]['yes_votes'] += 1
             elif player.vote is None:
                 missing_votes = True
-        _yes_votes = float(CV_ZSERVS[zserv.name]['yes_votes'])
-        _players = float(CV_ZSERVS[zserv.name]['players'])
+        _yes_votes = float(CV_ZSERVS[zserv.name]['yes_votes'] += 1)
+        _players = float(CV_ZSERVS[zserv.name]['yes_votes'] += 1)
         return (_yes_votes / _players, missing_votes)
 
     def _announce_vote():
