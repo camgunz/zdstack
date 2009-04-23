@@ -48,6 +48,8 @@ except getopt.GetoptError, ge:
     print_usage(ge)
 if len(opts) not in (1, 2, 3):
     print_usage("Invalid number of arguments")
+if ';' in opts['-m']:
+    print_usage("Invalid RPC method")
 opts = dict(opts)
 if '-c' in opts:
     set_configfile(opts['-c'])
@@ -62,9 +64,11 @@ else:
     args = []
 if '-a'in opts:
     args.extend([x for x in opts['-a'].split(';') if x])
-function_kwarg_str = ', '.join(args)
-call_string = opts['-m'] + "(" + function_kwarg_str + ")"
-print "Running %s" % (call_string)
+if opts['-m'] in NO_AUTH_REQUIRED:
+    s = opts['-m'] + ', '.join(args).join(['(', ')'])
+else:
+    s = opts['-m'] + ', '.join(['<username>', '<password>'] + args[2:])
+print "Running %s" % (s)
 response = send_proxy_method(proxy, opts['-m'], *args)
 if response:
     handle_response(response, '-e' in opts)

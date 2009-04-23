@@ -18,5 +18,5 @@ setup(name='ZDStack',
       scripts=['bin/zdstack', 'bin/zservctl', 'bin/fakezserv', 'bin/zdrpc',
                'bin/zdsweb'],
       packages=['ZDStack'],
-      requires=['sqlalchemy>=0.5.3'],
+      requires=['sqlalchemy(>=0.5.3)'],
 )

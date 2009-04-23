@@ -648,7 +648,7 @@ def get_plugins(plugins='all'):
     global PLUGINS
     if PLUGINS is None:
         cp = get_configparser()
-        plugin_folder = cp.getpath('DEFAULT', 'plugin_folder', False)
+        plugin_folder = cp.getpath('DEFAULT', 'zdstack_plugin_folder', False)
         if not plugin_folder:
             PLUGINS = []
         else:

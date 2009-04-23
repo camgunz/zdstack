@@ -286,6 +286,7 @@ class Stack(Server):
                     zdslog.debug("Converting message event")
                     ppn = event.data['possible_player_names']
                     c = event.data['contents'] 
+                    player = None
                     if isinstance(ppn, basestring):
                         try:
                             player = zserv.players.get(name=ppn)
@@ -294,13 +295,15 @@ class Stack(Server):
                             zdslog.error(s % (ppn))
                     else:
                         player = zserv.players.get_first_matching_player(ppn)
-                        if not player:
-                            s = "Received a message from a non-existent player"
-                            s += ", PPN: %s"
-                            zdslog.error(s % (str(ppn)))
-                        else:
-                            m = c.replace(player.name, '', 1)[3:]
-                            event.data = {'message': m, 'messenger': player}
+                    if not player:
+                        s = "Received a message from a non-existent player"
+                        s += ", PPN: %s"
+                        zdslog.error(s % (str(ppn)))
+                    else:
+                        zdslog.debug("Updating event.data")
+                        m = c.replace(player.name, '', 1)[3:]
+                        event.data = {'message': m, 'messenger': player}
+                        zdslog.debug("Event data: %s" % (str(event.data)))
                 if zserv.event_type_to_watch_for:
                     s = "%s is watching for %s events"
                     zdslog.debug(s % (zserv.name,
@@ -384,6 +387,7 @@ class Stack(Server):
         zdslog.debug("Sending %s to %s's plugins" % (event, zserv.name))
         for plugin in zserv.plugins:
             zdslog.debug("Processing %s with %s" % (event, plugin.__name__))
+            zdslog.debug("Event Data: %s" % (str(event.data)))
             try:
                 ###
                 # If a plugin wants to persist something (God forbid), then

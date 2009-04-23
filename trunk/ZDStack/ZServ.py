@@ -8,7 +8,8 @@ from datetime import date, datetime, timedelta
 from threading import Timer, Lock, Event
 from subprocess import Popen, PIPE, STDOUT
 
-from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, get_zdslog
+from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, \
+                    get_zdslog, get_plugins
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
@@ -51,17 +52,18 @@ class ZServ(object):
 
         """
         self.start_time = datetime.now()
-        self.restarts = []
+        self.restarts = list()
         self.name = name
         self.zdstack = zdstack
         self._fragment = None
         self.event_type_to_watch_for = None
-        self.response_events = []
+        self.response_events = list()
         self.response_finished = Event()
         self.finished_processing_response = Event()
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
         self.config_lock = Lock()
+        self.timed_bans = set()
         self.map = DummyMap()
         self.round = None
         self.players = PlayersList(self)
@@ -77,8 +79,12 @@ class ZServ(object):
         self.load_config()
         self.clear_state()
         if self.events_enabled and self.plugins_enabled:
-            self.plugins = self.config.getlist('plugins', default=list())
+            plugin_names = self.config.getlist('plugins', default=list())
+            zdslog.debug("Plugin names: %s" % (plugin_names))
+            self.plugins = get_plugins(plugin_names)
+            zdslog.debug("Plugins: %s" % (self.plugins))
         else:
+            zdslog.debug("Events enabled, plugins enabled: %s, %s" % (self.events_enabled, self.plugins_enabled))
             self.plugins = list()
 
     def clear_state(self):
@@ -334,6 +340,9 @@ class ZServ(object):
             error_stopping = False
             zdslog.debug("Killing zserv process")
             if is_running:
+                for timer, ip_address in self.timed_bans:
+                    timer.cancel()
+                    self.remove_timed_ban(ip_address)
                 try:
                     os.kill(self.zserv.pid, signum)
                     ###
@@ -465,7 +474,22 @@ class ZServ(object):
         """
         self.zaddban(ip_address, reason)
         seconds = duration * 60
-        Timer(seconds, self.zkillban, [ip_address]).start()
+        t = Timer(seconds, self.remove_timed_ban, [ip_address])
+        t.start()
+        self.timed_bans.add((t, ip_address))
+
+    def remove_timed_ban(self, ip_address):
+        """Removes a timed ban.
+
+        :param ip_address: the banned IP address
+        :type ip_address: string
+
+        """
+        try:
+            self.timed_bans.remove(ip_address)
+        except KeyError:
+            pass
+        self.zkillban(ip_address)
 
     def zaddbot(self, bot_name):
         """Adds a bot.
