@@ -48,9 +48,9 @@ except getopt.GetoptError, ge:
     print_usage(ge)
 if len(opts) not in (1, 2, 3):
     print_usage("Invalid number of arguments")
+opts = dict(opts)
 if ';' in opts['-m']:
     print_usage("Invalid RPC method")
-opts = dict(opts)
 if '-c' in opts:
     set_configfile(opts['-c'])
 cp = get_configparser()

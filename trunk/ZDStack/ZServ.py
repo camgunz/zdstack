@@ -63,7 +63,8 @@ class ZServ(object):
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
         self.config_lock = Lock()
-        self.timed_bans = set()
+        self.ban_timers = set()
+        self.ban_timer_lock = Lock()
         self.map = DummyMap()
         self.round = None
         self.players = PlayersList(self)
@@ -167,6 +168,7 @@ class ZServ(object):
                 # session.merge(self.round)
                 zdslog.debug("Deleting %s" % (self.round))
                 session.delete(self.round)
+        self.round = None
         self.clear_state()
 
     def change_map(self, map_number, map_name):
@@ -340,9 +342,18 @@ class ZServ(object):
             error_stopping = False
             zdslog.debug("Killing zserv process")
             if is_running:
-                for timer, ip_address in self.timed_bans:
-                    timer.cancel()
-                    self.remove_timed_ban(ip_address)
+                zdslog.debug("Ban Timers: %s" % (str(self.ban_timers)))
+                ###
+                # We don't want timed bans to become permanent, so we unban
+                # all temporarily banned players here.
+                ###
+                with self.ban_timer_lock:
+                    for ban_timer in self.ban_timers:
+                        ds = "Cancelling ban timer [%s]"
+                        zdslog.debug(ds % (ban_timer))
+                        ban_timer.cancel()
+                        self.zkillban(ban_timer.args[0])
+                    self.ban_timers = set()
                 try:
                     os.kill(self.zserv.pid, signum)
                     ###
@@ -472,24 +483,29 @@ class ZServ(object):
         reason:     a string representing the reason for the ban
 
         """
+        zdslog.debug("Adding timed ban for [%s]" % (ip_address))
         self.zaddban(ip_address, reason)
-        seconds = duration * 60
-        t = Timer(seconds, self.remove_timed_ban, [ip_address])
+        args = [ip_address]
+        t = Timer(duration * 60, self.remove_timed_ban, args)
+        args.append(t)
+        self.ban_timers.add(t)
         t.start()
-        self.timed_bans.add((t, ip_address))
+        zdslog.debug("Ban Timers: %s" % (str(self.ban_timers)))
 
-    def remove_timed_ban(self, ip_address):
-        """Removes a timed ban.
+    def remove_timed_ban(self, ip_address, timer):
+        """Removes a temporary ban.
 
-        :param ip_address: the banned IP address
+        :param ip_address: the IP address to unban
         :type ip_address: string
+        :param timer: the ban timer that called this method
+        :type timer: threading.Timer
 
         """
-        try:
-            self.timed_bans.remove(ip_address)
-        except KeyError:
-            pass
-        self.zkillban(ip_address)
+        with self.ban_timer_lock:
+            if not timer.isAlive():
+                return
+            self.zkillban(ip_address)
+            self.ban_timers.remove(timer)
 
     def zaddbot(self, bot_name):
         """Adds a bot.
