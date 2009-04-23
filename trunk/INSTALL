@@ -25,5 +25,6 @@ file:
 
 For system-wide installations (not recommended), the preferred location is
 /etc/zdstack/zdstackrc. For user-local installations, the preferred location is
-~/.zdstackrc. 
+~/.zdstackrc.  .ini suffixes are supported so editors with automatic syntax
+highlighting can detect that it is indeed an INI file.
 

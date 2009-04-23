@@ -1,4 +1,4 @@
-Copyright (c) 2008 Charles Gunyon
+Copyright (c) 2009 Charles Gunyon
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -20,9 +20,4 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-
-tablesort.js (included in zdwebstats) is released under a creative commons
-Attribution-ShareAlike 2.5 license
-(http://creativecommons.org/licenses/by-sa/2.5/), in-depth attribution and
-copyright information is still at the top of that file.
 

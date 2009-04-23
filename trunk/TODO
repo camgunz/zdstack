@@ -10,9 +10,10 @@
     - Whitelist (doesn't skip ZD master ban)
       - User/Users
       - Specific server/All servers
+  - Test/Rewrite plugins
+  - Add Indexes to ZDSModels
   - Add a "send RPC command" function to ZDSWeb
   - Setup firebird so it's not pigeonholed as an embedded DB
-  - Debug with multiple players, and then multiple servers and multiple players
 
 0.12
   - Figure something out regarding cvar_overrides

@@ -43,13 +43,6 @@ class ZServ(object):
 
     source_port = 'zdaemon'
 
-    ###
-    # There might still be race conditions here
-    # TODO: explicitly go through each method and check for thread-safety,
-    #       especially in RPC-accessible methods & the data structures they
-    #       use.
-    ###
-
     def __init__(self, name, zdstack):
         """Initializes a ZServ instance.
 
