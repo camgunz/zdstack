@@ -19,7 +19,7 @@
   * Much more state is now saved in events, such as whether players were holding flags, team scores, etc.
   * Limited RCON is now supported.
   * `zdrpc` an now either print the zserv's response as lines from the log, or as event data dicts.
-  * The python documentatoin files are now generated using sphinx, which is a big improvement over the ugliness that was pydoc
+  * The python documentation files are now generated using sphinx, which is a big improvement over the ugliness that was pydoc
 
 = Fixes =
 
