@@ -18,7 +18,7 @@ from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 ###
 
 from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import StaticPool, NullPool
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 DB_SESSION_CLASS = scoped_session(sessionmaker())
@@ -503,8 +503,11 @@ def _get_full_engine(db_engine, cp):
         ###
         # We need to recycle connections every hour or so to avoid MySQL's
         # idle connection timeouts.
+        #
+        # Also MySQL is a faggot, and will totally just disconnect us.
+        # Jesus.
         ###
-        return create_engine(db_str, pool_recycle=3600)
+        return create_engine(db_str, poolclass=NullPool, pool_recycle=3600)
     else:
         return create_engine(db_str)
 

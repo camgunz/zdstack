@@ -36,6 +36,9 @@ class TeamsList(object):
     def __iter__(self):
         return self.__teams.__iter__()
 
+    def __len__(self):
+        return len(self.__teams)
+
     @requires_instance_lock()
     def clear(self):
         """Clears the team list."""

@@ -3,6 +3,7 @@ from __future__ import with_statement
 import datetime
 
 from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
+from ZDStack.ZServ import TEAMDM_MODES
 from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
                               RCONAccess, RCONDenial, RCONAction
 from ZDStack.ZDSDatabase import get_weapon, get_alias, global_session, persist
@@ -383,6 +384,11 @@ class ZServEventHandler(BaseEventHandler):
             else:
                 fragger_was_holding_flag = fragger in \
                                                     zserv.players_holding_flags
+            if zserv.raw_game_mode in TEAMDM_MODES:
+                if is_suicide:
+                    zserv.team_scores[fragger.color] -= 1
+                else:
+                    zserv.team_scores[fragger.color] += 1
             red_holding_flag = False
             blue_holding_flag = False
             green_holding_flag = False

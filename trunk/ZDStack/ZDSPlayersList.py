@@ -49,6 +49,9 @@ class PlayersList(object):
     def __iter__(self):
         return self.__players.__iter__()
 
+    def __len__(self):
+        return len(self.__players)
+
     def _player_is_unique(self, player):
         """Returns True if the player is not in the players list."""
         return (player.ip, player.port) not in self.addresses()
