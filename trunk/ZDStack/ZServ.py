@@ -196,8 +196,6 @@ class ZServ(object):
         """
         # zdslog.debug('')
         self.load_config(reload=True)
-        self.game_mode = get_game_mode(name=self.raw_game_mode,
-                                       has_teams=has_teams)
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.
