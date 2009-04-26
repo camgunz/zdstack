@@ -22,7 +22,7 @@ If this message is appearing in the `ZDStack.log` file, it means that the socket
 
 MySQL enforces connection timeouts; the default being 3600 seconds (1 hour).  ZDStack will use a connection for a lot longer than an hour, and if you're only running Duel servers that no one connects to for an hour, MySQL will close ZDStack's connections.
 
-ZDStack combats this itself by recycling connections every hour.  Anything more frequent than that is ridiculous.  What you can do is edit the `my.cnf` file and set the `wait_timeout` option under `[mysqld]` to something larger than 3600, and `connect_timeout` to something larger than that.  Alternately you could use PostgreSQL, which is easily 5000% more awesome.
+ZDStack combats this itself by recycling connections every hour.  Anything more frequent than that is ridiculous.  What you can do is edit the `my.cnf` file and set the `wait_timeout` option under `[mysqld]` to something larger than 3600, on [http://totaltrash.org TT] we use 2,635,200 (30.5 days).  Alternately you could use PostgreSQL, which is easily 5000% more awesome.
 
 *ZDStack Segmentation Fault*
 
