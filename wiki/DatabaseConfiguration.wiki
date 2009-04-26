@@ -118,7 +118,7 @@ Configuration 3 uses a separate RDBMS, which can be located on the same machine 
 === How to configure ===
 
 {{{
-zdstack_database_engine = mysql (postgres, oracle, firebird or mssql)
+zdstack_database_engine = postgres (mysql, oracle, firebird or mssql)
 zdstack_database_host = database.host.org
 zdstack_database_port = 5678 (optional, ZDStack will use the default ports if blank)
 zdstack_database_name = name_of_database
