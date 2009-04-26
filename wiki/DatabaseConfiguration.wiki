@@ -44,6 +44,10 @@ For configuration 3, you will need to install the RDBMS itself (obviously), as w
 
 By default, ZDStack uses an in-memory SQLite database.
 
+== Recommendations ==
+
+If the goal is to avoid using an RDBMS, it is recommended to use SQLite.  Otherwise, PostgreSQL is the best RDBMS to use with ZDStack.  MySQL expects a different usage pattern than ZDStack's (it's not a PHP app opening up hundreds of connections a second), and this results in connection issues at times (which are still being ironed out in ZDStack).  Also MySQL's only real benefit over PostgreSQL is replication, and it's very unlikely any ZDStack user needs replication.
+
 == Configuration 1 ==
 
 Configuration 1 stores the entire database in memory.
