@@ -17,7 +17,7 @@ zdslog = get_zdslog()
 class Server(object):
 
     """Server represents a daemonized process serving network requests.
-    
+
     .. attribute:: stats
         A dict of server stats.
 
@@ -41,7 +41,7 @@ class Server(object):
 
     .. attribute:: password
         A string representing the authenticating password
-    
+
     """
 
     def __init__(self):

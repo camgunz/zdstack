@@ -62,12 +62,6 @@ ZDStack.ZDSDatabase
    :members:
    :undoc-members:
 
-ZDStack.ZDSDummyMap
--------------------
-.. automodule:: ZDStack.ZDSDummyMap
-   :members:
-   :undoc-members:
-
 ZDStack.ZDSEventHandler
 -----------------------
 .. automodule:: ZDStack.ZDSEventHandler

@@ -27,7 +27,89 @@ zdslog = get_zdslog()
 
 class Stack(Server):
 
-    """Generating documentation for this class doesn't work..."""
+    """Stack is the main ZDStack class.
+    
+    .. attribute:: spawn_lock
+        A Lock that must be acquired before a zserv can spawn.
+
+    .. attribute:: szn_lock
+        A Lock that must be acquired before modifying
+        stopped_zserv_list.
+
+    .. attribute:: zservs
+        A dict mapping ZServ names to ZServ instances.
+
+    .. attribute:: stopped_zserv_names
+        A set of strings representing the names of stopped ZServ
+        instances.
+
+    .. attribute:: start_time
+        A datetime representing the time the Stack started.
+
+    .. attribute:: keep_checking_loglinks
+        A boolean that, when set to False, does not reset the
+        loglink_check_timer after checking log links.
+
+    .. attribute:: keep_spawning_zservs
+        A boolean that, when set to False, does not reset the
+        zserv_check_timer after checking ZServs.
+
+    .. attribute:: keep_polling
+        A boolean that, when set to False, stops the ZServ Polling
+        Thread.
+
+    .. attribute:: keep_parsing
+        A boolean that, when set to False, stops the ZServ Parsing
+        Thread.
+
+    .. attribute:: keep_handling_command_events
+        A boolean that, when set to False, stops the Command Event
+        Handling Thread.
+
+    .. attribute:: keep_handling_generic_events
+        A boolean that, when set to False, stops the Generic Event
+        Handling Thread.
+
+    .. attribute:: keep_handling_plugin_events
+        A boolean that, when set to False, stops the Plugin Event
+        Handling Thread.
+
+    .. attribute:: regexps
+        A list of :class`~ZDStack.ZDSRegexps.Regexp` instances used to
+        parse :class:`~ZDStack.ZServ` events.
+
+    .. attribute:: event_handler
+        A :class:`~ZDStack.ZDSEventHandler.ZServEventHandler that
+        handles :class:`~ZDStack.ZServ` events.
+
+    .. attribute:: output_queue
+        A Queue where output lines are placed to be processed.
+
+    .. attribute:: plugin_events
+        A Queue where plugin events are placed to be processed.
+
+    .. attribute:: generic_events
+        A Queue where generic events are placed to be processed.
+
+    .. attribute:: command_events
+        A Queue where command events are placed to be processed.
+
+    .. attribute:: loglink_check_timer
+        A Timer that checks each ZServ's logfile links every 30 minutes.
+
+    .. attribute:: zserv_check_timer
+        A Timer that restarts each crashed ZServ every 500 milliseconds.
+
+    Stack does the following things:
+
+      * Checks that all server log links and FIFOs exist every 30 min.
+      * Checks that all ZServs are running every 500 milliseconds
+      * Polls all ZServs for output
+      * Parses ZServ output lines into events
+      * Passes events to the EventHandler and the ZServ's plugins
+      * Handles incoming RPC requests
+
+    """
 
     methods_requiring_authentication = []
 
@@ -185,6 +267,7 @@ class Stack(Server):
                 self.zserv_check_timer.start()
 
     def poll_zservs(self):
+        """Polls all ZServs for output."""
         ###
         # Rather than have a separate polling thread for each ZServ, I put
         # a big 'select' here for every (running) ZServ.  I know that 'poll'

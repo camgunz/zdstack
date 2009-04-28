@@ -33,6 +33,17 @@ class ZServ(object):
 
     """ZServ provides an interface to a zserv process.
 
+    .. attribute:: start_time
+        A datetime representing the time this ZServ was started - or
+        None if it is currently stopped.
+
+    .. attribute:: restarts
+        A list of datetimes representing the times of the last 2
+        restarts (at the most).
+
+    .. attribute:: name
+        A string representing the name of the ZServ.
+
     ZServ does the following:
 
       * Handles configuration of the zserv process
@@ -47,11 +58,13 @@ class ZServ(object):
     def __init__(self, name, zdstack):
         """Initializes a ZServ instance.
 
-        name:      a string representing the name of this ZServ.
-        zdstack:   the calling (ZD)Stack instance.
+        :param name: the name of this ZServ
+        :type name: string
+        :param zdstack: the calling (ZD)Stack instance
+        :type zdstack: :class:`~ZDStack.Stack`
 
         """
-        self.start_time = datetime.now()
+        self.start_time = None
         self.restarts = list()
         self.name = name
         self.zdstack = zdstack
@@ -230,19 +243,19 @@ class ZServ(object):
         self.players.sync()
 
     def reload_config(self):
-        """Reloads the config for the ZServ.
-
-        config: a RawZDSConfigParser instance or subclass.
-
-        """
+        """Reloads the config for the ZServ."""
         # zdslog.debug('')
         self.load_config(reload=True)
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.
 
-        reload: an optional that, if True, reloads the config.  False
-                by default.
+        :param reload: whether or not the configuration is being
+                       reloaded; if this is the first load, there are
+                       some things (like creating FIFOs, etc.) we need
+                       to do that we don't want to do if the internal
+                       zserv is still running
+        :type reload: boolean
 
         """
         with self.config_lock:
@@ -331,6 +344,7 @@ class ZServ(object):
             with self.zdstack.spawn_lock:
                 if self.is_running():
                     return
+                self.start_time = datetime.now()
                 self.restarts.append(datetime.now())
                 fobj = open(self.configfile, 'w')
                 fobj.write(self.config.get_config_data())
@@ -374,6 +388,10 @@ class ZServ(object):
         :param signum: the signal number to send to the zserv process,
                        15 (SIGTERM) by default
         :type signum: int
+        :rtype: boolean or string
+        :returns: if an error occurred while stopping the internal
+                  zserv, it is returned as a string - otherwise False
+                  is returned
 
         """
         is_running = self.is_running()
@@ -404,6 +422,7 @@ class ZServ(object):
                     ###
                     self.zserv.communicate()   # returns (None, None)
                     retval = self.zserv.wait() # we don't actually use this
+                    self.start_time = None
                 except Exception, e:
                     es = "Caught exception while stopping: [%s]" % (e)
                     zdslog.error(es)
@@ -419,8 +438,9 @@ class ZServ(object):
     def restart(self, signum=15):
         """Restarts the zserv process, restarting it if it crashes.
 
-        signum: an int representing the signal number to send to the
-                zserv process.  15 (TERM) by default.
+        :param signum: the signal to send to the internal zserv,
+                       SIGTERM by default
+        :type signum: int
 
         """
         zdslog.debug('')
@@ -438,17 +458,14 @@ class ZServ(object):
     def send_to_zserv(self, message, event_response_type=None):
         """Sends a message to the running zserv process.
 
-        message:             a string representing the message to send
-        event_response_type: a string representing the type of event to
-                             wait for in response
-
-        When using this method, keep the following in mind:
-
-          - Your message cannot contain newlines.
-          - If event_response_type is None, no response will be
-            returned
-
-        This method returns a list of events returned in response.
+        :param message: the message to send (cannot contain newlines)
+        :type message: string
+        :param event_response_type: the type of event to wait for in
+                                    response
+        :type event_response_type: string
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
+        :returns: a list of response events, if event_response_type is
+                  None, the list will be empty
 
         """
         # zdslog.debug('')
@@ -505,8 +522,10 @@ class ZServ(object):
     def zaddban(self, ip_address, reason='rofl'):
         """Adds a ban.
 
-        ip_address: a string representing the IP address to ban
-        reason:     a string representing the reason for the ban
+        :param ip_address: the IP address to ban
+        :type ip_address: string
+        :param reason: the reason for the ban
+        :param type: string
 
         """
         # zdslog.debug('')
@@ -516,10 +535,12 @@ class ZServ(object):
     def zaddtimedban(self, duration, ip_address, reason='rofl'):
         """Adds a ban with an expiration.
 
-        duration:   an integer representing how many minutes the ban
-                    should last
-        ip_address: a string representing the IP address to ban
-        reason:     a string representing the reason for the ban
+        :param duration: length of ban in minutes
+        :type duration: int
+        :param ip_address: the IP address to ban
+        :type ip_address: string
+        :param reason: the reason for the ban
+        :param type: string
 
         """
         zdslog.debug("Adding timed ban for [%s]" % (ip_address))
@@ -549,7 +570,8 @@ class ZServ(object):
     def zaddbot(self, bot_name):
         """Adds a bot.
 
-        bot_name: a string representing the name of the bot to add.
+        :param bot_name: the name of the bot to add
+        :type bot_name: string
 
         """
         # zdslog.debug('')
@@ -558,7 +580,8 @@ class ZServ(object):
     def zaddmap(self, map_number):
         """Adds a map to the maplist.
 
-        map_number: an int representing the name of the map to add
+        :param map_number: the number of the map to add
+        :type map_number: int
 
         """
         # zdslog.debug('')
@@ -572,8 +595,10 @@ class ZServ(object):
     def zget(self, variable_name):
         """Gets a variable.
 
-        variable_name: a string representing the name of the variable
-                       to get
+        :param variable_name: the name of the variable whose value is
+                              to be returned
+        :type variable_name: string
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
 
         """
         # zdslog.debug('')
@@ -582,9 +607,10 @@ class ZServ(object):
     def zkick(self, player_number, reason='rofl'):
         """Kicks a player.
 
-        player_number: an int representing the number of the player to
-                       kick
-        reason:        a string representing the reason for the kick
+        :param player_number: the number of the player to kick
+        :type player_number: int
+        :param reason: the reason for the kick
+        :type reason: string
 
         """
         # zdslog.debug('')
@@ -593,7 +619,8 @@ class ZServ(object):
     def zkillban(self, ip_address):
         """Removes a ban.
 
-        ip_address: a string representing the IP address to un-ban
+        :param ip_address: the IP address to unban
+        :type ip_address: string
 
         """
         # zdslog.debug('')
@@ -602,8 +629,8 @@ class ZServ(object):
     def zmap(self, map_number):
         """Changes the current map.
 
-        map_number: an int representing the number of the map to
-                    change to
+        :param map_number: the number of the map to change to
+        :type map_number: int
 
         """
         # zdslog.debug('')
@@ -612,15 +639,18 @@ class ZServ(object):
     def zmaplist(self):
         """Gets the maplist.
 
-        Returns a list of strings representing the names of maps in
-        the maplist.  An example of one of these strings is: "map01".
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
 
         """
         # zdslog.debug('')
         return self.send_to_zserv('maplist', 'maplist_command')
 
     def zplayers(self):
-        """Returns a list of players in the server."""
+        """Returns a list of players in the server.
+        
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
+        
+        """
         # zdslog.debug('')
         return self.send_to_zserv('players', 'players_command')
 
@@ -635,10 +665,11 @@ class ZServ(object):
         return self.send_to_zserv('resetscores')
 
     def zsay(self, message):
-        """Sends a message as ] CONSOLE [.
-        
-        message: a string representing the message to send.
-        
+        """Sends a message as '] CONSOLE ['.
+
+        :param message: the message to send
+        :type message: string
+
         """
         # zdslog.debug('')
         return self.send_to_zserv('say %s' % (message))
@@ -646,10 +677,11 @@ class ZServ(object):
     def zset(self, variable_name, variable_value):
         """Sets a variable.
 
-        variable_name:  a string representing the name of the variable
-                        to set
-        variable_value: a string representing the value to set the
-                        variable to
+        :param variable_name: the name of the variable whose value is
+                              to be set
+        :type variable_name: string
+        :param variable_value: the new valuable
+        :type variable_value: string
 
         """
         # zdslog.debug('')
@@ -659,25 +691,31 @@ class ZServ(object):
     def ztoggle(self, boolean_variable):
         """Toggles a boolean variable.
 
-        boolean_variable: a string representing the name of the
-                          boolean variable to toggle
+        :param boolean_variable: the name of the variable whose value
+                                 is to be toggled
+        :type boolean_variable: string
 
         """
         # zdslog.debug('')
         return self.send_to_zserv('toggle %s' % (boolean_variable))
 
     def zunset(self, variable_name):
-        """Unsets a variable.
+        """Un-sets a variable.
 
-        variable_name: a string representing the name of the variable
-                       to unset
+        :param variable_name: the name of the variable whose value is
+                              to be un-set
+        :type variable_name: string
 
         """
         # zdslog.debug('')
         return self.send_to_zserv('unset %s' % (variable_name))
 
     def zwads(self):
-        """Returns a list of the wads in use."""
+        """Gets the currently used WADs.
+
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
+
+        """
         # zdslog.debug('')
         return self.send_to_zserv('wads', 'wads_command')
 

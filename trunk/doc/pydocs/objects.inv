@@ -18,10 +18,10 @@ ZDStack.ZDSEventHandler mod code.html
 ZDStack.Server mod code.html
 ZDStack.ZDSConfigParser mod code.html
 ZDStack.LogEvent mod code.html
-ZDStack.ZDSDummyMap mod code.html
 ZDStack.ZDSRegexps mod code.html
 ZDStack.ZDSTask mod code.html
 ZDStack.ZDSDatabase mod code.html
+ZDStack.Stack.Stack.stopped_zserv_names attribute code.html
 ZDStack.ZDSModels.Frag.white_team_holding_flag attribute code.html
 ZDStack.ZDSTeamsList.TeamsList.get method code.html
 ZDStack.ZServNotFoundError exception code.html
@@ -77,7 +77,7 @@ ZDStack.ZDSEventHandler.ZServEventHandler.handle_rcon_event method code.html
 ZDStack.ZDSModels.Round.flag_touches attribute code.html
 ZDStack.RPCServer.XMLProxy class code.html
 ZDStack.RPCServer.BaseRPCRequestHandler class code.html
-ZDStack.ZDSDummyMap.DummyMap class code.html
+ZDStack.Stack.Stack.keep_handling_command_events attribute code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.getpath method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.dummy attribute code.html
 ZDStack.ZDSModels.FlagReturn.timestamp attribute code.html
@@ -97,9 +97,11 @@ ZDStack.Stack.Stack.removebots method code.html
 ZDStack.ZDSModels.RCONAccess.occurred attribute code.html
 ZDStack.ZDSModels.Map.WAD attribute code.html
 ZDStack.ZDSPlayersList.PlayersList.addresses method code.html
+ZDStack.Stack.Stack.spawn_lock attribute code.html
 ZDStack.DebugTRFH.setFormatter method code.html
 ZDStack.ZServ.ZServ.zget method code.html
 ZDStack.ZDSPlayer.Player.tag attribute code.html
+ZDStack.ZServ.ZServ.start_time attribute code.html
 ZDStack.ZDSTask.Task.args attribute code.html
 ZDStack.ZDSModels.RCONAction.id attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.getdecimal method code.html
@@ -109,6 +111,7 @@ ZDStack.ZDSTeamsList.TeamsList.zserv attribute code.html
 ZDStack.DebugTRFH.filter method code.html
 ZDStack.LogEvent.LogEvent class code.html
 ZDStack.get_configparser function code.html
+ZDStack.ZServ.ZServ.restarts attribute code.html
 ZDStack.DebugTRFH.handleError method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.set_file method code.html
 ZDStack.ZDSModels.RCONAccess.timestamp attribute code.html
@@ -116,11 +119,13 @@ ZDStack.ZDSZServConfig.ZServConfigParser.getpath method code.html
 ZDStack.ZDSModels.Frag.green_team_score attribute code.html
 ZDStack.Server.Server class code.html
 ZDStack.Stack.Stack.handle_generic_events method code.html
+ZDStack.Stack.Stack.event_handler attribute code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser.dummy attribute code.html
 ZDStack.ZDSEventHandler.ZServEventHandler.handle_map_change_event method code.html
 ZDStack.Server.Server.startup method code.html
 ZDStack.Stack.Stack.restart_all_zservs method code.html
 ZDStack.Stack.Stack.stop_zserv method code.html
+ZDStack.Stack.Stack.zserv_check_timer attribute code.html
 ZDStack.ZDSModels.FlagTouch.white_team_score attribute code.html
 ZDStack.Stack.Stack.spawn_zservs method code.html
 ZDStack.ZDSModels.Weapon.frags attribute code.html
@@ -130,6 +135,7 @@ ZDStack.ZDSConfigParser.RawZDSConfigParser.has_section method code.html
 ZDStack.ZDSModels.TeamColor.color attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser class code.html
 ZDStack.Stack.Stack.start method code.html
+ZDStack.Stack.Stack.keep_checking_loglinks attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.getlist method code.html
 ZDStack.ZServ.ZServ.restart method code.html
 ZDStack.Server.Server.port attribute code.html
@@ -143,6 +149,7 @@ ZDStack.ZDSModels.Weapon.is_suicide attribute code.html
 ZDStack.get_engine function code.html
 ZDStack.ZDSRegexps.Regexp.event_type attribute code.html
 ZDStack.ZDSPlayersList.PlayersList.get method code.html
+ZDStack.ZServ.ZServ.get_round method code.html
 ZDStack.ZServ.ZServ.zaddtimedban method code.html
 ZDStack.ZDSTask.Task.perform method code.html
 ZDStack.Stack.Stack.parse_zserv_output method code.html
@@ -174,10 +181,12 @@ ZDStack.ZDSModels.FlagReturn.red_team_holding_flag attribute code.html
 ZDStack.Server.Server.get_logfile method code.html
 ZDStack.Server.Server.logfile attribute code.html
 ZDStack.Stack.Stack.killban method code.html
+ZDStack.DebugTRFH.addFilter method code.html
 ZDStack.ZServ.ZServ.zwads method code.html
 ZDStack.ZDSModels.Alias.rcon_denials attribute code.html
 ZDStack.RPCServer.AuthenticatedRPCDispatcher.register_function method code.html
 ZDStack.ZDSModels.Round.rcon_denials attribute code.html
+ZDStack.Stack.Stack.zservs attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.has_option method code.html
 ZDStack.ZDSRegexps.Regexp.match method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.remove_section method code.html
@@ -189,6 +198,7 @@ ZDStack.ZDSModels.FlagTouch.was_picked attribute code.html
 ZDStack.ZDSModels.Frag.weapon_name attribute code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.getint method code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.get_config_data method code.html
+ZDStack.ZDSDatabase.get_round_by_id function code.html
 ZDStack.Stack.Stack.set method code.html
 ZDStack.ZDSDatabase.new_session function code.html
 ZDStack.ZDSModels.Round.rcon_accesses attribute code.html
@@ -204,12 +214,15 @@ ZDStack.ZDSModels.FlagReturn.white_team_score attribute code.html
 ZDStack.ZDSEventHandler.BaseEventHandler._event_categories_to_handlers attribute code.html
 ZDStack.Stack.Stack.start_checking_loglinks method code.html
 ZDStack.RPCServer.JSONRPCServer.exception_to_dict method code.html
-ZDStack.Plugins.get_modules function code.html
+ZDStack.Stack.Stack.generic_events attribute code.html
 ZDStack.Stack.Stack.check_all_zserv_configs method code.html
 ZDStack.ZDSEventHandler.BaseEventHandler.get_handler method code.html
 ZDStack.ZDSModels.StoredPlayer.aliases attribute code.html
+ZDStack.ZServ.ZServ.remove_timed_ban method code.html
 ZDStack.ZDSModels.Frag.blue_team_holding_flag attribute code.html
 ZDStack.ZServ.ZServ.stop method code.html
+ZDStack.Stack.Stack.keep_parsing attribute code.html
+ZDStack.Stack.Stack.start_all_zservs method code.html
 ZDStack.ZDSModels.FlagTouch.player_team_color_name attribute code.html
 ZDStack.get_configfile function code.html
 ZDStack.ZDSModels.FlagTouch.green_team_score attribute code.html
@@ -221,6 +234,7 @@ ZDStack.Stack.Stack.clearmaplist method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.defaults method code.html
 ZDStack.ZDSModels.Frag.id attribute code.html
 ZDStack.PlayerNotFoundError.args attribute code.html
+ZDStack.Stack.Stack.keep_handling_plugin_events attribute code.html
 ZDStack.ZDSEventHandler.FakeEventHandler.handle_disconnection method code.html
 ZDStack.ZDSModels.FlagTouch.blue_team_holding_flag attribute code.html
 ZDStack.ZDSModels.TeamColor.flag_touches attribute code.html
@@ -233,11 +247,14 @@ ZDStack.ZDSRegexps.ServerRegexp.category attribute code.html
 ZDStack.ZDSPlayer.Player class code.html
 ZDStack.DebugTRFH.acquire method code.html
 ZDStack.ZDSModels.RCONDenial.timestamp attribute code.html
+ZDStack.Stack.Stack.keep_polling attribute code.html
+ZDStack.Plugins.get_modules function code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser._section_list attribute code.html
 ZDStack.Server.Server.handle_signal method code.html
 ZDStack.ZDSRegexps.get_client_regexps function code.html
 ZDStack.ZDSModels.RCONDenial.id attribute code.html
 ZDStack.ZDSModels.Frag.fraggee_was_holding_flag attribute code.html
+ZDStack.ZServ.ZServ.name attribute code.html
 ZDStack.ZServ.ZServ.zclearmaplist method code.html
 ZDStack.ZDSRegexps.Regexp class code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.reloadfp method code.html
@@ -265,6 +282,7 @@ ZDStack.Utils.timedelta_in_seconds function code.html
 ZDStack.ZDSModels.FlagTouch.id attribute code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser.get method code.html
 ZDStack.ZDSModels.FlagTouch.ended attribute code.html
+ZDStack.Stack.Stack.start_time attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.add_section method code.html
 ZDStack.RPCServer.JSONRPCServer.generate_response method code.html
 ZDStack.ZServ.ZServ.zsay method code.html
@@ -274,7 +292,7 @@ ZDStack.Server.Server.reload_config method code.html
 ZDStack.ZDSModels.FlagReturn.green_team_holding_flag attribute code.html
 ZDStack.Server.Server.load_config method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.lock attribute code.html
-ZDStack.Stack.Stack.start_all_zservs method code.html
+ZDStack.Stack.Stack.plugin_events attribute code.html
 ZDStack.ZDSPlayer.Player.disconnected attribute code.html
 ZDStack.Utils.resolve_path function code.html
 ZDStack.ZDSPlayer.Player.get_alias method code.html
@@ -295,8 +313,9 @@ ZDStack.ZDSModels.Map.number attribute code.html
 ZDStack.ZDSModels.Alias.ip_address attribute code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.sections method code.html
 ZDStack.ZDSDatabase.persist function code.html
-ZDStack.ZDSPlayersList.PlayersList class code.html
+ZDStack.Stack.Stack.command_events attribute code.html
 ZDStack.ZDSModels.Map.rounds attribute code.html
+ZDStack.ZServ.ZServ.get_map method code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.remove_section method code.html
 ZDStack.ZDSDatabase.get_game_mode function code.html
 ZDStack.ZServ.ZServ.zkick method code.html
@@ -308,6 +327,7 @@ ZDStack.Stack.Stack.stop method code.html
 ZDStack.Plugins.get_plugins function code.html
 ZDStack.ZServ.ZServ.zset method code.html
 ZDStack.ZDSModels.StoredPlayer class code.html
+ZDStack.Stack.Stack.regexps attribute code.html
 ZDStack.RPCServer.SafeJSONTransport.make_connection method code.html
 ZDStack.ZDSPlayer.Player.playing attribute code.html
 ZDStack.ZDSZServConfig.ZServConfigParser.getboolean method code.html
@@ -329,6 +349,7 @@ ZDStack.ZServ.ZServ.zaddbot method code.html
 ZDStack.ZDSModels.Alias.flag_returns attribute code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.reload method code.html
 ZDStack.ZServ.ZServ.zplayers method code.html
+ZDStack.ZDSPlayersList.PlayersList class code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.loadfp method code.html
 ZDStack.ZDSModels.Frag.white_team_score attribute code.html
 ZDStack.RPCServer.AuthenticatedRPCDispatcher.password attribute code.html
@@ -336,6 +357,7 @@ ZDStack.ZDSModels.TeamColor.frags attribute code.html
 ZDStack.Server.Server.hostname attribute code.html
 ZDStack.ZServ.ZServ.zaddmap method code.html
 ZDStack.Stack.Stack.send_to_zserv method code.html
+ZDStack.Stack.Stack.output_queue attribute code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser.get_raw method code.html
 ZDStack.TeamNotFoundError exception code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.read method code.html
@@ -426,6 +448,7 @@ ZDStack.ZDSTeamsList.TeamsList.lock attribute code.html
 ZDStack.ZServ.ZServ.zresetscores method code.html
 ZDStack.ZDSModels.FlagTouch.loss_time attribute code.html
 ZDStack.ZDSDatabase.get_weapon function code.html
+ZDStack.Stack.Stack.loglink_check_timer attribute code.html
 ZDStack.RPCAuthenticationError exception code.html
 ZDStack.ZDSModels.Map class code.html
 ZDStack.TeamNotFoundError.args attribute code.html
@@ -437,7 +460,7 @@ ZDStack.Utils.parse_player_name function code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser class code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser._section_list attribute code.html
 ZDStack.Server.Server.password attribute code.html
-ZDStack.DebugTRFH.addFilter method code.html
+ZDStack.Stack.Stack.szn_lock attribute code.html
 ZDStack.RPCServer.JSONRPCServer.datetime_to_seconds method code.html
 ZDStack.Utils.send_proxy_method function code.html
 ZDStack.Utils.requires_lock function code.html
@@ -447,6 +470,7 @@ ZDStack.ZDSPlayer.Player.player_name attribute code.html
 ZDStack.RPCServer.AuthenticatedRPCDispatcher class code.html
 ZDStack.ZDSModels.Port.game_modes attribute code.html
 ZDStack.ZDSEventHandler.BaseEventHandler.handle_unhandled_event method code.html
+ZDStack.Stack.Stack.keep_handling_generic_events attribute code.html
 ZDStack.ZDSEventHandler.FakeEventHandler.handle_connection method code.html
 ZDStack.Stack.Stack.get_zserv_config method code.html
 ZDStack.ZDSModels.Frag.red_team_holding_flag attribute code.html
@@ -454,14 +478,17 @@ ZDStack.DebugTRFH.format method code.html
 ZDStack.ZDSRegexps.get_server_regexps function code.html
 ZDStack.Plugins.extract_module_callables function code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.getboolean method code.html
+ZDStack.ZServ.ZServ.get_game_mode method code.html
 ZDStack.ZDSConfigParser.RawZDSConfigParser.getdecimal method code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser.lock attribute code.html
 ZDStack.ZServ.ZServ.ztoggle method code.html
 ZDStack.ZDSConfigParser.ZDSConfigParser.set method code.html
 ZDStack.ZDSThreadPool.get_thread function code.html
 ZDStack.Stack.Stack.handle_plugin_events method code.html
+ZDStack.Stack.Stack.keep_spawning_zservs attribute code.html
+ZDStack.ZServ.ZServ.get_source_port method code.html
 ZDStack.ZServ.ZServ.zkillban method code.html
-ZDStack.RPCServer.XMLRPCServer class code.html
+ZDStack.ZDSModels.Round.frags attribute code.html
 ZDStack.set_configfile function code.html
 ZDStack.ZServ.ZServ.zunset method code.html
 ZDStack.RPCServer.JSONRPCServer.system_describe method code.html
@@ -479,7 +506,7 @@ ZDStack.ZDSModels.GameMode.rounds attribute code.html
 ZDStack.ZDSModels.FlagTouch.began attribute code.html
 ZDStack.Stack.Stack.get_zserv_info method code.html
 ZDStack.ZDSPlayer.Player.set_name method code.html
-ZDStack.ZDSModels.Round.frags attribute code.html
+ZDStack.RPCServer.XMLRPCServer class code.html
 ZDStack.ZDSModels.RCONAccess.id attribute code.html
 ZDStack.Stack.Stack.get_stopped_zservs method code.html
 ZDStack.ZDSModels.Frag.blue_team_score attribute code.html
