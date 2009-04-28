@@ -5,7 +5,7 @@ import datetime
 from contextlib import contextmanager
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exceptions import IntegrityError, OperationalError
 
 from ZDStack import get_db_lock, get_session_class, get_zdslog
 from ZDStack.Utils import requires_lock
@@ -58,26 +58,22 @@ def _locked_session(get_global=False, remove=False):
         else:
             s = SessionClass()
         try:
-            # zdslog.debug("Beginning a transaction")
-            with s.begin():
-                ###
-                # Implicitly commits at the end of the block.
-                ###
-                # zdslog.debug("Inside transaction")
+            try:
+                s.begin()
                 yield s
-            # zdslog.debug("Transaction completed")
+                s.commit()
+            except OperationalError, e:
+                zdslog.error("Got an operational error: %s" % (e))
+                ###
+                # Try again - MySQL could've just timed out.
+                ###
+                s.commit()
         except Exception, e:
-            # zdslog.debug("Error inside transaction: %s" % (e))
+            zdslog.error("Error inside transaction: %s" % (e))
             s.rollback()
+            zdslog.info("Successfully rolled back")
             raise
         finally:
-            ###
-            # I think closing the session causes problems with Models not
-            # being bound to it, so we'll skip closing it for now.
-            #
-            # s.close()
-            #
-            ###
             if remove:
                 ###
                 # I never want to see this session again!
@@ -306,4 +302,19 @@ def get_round(game_mode, map, session, start_time=None):
     r = persist(Round(game_mode=game_mode, map=map, start_time=start_time),
                 session=session)
     return r
+
+@requires_session
+def get_round_by_id(round_id, session):
+    """Gets a Round by its database ID.
+
+    :param round_id: the database ID of the round to lookup.
+    :type round_id: int
+    :param session: the session to use, if none is given, the global
+                    session is used
+    :type session: Session
+    :rtype: :class:`~ZDStack.ZDSModels.Round`
+    :returns: the Round with the specified database ID or None
+
+    """
+    return session.query(Round).filter_by(id=round_id).one()
 

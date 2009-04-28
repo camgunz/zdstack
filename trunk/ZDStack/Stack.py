@@ -20,7 +20,6 @@ from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSRegexps import get_server_regexps
-from ZDStack.ZDSDatabase import persist
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
 
@@ -579,7 +578,7 @@ class Stack(Server):
             max_players = 16
         return {'name': zserv.name,
                 'hostname': zserv.hostname,
-                'mode': zserv.raw_game_mode,
+                'mode': zserv.game_mode,
                 'wads': zserv.wads,
                 'optional_wads': zserv.optional_wads,
                 'ip': ip_address,

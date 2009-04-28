@@ -13,8 +13,8 @@ from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, \
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
-                                get_alias, persist, global_session
-from ZDStack.ZDSDummyMap import DummyMap
+                                get_round_by_id, get_alias, persist, \
+                                global_session
 from ZDStack.ZDSTeamsList import TeamsList
 from ZDStack.ZDSPlayersList import PlayersList
 from ZDStack.ZDSZServConfig import ZServConfigParser
@@ -65,8 +65,7 @@ class ZServ(object):
         self.config_lock = Lock()
         self.ban_timers = set()
         self.ban_timer_lock = Lock()
-        self.map = DummyMap()
-        self.round = None
+        self.round_id = None
         self.players = PlayersList(self)
         self.teams = TeamsList(self)
         self.players_holding_flags = list()
@@ -106,33 +105,23 @@ class ZServ(object):
         """Cleans up after a round."""
         zdslog.debug('Cleaning up')
         now = datetime.now()
-        if not self.round:
-            zdslog.debug("self.round: [%s]" % (self.round))
+        if not self.round_id:
+            zdslog.debug("self.round_id: [%s]" % (self.round_id))
             return
-        if self.stats_enabled:
-            zdslog.debug("Setting round end_time to [%s]" % (now))
-            self.round.end_time = now
-            with global_session() as session:
+        with global_session() as session:
+            round = get_round_by_id(self.round_id, session=session)
+            if self.stats_enabled:
+                zdslog.debug("Setting round end_time to [%s]" % (now))
+                round.end_time = now
                 s = "Adding %s to %s"
-                for player in self.players:
-                    alias = get_alias(player.name, player.ip, round=self.round,
-                                      session=session)
-                    if self.round not in alias.rounds:
-                        zdslog.debug(s % (self.round, alias))
-                        alias.rounds.append(self.round)
-                ###
-                #     if alias not in self.round.players:
-                #         zdslog.debug(s % (alias, self.round))
-                #         self.round.players.append(alias)
-                #     if self.round not in alias.rounds:
-                #         zdslog.debug(s % (self.round, alias))
-                #         alias.rounds.append(self.round)
-                #         zdslog.debug("Updating %s" % (alias))
-                #         # persist(alias, update=True, session=session)
-                ###
-                zdslog.debug("Updating %s" % (self.round))
-                persist(self.round, update=True, session=session)
-                for flag_touch in self.round.flag_touches:
+                for p in self.players:
+                    a = get_alias(p.name, p.ip, round=round, session=session)
+                    if round not in a.rounds:
+                        zdslog.debug(s % (round, a))
+                        a.rounds.append(round)
+                zdslog.debug("Updating %s" % (round))
+                persist(round, update=True, session=session)
+                for flag_touch in round.flag_touches:
                     ###
                     # Players can hold flags until a round ends, thus the
                     # FlagTouch will never have a loss_time.  Technically,
@@ -144,44 +133,96 @@ class ZServ(object):
                         flag_touch.loss_time = now
                         zdslog.debug("Updating %s" % (flag_touch))
                         persist(flag_touch, update=True, session=session)
-        else:
-            ###
-            # Because statistics are not enabled, all generated stats must be
-            # deleted at the conclusion of a round.  Not everything is deleted.
-            # Some things we want to persist, like weapons, team colors, ports,
-            # game modes and maps.  This stuff shouldn't take up too much
-            # memory anyway.  The rest of the stuff, like stats & aliases, can
-            # go out the window.
-            ###
-            zdslog.debug("Deleting a bunch of stuff")
-            with global_session() as session:
-                for stat in self.round.players + \
-                            self.round.frags + \
-                            self.round.flag_touches + \
-                            self.round.flag_returns + \
-                            self.round.rcon_accesses + \
-                            self.round.rcon_denials + \
-                            self.round.rcon_actions:
-                    # session.add(stat)
+            else:
+                ###
+                # Because statistics are not enabled, all generated stats must
+                # be deleted at the conclusion of a round.  Not everything is
+                # deleted.  Some things we want to persist, like weapons, team
+                # colors, ports, game modes and maps.  This stuff shouldn't
+                # take up too much memory anyway.  The rest of the stuff, like
+                # stats & aliases, can go out the window.
+                ###
+                zdslog.debug("Deleting a bunch of stuff")
+                for stat in round.players + \
+                            round.frags + \
+                            round.flag_touches + \
+                            round.flag_returns + \
+                            round.rcon_accesses + \
+                            round.rcon_denials + \
+                            round.rcon_actions:
                     zdslog.debug("Deleting %s" % (stat))
                     session.delete(stat)
-                # session.merge(self.round)
-                zdslog.debug("Deleting %s" % (self.round))
-                session.delete(self.round)
-        self.round = None
+                zdslog.debug("Deleting %s" % (round))
+                session.delete(round)
+        self.round_id = None
         self.clear_state()
+
+    def get_round(self, session=None):
+        """Gets this ZServ's current Round.
+
+        :param session: the session to use, if none is given, the
+                        global session is used
+        :type session: Session
+        :rtype: :class:`~ZDStack.ZDSModels.Round`
+        :returns: the current Round or None
+
+        """
+        if self.round_id:
+            return get_round_by_id(self.round_id, session=session)
+
+    def get_map(self, session=None):
+        """Gets this ZServ's current Map.
+
+        :param session: the session to use, if none is given, the
+                        global session is used
+        :type session: Session
+        :rtype: :class:`~ZDStack.ZDSModels.Map`
+        :returns: the current Map or None
+
+        """
+        if self.map_number and self.map_name:
+            return get_map(number=self.map_number, name=self.map_name)
+
+    def get_game_mode(self, session=None):
+        """Gets this ZServ's current GameMode.
+
+        :param session: the session to use, if none is given, the
+                        global session is used
+        :type session: Session
+        :rtype: :class:`~ZDStack.ZDSModels.GameMode`
+        :returns: the current GameMode
+
+        """
+        return get_game_mode(name=self.game_mode,
+                             has_teams=self.game_mode in TEAM_MODES)
+
+    def get_source_port(self, session=None):
+        """Gets this ZServ's current (source) Port.
+
+        :param session: the session to use, if none is given, the
+                        global session is used
+        :type session: Session
+        :rtype: :class:`~ZDStack.ZDSModels.Port`
+        :returns: the current (source) Port
+
+        """
+        return get_port(name=self.source_port)
 
     def change_map(self, map_number, map_name):
         """Handles a map change event.
 
-        map_number: an int representing the number of the new map
-        map_name:   a string representing the name of the new map
+        :param map_number: the number of the new map
+        :type map_number: int
+        :param map_name: the name of the new map
+        :type map_name: string
 
         """
         zdslog.debug('Change Map')
         self.clean_up()
-        self.map = get_map(number=map_number, name=map_name)
-        self.round = get_round(self.game_mode, self.map)
+        self.map_number = map_number
+        self.map_name = map_name
+        self.round_id = get_round(self.get_game_mode(), self.get_map()).id
+        zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
         ###
         # Because there are no player reconnections at the beginning of rounds
         # in 1.08.08, we need to manually do a sync() here.
@@ -207,16 +248,14 @@ class ZServ(object):
         with self.config_lock:
             # zdslog.debug('')
             self.config.process_config() # does tons of ugly, ugly stuff
-            gm = get_game_mode(name=self.raw_game_mode,
-                               has_teams=self.raw_game_mode in TEAM_MODES)
-            self.game_mode = gm
-            source_port = get_port(name=self.source_port)
-            if self.game_mode not in source_port.game_modes:
-                source_port.game_modes.append(self.game_mode)
+            gm = self.get_game_mode()
+            source_port = self.get_source_port()
+            if gm not in source_port.game_modes:
+                source_port.game_modes.append(gm)
                 persist(source_port, update=True)
-            if source_port not in self.game_mode.ports:
-                self.game_mode.ports.append(source_port)
-                persist(self.game_mode, update=True)
+            if source_port not in gm.ports:
+                gm.ports.append(source_port)
+                persist(gm, update=True)
             if not reload and not self.is_running():
                 if os.path.exists(self.fifo_path):
                     ###
@@ -228,16 +267,18 @@ class ZServ(object):
                 for x in [x for x in b if x.endswith('.log')]:
                     p = os.path.join(self.home_folder, x)
                     try:
-                        if os.path.isfile(p):
-                            os.remove(p)
-                        elif os.path.islink(p):
+                        if os.path.isfile(p) or os.path.islink(p):
                             os.remove(p)
                         else:
-                            es = "%s: Cannot start, cannot remove old log file %s"
+                            es = "%s: Cannot start, cannot remove old log file"
+                            es += " %s"
                             raise Exception(es % (self.name, p))
                     except Exception, e:
-                        es = "%s: Cannot start, cannot remove old log file %s: %s"
-                        raise Exception(es % (self.name, p, e))
+                        if 'Cannot start, cannot remove old log file' in str(e):
+                            es = "%s: " + str(e)
+                            raise Exception(es % (self.name))
+                        else:
+                            raise
             if not os.path.exists(self.fifo_path):
                 os.mkfifo(self.fifo_path)
 

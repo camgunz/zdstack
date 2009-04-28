@@ -69,11 +69,14 @@ class Task(object):
                 # Haha, there are like, 100000000 Parsing Tasks.
                 ###
                 zdslog.debug("Performing %s Task" % (self.name))
-            self.output = self.func(*self.args, **self.kwargs)
-            input_queue.task_done()
-            if self.output and output_queue:
-                zdslog.debug("Putting %s in %s" % (self.output, output_queue))
-                output_queue.put_nowait(self.output)
-            self.is_complete.set()
+            try:
+                self.output = self.func(*self.args, **self.kwargs)
+                if self.output and output_queue:
+                    ds = "Putting %s in %s"
+                    zdslog.debug(ds % (self.output, output_queue))
+                    output_queue.put_nowait(self.output)
+            finally:
+                input_queue.task_done()
+                self.is_complete.set()
         return self.output
 

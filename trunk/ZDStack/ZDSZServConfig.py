@@ -407,7 +407,7 @@ class ZServConfigParser(ZDSConfigParser):
         motd = self.get('motd')
         add_mapnum_to_hostname = self.getboolean('add_mapnum_to_hostname')
         remove_bots_when_humans = self.getboolean('remove_bots_when_humans')
-        maps = self.getlist('maps')
+        maps = self.getlist('maps') or ['map01']
         optional_wads = self.getlist('optional_wads')
         alternate_wads = self.getlist('alternate_wads', parse_func=lf)
         ###
@@ -467,7 +467,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.port = port
         self.zserv.cmd = cmd
         self.zserv.ip = ip
-        self.zserv.raw_game_mode = self.game_mode
+        self.zserv.game_mode = self.game_mode
         self.zserv.events_enabled = events_enabled
         self.zserv.stats_enabled = stats_enabled
         self.zserv.plugins_enabled = plugins_enabled
@@ -652,12 +652,12 @@ class ZServConfigParser(ZDSConfigParser):
             add_var_line(self.zserv.rcon_password_9, 'set rcon_pwd_9 "%s"')
             add_var_line(' '.join(self.zserv.rcon_commands_9),
                          'set rcon_cmds_9 "%s"')
-        add_bool_line(self.zserv.raw_game_mode in DM_MODES,
+        add_bool_line(self.zserv.game_mode in DM_MODES,
                       'set deathmatch "%s"')
-        if add_bool_line(self.zserv.raw_game_mode in TEAM_MODES, \
+        if add_bool_line(self.zserv.game_mode in TEAM_MODES, \
                                                         'set teamplay "%s"'):
             add_var_line(self.zserv.scorelimit, 'set teamscorelimit "%s"')
-        add_bool_line(self.zserv.raw_game_mode in CTF_MODES, 'set ctf "%s"')
+        add_bool_line(self.zserv.game_mode in CTF_MODES, 'set ctf "%s"')
         add_bool_line(self.zserv.telemissiles, 'set sv_telemissiles "%s"')
         add_bool_line(self.zserv.specs_dont_disturb_players,
                       'set specs_dont_disturb_players "%s"')
@@ -692,7 +692,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.dmflags, 'set dmflags "%s"')
         add_var_line(self.zserv.dmflags2, 'set dmflags2 "%s"')
         add_var_line(self.zserv.max_clients, 'set maxclients "%s"')
-        if self.zserv.raw_game_mode in DUEL_MODES:
+        if self.zserv.game_mode in DUEL_MODES:
             self.zserv.max_players = 2
         add_var_line(self.zserv.max_players, 'set maxplayers "%s"')
         add_var_line(self.zserv.timelimit, 'set timelimit "%s"')

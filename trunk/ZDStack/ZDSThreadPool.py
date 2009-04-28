@@ -49,7 +49,7 @@ from ZDStack.Utils import requires_lock
 
 zdslog = get_zdslog()
 
-__THREAD_POOL = []
+__THREAD_POOL = list()
 __THREAD_POOL_LOCK = Lock()
 
 @requires_lock(__THREAD_POOL_LOCK)
@@ -193,5 +193,10 @@ def join_all():
     zdslog.debug("Joining all threads")
     global __THREAD_POOL
     for t in __THREAD_POOL:
-        join(t, acquire_lock=False)
+        zdslog.debug("Thread Pool: %s" % ([x.getName() for x in __THREAD_POOL]))
+        zdslog.debug("Joining [%s]" % (t.getName()))
+        t.join()
+        zdslog.debug("Joined [%s]" % (t.getName()))
+    __THREAD_POOL = list()
+    zdslog.debug("All threads joined")
 

@@ -96,7 +96,8 @@ class Player(object):
         """
         zdslog.debug("Getting Alias for %s, %s" % (self.name, self.ip))
         return get_alias(name=self.name, ip_address=self.ip,
-                         round=self.zserv.round, session=session)
+                         round=self.zserv.get_round(session=session),
+                         session=session)
 
     def __ne__(self, x):
         try:
