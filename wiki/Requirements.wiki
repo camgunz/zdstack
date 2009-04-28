@@ -85,6 +85,6 @@ Here's a top shot of a ZDStack instance running 14 zservs for over 9 hours, usin
 25633 doom     15   0 37132 9148 1472 S    0  0.4   0:01.84 zserv
 }}}
 
-== But mine is using a lot more VIRT than that top shot ==
+== Whoa that's a lot of VIRT usage ==
 
 That's because ZDStack and its spawned zservs are sharing the same "memory".  So your ZDStack process is going to use a specific amount of VMEM, and every `zserv` it spawns will add to that amount.  The good news is that the memory isn't consumed twice, so you can safely disregard that huge VIRT number.
