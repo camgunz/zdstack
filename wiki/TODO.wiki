@@ -5,8 +5,6 @@
   * Re-write plugins for 0.11
     * unique players only
     * robust anti-teamkill
-    * anti-teamswitch
-      * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
     * ~~clean language~~
     * ~~fair teams~~
       * ~~Can't join the winning team unless they're down a player~~
