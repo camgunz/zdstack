@@ -144,9 +144,6 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             es = "Error processing RPC request: %s\nTraceback:\n%s"
             s = es % (e, traceback.format_exc())
             zdslog.error(s)
-            zdslog.debug(s)
-            zdslog.info(s)
-            print >> sys.stderr, s
             # self.send_response(500)
             ###
             # This is just for debugging.
@@ -571,15 +568,19 @@ class JSONProxy(object):
             #  'error': {'name': 'AttributeError', # or something
             #            'message': '"blah" has no ".name" attribute'}}
             #
+            # Yes, this ends up looking ridiculous.
+            #
             ###
             ###
             # Could probably do better than 'Exception' here...
             ###
             es = "Received error [%s]: %s - %s\nError name: %s\nError "
             es += "message: %s"
-            raise Exception(es % (error['code'], error['name'],
-                                  error['message'], error['error']['name'],
-                                  error['error']['message']))
+            raise Exception(es % (response['error']['code'],
+                                  response['error']['name'],
+                                  response['error']['message'],
+                                  response['error']['error']['name'],
+                                  response['error']['error']['message']))
         else:
             return response['result']
 

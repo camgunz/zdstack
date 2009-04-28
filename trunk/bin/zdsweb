@@ -186,7 +186,8 @@ class ZDSInterface:
             zserv_info['map_name'] = \
                         zserv_info['map_name'][:MAX_MAP_NAME_LENGTH] + '...'
         zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
-        optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
+        # optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
+        optional_wads = zserv_info['optional_wads']
         wads = list()
         stuff = sorted(zserv_info['wads'])
         for wad in stuff:
