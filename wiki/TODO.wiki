@@ -1,6 +1,7 @@
 ﻿#summary Todo list for the current release of ZDStack
 
-  
+  * Make sure MySQL segfault is figured out & fixed, or at least understood
+  * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
   * Re-write plugins for 0.11
     * unique players only
     * robust anti-teamkill
@@ -10,10 +11,8 @@
     * ~~fair teams~~
       * ~~Can't join the winning team unless they're down a player~~
       * ~~Can't join a team when it would put them up 2 players~~
-  * Make sure MySQL segfault is figured out & fixed, or at least understood
   * ~~Disallow duplicate ports in server config sections~~
   * ~~Detect rapid server crashing: stop the server and log an error~~
-  * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
   * ~~Keep configuration sections sorted~~
   * ~~Make non-debugging output even quieter (no 'Spawning zserv' messages)~~
   * ~~Should auto-create more folders (if possible):~~
