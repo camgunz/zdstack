@@ -3,7 +3,7 @@
 
 = Supported Platforms =
 
-ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
+ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04, and Slackware 12.2).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
 
 = Basic Software Requirements =
 
