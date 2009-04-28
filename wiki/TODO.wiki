@@ -1,17 +1,16 @@
 ﻿#summary Todo list for the current release of ZDStack
 
   
-  * Write some standard plugins for inclusion
-    * ~~unique players only~~
+  * Re-write plugins for 0.11
+    * unique players only
+    * robust anti-teamkill
+    * anti-teamswitch
+      * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
     * ~~clean language~~
-    * ~~robust anti-teamkill~~
-    * ~~map/kick/reset voting~~
     * ~~fair teams~~
       * ~~Can't join the winning team unless they're down a player~~
       * ~~Can't join a team when it would put them up 2 players~~
-    * anti-teamswitch
-      * If a player has switched to the winning team more than once, and (switches - 1) have occurred within 30 seconds of a flag score, kick that player.
-  * Test plugins (again, because everything's different now)
+  * Make sure MySQL segfault is figured out & fixed, or at least understood
   * ~~Disallow duplicate ports in server config sections~~
   * ~~Detect rapid server crashing: stop the server and log an error~~
   * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
@@ -22,4 +21,3 @@
     * ~~zdstack_zserv_folder~~
     * ~~zdstack_plugin_folder~~
   * ~~Implement zserv logfile saving~~
-  * Duplicate ports are still allowed - fix
