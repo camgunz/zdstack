@@ -63,17 +63,27 @@ ZDStack is very easy on CPU, using little or no CPU most of the time -- even dur
 
 == Top Shot ==
 
-Here's a top shot of a ZDStack instance running 1 zserv.  A new round has been started roughly 20 times (no stat events occurred in these rounds, however), statistics are enabled, and an in-memory database is being used.  The zserv itself is running the IDL2009 WAD.
+Here's a top shot of a ZDStack instance running 14 zservs for over 9 hours, using the MySQL database engine.
 
 {{{
-  PID USER  PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-19519 doom  20   0  261m 113m  26m S    2 11.4   4:29.86 firefox
-25975 doom  20   0 42788  13m 1464 S    0  1.3   0:01.30 zserv
-25968 doom  20   0 81808  11m 2096 S    0  1.1   0:03.32 zdstack debug
- 6173 doom  20   0 12156 8344 1528 S    0  0.8   0:00.06 zdsweb -p 8080
+  PID USER     PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 6173 doom     20   0 12156 8344 1528 S    0  0.8   0:00.06 ./zdsweb -p 8080
+25614 doom     24   0  312m  20m 2068 S    0  1.0   1:26.52 ./zdstack start
+25631 doom     15   0 38160  13m 1648 S    0  0.7   0:10.06 zserv
+25623 doom     15   0 38156  13m 1604 S    0  0.7   0:09.36 zserv
+25627 doom     15   0 38164  13m 1548 S    0  0.7   0:06.93 zserv
+25648 doom     15   0 38152  13m 1528 S    0  0.7   0:05.97 zserv
+25656 doom     15   0 38156  13m 1476 S    0  0.7   0:00.59 zserv
+25635 doom     15   0 37472  12m 1632 S    0  0.6   0:13.29 zserv
+25653 doom     15   0 37392  12m 1552 S    0  0.6   0:23.04 zserv
+25647 doom     15   0 37132  12m 1576 S    0  0.6   0:03.71 zserv
+25651 doom     15   0 37128  11m 1648 S    1  0.6   0:13.85 zserv
+25638 doom     15   0 37132  11m 1808 S    0  0.6   0:21.61 zserv
+25621 doom     15   0 37140  10m 1740 S    0  0.5   0:17.87 zserv
+25625 doom     15   0 37128 9376 1616 S    0  0.5   0:02.37 zserv
+25628 doom     15   0 37144 9248 1544 S    0  0.5   0:01.65 zserv
+25633 doom     15   0 37132 9148 1472 S    0  0.4   0:01.84 zserv
 }}}
-
-Firefox is included for perspective, even though it's a notorious RAM hog (evidently).
 
 == But mine is using a lot more VIRT than that top shot ==
 
