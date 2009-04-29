@@ -12,7 +12,7 @@ from threading import Lock, Timer, Thread
 from collections import deque
 
 from ZDStack import ZDSThreadPool
-from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, PlayerNotFoundError, \
+from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, TICK, PlayerNotFoundError, \
                     ZServNotFoundError, get_configfile, get_configparser, \
                     get_zdslog
 from ZDStack.Utils import get_event_from_line, requires_instance_lock
@@ -224,10 +224,10 @@ class Stack(Server):
     def spawn_zservs(self):
         """Spawns zservs, respawning if they've crashed."""
         now = datetime.now()
-        try:
-            for zserv in self.zservs.values():
-                try:
-                    with self.szn_lock:
+        with self.szn_lock:
+            try:
+                for zserv in self.zservs.values():
+                    try:
                         if zserv.name in self.stopped_zserv_names or \
                            zserv.is_running():
                             ###
@@ -239,8 +239,7 @@ class Stack(Server):
                     # This timer runs every 500ms.  So if the zserv has 2
                     # restarts in the last 4 seconds, stop trying to start it.
                     ###
-                    if len(zserv.restarts) > 1:
-                        with self.szn_lock:
+                        if len(zserv.restarts) > 1:
                             second_most_recent_restart = zserv.restarts[-2]
                             diff = now - second_most_recent_restart
                             if diff <= timedelta(seconds=4):
@@ -255,16 +254,16 @@ class Stack(Server):
                                 # infinitely.
                                 ###
                                 zserv.restarts = zserv.restarts[-2:]
-                    zserv.start()
-                except Exception, e:
-                    es = "Received error while checking [%s]: [%s]"
-                    zdslog.error(es % (zserv.name, e))
-                    continue
-        finally:
-            if self.keep_spawning_zservs:
-                t = Timer(.5, self.spawn_zservs)
-                self.zserv_check_timer = t
-                self.zserv_check_timer.start()
+                        zserv.start()
+                    except Exception, e:
+                        es = "Received error while checking [%s]: [%s]"
+                        zdslog.error(es % (zserv.name, e))
+                        continue
+            finally:
+                if self.keep_spawning_zservs:
+                    t = Timer(.5, self.spawn_zservs)
+                    self.zserv_check_timer = t
+                    self.zserv_check_timer.start()
 
     def poll_zservs(self):
         """Polls all ZServs for output."""
@@ -277,54 +276,68 @@ class Stack(Server):
         # Also the select call gives up every second, which allows it to check
         # whether or not it should keep polling.
         ###
-        with self.szn_lock:
-            stuff = [(z, z.fifo) for z in self.zservs.values() if z.fifo]
+        stuff = [(z, z.fifo) for z in self.zservs.values() if z.fifo]
+        if not stuff:
+            time.sleep(TICK)
+            return
+        try:
             r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
-            readable = [(z, f) for z, f in stuff if f in r]
-        # if readable:
-        #     zdslog.debug("Readable: %s" % (str(readable)))
-            for zserv, fd in readable:
-                while 1:
-                    # zdslog.debug("Reading data from [%s]" % (zserv.name))
-                    try:
+        except select.error, e:
+            errno, message = e.args
+            if errno != 9:
+                ###
+                # Error code 9: Bad file descriptor: probably meaning FD was
+                # closed.
+                ###
+                raise
+        except TypeError:
+            ###
+            # This probably shouldn't happen, but if the ZServ's .fifo
+            # attribute is None and it slips through somehow, the select()
+            # call will try to call its .fileno() method, which will obviously
+            # fail.  We just want to try the whole thing again in this case.
+            ###
+            return
+        if not r:
+            return
+        readable = [(z, f) for z, f in stuff if f in r]
+        for zserv, fd in readable:
+            while 1:
+                try:
+                    ###
+                    # I guess 1024 bytes should be a big enough chunk.
+                    ###
+                    data = os.read(fd, 1024)
+                    if data:
+                        lines = data.splitlines()
+                        if zserv._fragment:
+                            lines[0] = zserv._fragment + lines[0]
+                            zserv._fragment = None
+                        if not data.endswith('\n'):
+                            lines, zserv._fragment = lines[:-1], lines[-1]
+                        output = (zserv, datetime.now(), lines)
+                        task = Task(self.parse_zserv_output, args=output,
+                                    name='Parsing')
+                        self.output_queue.put_nowait(task)
+                    else:
                         ###
-                        # I guess 1024 bytes should be a big enough chunk.
+                        # Non-blocking FDs should raise exceptions instead
+                        # of returning nothing, but just for the hell of
+                        # it.
                         ###
-                        data = os.read(fd, 1024)
-                        if data:
-                            # zdslog.debug("Got %d bytes" % (len(data)))
-                            lines = data.splitlines()
-                            if zserv._fragment:
-                                lines[0] = zserv._fragment + lines[0]
-                                zserv._fragment = None
-                            if not data.endswith('\n'):
-                                lines, zserv._fragment = lines[:-1], lines[-1]
-                            output = (zserv, datetime.now(), lines)
-                            task = Task(self.parse_zserv_output, args=output,
-                                        name='Parsing')
-                            self.output_queue.put_nowait(task)
-                        else:
-                            ###
-                            # Non-blocking FDs should raise exceptions instead
-                            # of returning nothing, but just for the hell of
-                            # it.
-                            ###
-                            # zdslog.debug("No data")
-                            break
-                    except OSError, e:
-                        if e.errno == 11:
-                            ###
-                            # Error code 11: FD would have blocked... meaning
-                            # we're at the end of the data stream.
-                            ###
-                            # zdslog.debug("FD would have blocked")
-                            break
-                        else:
-                            ###
-                            # We want other stuff to bubble up.
-                            ###
-                            # zdslog.debug("Raising exception")
-                            raise
+                        break
+                except OSError, e:
+                    if e.errno == 11:
+                        ###
+                        # Error code 11: FD would have blocked... meaning
+                        # we're at the end of the data stream.
+                        ###
+                        break
+                    else:
+                        ###
+                        # We want other stuff to bubble up.
+                        ###
+                        raise
 
     def parse_zserv_output(self, zserv, dt, lines):
         """Parses ZServ output into events, places them in the event queue.
