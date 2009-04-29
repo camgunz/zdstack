@@ -242,11 +242,6 @@ class ZServ(object):
         ###
         self.players.sync()
 
-    def reload_config(self):
-        """Reloads the config for the ZServ."""
-        # zdslog.debug('')
-        self.load_config(reload=True)
-
     def load_config(self, reload=False):
         """Loads this ZServ's config.
 
@@ -260,7 +255,7 @@ class ZServ(object):
         """
         with self.config_lock:
             # zdslog.debug('')
-            self.config.process_config() # does tons of ugly, ugly stuff
+            self.config.process_config(reload=reload) # does tons of ugly stuff
             gm = self.get_game_mode()
             source_port = self.get_source_port()
             if gm not in source_port.game_modes:

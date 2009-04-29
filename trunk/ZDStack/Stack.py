@@ -14,12 +14,13 @@ from collections import deque
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, TICK, PlayerNotFoundError, \
                     ZServNotFoundError, get_configfile, get_configparser, \
-                    get_zdslog
+                    load_configparser, check_server_config_section, get_zdslog
 from ZDStack.Utils import get_event_from_line, requires_instance_lock
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSRegexps import get_server_regexps
+from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
 
@@ -525,7 +526,7 @@ class Stack(Server):
         for zserv_name in self.config.sections():
             if zserv_name in self.zservs:
                 zdslog.info("Reloading Config for [%s]" % (zserv_name))
-                self.zservs[zserv_name].reload_config()
+                self.zservs[zserv_name].load_config(reload=True)
             else:
                 zdslog.debug("Adding zserv [%s]" % (zserv_name))
                 self.zservs[zserv_name] = ZServ(zserv_name, self)
@@ -758,15 +759,21 @@ class Stack(Server):
 
         """
         # zdslog.debug('')
-        sio = StringIO(data)
-        cp = RCP(sio, dummy=True)
+        cp = RCP(StringIO(data), dummy=True)
+        current_main_cp = load_configparser()
+        for o, v in cp.items(zserv_name):
+            current_main_cp.set(zserv_name, o, v)
+        check_server_config_section(zserv_name, current_main_cp)
         main_cp = get_configparser()
         with main_cp.lock:
             for o, v in cp.items(zserv_name):
                 main_cp.set(zserv_name, o, v, acquire_lock=False)
             main_cp.save(acquire_lock=False)
-        self.initialize_config(reload=True)
-        self.get_zserv(zserv_name).reload_config()
+        self.config = get_configparser(reload=True)
+        self.raw_config = RCP(self.config_file)
+        for section in self.raw_config.sections():
+            self.raw_config.set(section, 'name', section)
+        self.get_zserv(zserv_name).load_config(reload=True)
 
     def send_to_zserv(self, zserv_name, message):
         """Sends a command to a running zserv process.

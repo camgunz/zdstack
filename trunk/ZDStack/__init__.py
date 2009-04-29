@@ -254,6 +254,32 @@ def set_configfile(config_file):
         raise ValueError(es % (config_file))
     CONFIGFILE = config_file
 
+def check_server_config_section(server_name, config):
+    """Checks an individual server's configuration section.
+
+    :param server_name: the name of the server whose configuration
+                        section is to be checked
+    :type server_name"
+    :param config: configuration options and values
+    :type config: :class:`~ZDStack.ZDSConfigParser`
+
+    """
+    ports = [config.get(s, 'port') for s in config.sections()]
+    d = dict(config.items(server_name))
+    for x in REQUIRED_SERVER_CONFIG_OPTIONS:
+        if x not in d or not d[x]:
+            es = "Required server option %s not found for server [%s]"
+            raise ValueError(es % (x, s))
+    for fo, m in REQUIRED_SERVER_VALID_FILES:
+        f = config.getpath(s, fo)
+        if not os.access(f, m):
+            raise ValueError("Insufficient access provided for %s" % (f))
+    if d['mode'].lower() not in SUPPORTED_GAME_MODES:
+        raise ValueError("Unsupported game mode %s" % (d['mode']))
+    if ports.count(d['port']) > 1:
+        es = "%s's port (%s) is already in use"
+        raise ValueError(es % (d['name'], d['port']))
+
 def load_configparser():
     """Loads the ZDStack configuration file into a ConfigParser.
     
@@ -279,22 +305,8 @@ def load_configparser():
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (fo))
         # cp.set('DEFAULT', fo, f)
-    ports = []
     for s in cp.sections():
-        d = dict(cp.items(s))
-        for x in REQUIRED_SERVER_CONFIG_OPTIONS:
-            if x not in d or not d[x]:
-                es = "Required server option %s not found for server [%s]"
-                raise ValueError(es % (x, s))
-        for fo, m in REQUIRED_SERVER_VALID_FILES:
-            f = cp.getpath(s, fo)
-            if not os.access(f, m):
-                raise ValueError("Insufficient access provided for %s" % (f))
-            # cp.set(s, fo, f)
-        if d['mode'].lower() not in SUPPORTED_GAME_MODES:
-            raise ValueError("Unsupported game mode %s" % (d['mode']))
-        if d['port'] in ports:
-            raise ValueError("%s's port (%s) is already in use" % (d['name'], d['port']))
+        check_server_config_section(s, cp)
     ###
     # Below are some checks for specific options & values
     ###
@@ -361,6 +373,7 @@ def load_configparser():
             raise ValueError(es % (plugin_folder, e))
     if DEBUGGING is None:
         set_debugging(False)
+    return cp
     ###
     # Check for duplicate ports.
     ###

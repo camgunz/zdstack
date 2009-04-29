@@ -42,6 +42,12 @@ class ZServConfigParser(ZDSConfigParser):
         raise NotImplementedError()
 
     @requires_instance_lock()
+    def clear(self):
+        """Removes all data for this ZServ's config."""
+        ZDSConfigParser.remove_section(self, self.zserv.name,
+                                       acquire_lock=False)
+
+    @requires_instance_lock()
     def has_option(self, option):
         """Checks if this ZServ's config contains a specific option.
 
@@ -306,14 +312,19 @@ class ZServConfigParser(ZDSConfigParser):
         """
         return self._sections[self.zserv.name].items()
 
-    def process_config(self):
+    def process_config(self, reload=False):
         """Process a config.
-        
+
+        :param reload: whether or not to reload the configuration
+        :type reload: boolean
+
         After the config has been successfully processed, this
         ZServConfig updates its ZServ's instance variables
 
         """
         from ZDStack.ZServ import DUEL_MODES
+        if reload:
+            self.reload()
         game_mode = self.zserv.zdstack.config.get(self.zserv.name, 'mode')
         self.game_mode = game_mode.lower()
         zserv_folder = self.getpath('zdstack_zserv_folder')
