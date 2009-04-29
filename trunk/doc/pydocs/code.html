@@ -676,7 +676,7 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <dl class="class">
 <dt id="ZDStack.RPCServer.JSONRPCServer">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5dfbc&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5e89c&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="ZDStack.RPCServer.JSONRPCServer.datetime_to_seconds">
 <tt class="descname">datetime_to_seconds</tt><big>(</big><em>dt</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer.datetime_to_seconds" title="Permalink to this definition">¶</a></dt>
@@ -823,7 +823,7 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <dl class="class">
 <dt id="ZDStack.RPCServer.XMLRPCServer">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5dfbc&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCServer" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5e89c&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCServer" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -5112,6 +5112,11 @@ values.</p>
 <dd>ZServConfigParsers don&#8217;t support adding sections.</dd></dl>
 
 <dl class="method">
+<dt id="ZDStack.ZDSZServConfig.ZServConfigParser.clear">
+<tt class="descname">clear</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser.clear" title="Permalink to this definition">¶</a></dt>
+<dd>Removes all data for this ZServ&#8217;s config.</dd></dl>
+
+<dl class="method">
 <dt id="ZDStack.ZDSZServConfig.ZServConfigParser.get">
 <tt class="descname">get</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser.get" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets an option&#8217;s value.</p>
@@ -5457,8 +5462,16 @@ options</td>
 
 <dl class="method">
 <dt id="ZDStack.ZDSZServConfig.ZServConfigParser.process_config">
-<tt class="descname">process_config</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser.process_config" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">process_config</tt><big>(</big><em>reload=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser.process_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process a config.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>reload</em> (boolean) &#8211; whether or not to reload the configuration</td>
+</tr>
+</tbody>
+</table>
 <p>After the config has been successfully processed, this
 ZServConfig updates its ZServ&#8217;s instance variables</p>
 </dd></dl>
@@ -5661,11 +5674,6 @@ zserv is still running</td>
 </tbody>
 </table>
 </dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZServ.ZServ.reload_config">
-<tt class="descname">reload_config</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZServ.ZServ.reload_config" title="Permalink to this definition">¶</a></dt>
-<dd>Reloads the config for the ZServ.</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.ZServ.ZServ.remove_timed_ban">

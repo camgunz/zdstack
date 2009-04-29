@@ -56,7 +56,6 @@ ZDStack.DebugTRFH.close method code.html
 ZDStack.ZDSModels.Round.map_id attribute code.html
 ZDStack.ZDSModels.Frag.green_team_holding_flag attribute code.html
 ZDStack.ZDSModels.FlagTouch.resulted_in_score attribute code.html
-ZDStack.ZServ.ZServ.reload_config method code.html
 ZDStack.ZDSModels.FlagReturn.green_team_score attribute code.html
 ZDStack.ZDSModels.FlagReturn.flag attribute code.html
 ZDStack.ZDSModels.Round.players attribute code.html
@@ -389,6 +388,7 @@ ZDStack.ZDSModels.Weapon.name attribute code.html
 ZDStack.ZDSPlayersList.PlayersList.remove method code.html
 ZDStack.Utils.get_event_from_line function code.html
 ZDStack.ZDSPlayer.Player.number attribute code.html
+ZDStack.ZDSZServConfig.ZServConfigParser.clear method code.html
 ZDStack.Server.Server.get_status method code.html
 ZDStack.ZDSModels.Alias.rcon_accesses attribute code.html
 ZDStack.Server.Server.pidfile attribute code.html
