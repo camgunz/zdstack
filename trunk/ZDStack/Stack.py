@@ -282,16 +282,16 @@ class Stack(Server):
             return
         try:
             r, w, x = select.select([f for z, f in stuff], [], [], MAX_TIMEOUT)
-            if not r:
-                return
         except select.error, e:
             errno, message = e.args
-            if errno != 9:
+            if errno == 9:
                 ###
                 # Error code 9: Bad file descriptor: probably meaning FD was
-                # closed.
+                # closed.  We just want to try the whole thing again in this
+                # case.
                 ###
-                raise
+                return
+            raise
         except TypeError:
             ###
             # This probably shouldn't happen, but if the ZServ's .fifo
@@ -299,6 +299,8 @@ class Stack(Server):
             # call will try to call its .fileno() method, which will obviously
             # fail.  We just want to try the whole thing again in this case.
             ###
+            return
+        if not r:
             return
         readable = [(z, f) for z, f in stuff if f in r]
         for zserv, fd in readable:
