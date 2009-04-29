@@ -327,8 +327,10 @@ class Stack(Server):
                         ###
                         break
                 except OSError, e:
-                    if e.errno == 11:
+                    if e.errno in (9, 11):
                         ###
+                        # Error code 9 is described above.
+                        #
                         # Error code 11: FD would have blocked... meaning
                         # we're at the end of the data stream.
                         ###
