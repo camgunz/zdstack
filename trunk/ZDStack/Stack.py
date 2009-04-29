@@ -681,8 +681,8 @@ class Stack(Server):
                 'port': zserv.port,
                 'players': players,
                 'max_players': max_players,
-                'map_name': zserv.map.name,
-                'map_number': zserv.map.number,
+                'map_name': zserv.map_name,
+                'map_number': zserv.map_number,
                 'is_running': zserv.is_running()}
 
     def get_zserv_info(self, zserv_name):
