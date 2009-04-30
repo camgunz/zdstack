@@ -313,7 +313,7 @@ class Stack(Server):
                     data = os.read(fd, 1024)
                     if data:
                         ds = "Got data from %s: [%s]"
-                        zdslog.debug(ds % (zserv.name, data))
+                        zdslog.debug(ds % (zserv.name, data.strip()))
                         lines = data.splitlines()
                         if zserv._fragment:
                             lines[0] = zserv._fragment + lines[0]
@@ -357,6 +357,7 @@ class Stack(Server):
         """
         # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
         if zserv.save_logfile:
+            zdslog.debug("Trying to save lines to %s's logger" % (zserv.name))
             logging.getLogger(zserv.name).info('\n'.join(lines))
         if not zserv.events_enabled:
             ###
@@ -440,6 +441,8 @@ class Stack(Server):
                         zdslog.debug("Waiting until response is processed")
                         zserv.finished_processing_response.wait()
                         zdslog.debug("Done waiting")
+                    else:
+                        zdslog.debug("Response hasn't started yet")
             except Exception, e:
                 es = "Received error while processing event from [%s]: "
                 es += "[%s]"
@@ -478,10 +481,13 @@ class Stack(Server):
         if handler:
             s = "Handling %s event (Line: [%s])" % (event.type, event.line)
             zdslog.debug(s)
-            ###
-            # This should return a new model... or nothing.
-            ###
-            handler(event, zserv)
+            if event.category != 'command' and event.type != 'map_change':
+                zdslog.debug("Acquiring %s's event lock" % (zserv.name))
+                with zserv.event_lock:
+                    zdslog.debug("Acquired %s's event lock" % (zserv.name))
+                    handler(event, zserv)
+            else:
+                handler(event, zserv)
             zdslog.debug("Finished handling %s event" % (event.type))
         else:
             pass
@@ -501,11 +507,13 @@ class Stack(Server):
             zdslog.debug("Processing %s with %s" % (event, plugin.__name__))
             zdslog.debug("Event Data: %s" % (str(event.data)))
             try:
-                ###
-                # If a plugin wants to persist something (God forbid), then
-                # they'll have to do it themselves.
-                ###
-                plugin(event, zserv)
+                if event.category != 'command' and event.type != 'map_change':
+                    zdslog.debug("Acquiring %s's event lock" % (zserv.name))
+                    with zserv.event_lock:
+                        zdslog.debug("Acquired %s's event lock" % (zserv.name))
+                        plugin(event, zserv)
+                else:
+                    plugin(event, zserv)
             except Exception, e:
                 es = "Exception in plugin %s: [%s]"
                 zdslog.error(es % (plugin.__name__, e))

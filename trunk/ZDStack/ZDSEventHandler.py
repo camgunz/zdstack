@@ -3,7 +3,7 @@ from __future__ import with_statement
 import datetime
 
 from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
-from ZDStack.ZServ import TEAMDM_MODES
+from ZDStack.ZServ import TEAM_MODES, TEAMDM_MODES
 from ZDStack.ZDSModels import Round, Alias, Frag, FlagTouch, FlagReturn, \
                               RCONAccess, RCONDenial, RCONAction
 from ZDStack.ZDSDatabase import get_weapon, get_alias, get_team_color, \
@@ -35,22 +35,6 @@ class BaseEventHandler(object):
         self._event_categories_to_handlers = dict()
         self.set_handler('error', self.handle_error_event)
 
-    def _get_handler_wrapper(self, handler):
-        """Acquires the ZServ's event lock before handling an event.
-        
-        :param event: the handler function to wrap
-        :type event: function
-        :rtype: function
-        
-        """
-        def wrapper(event, zserv):
-            if event.category != 'command' and event.type != 'map_change':
-                with zserv.event_lock:
-                    handler(event, zserv)
-            else:
-                handler(event, zserv)
-        return wrapper
-
     def get_handler(self, event_category):
         """Returns a handler method for a given event_category.
 
@@ -62,7 +46,7 @@ class BaseEventHandler(object):
         """
         h = self._event_categories_to_handlers.get(event_category,
                                                    self.handle_unhandled_event)
-        return self._get_handler_wrapper(h)
+        return h
 
     def set_handler(self, event_category, handler):
         """Sets the handler method for a certain event_category.
@@ -346,10 +330,11 @@ class ZServEventHandler(BaseEventHandler):
                 green_score = zserv.team_scores.get('green', None)
                 white_score = zserv.team_scores.get('white', None)
                 with global_session() as session:
+                    round = zserv.get_round(session=session)
                     alias = get_alias(player.name, player.ip,
-                                      round=zserv.get_round(), session=session)
+                                      round=round, session=session)
                     team_color = get_team_color(player.color, session=session)
-                    s = FlagReturn(player=alias, round=zserv.get_round(),
+                    s = FlagReturn(player=alias, round=round,
                                    timestamp=event.dt,
                                    player_was_holding_flag=player_holding_flag,
                                    player_team_color=team_color,
@@ -391,8 +376,6 @@ class ZServEventHandler(BaseEventHandler):
             else:
                 fragger = fraggee
                 is_suicide = True
-            weapon = get_weapon(name=event.data['weapon'],
-                                is_suicide=is_suicide)
             if fraggee in zserv.fragged_runners:
                 fraggee_was_holding_flag = True
                 zserv.fragged_runners.remove(fraggee)
@@ -401,8 +384,8 @@ class ZServEventHandler(BaseEventHandler):
             if is_suicide:
                 fragger_was_holding_flag = fraggee_was_holding_flag
             else:
-                fragger_was_holding_flag = fragger in \
-                                                    zserv.players_holding_flags
+                fragger_was_holding_flag = \
+                    fragger in zserv.players_holding_flags
             if zserv.game_mode in TEAMDM_MODES:
                 if is_suicide:
                     zserv.team_scores[fragger.color] -= 1
@@ -435,22 +418,36 @@ class ZServEventHandler(BaseEventHandler):
             green_score = zserv.team_scores.get('green', None)
             white_score = zserv.team_scores.get('white', None)
             with global_session() as session:
+                fragger_team = None
+                fraggee_team = None
+                if zserv.game_mode in TEAM_MODES:
+                    fraggee_team_color = get_team_color(color=fraggee.color,
+                                                        session=session)
+                    if is_suicide:
+                        fragger_team_color = fraggee_team_color
+                    else:
+                        fragger_team_color = get_team_color(color=fragger.color,
+                                                            session=session)
+                weapon = get_weapon(name=event.data['weapon'],
+                                    is_suicide=is_suicide, session=session)
+                zdslog.debug("Getting ZServ's round")
+                round = zserv.get_round(session=session)
+                zdslog.debug("Getting Fraggee Alias")
                 fraggee_alias = get_alias(fraggee.name, fraggee.ip,
-                                          round=zserv.get_round(),
-                                          session=session)
+                                          round=round, session=session)
                 if fraggee == fragger:
                     fragger_alias = fraggee_alias
                 else:
+                    zdslog.debug("Getting Fragger Alias")
                     fragger_alias = get_alias(fragger.name, fragger.ip,
-                                              round=zserv.get_round(),
-                                              session=session)
+                                              round=round, session=session)
+                zdslog.debug("Getting Frag")
                 s = Frag(fragger=fragger_alias, fraggee=fraggee_alias,
-                         weapon=weapon, round=zserv.get_round(),
-                         timestamp=event.dt,
+                         weapon=weapon, round=round, timestamp=event.dt,
                          fragger_was_holding_flag=fragger_was_holding_flag,
                          fraggee_was_holding_flag=fraggee_was_holding_flag,
-                         fragger_team_color=fragger_team,
-                         fraggee_team_color=fraggee_team,
+                         fragger_team_color=fragger_team_color,
+                         fraggee_team_color=fraggee_team_color,
                          red_team_holding_flag=red_holding_flag,
                          blue_team_holding_flag=blue_holding_flag,
                          green_team_holding_flag=green_holding_flag,
@@ -459,7 +456,9 @@ class ZServEventHandler(BaseEventHandler):
                          blue_team_score=blue_score,
                          green_team_score=green_score,
                          white_team_score=white_score)
+                zdslog.debug("Persisting Frag")
                 persist(s, session=session)
+                zdslog.debug("Done!")
 
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.

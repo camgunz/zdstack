@@ -141,8 +141,8 @@ class PlayersList(object):
         name.
 
         """
-        ds = "get(name=%s, ip_address_and_port=%s)"
-        zdslog.debug(ds % (name, ip_address_and_port))
+        ds = "get(name=%s, ip_address_and_port=%s, sync=%s)"
+        zdslog.debug(ds % (name, ip_address_and_port, sync))
         # zdslog.debug('')
         if name and ip_address_and_port:
             ip_address, port = ip_address_and_port

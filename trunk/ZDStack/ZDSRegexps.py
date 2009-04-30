@@ -227,6 +227,7 @@ COMMANDS = (
 (r"=== ALL SCORES RESET BY SERVER ADMIN ===$", 'resetscores_command', True),
 (r"\] CONSOLE \[ (?P<message>.*)$", 'say_command', False),
 (r"(?P<var_name>.*) is now (?P<var_value>.*)$", 'set_command', True),
+(r'"(?P<var_name>.*)" is "(?P<var_value>true|false)"$', 'toggle_command', True),
 (r"(?P<wad_number>\d\d\d|\d\d|\d)\. (?P<wad_name>.*.wad)$", 'wads_command', False)
 )
 

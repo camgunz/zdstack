@@ -67,8 +67,10 @@ class FakeZServ:
                 event = get_event_from_line(line, REGEXPS)
                 if event:
                     if event.category == 'command' and \
-                       event.type != 'map_change':
+                       event.type not in ('map_change', 'maplist_command'):
                         self.debug("Got command event: %s" % (in_command))
+                        self.debug("Line is: %s" % (line))
+                        self.debug("Event Type is: %s" % (event.type))
                         if not in_command:
                             self.wait_for_command()
                             in_command = True

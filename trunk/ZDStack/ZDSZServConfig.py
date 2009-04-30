@@ -356,9 +356,13 @@ class ZServConfigParser(ZDSConfigParser):
         ip = self.get('ip')
         if ip:
             check_ip(ip)
+        ###
+        # Normally, we would disable stats when using fakezserv, but let's
+        # assume whoever is using fakezserv knows what they're doing.
+        ###
         if 'fakezserv' in zserv_exe:
             cmd = [zserv_exe, self.getpath('fake_logfile'), fifo_path]
-            stats_enabled = False
+            # stats_enabled = False
         else:
             cmd = [zserv_exe, '-cfg', configfile, '-waddir', wad_folder,
                    '-iwad', iwad, '-port', str(port), '-log']
@@ -366,10 +370,16 @@ class ZServConfigParser(ZDSConfigParser):
                 cmd.extend(['-file', wad])
             if ip:
                 cmd.extend(['-ip', ip])
-            stats_enabled = self.getboolean('enable_stats', False)
+            # stats_enabled = self.getboolean('enable_stats', False)
         events_enabled = self.getboolean('enable_events', False)
+        stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
         save_logfile = self.getboolean('save_logfile', False)
+        if not save_logfile:
+            ###
+            # This can be confusing, I admit.
+            ###
+            save_logfile = self.getboolean('save_logfiles', False)
         if not events_enabled:
             if stats_enabled:
                 es = "Statistics require events, but they have been disabled"
@@ -459,6 +469,7 @@ class ZServConfigParser(ZDSConfigParser):
         # We want to setup the ZServ's logger here too, if applicable.
         ###
         if save_logfile:
+            zdslog.debug("Setting up %s's logger" % (self.zserv.name))
             cp = self.zserv.zdstack.config
             to_keep = self.getint('number_of_zserv_logs_to_backup')
             to_keep = to_keep or 0
@@ -488,6 +499,8 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.stats_enabled = stats_enabled
         self.zserv.plugins_enabled = plugins_enabled
         self.zserv.save_logfile = save_logfile
+        ds = "save_logfile is %s for %s"
+        zdslog.debug(ds % (self.zserv.save_logfile, self.zserv.name))
         self.zserv.rcon_password = rcon_password
         self.zserv.rcon_enabled = rcon_enabled
         self.zserv.rcon_password_1 = rcon_password_1

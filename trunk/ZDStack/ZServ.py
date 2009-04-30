@@ -480,6 +480,10 @@ class ZServ(object):
             ###
             if not self.events_enabled or event_response_type is None:
                 return _send(message)
+            #                                                                #
+            # Everything past this point only happens if event_response_type #
+            # is not None and events are enabled.                            #
+            #                                                                #
             zdslog.debug("Setting response type")
             self.response_events = []
             self.event_type_to_watch_for = event_response_type
@@ -489,13 +493,14 @@ class ZServ(object):
             zdslog.debug("Waiting for response")
             ###
             # In case a server is restarted before a non-response event occurs,
-            # we need a timeout here.
+            # we need a timeout here.  500ms is probably enough.
             ###
-            self.response_finished.wait(float(TICK*4))
+            self.response_finished.wait(.5)
             ###
             # We want to process this response before any other events, so make
             # other threads wait until we're finished processing the response.
             ###
+            zdslog.debug("Response is finished")
             self.finished_processing_response.clear()
             try:
                 zdslog.debug("Processing response events")
@@ -538,13 +543,14 @@ class ZServ(object):
 
         """
         zdslog.debug("Adding timed ban for [%s]" % (ip_address))
-        self.zaddban(ip_address, reason)
+        out = self.zaddban(ip_address, reason)
         args = [ip_address]
         t = Timer(duration * 60, self.remove_timed_ban, args)
         args.append(t)
         self.ban_timers.add(t)
         t.start()
         zdslog.debug("Ban Timers: %s" % (str(self.ban_timers)))
+        return out
 
     def remove_timed_ban(self, ip_address, timer):
         """Removes a temporary ban.
@@ -558,8 +564,9 @@ class ZServ(object):
         with self.ban_timer_lock:
             if not timer.isAlive():
                 return
-            self.zkillban(ip_address)
+            out = self.zkillban(ip_address)
             self.ban_timers.remove(timer)
+        return out
 
     def zaddbot(self, bot_name):
         """Adds a bot.
@@ -584,7 +591,7 @@ class ZServ(object):
     def zclearmaplist(self):
         """Clears the maplist."""
         # zdslog.debug('')
-        return self.send_to_zserv('clearmaplist')
+        return self.send_to_zserv('clearmaplist', 'clearmaplist_command')
 
     def zget(self, variable_name):
         """Gets a variable.
@@ -608,7 +615,8 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('kick %s %s' % (player_number, reason))
+        return self.send_to_zserv('kick %s %s' % (player_number, reason),
+                                  'kick_command')
 
     def zkillban(self, ip_address):
         """Removes a ban.
@@ -618,7 +626,8 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('killban %s' % (ip_address))
+        return self.send_to_zserv('killban %s' % (ip_address),
+                                  'killban_command')
 
     def zmap(self, map_number):
         """Changes the current map.
@@ -651,12 +660,12 @@ class ZServ(object):
     def zremovebots(self):
         """Removes all bots."""
         # zdslog.debug('')
-        return self.send_to_zserv('removebots')
+        return self.send_to_zserv('removebots', 'removebots_command')
 
     def zresetscores(self):
         """Resets all scores."""
         # zdslog.debug('')
-        return self.send_to_zserv('resetscores')
+        return self.send_to_zserv('resetscores', 'resetscores_command')
 
     def zsay(self, message):
         """Sends a message as '] CONSOLE ['.
@@ -666,7 +675,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('say %s' % (message))
+        return self.send_to_zserv('say %s' % (message), 'say_command')
 
     def zset(self, variable_name, variable_value):
         """Sets a variable.
@@ -680,7 +689,7 @@ class ZServ(object):
         """
         # zdslog.debug('')
         s = 'set %s "%s"' % (variable_name, variable_value)
-        return self.send_to_zserv(s)
+        return self.send_to_zserv(s, 'set_command')
 
     def ztoggle(self, boolean_variable):
         """Toggles a boolean variable.
@@ -691,7 +700,8 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('toggle %s' % (boolean_variable))
+        return self.send_to_zserv('toggle %s' % (boolean_variable),
+                                  'toggle_command')
 
     def zunset(self, variable_name):
         """Un-sets a variable.
