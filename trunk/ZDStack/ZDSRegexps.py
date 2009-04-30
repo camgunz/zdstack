@@ -49,8 +49,9 @@ def get_possible_player_names(s):
 
     :param s: the message to parse
     :type s: string
-    :rtype: list of strings
-    :returns: a list of potential names of the sender
+    :rtype: tuple
+    :returns: (['potential', 'names', 'of', 'the', 'sender',
+               'message without prefix')
 
     """
     ###
@@ -65,17 +66,17 @@ def get_possible_player_names(s):
     sm = __SR.match(ws)
     bm = __SB.match(ws)
     if not sm and not bm:
-        return ppn
+        return (ppn, ws)
     sm = sm.group(1)
     bm = bm.group(1)
     diff = bm.replace(sm, '')
     sm = sm[1:-2]
     if not __SD in diff:
-        return sm
+        return (sm, ws)
     ppn.append(sm)
     for token in diff.split(__SD)[:-1]:
         ppn.append(sm + __SD.join([ppn[-1], token]))
-    return sm
+    return (ppn, ws)
 
 class Regexp(object):
 
@@ -152,10 +153,12 @@ class Regexp(object):
         if d:
             # zdslog.debug("Returning a %s event" % (self.event_type))
             return LogEvent(now, self.event_type, d, self.category, s)
-        ppn = get_possible_player_names(s)
-        if ppn:
-            d = {'contents': s, 'possible_player_names': ppn}
-            return LogEvent(now, 'message', d, 'message', s)
+        output = get_possible_player_names(s)
+        if output:
+            ppn, message = output
+            if ppn:
+                d = {'contents': message, 'possible_player_names': ppn}
+                return LogEvent(now, 'message', d, 'message', s)
         ###
         # if (s.startswith('<') or (len(s) >= 20 and s[20] == '<')) and '>' in s:
         #     ###

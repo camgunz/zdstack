@@ -1,6 +1,6 @@
 from ZDStack import get_zdslog
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
-from ZDStack.ZDSDatabase import get_alias
+from ZDStack.ZDSDatabase import get_alias, get_team_color
 
 zdslog = get_zdslog()
 
@@ -65,6 +65,7 @@ class Player(object):
         self.player_name = ''
         if name:
             self.set_name(name)
+        self.color = None
         self.playing = False
         self.disconnected = False
 
@@ -86,7 +87,7 @@ class Player(object):
         self.tag, self.player_name = parse_player_name(self.name)
 
     def get_alias(self, session=None):
-        """Returns an alias representing this player.
+        """Gets this player's Alias model.
         
         :param session: a Session instance, if none is given, the global
                         session will be used
@@ -98,6 +99,18 @@ class Player(object):
         return get_alias(name=self.name, ip_address=self.ip,
                          round=self.zserv.get_round(session=session),
                          session=session)
+
+    def get_team_color(self, session=None):
+        """Gets this player's TeamColor model.
+
+        :param session: a Session instance, if none is given, the global
+                        session will be used
+        :type session: Session
+        :rtype: TeamColor
+        
+        """
+        zdslog.debug("Getting TeamColor for %s, %s" % (self.name, self.ip))
+        return get_team_color(self.color, session=session)
 
     def __ne__(self, x):
         try:

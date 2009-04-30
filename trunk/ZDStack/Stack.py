@@ -312,6 +312,8 @@ class Stack(Server):
                     ###
                     data = os.read(fd, 1024)
                     if data:
+                        ds = "Got data from %s: [%s]"
+                        zdslog.debug(ds % (zserv.name, data))
                         lines = data.splitlines()
                         if zserv._fragment:
                             lines[0] = zserv._fragment + lines[0]
@@ -379,7 +381,27 @@ class Stack(Server):
                 #
                 #   return LogEvent(now, 'junk', d, 'junk', line))
                 #
+                # We do, on the other hand, want to let the ZServ know that its
+                # response is finished, if it's waiting on something.
+                #
                 ###
+                if zserv.event_type_to_watch_for:
+                    zdslog.debug("Response is finished")
+                    ###
+                    # Received an event that was not a response to the
+                    # command after events that were responses to the
+                    # command, so notify the zserv that its response
+                    # is complete.
+                    ###
+                    zserv.response_finished.set()
+                    ###
+                    # We want to wait until the ZServ finished processing
+                    # the response, because the current event may depend
+                    # upon it.
+                    ###
+                    zdslog.debug("Waiting until response is processed")
+                    zserv.finished_processing_response.wait()
+                    zdslog.debug("Done waiting")
                 continue
             try:
                 if event.type == 'message':
@@ -391,14 +413,15 @@ class Stack(Server):
                         try:
                             player = zserv.players.get(name=ppn)
                         except PlayerNotFoundError:
-                            s = "Received message from non-existent player [%s]"
-                            zdslog.error(s % (ppn))
+                            s = "Received a message from a non-existent player"
+                            s += ", PPN: %s, Message: %s"
+                            zdslog.error(s % (ppn, line))
                     else:
                         player = zserv.players.get_first_matching_player(ppn)
                     if not player:
                         s = "Received a message from a non-existent player"
-                        s += ", PPN: %s"
-                        zdslog.error(s % (str(ppn)))
+                        s += ", PPN: %s, Message: %s"
+                        zdslog.error(s % (ppn, line))
                     else:
                         zdslog.debug("Updating event.data")
                         m = c.replace(player.name, '', 1)[3:]
@@ -413,18 +436,7 @@ class Stack(Server):
                         zserv.response_events.append(event)
                     elif zserv.response_events:
                         zdslog.debug("Response is finished")
-                        ###
-                        # Received an event that was not a response to the
-                        # command after events that were responses to the
-                        # command, so notify the zserv that its response
-                        # is complete.
-                        ###
                         zserv.response_finished.set()
-                        ###
-                        # We want to wait until the ZServ finished processing
-                        # the response, because the current event may depend
-                        # upon it.
-                        ###
                         zdslog.debug("Waiting until response is processed")
                         zserv.finished_processing_response.wait()
                         zdslog.debug("Done waiting")
@@ -767,7 +779,8 @@ class Stack(Server):
         main_cp = get_configparser()
         with main_cp.lock:
             for o, v in cp.items(zserv_name):
-                main_cp.set(zserv_name, o, v, acquire_lock=False)
+                if o != 'name':
+                    main_cp.set(zserv_name, o, v, acquire_lock=False)
             main_cp.save(acquire_lock=False)
         self.config = get_configparser(reload=True)
         self.raw_config = RCP(self.config_file)

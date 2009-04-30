@@ -353,16 +353,21 @@ class ZServConfigParser(ZDSConfigParser):
                 es = "%s: WAD [%s] not found"
                 raise ValueError(es % (self.zserv.name, wad_path))
         port = self.getint('port')
-        cmd = [zserv_exe, '-cfg', configfile, '-waddir', wad_folder, '-iwad',
-               iwad, '-port', str(port), '-log']
-        for wad in wads:
-            cmd.extend(['-file', wad])
         ip = self.get('ip')
         if ip:
             check_ip(ip)
-            cmd.extend(['-ip', ip])
+        if 'fakezserv' in zserv_exe:
+            cmd = [zserv_exe, self.getpath('fake_logfile'), fifo_path]
+            stats_enabled = False
+        else:
+            cmd = [zserv_exe, '-cfg', configfile, '-waddir', wad_folder,
+                   '-iwad', iwad, '-port', str(port), '-log']
+            for wad in wads:
+                cmd.extend(['-file', wad])
+            if ip:
+                cmd.extend(['-ip', ip])
+            stats_enabled = self.getboolean('enable_stats', False)
         events_enabled = self.getboolean('enable_events', False)
-        stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
         save_logfile = self.getboolean('save_logfile', False)
         if not events_enabled:

@@ -4,6 +4,7 @@ import time
 import socket
 import logging
 import logging.handlers
+import datetime
 
 from threading import Lock
 from decimal import Decimal
@@ -68,7 +69,7 @@ SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
 
 DEVNULL = open(os.devnull, 'w')
-DATEFMT = '%Y-%m-%d %H:%M:%S'
+DATEFMT = '%Y-%m-%d %H:%M:%S.%f'
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
 TICK = Decimal('0.027')
 MAX_TIMEOUT = 1
@@ -131,11 +132,32 @@ class RPCAuthenticationError(Exception):
     def __init__(self, username):
         Exception.__init__(self, "Authentication failed for [%s]" % (username))
 
+class DebugFormatter(logging.Formatter):
+
+    def formatTime(self, record, datefmt=None):
+        ct = self.converter(record.created)
+        if not datefmt:
+            t = time.strftime("%Y-%m-%d %H:%M:%S", ct)
+            s = "%s,%03d" % (t, record.msecs)
+        else:
+            microseconds = Decimal(str(record.msecs)) * 1000
+            t = [ct[0], ct[1], ct[2], ct[3], ct[4], ct[5], microseconds]
+            dt = datetime.datetime(*t)
+            s = dt.strftime(datefmt)
+            ###
+            # Python 2.5 doesn't interpolate microseconds for '%f', so we do it
+            # here manually if necessary.
+            ###
+            microsecond = str(dt.microsecond).zfill(6)
+            while '%f' in s:
+                s = s.replace('%f', microsecond)
+        return s
+
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
 
     def emit(self, record):
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
-        print >> sys.stderr, self.format(record)
+        # print >> sys.stderr, self.format(record)
 
 class JSONNotFoundError(Exception):
 
@@ -279,6 +301,15 @@ def check_server_config_section(server_name, config):
     if ports.count(d['port']) > 1:
         es = "%s's port (%s) is already in use"
         raise ValueError(es % (d['name'], d['port']))
+    if 'fakezserv' in d['zserv_exe']:
+        if not 'fake_logfile' in d:
+            es = "When using 'fakezserv', the option 'fake_logfile' must "
+            es += "be defined"
+            raise ValueError(es)
+        f = config.getpath(s, 'fake_logfile')
+        if not os.path.isfile(f):
+            es = "Could not locate fake logfile [%s]"
+            raise ValueError(es % (d['fake_logfile']))
 
 def load_configparser():
     """Loads the ZDStack configuration file into a ConfigParser.
@@ -307,6 +338,7 @@ def load_configparser():
         # cp.set('DEFAULT', fo, f)
     for s in cp.sections():
         check_server_config_section(s, cp)
+            
     ###
     # Below are some checks for specific options & values
     ###
@@ -712,6 +744,7 @@ def get_zdslog(reload=False):
             log_format += '- %(lineno)-4d: '
             log_format += '%(levelname)-5s %(message)s'
             handler = DebugTRFH(log_file, when='midnight', backupCount=4)
+            formatter = DebugFormatter(log_format, datefmt=DATEFMT)
         else:
             log_level = logging.INFO
             log_format = '[%(asctime)s] '
@@ -719,8 +752,8 @@ def get_zdslog(reload=False):
             handler = logging.handlers.TimedRotatingFileHandler(log_file,
                                                                 when='midnight',
                                                                 backupCount=4)
+            formatter = logging.Formatter(log_format)
         handler.setLevel(log_level)
-        formatter = logging.Formatter(log_format, DATEFMT)
         handler.setFormatter(formatter)
         ZDSLOG.addHandler(handler)
         ZDSLOG.setLevel(log_level)

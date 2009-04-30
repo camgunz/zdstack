@@ -15,7 +15,6 @@ from ZDStack.ZDSModels import Round
 from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
                                 get_round_by_id, get_alias, persist, \
                                 global_session
-from ZDStack.ZDSTeamsList import TeamsList
 from ZDStack.ZDSPlayersList import PlayersList
 from ZDStack.ZDSZServConfig import ZServConfigParser
 
@@ -73,6 +72,7 @@ class ZServ(object):
         self.response_events = list()
         self.response_finished = Event()
         self.finished_processing_response = Event()
+        self.event_lock = Lock()
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
         self.config_lock = Lock()
@@ -80,9 +80,8 @@ class ZServ(object):
         self.ban_timer_lock = Lock()
         self.round_id = None
         self.players = PlayersList(self)
-        self.teams = TeamsList(self)
-        self.players_holding_flags = list()
-        self.teams_holding_flags = list()
+        self.players_holding_flags = set()
+        self.teams_holding_flags = set()
         self.fragged_runners = list()
         self.team_scores = dict()
         self._template = ''
@@ -104,9 +103,8 @@ class ZServ(object):
         """Clears the current state of the round."""
         with self.state_lock:
             self.players.clear()
-            self.teams.clear()
-            self.players_holding_flags = list()
-            self.teams_holding_flags = list()
+            self.players_holding_flags = set()
+            self.teams_holding_flags = set()
             self.fragged_runners = list()
             if self.playing_colors:
                 self.team_scores = dict(zip(self.playing_colors,
@@ -156,15 +154,15 @@ class ZServ(object):
                 # stats & aliases, can go out the window.
                 ###
                 zdslog.debug("Deleting a bunch of stuff")
-                for stat in round.players + \
-                            round.frags + \
-                            round.flag_touches + \
-                            round.flag_returns + \
-                            round.rcon_accesses + \
-                            round.rcon_denials + \
-                            round.rcon_actions:
-                    zdslog.debug("Deleting %s" % (stat))
-                    session.delete(stat)
+                # for stat in round.players + \
+                #             round.frags + \
+                #             round.flag_touches + \
+                #             round.flag_returns + \
+                #             round.rcon_accesses + \
+                #             round.rcon_denials + \
+                #             round.rcon_actions:
+                #     zdslog.debug("Deleting %s" % (stat))
+                #     session.delete(stat)
                 zdslog.debug("Deleting %s" % (round))
                 session.delete(round)
         self.round_id = None
@@ -240,7 +238,8 @@ class ZServ(object):
         # Because there are no player reconnections at the beginning of rounds
         # in 1.08.08, we need to manually do a sync() here.
         ###
-        self.players.sync()
+        with self.event_lock:
+            self.players.sync()
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.

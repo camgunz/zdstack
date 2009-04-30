@@ -412,18 +412,20 @@ class RawZDSConfigParser(RCP):
         :type fp: file
 
         """
+        sect_temp = "[%s]\n"
+        opt_temp = "%s = %s\n"
         if self._defaults:
-            fp.write("[%s]\n" % DEFAULTSECT)
-            for (key, value) in self._defaults.items():
-                s = "%s = %s\n"
-                fp.write(s % (key, str(value).replace('\n', '\n\t')))
+            fp.write(sect_temp % DEFAULTSECT)
+            for k in sorted(self._defaults.keys()):
+                v = str(self._defaults[k]).replace('\n', '\n\t')
+                fp.write(opt_temp % (k, v))
             fp.write("\n")
         for section in self._section_list:
-            fp.write("[%s]\n" % section)
-            for (key, value) in self._sections[section].items():
-                if key != "__name__":
-                    fp.write("%s = %s\n" %
-                             (key, str(value).replace('\n', '\n\t')))
+            fp.write(sect_temp % section)
+            for k in sorted(self._sections[section].keys()):
+                if k != "__name__":
+                    v = str(self._sections[section][k]).replace('\n', '\n\t')
+                    fp.write(opt_temp % (k, v))
             fp.write("\n")
 
     @requires_instance_lock()
