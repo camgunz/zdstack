@@ -1,3 +1,5 @@
+from threading import Event
+
 class LogEvent(object):
 
     """LogEvent represents an event occurring in a log file.
@@ -10,6 +12,9 @@ class LogEvent(object):
         A dict containing event-specific data.
     .. attribute:: category
         A string representing the category of the event.
+    .. attribute:: handled
+        An Event instance that is set() when the EventHandler has
+        handled the event.
     
     """
 
@@ -24,6 +29,7 @@ class LogEvent(object):
         self.data = event_data
         self.category = event_category
         self.line = line
+        self.handled = Event()
 
     def __str__(self):
         return "<Event %s at %s>" % (self.type, self.dt)

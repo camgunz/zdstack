@@ -217,7 +217,7 @@ COMMANDS = (
 (r"Cleared (?P<cleared_maps>\d\d\d|\d\d|\d) maps from que.$", 'clearmaplist_command', False),
 (r'"(?P<var_name>.*)" is "(?P<var_value>.*)"$', 'get_command', False),
 (r"\s.\*\*\s*Player (?P<player_num>\d\d|\d) not found!$", 'kick_command', False),
-(r"(?P<player_name>.*) was kicked from the game (?P<reason>)$", 'kick_command', True),
+(r"(?P<player_name>.*) was kicked from the game \((?P<reason>.*)\)$", 'kick_command', True),
 (r"(?P<player_ip>(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) unbanned.$", 'killban_command', False),
 (r"No such ban$", 'killban_command', False),
 (r"map(?P<number>\d\d): (?P<name>.*)$", 'map_change', None),

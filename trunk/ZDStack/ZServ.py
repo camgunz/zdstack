@@ -94,6 +94,9 @@ class ZServ(object):
             plugin_names = self.config.getlist('plugins', default=list())
             zdslog.debug("Plugin names: %s" % (plugin_names))
             self.plugins = get_plugins(plugin_names)
+            loaded_plugin_names = [x.__name__ for x in self.plugins]
+            for y in [x for x in plugin_names if x not in loaded_plugin_names]:
+                zdslog.error("Plugin %s not found" % (y))
             zdslog.debug("Plugins: %s" % (self.plugins))
         else:
             zdslog.debug("Events enabled, plugins enabled: %s, %s" % (self.events_enabled, self.plugins_enabled))

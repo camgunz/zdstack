@@ -477,21 +477,24 @@ class Stack(Server):
         :type zserv: :class:`~ZDStack.LogEvent`
 
         """
-        handler = self.event_handler.get_handler(event.category)
-        if handler:
-            s = "Handling %s event (Line: [%s])" % (event.type, event.line)
-            zdslog.debug(s)
-            if event.category != 'command' and event.type != 'map_change':
-                zdslog.debug("Acquiring %s's event lock" % (zserv.name))
-                with zserv.event_lock:
-                    zdslog.debug("Acquired %s's event lock" % (zserv.name))
+        try:
+            handler = self.event_handler.get_handler(event.category)
+            if handler:
+                s = "Handling %s event (Line: [%s])" % (event.type, event.line)
+                zdslog.debug(s)
+                if event.category != 'command' and event.type != 'map_change':
+                    zdslog.debug("Acquiring %s's event lock" % (zserv.name))
+                    with zserv.event_lock:
+                        zdslog.debug("Acquired %s's event lock" % (zserv.name))
+                        handler(event, zserv)
+                else:
                     handler(event, zserv)
+                zdslog.debug("Finished handling %s event" % (event.type))
             else:
-                handler(event, zserv)
-            zdslog.debug("Finished handling %s event" % (event.type))
-        else:
-            pass
-            # zdslog.debug("No handler set for %s" % (event.type))
+                pass
+                # zdslog.debug("No handler set for %s" % (event.type))
+        finally:
+            event.handled.set()
 
     def handle_plugin_events(self, event, zserv):
         """Handles plugin events.
@@ -502,6 +505,12 @@ class Stack(Server):
         :type zserv: :class:`~ZDStack.LogEvent`
 
         """
+        zdslog.debug("Waiting for %s to be handled" % (event))
+        event.handled.wait(MAX_TIMEOUT)
+        if not event.handled.isSet():
+            ds = "Tired of waiting for event to be handled, giving up"
+            zdslog.debug(ds)
+            return
         zdslog.debug("Sending %s to %s's plugins" % (event, zserv.name))
         for plugin in zserv.plugins:
             zdslog.debug("Processing %s with %s" % (event, plugin.__name__))

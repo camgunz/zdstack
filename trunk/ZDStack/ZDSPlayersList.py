@@ -71,6 +71,52 @@ class PlayersList(object):
         zdslog.debug("add(%s)" % (player))
         full_list = []
         name_list = []
+        player_full = (player.name, player.ip, player.port)
+        player_name = (player.name, player.ip)
+        ###
+        # Check if a player has reconnected.
+        ###
+        for p in self.__players:
+            if p.name == player.name and p.ip == player.ip and p.disconnected:
+                ###
+                # Player reconnected, find this player in self.__players and:
+                #   - set .port to new port
+                #   - set .disconnected to False
+                ###
+                zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
+                p.disconnected = False
+                p.port = player.port
+                return True
+        ###
+        # At this point there are 3 possibilities:
+        #   - this is a totally new connection
+        #   - the player's older connection is timing out, but
+        #     hasn't timed out yet
+        #   - someone at the same IP has created a separate
+        #     connection
+        #
+        # Unfortunately there's nothing we can really do about this,
+        # we just have to add the player regardless.
+        ###
+        zdslog.debug("Found totally new player [%s]" % (p_name[0]))
+        self.__players.append(player)
+        return False
+
+    @requires_instance_lock()
+    def old_add(self, player):
+        """Adds a player.
+
+        :param player: the player to add
+        :type player: Player
+        :rtype: boolean
+        :returns: True if the player was previously connected this
+                  round, i.e., the connection is in fact a
+                  re-connection
+
+        """
+        zdslog.debug("add(%s)" % (player))
+        full_list = []
+        name_list = []
         p_full = (player.name, player.ip, player.port)
         p_name = (player.name, player.ip)
         for p in self.__players:
@@ -78,10 +124,9 @@ class PlayersList(object):
             name_list.append((p.name, p.ip))
         if p_name in name_list:
             ###
-            # Player reconnected
-            # # Find this player in self.__players and:
-            #   set .port to new port
-            #   set .disconnected to False
+            # Player reconnected, find this player in self.__players and:
+            #   - set .port to new port
+            #   - set .disconnected to False
             ###
             zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
             for p in self.__players:

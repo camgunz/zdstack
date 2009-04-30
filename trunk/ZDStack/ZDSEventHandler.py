@@ -188,7 +188,21 @@ class ZServEventHandler(BaseEventHandler):
             color = event.data['team']
             with zserv.players.lock:
                 player.color = color
-                player.playing = color in zserv.playing_colors
+                if event.type == 'team_join':
+                    ###
+                    # You probably can't join a non-playing team, but then
+                    # just to be on the safe side:
+                    ###
+                    player.playing = color in zserv.playing_colors
+                else:
+                    ###
+                    # You can switch from team to team without ever actually
+                    # joining the game.  So if the event is a team_switch, the
+                    # player is only playing if they were previously playing
+                    # AND they've switched to a playing team.
+                    ###
+                    player.playing = player.playing and \
+                                         color in zserv.playing_colors
         else:
             with zserv.players.lock:
                 player.playing = True
