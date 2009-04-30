@@ -418,8 +418,8 @@ class ZServEventHandler(BaseEventHandler):
             green_score = zserv.team_scores.get('green', None)
             white_score = zserv.team_scores.get('white', None)
             with global_session() as session:
-                fragger_team = None
-                fraggee_team = None
+                fragger_team_color = None
+                fraggee_team_color = None
                 if zserv.game_mode in TEAM_MODES:
                     fraggee_team_color = get_team_color(color=fraggee.color,
                                                         session=session)
