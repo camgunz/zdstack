@@ -4,7 +4,7 @@
   * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
   * Re-write plugins for 0.11
     * unique players only
-    * robust anti-teamkill
+    * ~~robust anti-teamkill~~
     * ~~clean language~~
     * ~~fair teams~~
       * ~~Can't join the winning team unless they're down a player~~
