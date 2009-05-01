@@ -568,19 +568,158 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.max_players_per_team = max_players_per_team
         self.zserv.team_score_limit = scorelimit
         ###
-        # Stuff still missing
+        # All server variables
         #
         # sv_fineticks
+        # sv_vampire
+        # sv_voodoo_spawns
+        # sv_useblocking
+        # sv_keys_stay
+        # sv_keys_teamkeys
+        # sv_keys_inteammodes
+        # sv_no_team_starts
+        # sv_ctf_old_convention
+        # sv_allow_target_names
+        # sv_hide_countries
+        # sv_powerful_monsters
+        # sv_strong_monsters
+        # sv_silentbfg
+        # sv_oldjump
+        # sv_oldweaponswitch "false"
+        # sv_oldrandom "false"
+        # sv_oldpmovement "false"
+        # sv_oldsoundcut "false"
+        # sv_oldwallrun "false"
+        # sv_oldwepsound "true"
+        # sv_keepkeys "false"
+        # sv_niceweapons "false"
+        # sv_samespawnspot "false"
+        # sv_barrelrespawn "false"
+        # sv_respawnprotect "false"
+        # sv_weapondrop "false"
+        # * sv_telemissiles "false"
+        # sv_quadrespawntime "false"
+        # sv_resetinventory "false"
+        # sv_nocrosshair "false"
+        # sv_nosuper "false"
+        # sv_noexitkill "false"
+        # sv_nopassover "false"
+        # sv_respawnsuper "true"
+        # sv_nofreelook "false"
+        # sv_nojump "false"
+        # sv_fastmonsters "false"
+        # sv_itemrespawn "true"
+        # sv_monsterrespawn "false"
+        # sv_nomonsters "true"
+        # sv_infiniteammo "false"
+        # sv_noexit "true"
+        # sv_noarmor "false"
+        # * sv_forcerespawn "false"
+        # sv_spawnfarthest "false"
+        # sv_samelevel "false"
+        # sv_oldfalldamage "false"
+        # sv_falldamage "false"
+        # sv_weaponstay "true"
+        # sv_noitems "false"
+        # sv_nohealth "false"
+        # sv_randmaps
+        # acl
+        # - this also needs commands acl_add/acl_remove/acl_clear
+        # * maxplayersperteam "0"
+        # * spam_limit "10"
+        # * spam_window "10"
+        # * maxteams "2"
+        # * teamscorelimit "5"
+        # * killlimit "0"
+        # * timelimit "15"
+        # * fraglimit "0"
+        # * teamdamage "0"
+        # var_pushers "true"
+        # var_friction "true"
+        # developer "false"
+        # nofilecompression "false"
+        # * teamplay "1"
+        # * ctf "1"
+        # * deathmatch "1"
+        # * skill "4"
+        # * sv_deathlimit "180"
+        # sv_showmultikills "true"
+        # sv_showsprees "true"
+        # sv_splashfactor "1"
+        # sv_teamautoaim "0"
+        # addrocketexplosion "false"
+        # cl_missiledecals "true"
+        # * sv_gravity "800"
+        # genblockmap "false"
+        # forcewater "false"
+        # * sv_aircontrol "0"
+        # * maxclients "16"
+        # sv_unlag "true"
+        # sv_unlag_report "false"
+        # * sv_vote_min "50"
+        # * sv_vote_randcaps "0"
+        # * sv_vote_randmap "0"
+        # * sv_vote_kick_percent "60"
+        # * sv_vote_kick "0"
+        # * sv_vote_reset "0"
+        # * sv_vote_map "0"
+        # * sv_vote_map_percent "51"
+        # * sv_vote_map_skip "0"
+        # * sv_vote_timeout "45"
+        # * sv_vote_limit "3"
+        # * specs_dont_disturb_players "0"
+        # * sv_maxclientsperip "4"
+        # * password "zdstackpassword"
+        # * master_advertise "0"
+        # * restartemptymap "0"
+        # * removebotswhenhumans "1"
+        # * minplayers "0"
+        # * maxplayers "8"
+        # * cfg_activated "1"
+        # * rcon_cmds_9 ""
+        # * rcon_cmds_8 ""
+        # * rcon_cmds_7 ""
+        # * rcon_cmds_6 ""
+        # * rcon_cmds_5 ""
+        # * rcon_cmds_4 ""
+        # * rcon_cmds_3 ""
+        # * rcon_cmds_2 ""
+        # * rcon_cmds_1 "mapskipto players"
+        # * rcon_pwd_9 ""
+        # * rcon_pwd_8 ""
+        # * rcon_pwd_7 ""
+        # * rcon_pwd_6 ""
+        # * rcon_pwd_5 ""
+        # * rcon_pwd_4 ""
+        # * rcon_pwd_3 ""
+        # * rcon_pwd_2 ""
+        # * rcon_pwd_1 "zdstacklevel1"
+        # * rcon_password "zdstackrcon"
+        # * motd "ZDStack Server ctf<br><br>This server is managed by ZDStack"
+        # banlist_url ""
+        # * hostname "ZDStack Server Private CTF ctf"
+        # * optional_wads "zvox2.wad"
+        # * email "zdstack@zdstack.com"
+        # website "http://zdstack.com/wads"
+        # sv_resend "1"
+        # wi_percents "true"
+        # heapsize "8"
+        # cl_maxdecals "1024"
+        # cl_spreaddecals "true"
+        # limitpainelemental "true"
+        # r_stretchsky "true"
+        # * log_disposition "2"
         #
         ###
+
         ###
         # Stuff added in 1.09 (and maybe 1.08.08 RCs
-        ###
+        #
         # sv_specteamblock
         # sv_oldthrust
         # sv_allowzoom
         # item_respawn_time
-        # cl_interp (0 is equivalent to 1.08) 0 - 5
+        # cl_interp (0 is equivalent to sv_finetics 1.08) 0 - 5
         #
         # sv_fineticks is replaced (sorta) by cl_updatemod:
         #

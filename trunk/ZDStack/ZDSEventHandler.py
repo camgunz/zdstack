@@ -148,13 +148,6 @@ class ZServEventHandler(BaseEventHandler):
             # game_join, team_join, and player_lookup events.
             ###
             return
-        ###
-        # This used to wait 3 seconds between obtaining the zserv's STDIN lock
-        # and sync'ing the players list.  That is way, way too long now.
-        #
-        # zserv.sync_players(sleep=3.0)
-        #
-        ###
         zserv.players.sync()
 
     def handle_game_join_event(self, event, zserv):
@@ -170,9 +163,9 @@ class ZServEventHandler(BaseEventHandler):
         ###
         # Here's an example of how 1.08.08 logs player connections in CTF:
         #
-        # xxx.xxx.xxx.xxx:30666 connection (v. 108)|connection|connection   |
-        # > xxxxxxx is now on the Blue team.       |join      |team_switch  |
-        # > xxxxxxx has connected.                 |connection|player_lookup|
+        # xxx.xxx.xxx.xxx:30666 connection (v. 108)
+        # > xxxxxxx is now on the Blue team.
+        # > xxxxxxx has connected.
         #
         # These lines map thusly:
         #

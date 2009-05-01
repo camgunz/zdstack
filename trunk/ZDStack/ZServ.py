@@ -373,8 +373,10 @@ class ZServ(object):
                 zdslog.info("Spawning zserv [%s]" % (' '.join(self.cmd)))
                 self.fifo = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)
                 self.zserv = Popen(self.cmd, stdin=PIPE, stdout=DEVNULL,
-                                   stderr=STDOUT, bufsize=0, close_fds=True,
+                                   stderr=DEVNULL, bufsize=0, close_fds=True,
                                    cwd=self.home_folder)
+                # self.fifo = self.zserv.stdout.fileno()
+                # zdslog.debug("%s: FIFO: %s" % (self.name, self.fifo))
                 # self.send_to_zserv('players') # avoids CPU spinning
 
     def stop(self, check_if_running=True, signum=15):
@@ -470,6 +472,9 @@ class ZServ(object):
         if '\n' in message or '\r' in message:
             es = "Message cannot contain newlines or carriage returns"
             raise ValueError(es)
+        if not self.is_running():
+            zdslog.error("Cannot send data to a stopped ZServ")
+            return
         def _send(message):
             zdslog.debug("Writing to STDIN")
             self.zserv.stdin.write(message + '\n')
@@ -521,6 +526,70 @@ class ZServ(object):
                 zdslog.debug("Setting response processing finished")
                 self.finished_processing_response.set()
                 self.response_finished.set()
+
+###
+# Commands:
+#    acl_add
+#    acl_clear
+#    acl_remove
+#    add_cvaroverride
+#  * addban
+#  * addbot
+#  * addmap
+#    addtempban
+#    alias
+#    archivecvar
+#    atexit
+#    banlist
+#  * clearmaplist
+#    cmdlist
+#    corpsebot
+#    countdecals
+#    cvarlist
+#    dumpclasses
+#    dumpmapthings
+#    dumpheap
+#    dumpspawnables
+#    echo
+#    error
+#    eval
+#    exec
+#    exit
+#    gameversion
+#  * get
+#    key
+#  * kick
+#  * killban
+#    list_cvaroverride
+#    listbots
+#  * map
+#    mapskipby
+#    mapskipto
+#  * maplist
+#    mem
+#    pings
+#    playerinfo
+#  * players
+#    playersounds
+#    print
+#    puke
+#    pullin
+#    quit
+#  * removebots
+#  * resetscores
+#  * say
+#    scriptstat
+#  * set
+#    setaltwads
+#    skins
+#    soundlinks
+#    soundlist
+#    spray
+#  * toggle
+#  * unset
+#    voicepacks
+#  * wads
+###
 
     def zaddban(self, ip_address, reason='rofl'):
         """Adds a ban.

@@ -52,123 +52,6 @@ class PlayersList(object):
     def __len__(self):
         return len(self.__players)
 
-    def _player_is_unique(self, player):
-        """Returns True if the player is not in the players list."""
-        return (player.ip, player.port) not in self.addresses()
-
-    @requires_instance_lock()
-    def add(self, player):
-        """Adds a player.
-
-        :param player: the player to add
-        :type player: Player
-        :rtype: boolean
-        :returns: True if the player was previously connected this
-                  round, i.e., the connection is in fact a
-                  re-connection
-
-        """
-        ###
-        # Hilariously, this function is never, ever called.
-        ###
-        zdslog.debug("add(%s)" % (player))
-        full_list = []
-        name_list = []
-        player_full = (player.name, player.ip, player.port)
-        player_name = (player.name, player.ip)
-        ###
-        # Check if a player has reconnected.
-        ###
-        for p in self.__players:
-            if p.name == player.name and p.ip == player.ip and p.disconnected:
-                ###
-                # Player reconnected, find this player in self.__players and:
-                #   - set .port to new port
-                #   - set .disconnected to False
-                ###
-                zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
-                p.disconnected = False
-                p.port = player.port
-                return True
-        ###
-        # At this point there are 3 possibilities:
-        #   - this is a totally new connection
-        #   - the player's older connection is timing out, but
-        #     hasn't timed out yet
-        #   - someone at the same IP has created a separate
-        #     connection
-        #
-        # Unfortunately there's nothing we can really do about this,
-        # we just have to add the player regardless.
-        ###
-        zdslog.debug("Found totally new player [%s]" % (p_name[0]))
-        self.__players.append(player)
-        return False
-
-    @requires_instance_lock()
-    def old_add(self, player):
-        """Adds a player.
-
-        :param player: the player to add
-        :type player: Player
-        :rtype: boolean
-        :returns: True if the player was previously connected this
-                  round, i.e., the connection is in fact a
-                  re-connection
-
-        """
-        zdslog.debug("add(%s)" % (player))
-        full_list = []
-        name_list = []
-        p_full = (player.name, player.ip, player.port)
-        p_name = (player.name, player.ip)
-        for p in self.__players:
-            full_list.append((p.name, p.ip, p.port))
-            name_list.append((p.name, p.ip))
-        if p_name in name_list:
-            ###
-            # Player reconnected, find this player in self.__players and:
-            #   - set .port to new port
-            #   - set .disconnected to False
-            ###
-            zdslog.debug("Player [%s] has reconnected" % (p_name[0]))
-            for p in self.__players:
-                if (p.name, p.ip) == p_name:
-                    p.port = player.port
-                    p.disconnected = False
-            return True
-        else:
-            ###
-            # Totally new connection
-            ###
-            zdslog.debug("Found totally new player [%s]" % (p_name[0]))
-            self.__players.append(player)
-            return False
-
-    @requires_instance_lock()
-    def remove(self, player):
-        """Disconnects a player.
-
-        :param player: the player to remove
-        :type player: Player
-
-        """
-        zdslog.debug("remove(%s)" % (player))
-        self.set_playing(player, False, acquire_lock=False)
-        player.disconnected = True
-
-    @requires_instance_lock()
-    def set_playing(self, player, playing):
-        """Sets whether or not a player is playing.
-
-        :param player: the player to modify
-        :type player: Player
-        :param playing: whether or not the player is playing
-        :type playing: boolean
-
-        """
-        player.playing = playing
-
     @requires_instance_lock()
     def get(self, name=None, ip_address_and_port=None, sync=True):
         """Returns a Player instance.
@@ -248,10 +131,6 @@ class PlayersList(object):
         :type sleep: int or Decimal or float
 
         """
-        ###
-        # When setting a player's name, it's important to use 'set_name', so
-        # the alias is saved in the DB.
-        ###
         ds = "sync(zplayers=%s)"
         zdslog.debug(ds % (zplayers))
         if zplayers is None:
@@ -322,24 +201,6 @@ class PlayersList(object):
                 self.__players.append(p)
                 p.get_alias() # saves the player's alias
         zdslog.debug("Sync: done")
-
-    def names(self):
-        """The names of all this PlayersList's Players.
-
-        :rtype: a list of strings
-        :returns: the names of all the players in this PlayersList
-
-        """
-        return [x.name for x in self if x.name]
-
-    def addresses(self):
-        """The addresses of all this PlayersList's Players.
-
-        :rtype: a list of tuples
-        :returns: a list of 2-Tuples (ip, port) for all players.
-        
-        """
-        return [(x.ip, x.port) for x in self]
 
     @requires_instance_lock()
     def get_first_matching_player(self, possible_player_names):

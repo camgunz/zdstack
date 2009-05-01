@@ -378,20 +378,12 @@ class Stack(Server):
                     zdslog.debug("Converting message event")
                     ppn = event.data['possible_player_names']
                     c = event.data['contents'] 
-                    player = None
-                    if isinstance(ppn, basestring):
-                        try:
-                            player = zserv.players.get(name=ppn)
-                        except PlayerNotFoundError:
-                            s = "Received a message from a non-existent player"
-                            s += ", PPN: %s, Message: %s"
-                            zdslog.error(s % (ppn, line))
-                    else:
-                        player = zserv.players.get_first_matching_player(ppn)
+                    player = zserv.players.get_first_matching_player(ppn)
                     if not player:
                         s = "Received a message from a non-existent player"
                         s += ", PPN: %s, Message: %s"
                         zdslog.error(s % (ppn, line))
+                        event.category, event.type = ('junk', 'junk')
                     else:
                         zdslog.debug("Updating event.data")
                         m = c.replace(player.name, '', 1)[3:]

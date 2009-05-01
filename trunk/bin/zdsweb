@@ -18,8 +18,6 @@ import ConfigParser
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
-from pyfileutils import write_file
-
 from ZDStack import set_configfile, load_configparser, get_configparser, \
                     get_server_proxy
 from ZDStack.Utils import html_escape
@@ -771,7 +769,10 @@ def run_httpd():
     server_address = (ADDRESS, PORT)
     print "ZDSWeb starting up on %s:%s" % server_address
     __fork()
-    write_file(str(os.getpid()), PID_FILE, overwrite=True)
+    fobj = open(PID_FILE, 'wb')
+    fobj.write(str(os.getpid()))
+    fobj.flush()
+    fobj.close()
     logging.info("ZDSWeb starting up on %s:%s" % server_address)
     HTTPServer(server_address, ZDSHTTPRequestHandler).serve_forever()
 

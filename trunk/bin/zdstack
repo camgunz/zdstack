@@ -6,8 +6,6 @@ import time
 import getopt
 import signal
 
-from pyfileutils import read_file, write_file
-
 from ZDStack import set_debugging, set_configfile, get_configparser, \
                     get_server_proxy
 
@@ -73,7 +71,10 @@ def stop():
         cp = get_configparser()
         pid_file = cp.getpath('DEFAULT', 'zdstack_pid_file')
         try:
-            os.kill(int(read_file(pid_file)), signal.SIGTERM)
+            pid_fobj = open(pid_file)
+            pid = int(pid_fobj.read())
+            pid_fobj.close()
+            os.kill(pid, signal.SIGTERM)
             print "\nStopping ZDStack\n"
         except (OSError, IOError):
             if os.path.isfile(pid_file):
