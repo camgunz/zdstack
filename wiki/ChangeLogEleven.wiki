@@ -20,6 +20,8 @@
   * Limited RCON is now supported.
   * `zdrpc` an now either print the zserv's response as lines from the log, or as event data dicts.
   * The python documentation files are now generated using sphinx, which is a big improvement over the ugliness that was pydoc
+  * `pyfileutils` is no longer a requirement
+  * When saving a configuration using RPC methods, section order is preserved, and options are sorted alphabetically
 
 = Fixes =
 
