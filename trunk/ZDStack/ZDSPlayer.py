@@ -58,7 +58,7 @@ class Player(object):
         zdslog.debug('name: [%s]' % (name))
         self.zserv = zserv
         self.ip = ip_address
-        self.port = port
+        self.port = int(port)
         self.number = number
         self.name = ''
         self.tag = None

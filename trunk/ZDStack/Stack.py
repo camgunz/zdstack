@@ -63,17 +63,9 @@ class Stack(Server):
         A boolean that, when set to False, stops the ZServ Parsing
         Thread.
 
-    .. attribute:: keep_handling_command_events
-        A boolean that, when set to False, stops the Command Event
-        Handling Thread.
-
-    .. attribute:: keep_handling_generic_events
-        A boolean that, when set to False, stops the Generic Event
-        Handling Thread.
-
-    .. attribute:: keep_handling_plugin_events
-        A boolean that, when set to False, stops the Plugin Event
-        Handling Thread.
+    .. attribute:: keep_handling_events
+        A boolean that, when set to False, stops the Event Handling
+        Thread.
 
     .. attribute:: regexps
         A list of :class`~ZDStack.ZDSRegexps.Regexp` instances used to
@@ -86,14 +78,8 @@ class Stack(Server):
     .. attribute:: output_queue
         A Queue where output lines are placed to be processed.
 
-    .. attribute:: plugin_events
-        A Queue where plugin events are placed to be processed.
-
-    .. attribute:: generic_events
-        A Queue where generic events are placed to be processed.
-
-    .. attribute:: command_events
-        A Queue where command events are placed to be processed.
+    .. attribute:: event_queue
+        A Queue where events are placed to be processed.
 
     .. attribute:: loglink_check_timer
         A Timer that checks each ZServ's logfile links every 30 minutes.
@@ -126,17 +112,13 @@ class Stack(Server):
         self.keep_spawning_zservs = False
         self.keep_polling = False
         self.keep_parsing = False
-        self.keep_handling_command_events = False
-        self.keep_handling_generic_events = False
-        self.keep_handling_plugin_events = False
+        self.keep_handling_events = False
         self.regexps = get_server_regexps()
         Server.__init__(self)
         self.load_zservs()
         self.event_handler = ZServEventHandler()
         self.output_queue = Queue.Queue()
-        self.plugin_events = Queue.Queue()
-        self.generic_events = Queue.Queue()
-        self.command_events = Queue.Queue()
+        self.event_queue = Queue.Queue()
         self.methods_requiring_authentication.append('start_zserv')
         self.methods_requiring_authentication.append('stop_zserv')
         self.methods_requiring_authentication.append('start_all_zservs')
@@ -151,9 +133,7 @@ class Stack(Server):
         self.keep_checking_loglinks = True
         self.keep_polling = True
         self.keep_parsing = True
-        self.keep_handling_generic_events = True
-        self.keep_handling_command_events = True
-        self.keep_handling_plugin_events = True
+        self.keep_handling_events = True
         if not self.loglink_check_timer:
             self.start_checking_loglinks()
         self.polling_thread = \
@@ -162,12 +142,8 @@ class Stack(Server):
                                      lambda: self.keep_polling == True)
         ZDSThreadPool.process_queue(self.output_queue, 'ZServ Output Queue',
                                     lambda: self.keep_parsing == True)
-        ZDSThreadPool.process_queue(self.command_events, 'ZServ Command Queue',
-                            lambda: self.keep_handling_command_events == True)
-        ZDSThreadPool.process_queue(self.generic_events, 'ZServ Generic Queue',
-                            lambda: self.keep_handling_generic_events == True)
-        ZDSThreadPool.process_queue(self.plugin_events, 'ZServ Plugin Queue',
-                            lambda: self.keep_handling_plugin_events == True)
+        ZDSThreadPool.process_queue(self.event_queue, 'ZServ Event Queue',
+                            lambda: self.keep_handling_events == True)
         ###
         # Start the spawning timer last.
         ###
@@ -195,15 +171,9 @@ class Stack(Server):
         zdslog.debug("Clearing output queue")
         self.keep_parsing = False
         self.output_queue.join()
-        zdslog.debug("Clearing command event queue")
-        self.keep_handling_command_events = False
-        self.command_events.join()
-        zdslog.debug("Clearing generic event queue")
-        self.keep_handling_generic_events = False
-        self.generic_events.join()
-        zdslog.debug("Clearing plugin event queue")
-        self.keep_handling_plugin_events = False
-        self.plugin_events.join()
+        zdslog.debug("Clearing event queue")
+        self.keep_handling_events = False
+        self.event_queue.join()
         Server.stop(self)
 
     def start_checking_loglinks(self):
@@ -357,7 +327,6 @@ class Stack(Server):
         """
         # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
         if zserv.save_logfile:
-            zdslog.debug("Trying to save lines to %s's logger" % (zserv.name))
             logging.getLogger(zserv.name).info('\n'.join(lines))
         if not zserv.events_enabled:
             ###
@@ -443,90 +412,49 @@ class Stack(Server):
                         zdslog.debug("Done waiting")
                     else:
                         zdslog.debug("Response hasn't started yet")
+                task = Task(self.handle_events, args=[event, zserv],
+                            name='%s Event Handling' % (event.type.capitalize()))
+                s = "Putting [%s] from %s in the event queue"
+                zdslog.debug(s % (event, zserv.name))
+                ###
+                # Because response events are saved by the ZServ, we don't need
+                # a separate queue for them; whatever called send_to_zserv()
+                # will process the events asynchronously.
+                ###
+                self.event_queue.put_nowait(task)
             except Exception, e:
                 es = "Received error while processing event from [%s]: "
                 es += "[%s]"
                 zdslog.error(es % (zserv.name, e))
                 continue
-            s = "Put [%s] from %s in the %s queue"
-            if event.category == 'command':
-                queue_name = 'command'
-                queue = self.command_events
-            elif event.category != 'command':
-                queue_name = 'generic'
-                queue = self.generic_events
-            else:
-                raise Exception("What the hell")
-            task = Task(self.handle_generic_events, args=[event, zserv],
-                        name='%s Event Handling' % (event.type.capitalize()))
-            queue.put_nowait(task)
-            # zdslog.debug(s % (event, zserv.name, queue_name))
+
+    def handle_events(self, event, zserv):
+        """Handles events.
+
+        :param event: the event to handle
+        :type event: :class:`~ZDStack.LogEvent`
+        :param zserv: the ZServ instance that generated the event.
+        :type zserv: :class:`~ZDStack.LogEvent`
+
+        """
+        ds = "Handling %s event (Line: [%s])"
+        zdslog.debug(ds % (event.type, event.line))
+        handler = self.event_handler.get_handler(event.category)
+        # zdslog.debug("Acquiring %s's event lock" % (zserv.name))
+        with zserv.event_lock:
+            # zdslog.debug("Acquired %s's event lock" % (zserv.name))
+            handler(event, zserv)
             if zserv.plugins_enabled:
-                f = lambda: self.handle_plugin_events(event, zserv)
-                t = Task(self.handle_plugin_events, args=[event, zserv],
-                         name='%s Event Handling' % (event.type.capitalize()))
-                # zdslog.debug(s % (event.type, zserv.name, 'plugin'))
-                self.plugin_events.put_nowait(t)
-
-    def handle_generic_events(self, event, zserv):
-        """Handles generic events.
-
-        :param event: the event to handle
-        :type event: :class:`~ZDStack.LogEvent`
-        :param zserv: the ZServ instance that generated the event.
-        :type zserv: :class:`~ZDStack.LogEvent`
-
-        """
-        try:
-            handler = self.event_handler.get_handler(event.category)
-            if handler:
-                s = "Handling %s event (Line: [%s])" % (event.type, event.line)
-                zdslog.debug(s)
-                if event.category != 'command' and event.type != 'map_change':
-                    zdslog.debug("Acquiring %s's event lock" % (zserv.name))
-                    with zserv.event_lock:
-                        zdslog.debug("Acquired %s's event lock" % (zserv.name))
-                        handler(event, zserv)
-                else:
-                    handler(event, zserv)
-                zdslog.debug("Finished handling %s event" % (event.type))
-            else:
-                pass
-                # zdslog.debug("No handler set for %s" % (event.type))
-        finally:
-            event.handled.set()
-
-    def handle_plugin_events(self, event, zserv):
-        """Handles plugin events.
-
-        :param event: the event to handle
-        :type event: :class:`~ZDStack.LogEvent`
-        :param zserv: the ZServ instance that generated the event.
-        :type zserv: :class:`~ZDStack.LogEvent`
-
-        """
-        zdslog.debug("Waiting for %s to be handled" % (event))
-        event.handled.wait(MAX_TIMEOUT)
-        if not event.handled.isSet():
-            ds = "Tired of waiting for event to be handled, giving up"
-            zdslog.debug(ds)
-            return
-        zdslog.debug("Sending %s to %s's plugins" % (event, zserv.name))
-        for plugin in zserv.plugins:
-            zdslog.debug("Processing %s with %s" % (event, plugin.__name__))
-            zdslog.debug("Event Data: %s" % (str(event.data)))
-            try:
-                if event.category != 'command' and event.type != 'map_change':
-                    zdslog.debug("Acquiring %s's event lock" % (zserv.name))
-                    with zserv.event_lock:
-                        zdslog.debug("Acquired %s's event lock" % (zserv.name))
+                for plugin in zserv.plugins:
+                    ds = "Processing %s with %s"
+                    zdslog.debug(ds % (event, plugin.__name__))
+                    try:
                         plugin(event, zserv)
-                else:
-                    plugin(event, zserv)
-            except Exception, e:
-                es = "Exception in plugin %s: [%s]"
-                zdslog.error(es % (plugin.__name__, e))
-                continue
+                    except Exception, e:
+                        es = "Exception in plugin %s: [%s]"
+                        zdslog.error(es % (plugin.__name__, e))
+                        continue
+        zdslog.debug("Finished handling %s event" % (event.type))
 
     def get_running_zservs(self):
         """Returns a list of ZServs whose internal zserv is running."""

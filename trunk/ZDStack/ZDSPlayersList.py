@@ -68,6 +68,9 @@ class PlayersList(object):
                   re-connection
 
         """
+        ###
+        # Hilariously, this function is never, ever called.
+        ###
         zdslog.debug("add(%s)" % (player))
         full_list = []
         name_list = []
@@ -189,24 +192,25 @@ class PlayersList(object):
         ds = "get(name=%s, ip_address_and_port=%s, sync=%s)"
         zdslog.debug(ds % (name, ip_address_and_port, sync))
         # zdslog.debug('')
-        if name and ip_address_and_port:
-            ip_address, port = ip_address_and_port
-            def find_player():
-                for player in self:
-                    if player.name == name and \
-                       player.ip == ip_address and \
-                       player.port == port:
-                        return player
+        if ip_address_and_port:
+            ip_address, port = (ip_address_and_port[0],
+                                int(ip_address_and_port[1]))
+            if name:
+                def find_player():
+                    for player in self:
+                        if player.name == name and \
+                           player.ip == ip_address and \
+                           player.port == port:
+                            return player
+            else:
+                def find_player():
+                    for player in self:
+                        if player.ip == ip_address and player.port == port:
+                            return player
         elif name:
             def find_player():
                 for player in self:
                     if player.name == name:
-                        return player
-        elif ip_address_and_port:
-            ip_address, port = ip_address_and_port
-            def find_player():
-                for player in self:
-                    if player.ip == ip_address and player.port == port:
                         return player
         else:
             raise TypeError("One of name or ip_address_and_port is required")
@@ -263,34 +267,47 @@ class PlayersList(object):
         ###
         # - Check for players to update (reconnected)
         # - Check for players to remove (disconnected)
-        # - Check for players to add    (connected)
+        # - Check for players to add    (new)
         ###
+        zdslog.debug("Updating player status")
         for p in self:
-            current_status = 'disconnected'
-            current_match = None
-            current_port = p.port
+            zdslog.debug("Checking %s - %s:%s" % (p.name, p.ip, p.port))
+            ###
+            # 'connected': name, IP and port all match
+            # 'reconnected': name and IP match, port does not
+            # 'disconnected': not found in zplayers
+            ###
+            match = None
             for d in zplayers:
-                if not p.ip == d['player_ip'] or \
-                   not p.name == d['player_name']:
-                    ###
-                    # Players do not match.
-                    ###
-                    continue
-                current_match = d
-                if p.port == d['player_port']:
-                    current_status = 'connected'
+                if p.name == d['player_name'] and p.ip == d['player_ip']:
+                    ds = "%s - %s:%s matches"
+                    zdslog.debug(ds % (d['player_name'], d['player_ip'],
+                                                         d['player_port']))
+                    match = d
+                    if int(d['player_port']) == p.port:
+                        break
                 else:
-                    current_status = 'reconnected'
-            if current_status == 'disconnected':
+                    ds = "%s - %s:%s does not match"
+                    zdslog.debug(ds % (d['player_name'], d['player_ip'],
+                                                         d['player_port']))
+            if not match:
+                zdslog.debug("Disconnecting %s" % (p))
                 p.disconnected = True
             else:
-                p.disconnected = False
-                if p.number != current_match['player_num']:
-                    p.number = current_match['player_num']
-                if current_status == 'reconnected':
-                    p.port = current_match['player_port']
+                zdslog.debug("Updating %s" % (p))
+                p.port = int(match['player_port'])
+                p.number = int(match['player_num'])
+        zdslog.debug("Checking for players to add")
         for d in zplayers:
-            addr = (d['player_ip'], d['player_port'])
+            if not d['player_name']:
+                ###
+                # Skip players with blank names, this is just trouble.
+                ###
+                continue
+            zdslog.debug("Checking %s - %s:%s" % (d['player_name'],
+                                                  d['player_ip'],
+                                                  d['player_port']))
+            addr = (d['player_ip'], int(d['player_port']))
             try:
                 p = self.get(name=d['player_name'], ip_address_and_port=addr,
                              sync=False, acquire_lock=False)
@@ -298,11 +315,12 @@ class PlayersList(object):
                 ###
                 # Found a new player!
                 ###
-                p = Player(self.zserv, d['player_ip'], d['player_port'],
+                p = Player(self.zserv, d['player_ip'], int(d['player_port']),
                            d['player_name'] or None,
                            d['player_num'])
                 zdslog.debug("Adding new player [%s]" % (p.name))
                 self.__players.append(p)
+                p.get_alias() # saves the player's alias
         zdslog.debug("Sync: done")
 
     def names(self):

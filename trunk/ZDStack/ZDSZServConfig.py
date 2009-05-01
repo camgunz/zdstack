@@ -374,6 +374,7 @@ class ZServConfigParser(ZDSConfigParser):
         events_enabled = self.getboolean('enable_events', False)
         stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
+        zdslog.debug("Plugins enabled for %s: [%s]" % (self.zserv.name, plugins_enabled))
         save_logfile = self.getboolean('save_logfile', False)
         if not save_logfile:
             ###

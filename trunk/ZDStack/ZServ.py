@@ -99,7 +99,8 @@ class ZServ(object):
                 zdslog.error("Plugin %s not found" % (y))
             zdslog.debug("Plugins: %s" % (self.plugins))
         else:
-            zdslog.debug("Events enabled, plugins enabled: %s, %s" % (self.events_enabled, self.plugins_enabled))
+            ds = "Events enabled, plugins enabled: %s, %s"
+            zdslog.debug(ds % (self.events_enabled, self.plugins_enabled))
             self.plugins = list()
 
     def clear_state(self):
@@ -142,7 +143,8 @@ class ZServ(object):
                     # however, the loss_time would be at the end of a round,
                     # because you can't hold a flag when there is no round.
                     ###
-                    zdslog.debug("Checking that %s has a loss_time")
+                    ds = "Checking that %s has a loss_time"
+                    zdslog.debug(ds % (flag_touch))
                     if not flag_touch.loss_time:
                         flag_touch.loss_time = now
                         zdslog.debug("Updating %s" % (flag_touch))
@@ -241,8 +243,7 @@ class ZServ(object):
         # Because there are no player reconnections at the beginning of rounds
         # in 1.08.08, we need to manually do a sync() here.
         ###
-        with self.event_lock:
-            self.players.sync()
+        self.players.sync()
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.

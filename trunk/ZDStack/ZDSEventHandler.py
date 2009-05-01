@@ -167,16 +167,27 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         zdslog.debug("handle_game_join_event(%s)" % (event))
-        if event.type == 'team_switch':
-            ###
-            # Team Switches oftentimes occur before player lookup events,
-            # and to make matters worse, the player probably hasn't shown up
-            # in the zserv's player's list yet.  So we have to sync, with a
-            # wait.
-            ###
-            zserv.players.sync(sleep=TICK)
+        ###
+        # Here's an example of how 1.08.08 logs player connections in CTF:
+        #
+        # xxx.xxx.xxx.xxx:30666 connection (v. 108)|connection|connection   |
+        # > xxxxxxx is now on the Blue team.       |join      |team_switch  |
+        # > xxxxxxx has connected.                 |connection|player_lookup|
+        #
+        # These lines map thusly:
+        #
+        # | connection | connection    | unhandled                   |
+        # | join       | team_switch   | self.handle_game_join_event |
+        # | connection | player_lookup | self._sync_players          |
+        #
+        ###
         try:
-            player = zserv.players.get(event.data['player'])
+            ###
+            # team_switch events can occur before the player has a name,
+            # fortunately players.get() will sync() for us if the player is not
+            # initially found.
+            ###
+            player = zserv.players.get(name=event.data['player'])
         except PlayerNotFoundError:
             if event.type[0] in 'aeiou':
                 es = "Received an %s event for non-existent player [%s]"
