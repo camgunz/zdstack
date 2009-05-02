@@ -22,6 +22,7 @@
   * The python documentation files are now generated using sphinx, which is a big improvement over the ugliness that was pydoc
   * `pyfileutils` is no longer a requirement
   * When saving a configuration using RPC methods, section order is preserved, and options are sorted alphabetically
+  * Added support for global ban/whitelists, server-specific whitelists, and using the ZDaemon master banlist on unadvertised servers
 
 = Fixes =
 
