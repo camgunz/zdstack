@@ -2,7 +2,7 @@
 #labels Featured
 
 =Overview=
-Controlling ZDStack is done with 2 programs, `zdstack` and `zservctl`.  A web-interface via ZDWebStats is planned, but not started yet.
+Controlling ZDStack is done with 2 programs, `zdstack` and `zservctl`.  The [http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] web-interface can also control individual zserv processes.
 
 =zdstack=
 
