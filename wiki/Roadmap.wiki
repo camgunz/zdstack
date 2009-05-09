@@ -4,7 +4,7 @@
 = ZDStack =
 
 == Version 0.9.x ==
-  * Bugfixes (getting ad-hoc help from !KillingBlair)
+  * Bugfixes (got ad-hoc help from !KillingBlair)
 
 == Version 0.10.0 ==
   * Added JSON-RPC as an RPC protocol option
@@ -13,18 +13,22 @@
   * Fixed a few threading (100% CPU Usage) bugs
   * Added LICENSE file, changed license to MIT license
   * Added !PyDoc documentation for [http://code.google.com/p/zdstack/wiki/Plugins Plugin] authors
+  * Bugfixes (got ad-hoc help from Unfy)
 
 == Version 0.11.0 - current ==
   * Add authentication
   * Add global ban/whitelist
   * Switch to SQLAlchemy/Elixir for events & stats
+  * Deprecated ZDWebStats, added ZDSWeb configuration web-interface
+  * Moved to ReST and Sphinx for developer documentation
+  * Added quite a bit more state to stats
   * Add support for all zserv server config variables
+  * Lots of bugfixes
 
 == Version 0.12.0 ==
   * Fix bugs :)
   * Add a test suite
   * Solidify API
-  * Document variables & methodology (consider switching to ReST)
 
 Subsequent releases will be Release Candidates, with no substantial changes apart from:
   * Test suite modification
