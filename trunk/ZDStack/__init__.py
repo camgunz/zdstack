@@ -1,5 +1,6 @@
 import os
 import sys
+import stat
 import time
 import socket
 import logging
@@ -10,7 +11,7 @@ from threading import Lock
 from decimal import Decimal
 from contextlib import contextmanager
 
-from ZDStack.Utils import resolve_path
+from ZDStack.Utils import resolve_path, create_file
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 
@@ -18,11 +19,15 @@ from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 # ORM Stuff
 ###
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import scoped_session, sessionmaker, relation, mapper
 from sqlalchemy.pool import StaticPool, NullPool
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
-DB_SESSION_CLASS = scoped_session(sessionmaker())
+DB_SESSION_CLASS = None
+DB_METADATA = None
+DB_AUTOFLUSH = None
+DB_AUTOCOMMIT = None
 
 ###
 # End ORM Stuff
@@ -34,17 +39,18 @@ __all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
            'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'ZDSLOG',
            'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
            'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
-           'DB_SESSION_CLASS', 'get_hostname', 'get_loopback', 'get_engine',
-           'get_db_lock', 'get_session_class', 'get_configfile',
-           'set_configfile', 'load_configparser', 'get_configparser',
-           'get_server_proxy', 'get_plugins', 'set_debugging', 'get_zdslog',
-           'get_debugging']
+           'DB_SESSION_CLASS', 'DB_METADATA', 'DB_ENGINE', 'DB_AUTOFLUSH',
+           'DB_AUTOCOMMIT', 'ZDAEMON_BANLIST_URL', 'get_hostname',
+           'get_loopback', 'get_engine', 'get_metadata', 'get_db_lock',
+           'get_session_class', 'get_configfile', 'set_configfile',
+           'load_configparser', 'get_configparser', 'get_server_proxy',
+           'get_plugins', 'set_debugging', 'get_zdslog', 'get_debugging']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
      'zdstack_rpc_protocol', 'zdstack_log_folder', 'zdstack_pid_file',
      'zdstack_zserv_folder', 'zdstack_plugin_folder', 'zdstack_iwad_folder',
-     'zdstack_wad_folder')
+     'zdstack_wad_folder', 'zdstack_global_accesslist_file']
 
 REQUIRED_SERVER_CONFIG_OPTIONS = \
     ('zserv_exe', 'iwad', 'enable_events', 'enable_stats', 'enable_plugins',
@@ -58,8 +64,11 @@ REQUIRED_GLOBAL_VALID_FOLDERS = \
      ('zdstack_iwad_folder', os.R_OK | os.X_OK),
      ('zdstack_wad_folder', os.R_OK | os.X_OK))
 
+REQUIRED_GLOBAL_VALID_FILES = \
+     (('zdstack_global_accesslist_file', os.R_OK | os.X_OK),)
+
 REQUIRED_SERVER_VALID_FILES = \
-    (('zserv_exe', os.R_OK | os.X_OK), ('iwad', os.R_OK))
+    (('zserv_exe', os.R_OK | os.X_OK, False), ('iwad', os.R_OK, False))
 
 SUPPORTED_ENGINE_TYPES = \
     ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql', 'firebird')
@@ -73,10 +82,14 @@ DATEFMT = '%Y-%m-%d %H:%M:%S.%f'
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
 TICK = Decimal('0.027')
 MAX_TIMEOUT = 1
+ZDAEMON_BANLIST_URL = 'http://zdaemon.ath.cx/bans/'
+DIE_THREADS_DIE = False
 
 ###
 # These are all internal __init__ globals, and they all have getters that
-# should be used instead of importing them.
+# should be used instead of importing them.  Setting the value of these
+# variables does work, however; the getters only modify these if they are
+# None.
 ###
 HOSTNAME = None
 LOOPBACK = None
@@ -89,7 +102,6 @@ DB_ENGINE = None
 JSON_MODULE = None
 RPC_CLASS = None
 RPC_PROXY_CLASS = None
-DIE_THREADS_DIE = False
 ZDSLOG = None
 
 ###
@@ -292,10 +304,28 @@ def check_server_config_section(server_name, config):
         if x not in d or not d[x]:
             es = "Required server option %s not found for server [%s]"
             raise ValueError(es % (x, s))
-    for fo, m in REQUIRED_SERVER_VALID_FILES:
+    for fo, m, can_create in REQUIRED_SERVER_VALID_FILES:
         f = config.getpath(s, fo)
+        if not (os.path.isfile(f) or os.path.islink(f)):
+            if can_create:
+                try:
+                    create_file(f)
+                except Exception, e:
+                    raise ValueError("Could not create %s: %s" % (f, e))
+            else:
+                raise ValueError("Couldn't locate %s" % (fo))
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (f))
+    if config.getboolean(s, 'use_global_banlist', 'no'):
+        global_banlist_file = \
+            config.getpath('DEFAULT', 'zdstack_global_banlist_file', None)
+        if not global_banlist_file:
+            es = "%s cannot use global banlist file, it is undefined"
+            raise ValueError(es % (s))
+        if not (os.path.isfile(global_banlist_file) or \
+                os.path.islink(global_banlist_file)):
+            es = "%s cannot use global banlist file, cannot locate the file"
+            raise ValueError(es % (s))
     if d['mode'].lower() not in SUPPORTED_GAME_MODES:
         raise ValueError("Unsupported game mode %s" % (d['mode']))
     if ports.count(d['port']) > 1:
@@ -335,6 +365,15 @@ def load_configparser():
                 raise Exception("Could not make folder %s: %s" % (fo, e))
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (fo))
+    for fo, m in REQUIRED_GLOBAL_VALID_FILES:
+        f = cp.getpath('DEFAULT', fo, None)
+        if not (os.path.isfile(f) or os.path.islink(f)):
+            try:
+                create_file(f)
+            except Exception, e:
+                raise ValueError("Could not create %s: %s" % (f, e))
+        if not os.access(f, m):
+            raise ValueError("Insufficient access provided for %s" % (f))
         # cp.set('DEFAULT', fo, f)
     for s in cp.sections():
         check_server_config_section(s, cp)
@@ -451,16 +490,6 @@ def _get_embedded_engine(db_engine, cp):
             es = "Embedded DB file %s not found, will create new DB"
             ZDSLOG.info(es % (db_name))
         db_str += '/' + db_name
-    ###
-    # Set embedded-DB-specific stuff here.
-    ###
-    DB_SESSION_CLASS.configure(autoflush=False, autocommit=True)
-    ZDSLOG.debug("No-op is False")
-    ZDSLOG.debug("autoflush is False")
-    ZDSLOG.debug("autocommit is True")
-    ###
-    # End embedded DB section.
-    ###
     if db_engine == 'sqlite':
         cd = {'check_same_thread': False, 'isolation_level': 'IMMEDIATE'}
         e = create_engine(db_str, poolclass=StaticPool, connect_args=cd)
@@ -533,28 +562,83 @@ def _get_full_engine(db_engine, cp):
         # so we use SQLAlchemy's.
         ###
         db_str += '?charset=utf8&use_unicode=0'
-    ###
-    # Set full-RDBMS-specific stuff here.
-    ###
-    DB_SESSION_CLASS.configure(autocommit=True, autoflush=True)
-    ZDSLOG.debug("No-op is True")
-    ZDSLOG.debug("autoflush is True")
-    ZDSLOG.debug("autocommit is True")
-    ###
-    # End full-RDBMS section.
-    ###
     ZDSLOG.debug("Creating engine from DB str: [%s]" % (db_str))
     if db_engine == 'mysql':
         ###
         # We need to recycle connections every hour or so to avoid MySQL's
         # idle connection timeouts.
         #
-        # Also MySQL is a faggot, and will totally just disconnect us.
-        # Jesus.
+        # Also MySQL is a faggot, and will totally just disconnect us.  Jesus.
         ###
         return create_engine(db_str, poolclass=NullPool, pool_recycle=3600)
     else:
         return create_engine(db_str)
+
+def get_engine():
+    """Gets the database engine.
+
+    :rtype: an SQLAlchemy Engine instance.
+
+    """
+    ###
+    # At this point, we are assuming that stats have been enabled.
+    ###
+    ZDSLOG.debug("Getting engine")
+    global DB_ENGINE
+    global DB_AUTOFLUSH
+    global DB_AUTOCOMMIT
+    if not DB_ENGINE:
+        cp = get_configparser()
+        db_engine = cp.get('DEFAULT', 'zdstack_database_engine', 'sqlite')
+        db_engine = db_engine.lower()
+        if db_engine not in SUPPORTED_ENGINE_TYPES:
+            raise ValueError("DB engine %s is not supported" % (db_engine))
+        if db_engine in ('sqlite', 'firebird'):
+            ###
+            # Firebird isn't necessarily embedded, so we should sort this out
+            # somehow.
+            ###
+            DB_ENGINE = _get_embedded_engine(db_engine, cp)
+            DB_AUTOFLUSH, DB_AUTOCOMMIT = (False, True)
+        else:
+            DB_ENGINE = _get_full_engine(db_engine, cp)
+            DB_AUTOFLUSH, DB_AUTOCOMMIT = (True, True)
+    return DB_ENGINE
+
+def get_metadata():
+    global DB_METADATA
+    if not DB_METADATA:
+        DB_METADATA = MetaData()
+        DB_METADATA.bind = get_engine()
+    return DB_METADATA
+
+def get_session_class():
+    """Gets the database Session class.
+
+    :rtype: an SQLAlchemy Session class.
+
+    """
+    global DB_SESSION_CLASS
+    if not DB_SESSION_CLASS:
+        if None in (DB_ENGINE, DB_AUTOFLUSH, DB_AUTOCOMMIT):
+            raise Exception("Database engine has not been created yet.")
+        ZDSLOG.debug("autoflush is %s" % (DB_AUTOFLUSH))
+        ZDSLOG.debug("autocommit is %s" % (DB_AUTOCOMMIT))
+        DB_SESSION_CLASS = scoped_session(sessionmaker())
+        DB_SESSION_CLASS.configure(autoflush=DB_AUTOFLUSH,
+                                   autocommit=DB_AUTOCOMMIT)
+        DB_SESSION_CLASS.bind = DB_ENGINE
+    return DB_SESSION_CLASS
+
+def get_db_lock():
+    """Gets the global DB lock.
+
+    :rtype: threading.Lock
+    :returns: the global database lock, although doesn't acquire it
+
+    """
+    global DB_LOCK
+    return DB_LOCK
 
 def get_rpc_server_class():
     """Gets the RPC server class.
@@ -619,52 +703,6 @@ def get_server_proxy():
                                 cp.get('DEFAULT', 'zdstack_port'))
     ZDSLOG.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
     return get_rpc_proxy_class()(address)
-
-def get_engine():
-    """Gets the database engine.
-
-    :rtype: an SQLAlchemy Engine instance.
-
-    """
-    ###
-    # At this point, we are assuming that stats have been enabled.
-    ###
-    ZDSLOG.debug("Getting engine")
-    global DB_ENGINE
-    if not DB_ENGINE:
-        cp = get_configparser()
-        db_engine = cp.get('DEFAULT', 'zdstack_database_engine', 'sqlite')
-        db_engine = db_engine.lower()
-        if db_engine not in SUPPORTED_ENGINE_TYPES:
-            raise ValueError("DB engine %s is not supported" % (db_engine))
-        if db_engine in ('sqlite', 'firebird'):
-            ###
-            # Firebird isn't necessarily embedded, so we should sort this out
-            # somehow.
-            ###
-            DB_ENGINE = _get_embedded_engine(db_engine, cp)
-        else:
-            DB_ENGINE = _get_full_engine(db_engine, cp)
-    return DB_ENGINE
-
-def get_db_lock():
-    """Gets the global DB lock.
-
-    :rtype: threading.Lock
-    :returns: the global database lock, although doesn't acquire it
-
-    """
-    global DB_LOCK
-    return DB_LOCK
-
-def get_session_class():
-    """Gets the database Session class.
-
-    :rtype: an SQLAlchemy Session class.
-
-    """
-    global DB_SESSION_CLASS
-    return DB_SESSION_CLASS
 
 def get_configparser(reload=False, raw=False):
     """Gets ZDStack's ConfigParser.
@@ -767,6 +805,123 @@ def get_debugging():
     """
     global DEBUGGING
     return DEBUGGING == True
+
+def initialize_database():
+    """Initializes the Database.
+
+    This *MUST* be called before running importing Stack, but can only
+    be called AFTER initializing logging (set_debugging and all that).
+
+    """
+    zdslog = get_zdslog()
+    zdslog.debug("Initializing Database")
+    engine = get_engine()
+    metadata = get_metadata()
+    ###
+    # Wow do I ever wish I could do from ZDStack.ZDSTables import * here.
+    # Fuck!
+    ###
+    from ZDStack.ZDSTables import ports_and_gamemodes, rounds_and_aliases, \
+                                  aliases_table, team_colors_table, \
+                                  wads_table, maps_table, weapons_table, \
+                                  ports_table, game_modes_table, \
+                                  rounds_table, stored_players_table, \
+                                  frags_table, flag_touches_table, \
+                                  flag_returns_table, rcon_accesses_table, \
+                                  rcon_actions_table, rcon_denials_table
+    ###
+    # Wow do I ever wish I could do from ZDStack.ZDSModels import * here.
+    # Fuck!
+    ###
+    from ZDStack.ZDSModels import Alias, TeamColor, Map, Weapon, Port, \
+                                  GameMode, Round, StoredPlayer, Frag, \
+                                  FlagTouch, FlagReturn, RCONAccess, \
+                                  RCONAction, RCONDenial
+    ###
+    # Parent cascades.
+    ###
+    _pc = 'save-update, delete, delete-orphan'
+    mapper(Alias, aliases_table, properties={
+     'rounds': relation(Round, secondary=rounds_and_aliases),
+     'frags': relation(Frag, backref='fragger', cascade=_pc),
+     'deaths': relation(Frag, backref='fraggee', cascade=_pc),
+     'frags': relation(Frag, backref='fragger', cascade=_pc,
+                   primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
+     'deaths': relation(Frag, backref='fraggee', cascade=_pc,
+                   primaryjoin=frags_table.c.fraggee_id==aliases_table.c.id),
+     'flag_touches': relation(FlagTouch, backref='player', cascade=_pc),
+     'flag_returns': relation(FlagReturn, backref='player', cascade=_pc),
+     'rcon_accesses': relation(RCONAccess, backref='player', cascade=_pc),
+     'rcon_denials': relation(RCONDenial, backref='player', cascade=_pc),
+     'rcon_actions': relation(RCONAction, backref='player', cascade=_pc)
+    })
+
+    mapper(TeamColor, team_colors_table, properties={
+     'frags': relation(Frag, backref='fragger_team_color', cascade=_pc,
+                       primaryjoin=frags_table.c.fragger_team_color_name==\
+                                   team_colors_table.c.color),
+     'deaths': relation(Frag, backref='fraggee_team_color', cascade=_pc,
+                        primaryjoin=frags_table.c.fraggee_team_color_name==\
+                                    team_colors_table.c.color),
+     'flag_touches': relation(FlagTouch, backref='player_team_color',
+                              cascade=_pc),
+     'flag_returns': relation(FlagReturn, backref='player_team_color',
+                              cascade=_pc)
+    })
+
+    mapper(Map, maps_table, properties={
+     'rounds': relation(Round, backref='map', cascade=_pc)
+    })
+
+    mapper(Weapon, weapons_table, properties={
+     'frags': relation(Frag, backref='weapon', cascade=_pc)
+    })
+
+    mapper(Port, ports_table, properties={
+     'game_modes': relation(GameMode, secondary=ports_and_gamemodes)
+    })
+
+    mapper(GameMode, game_modes_table, properties={
+     'ports': relation(Port, secondary=ports_and_gamemodes),
+     'rounds': relation(Round, backref='game_mode', cascade=_pc)
+    })
+
+    mapper(Round, rounds_table, properties={
+     'players': relation(Alias, secondary=rounds_and_aliases),
+     'frags': relation(Frag, backref='round', cascade=_pc),
+     'flag_touches': relation(FlagTouch, backref='round', cascade=_pc),
+     'flag_returns': relation(FlagReturn, backref='round', cascade=_pc),
+     'rcon_accesses': relation(RCONAccess, backref='round', cascade=_pc),
+     'rcon_denials': relation(RCONDenial, backref='round', cascade=_pc),
+     'rcon_actions': relation(RCONAction, backref='round', cascade=_pc)
+    })
+
+    mapper(StoredPlayer, stored_players_table, properties={
+     'aliases': relation(Alias, backref='stored_player')
+    })
+
+    mapper(Frag, frags_table)
+    mapper(FlagTouch, flag_touches_table)
+    mapper(FlagReturn, flag_returns_table)
+    mapper(RCONAccess, rcon_accesses_table)
+    mapper(RCONDenial, rcon_denials_table)
+    mapper(RCONAction, rcon_actions_table)
+    
+    zdslog.debug("Creating tables")
+    metadata.create_all(engine)
+    zdslog.debug("Persisting all supported team colors")
+    session = get_session_class()()
+    try:
+        session.begin()
+        for color in TEAM_COLORS:
+            try:
+                session.query(TeamColor).filter_by(color=color).one()
+            except NoResultFound:
+                session.add(TeamColor(color=color))
+        session.commit()
+    except:
+        session.rollback()
+        raise
 
 # set_debugging(False)
 

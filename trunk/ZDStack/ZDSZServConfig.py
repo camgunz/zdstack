@@ -330,15 +330,15 @@ class ZServConfigParser(ZDSConfigParser):
         zserv_folder = self.getpath('zdstack_zserv_folder')
         zserv_exe = self.getpath('zserv_exe')
         home_folder = os.path.join(zserv_folder, self.zserv.name)
-        configfile = os.path.join(home_folder, self.zserv.name + '.cfg')
+        config_file = os.path.join(home_folder, self.zserv.name + '.cfg')
+        banlist_file = os.path.join(home_folder, 'zd_bans.txt')
         if not os.path.isdir(home_folder):
             os.mkdir(home_folder)
         fifo_path = os.path.join(home_folder, 'zdsfifo')
-        if os.path.exists(fifo_path):
-            if os.path.isdir(fifo_path):
-                es = "[%s]: FIFO [%s] cannot be created, a folder with the "
-                es += "same name already exists"
-                raise Exception(es % (self.zserv.name, fifo_path))
+        if os.path.exists(fifo_path) and os.path.isdir(fifo_path):
+            es = "[%s]: FIFO [%s] cannot be created, a folder with the same "
+            es += "name already exists"
+            raise Exception(es % (self.zserv.name, fifo_path))
         wad_folder = self.getpath('zdstack_wad_folder')
         iwad_folder = self.getpath('zdstack_iwad_folder')
         base_iwad = os.path.expanduser(self.get('iwad'))
@@ -364,7 +364,7 @@ class ZServConfigParser(ZDSConfigParser):
             cmd = [zserv_exe, self.getpath('fake_logfile'), fifo_path]
             # stats_enabled = False
         else:
-            cmd = [zserv_exe, '-cfg', configfile, '-waddir', wad_folder,
+            cmd = [zserv_exe, '-cfg', config_file, '-waddir', wad_folder,
                    '-iwad', iwad, '-port', str(port), '-log']
             for wad in wads:
                 cmd.extend(['-file', wad])
@@ -374,13 +374,6 @@ class ZServConfigParser(ZDSConfigParser):
         events_enabled = self.getboolean('enable_events', False)
         stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
-        zdslog.debug("Plugins enabled for %s: [%s]" % (self.zserv.name, plugins_enabled))
-        save_logfile = self.getboolean('save_logfile', False)
-        if not save_logfile:
-            ###
-            # This can be confusing, I admit.
-            ###
-            save_logfile = self.getboolean('save_logfiles', False)
         if not events_enabled:
             if stats_enabled:
                 es = "Statistics require events, but they have been disabled"
@@ -388,6 +381,15 @@ class ZServConfigParser(ZDSConfigParser):
             if plugins_enabled:
                 es = "Plugins require events, but they have been disabled"
                 raise ValueError(es)
+        save_logfile = self.getboolean('save_logfile', False)
+        if not save_logfile:
+            ###
+            # This can be confusing, I admit.
+            ###
+            save_logfile = self.getboolean('save_logfiles', False)
+        use_global_banlist = self.getboolean('use_global_banlist', False)
+        copy_zdaemon_banlist = self.getboolean('copy_zdaemon_banlist', False)
+        whitelist_file = self.getpath('whitelist_file', None)
         rcon_password = self.get('rcon_password')
         rcon_enabled = rcon_password and True
         rps = 'rcon_password_'
@@ -484,7 +486,16 @@ class ZServConfigParser(ZDSConfigParser):
             logger.addHandler(h)
             logger.setLevel(logging.INFO)
         self.zserv.home_folder = home_folder
-        self.zserv.configfile = configfile
+        self.zserv.config_file = config_file
+        if hasattr(self.zserv, 'banlist_file') and not \
+           self.zserv.banlist_file == banlist_file:
+            ###
+            # The banlist should be reloaded.
+            ###
+            self.zserv.banlist_file = banlist_file
+            self.zserv.banlist = BanList(filename=banlist_file)
+        else:
+            self.zserv.banlist_file = banlist_file
         self.zserv.zserv_exe = zserv_exe
         self.zserv.fifo_path = fifo_path
         self.zserv.wad_folder = wad_folder
@@ -502,6 +513,16 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.save_logfile = save_logfile
         ds = "save_logfile is %s for %s"
         zdslog.debug(ds % (self.zserv.save_logfile, self.zserv.name))
+        self.zserv.use_global_banlist = use_global_banlist
+        self.zserv.copy_zdaemon_banlist = copy_zdaemon_banlist
+        self.zserv.whitelist_file = whitelist_file
+        if self.zserv.whitelist_file == \
+            self.zserv.zdstack.config.getpath('DEFAULT',
+                                              'zdstack_global_whitelist_file'):
+            self.zserv.whitelist_lock = self.zserv.zdstack.global_whitelist_lock
+        else:
+            self.zserv.whitelist_lock = Lock()
+        self.zserv.use_global_banlist = use_global_banlist
         self.zserv.rcon_password = rcon_password
         self.zserv.rcon_enabled = rcon_enabled
         self.zserv.rcon_password_1 = rcon_password_1
@@ -767,6 +788,10 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.website, 'set website "%s"')
         add_var_line(self.zserv.admin_email, 'set email "%s"')
         add_bool_line(self.zserv.advertise, 'set master_advertise "%s"')
+        if self.zserv.use_global_banlist:
+            addr = (self.zserv.zdstack.hostname, self.zserv.zdstack.port)
+            banlist_url = 'http://%s:%s/bans' % addr
+            add_var_line(banlist_url, 'set banlist_url "%s"')
         if add_bool_line(self.zserv.rcon_enabled, 'set enable_rcon "%s"'):
             add_var_line(self.zserv.rcon_password, 'set rcon_password "%s"')
         if add_bool_line(self.zserv.requires_password, \

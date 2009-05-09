@@ -65,9 +65,12 @@ else:
 if '-a'in opts:
     args.extend([x for x in opts['-a'].split(';') if x])
 if opts['-m'] in NO_AUTH_REQUIRED:
-    s = opts['-m'] + ', '.join(args).join(['(', ')'])
+    sargs = [x for x in args]
+    s = opts['-m'] + ', '.join(args)
 else:
+    sargs = ['<username>', '<password>'] + [x for x in args[2:]]
     s = opts['-m'] + ', '.join(['<username>', '<password>'] + args[2:])
+s = opts['-m'] + ', '.join(sargs).join(['(', ')'])
 print "Running %s" % (s)
 response = send_proxy_method(proxy, opts['-m'], *args)
 if response:

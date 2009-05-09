@@ -10,8 +10,9 @@ from ConfigParser import SafeConfigParser as SCP
 from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError
 
 from ZDStack.Utils import resolve_path, requires_instance_lock
+from ZDStack.ZDSFile import SynchronizedFile
 
-class RawZDSConfigParser(RCP):
+class RawZDSConfigParser(SynchronizedFile, RCP):
 
     """RawZDSConfigParser improves on ConfigParser.RawConfigParser.
 
@@ -43,51 +44,10 @@ class RawZDSConfigParser(RCP):
     """
 
     def __init__(self, filename=None, dummy=False):
-        """Initializes a RawZDSConfigParser.
-
-        :param filename: the name of the file to parse initially
-        :type filename: string
-        :param dummy: indicates that this RawZDSConfigParser is a
-                      dummy, and therefore shouldn't perform checks on
-                      the underlying file.
-        :type dummy: boolean
-
-        All arguments are optional.
-
-        """
-        RCP.__init__(self)
+        """Initializes a RawZDSConfigParser."""
         self._section_list = []
-        self.lock = Lock()
-        self.dummy = dummy
-        if filename:
-            if isinstance(filename, str):
-                self.set_file(filename)
-                self.load()
-            elif hasattr(filename, 'readline'):
-                if not self.dummy:
-                    if not hasattr(filename, 'name'):
-                        es = "Given file objects must have a 'name' attribute"
-                        raise ValueError(es)
-                    self.set_file(filename.name)
-                self.loadfp(filename)
-            else:
-                es = "Unsupported type for 'filename': [%s]"
-                raise ValueError(es % (type(filename)))
-
-    @requires_instance_lock()
-    def set_file(self, filename):
-        """Sets the location of the configuration file.
-
-        :param filename: the new location of the configuration file
-        :type filename: string
-
-        """
-        if self.dummy:
-            return
-        f = resolve_path(filename)
-        if not os.path.isfile(f):
-            raise ValueError("Config File [%s] not found" % (filename))
-        self.filename = f
+        RCP.__init__(self)
+        SynchronizedFile.__init__(self, filename, dummy)
 
     @requires_instance_lock()
     def defaults(self):
@@ -404,29 +364,24 @@ class RawZDSConfigParser(RCP):
         """
         RCP.set(self, section, option, value)
 
-    @requires_instance_lock()
-    def write(self, fp):
-        """Writes a string representation of this ConfigParser to disk.
-
-        :param fp: the file to write to
-        :type fp: file
-
-        """
+    def __str__(self):
+        out = ''
         sect_temp = "[%s]\n"
         opt_temp = "%s = %s\n"
         if self._defaults:
-            fp.write(sect_temp % DEFAULTSECT)
+            out += sect_temp % DEFAULTSECT
             for k in sorted(self._defaults.keys()):
                 v = str(self._defaults[k]).replace('\n', '\n\t')
-                fp.write(opt_temp % (k, v))
-            fp.write("\n")
+                out += opt_temp % (k, v)
+            out += "\n"
         for section in self._section_list:
-            fp.write(sect_temp % section)
+            out += sect_temp % section
             for k in sorted(self._sections[section].keys()):
-                if k != "__name__":
+                if k != "__name__" and k != 'name':
                     v = str(self._sections[section][k]).replace('\n', '\n\t')
-                    fp.write(opt_temp % (k, v))
-            fp.write("\n")
+                    out += opt_temp % (k, v)
+            out += "\n"
+        return out
 
     @requires_instance_lock()
     def remove_option(self, section, option):
@@ -463,68 +418,6 @@ class RawZDSConfigParser(RCP):
         sections = self.sections(acquire_lock=False) + [DEFAULTSECT]
         for s in sections:
             self.remove_section(s, acquire_lock=False)
-
-    @requires_instance_lock()
-    def load(self):
-        """Loads the data from the configuration file."""
-        if self.dummy:
-            raise Exception("Can't load() a dummy configparser")
-        self._read(open(self.filename), self.filename)
-
-    @requires_instance_lock()
-    def loadfp(self, fobj):
-        """Loads configuration data from a file object.
-        
-        :param fobj: the file containing configuration data
-        :type fobj: file
-
-        This ConfigParser's filename will also be set to the resolved
-        value of the file object's .name attribute, so the passed file
-        object must have a .name attribute.
-        
-        """
-        if not self.dummy:
-            if not hasattr(fobj, 'name'):
-                es = "File objects passed to loadfp must have a .name "
-                es += "attribute"
-                raise ValueError(es)
-            self.set_file(fobj.name, acquire_lock=False)
-        if self.dummy:
-            filename = '<???>' # Haha, I used to hate this
-        else:
-            filename = self.filename
-        self._read(fobj, filename)
-
-    @requires_instance_lock()
-    def reload(self):
-        """Reloads configuration data from the configuration file."""
-        self.clear(acquire_lock=False)
-        self.load(acquire_lock=False)
-
-    @requires_instance_lock()
-    def reloadfp(self, fobj):
-        """Reloads configuration data from a file object.
-
-        :param fobj: the file containing configuration data
-        :type fobj: file
-
-        This ConfigParser's filename will also be set to the resolved
-        value of the file object's .name attribute, so the passed file
-        object must have a .name attribute.
-        
-        """
-        self.clear(acquire_lock=False)
-        self.loadfp(fobj, acquire_lock=False)
-
-    @requires_instance_lock()
-    def save(self):
-        """Writes configuration data to the configuration file."""
-        fobj = open(self.filename, 'w')
-        try:
-            self.write(fobj, acquire_lock=False)
-            fobj.flush()
-        finally:
-            fobj.close()
 
     @requires_instance_lock()
     def get_if_valid(self, section, option):

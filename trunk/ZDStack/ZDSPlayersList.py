@@ -6,6 +6,7 @@ from threading import Lock
 from collections import deque
 
 from ZDStack import PlayerNotFoundError, get_zdslog
+from ZDStack.ZServ import TEAM_MODES
 from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSPlayer import Player
 
@@ -148,7 +149,7 @@ class PlayersList(object):
         # - Check for players to remove (disconnected)
         # - Check for players to add    (new)
         ###
-        zdslog.debug("Updating player status")
+        zdslog.debug("Updating player state")
         for p in self:
             zdslog.debug("Checking %s - %s:%s" % (p.name, p.ip, p.port))
             ###
@@ -200,6 +201,30 @@ class PlayersList(object):
                 zdslog.debug("Adding new player [%s]" % (p.name))
                 self.__players.append(p)
                 p.get_alias() # saves the player's alias
+        if self.zserv.game_mode in TEAM_MODES:
+            zdslog.debug("Updating player teams")
+            for player in self:
+                for d in self.zserv.zplayerinfo(player.number):
+                    if d['playerinfo_attribute'] == 'Color':
+                        team_number = d['playerinfo_value']
+                        team_color = NUMBERS_TO_COLORS[team_number]
+                        if player.color != team_color:
+                            ds = "Updating color for %s from %s to %s"
+                            t = (player.name, player.color, team_color)
+                            zdslog.debug(ds % t)
+                        player.color = team_color
+        # to_kick = list()
+        # for p in self:
+        #     if not p.disconnected and not \
+        #        p.ip in self.zserv.access_list.whitelist and \
+        #        p.ip in self.zserv.access_list.banlist:
+        #         to_kick.append(p.number)
+        # for n in reversed(sorted(to_kick)):
+        #     ###
+        #     # Again, I'm hoping that lower player numbers don't re-arrange
+        #     # when players with higher numbers disconnect.
+        #     ###
+        #     self.zserv.kick(n)
         zdslog.debug("Sync: done")
 
     @requires_instance_lock()
@@ -219,6 +244,16 @@ class PlayersList(object):
         for pn in possible_player_names:
             if pn in names:
                 return self.get(name=pn, sync=False, acquire_lock=False)
+        ###
+        # Here we sync, and try again.
+        ###
+        self.sync(acquire_lock=False)
+        for pn in possible_player_names:
+            if pn in names:
+                return self.get(name=pn, sync=False, acquire_lock=False)
+        ###
+        # Otherwise, debug some stuff.
+        ###
         zdslog.debug("Names: [%s]" % (names))
         zdslog.debug("PPN: [%s]" % (possible_player_names))
 

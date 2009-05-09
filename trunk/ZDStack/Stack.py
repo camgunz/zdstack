@@ -104,6 +104,8 @@ class Stack(Server):
         """Initializes a Stack instance."""
         self.spawn_lock = Lock()
         self.szn_lock = Lock()
+        self.global_banlist_lock = Lock()
+        self.global_whitelist_lock = Lock()
         # self.poller = select.poll()
         self.zservs = {}
         self.stopped_zserv_names = set()
@@ -125,6 +127,13 @@ class Stack(Server):
         self.methods_requiring_authentication.append('stop_all_zservs')
         self.loglink_check_timer = None
         self.zserv_check_timer = None
+        self.zdaemon_banlist_fetch_timer = None
+        ###
+        # We need a 3rd timer, unfortunately, to periodically get the ZDaemon
+        # master banlist and check it against the current master banlist file,
+        # updating it if necessary.  This is so unadvertised servers can use
+        # the master banlist as well.
+        ###
 
     def start(self):
         """Starts this Stack."""
@@ -149,6 +158,8 @@ class Stack(Server):
         ###
         if not self.zserv_check_timer:
             self.spawn_zservs()
+        if not self.zdaemon_banlist_fetch_timer:
+            self.fetch_zdaemon_banlist()
         Server.start(self)
 
     def stop(self):
@@ -235,6 +246,10 @@ class Stack(Server):
                     t = Timer(.5, self.spawn_zservs)
                     self.zserv_check_timer = t
                     self.zserv_check_timer.start()
+
+    def fetch_zdaemon_banlist(self):
+        """Fetches the ZDaemon banlist for servers who have it copied."""
+        pass
 
     def poll_zservs(self):
         """Polls all ZServs for output."""
@@ -467,7 +482,7 @@ class Stack(Server):
         for zserv in self.get_running_zservs():
             if not zserv.name in configparser.sections():
                 es = "Cannot remove running zserv [%s] from the config."
-                raise Exception(es % (zserv_name))
+                raise Exception(es % (zserv.name))
 
     def load_zservs(self):
         """Instantiates all configured ZServs."""
@@ -751,6 +766,79 @@ class Stack(Server):
         # zdslog.debug('')
         return self.get_zserv(zserv_name).zaddban(ip_address, reason)
 
+    def add_global_ban(self, ip_address, reason='rofl'):
+        """Adds a ban to all servers.
+
+        :param ip_address: the IP address to ban
+        :type ip_address: string
+        :param reason: the reason for the ban
+        :type reason: string
+
+        """
+        with self.global_banlist_lock:
+            ###
+            # We need some kind of ban parsing thing here, so we don't add
+            # duplicate bans.
+            ###
+            ###
+            # Do some ban adding stuff here
+            ###
+            pass
+
+    def remove_global_ban(self, ip_address):
+        """Removes a ban from all servers.
+
+        :param ip_address: the IP address to ban
+        :type ip_address: string
+
+        """
+        for zserv in self.zservs.values():
+            if zserv.is_running():
+                zserv.zkillban(ip_address)
+        with self.global_banlist_lock:
+            ###
+            # We need some kind of ban parsing thing here, so we don't leave
+            # duplicate bans.
+            ###
+            ###
+            # Do some ban removing stuff here
+            ###
+            pass
+
+    def add_global_whitelist(self, ip_address):
+        """Whitelists an IP address.
+
+        :param ip_address: the IP address to whitelist
+        :type ip_address: string
+
+        """
+        with self.global_whitelist_lock:
+            ###
+            # We need some kind of ban parsing thing here, so we don't add
+            # duplicate whitelists.
+            ###
+            ###
+            # Do some whitelist adding stuff here
+            ###
+            pass
+
+    def remove_global_whitelist(self, ip_address):
+        """Whitelists an IP address.
+
+        :param ip_address: the IP address to whitelist
+        :type ip_address: string
+
+        """
+        with self.global_whitelist_lock:
+            ###
+            # We need some kind of ban parsing thing here, so we don't leave
+            # duplicate whitelists.
+            ###
+            ###
+            # Do some whitelist removing stuff here
+            ###
+            pass
+
     def addbot(self, zserv_name, bot_name=None):
         """Adds a bot.
 
@@ -999,6 +1087,14 @@ class Stack(Server):
         self.rpc_server.register_function(self.send_to_zserv,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.addban,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.add_global_ban,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.remove_global_ban,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.add_global_whitelist,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.remove_global_whitelist,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.addbot,
                                           requires_authentication=True)

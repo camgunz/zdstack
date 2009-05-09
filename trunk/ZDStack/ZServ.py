@@ -10,13 +10,6 @@ from subprocess import Popen, PIPE, STDOUT
 
 from ZDStack import DEVNULL, TICK, TEAM_COLORS, PlayerNotFoundError, \
                     get_zdslog, get_plugins
-from ZDStack.ZDSTask import Task
-from ZDStack.ZDSModels import Round
-from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
-                                get_round_by_id, get_alias, persist, \
-                                global_session
-from ZDStack.ZDSPlayersList import PlayersList
-from ZDStack.ZDSZServConfig import ZServConfigParser
 
 COOP_MODES = ('coop', 'cooperative', 'co-op', 'co-operative')
 DUEL_MODES = ('1v1', 'duel', '1vs1')
@@ -25,6 +18,16 @@ TEAMDM_MODES = ('teamdm', 'team deathmatch', 'tdm')
 CTF_MODES = ('ctf', 'capture the flag', 'capture-the-flag')
 DM_MODES = DUEL_MODES + FFA_MODES + TEAMDM_MODES + CTF_MODES
 TEAM_MODES = TEAMDM_MODES + CTF_MODES
+NUMBERS_TO_COLORS = {0: 'red', 1: 'blue', 2: 'green', 3: 'white'}
+COLORS_TO_NUMBERS = {'red': 0, 'blue': 1, 'green': 2, 'white': 3}
+
+from ZDStack.ZDSTask import Task
+from ZDStack.ZDSModels import Round
+from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
+                                get_round_by_id, get_alias, persist, \
+                                global_session
+from ZDStack.ZDSPlayersList import PlayersList
+from ZDStack.ZDSZServConfig import ZServConfigParser
 
 zdslog = get_zdslog()
 
@@ -72,6 +75,7 @@ class ZServ(object):
         self.response_events = list()
         self.response_finished = Event()
         self.finished_processing_response = Event()
+        self.whitelist_lock = Lock()
         self.event_lock = Lock()
         self.state_lock = Lock()
         self._zserv_stdin_lock = Lock()
@@ -106,7 +110,7 @@ class ZServ(object):
     def clear_state(self):
         """Clears the current state of the round."""
         with self.state_lock:
-            self.players.clear()
+            self.players.clear(acquire_lock=False)
             self.players_holding_flags = set()
             self.teams_holding_flags = set()
             self.fragged_runners = list()
@@ -234,16 +238,18 @@ class ZServ(object):
 
         """
         zdslog.debug('Change Map')
-        self.clean_up()
-        self.map_number = map_number
-        self.map_name = map_name
-        self.round_id = get_round(self.get_game_mode(), self.get_map()).id
-        zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
         ###
         # Because there are no player reconnections at the beginning of rounds
-        # in 1.08.08, we need to manually do a sync() here.
+        # in 1.08.08, we need to prevent anything from accessing the list of
+        # players until we sync it up.
         ###
-        self.players.sync()
+        with self.players.lock:
+            self.clean_up()
+            self.map_number = map_number
+            self.map_name = map_name
+            self.round_id = get_round(self.get_game_mode(), self.get_map()).id
+            zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
+            self.players.sync(acquire_lock=False)
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.
@@ -344,7 +350,7 @@ class ZServ(object):
                     return
                 self.start_time = datetime.now()
                 self.restarts.append(datetime.now())
-                fobj = open(self.configfile, 'w')
+                fobj = open(self.config_file, 'w')
                 fobj.write(self.config.get_config_data())
                 fobj.flush()
                 fobj.close()
@@ -720,6 +726,18 @@ class ZServ(object):
         """
         # zdslog.debug('')
         return self.send_to_zserv('maplist', 'maplist_command')
+
+    def zplayerinfo(self, player_number):
+        """Returns information about a player.
+
+        :param player_number: the number of the player for which to return
+                              player information.
+        :type player_number: string
+        :rtype: list of :class:`~ZDStack.LogEvent` instances
+
+        """
+        return self.send_to_zserv('playerinfo %s' % (player_number),
+                                  'playerinfo_command')
 
     def zplayers(self):
         """Returns a list of players in the server.

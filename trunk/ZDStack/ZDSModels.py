@@ -1,67 +1,14 @@
-import datetime
-
-from sqlalchemy import Table, Column, ForeignKey, Index, String, DateTime, \
-                       Integer, Boolean, UniqueConstraint
-from sqlalchemy.orm import relation, mapper
-from sqlalchemy.ext.declarative import declarative_base
-
-from ZDStack import get_engine, get_session_class, get_zdslog
+from ZDStack import get_engine, get_metadata, get_zdslog
+from ZDStack.ZDSTables import *
 
 zdslog = get_zdslog()
-
-###
-# TODO: Create table indexes, which look like:
-#
-# Index('myindex', mytable.c.col5, mytable.c.col6, unique=True)
-#
-###
 
 ###
 # Get the DB engine.
 ###
 zdslog.debug("Initializing Database")
 __engine = get_engine()
-
-###
-# Setup the declarative_base base class.
-###
-Base = declarative_base()
-
-###
-# Bind the Base's metadata.
-###
-zdslog.debug("Binding MetaData")
-Base.metadata.bind = __engine
-
-###
-# Bind the session as well.
-###
-zdslog.debug("Binding Session")
-get_session_class().configure(bind=__engine)
-
-_pc = 'save-update, delete, delete-orphan'
-
-ports_and_gamemodes = Table('ports_and_gamemodes', Base.metadata,
-    Column('port_name', String(50), ForeignKey('ports.name')),
-    Column('game_mode_name', String(30), ForeignKey('game_modes.name')),
-    UniqueConstraint('port_name', 'game_mode_name')
-)
-
-rounds_and_aliases = Table('rounds_and_aliases', Base.metadata,
-    Column('round_id', Integer, ForeignKey('rounds.id')),
-    Column('alias_id', Integer, ForeignKey('aliases.id')),
-    UniqueConstraint('round_id', 'alias_id')
-)
-
-aliases_table = Table('aliases', Base.metadata,
-    Column('id', Integer, primary_key=True),
-    Column('name', String(255), index=True, nullable=False),
-    Column('ip_address', String(16), index=True, nullable=False),
-    Column('was_namefake', Boolean, default=False),
-    Column('stored_player_name', String(255),
-           ForeignKey('stored_players.name'), nullable=True),
-    UniqueConstraint('name', 'ip_address')
-)
+__metadata = get_metadata()
 
 class Alias(object):
 
@@ -74,9 +21,9 @@ class Alias(object):
 
     There is no way for ZDStack to determine player identity
     completely on its own; an administrator must setup mappings between
-    StoredPlayers and Aliases.  However, player names and address must
-    be stored, so we assume that everything is an Alias and store it as
-    such.
+    StoredPlayers and Aliases.  However, player names and addresses
+    must be stored, so we assume that everything is an Alias and store
+    it as such.
 
     """
 
@@ -91,7 +38,7 @@ class Alias(object):
         s = "Alias('%s', '%s')"
         return s % (self.name, self.ip_address)
 
-class TeamColor(Base):
+class TeamColor(object):
 
     """TeamColor represents a team's color.
 
@@ -119,29 +66,16 @@ class TeamColor(Base):
 
     """
 
-    __tablename__ = 'team_colors'
-
-    color = Column(String(10), primary_key=True)
-    frags = \
-      relation('Frag', backref='fragger_team_color',
-               cascade=_pc,
-               primaryjoin='Frag.fragger_team_color_name == TeamColor.color')
-    deaths = \
-      relation('Frag', backref='fraggee_team_color',
-               cascade=_pc,
-               primaryjoin='Frag.fraggee_team_color_name == TeamColor.color')
-    flag_touches = relation('FlagTouch', backref='player_team_color',
-                            cascade=_pc)
-    flag_returns = relation('FlagReturn', backref='player_team_color',
-                            cascade=_pc)
+    def __init__(self, color):
+        self.color = color
 
     def __str__(self):
         return '<TeamColor %s>' % (self.color)
 
     def __repr__(self):
-        return "Team('%s')" % (self.color)
+        return "TeamColor('%s')" % (self.color)
 
-class Map(Base):
+class Map(object):
 
     """Map represents a map in a WAD.
 
@@ -149,7 +83,7 @@ class Map(Base):
         The database ID of this Map
 
     .. attribute:: wad
-        A string representing the name of the containing WAD
+        The containing WAD
 
     .. attribute:: number
         An int representing the number of this Map in the containing
@@ -163,15 +97,11 @@ class Map(Base):
 
     """
 
-    __tablename__ = 'maps'
-
-    id = Column(Integer, primary_key=True)
-    wad = Column(String(50))
-    number = Column(Integer, nullable=False)
-    name = Column(String(255), nullable=False)
-    rounds = relation('Round', backref='map', cascade=_pc)
-
-    UniqueConstraint(number, name)
+    def __init__(self, number, name, wad=None):
+        self.number = number
+        self.name = name
+        if wad:
+            self.wad_name = wad.name
 
     def __str__(self):
         return "<Map%s: %s>" % (str(self.number).zfill(2), self.name)
@@ -179,7 +109,7 @@ class Map(Base):
     def __repr__(self):
         return "Map(%s, '%s')" % (self.number, self.name)
 
-class Weapon(Base):
+class Weapon(object):
 
     """Weapon represents something that kills players.
 
@@ -192,11 +122,9 @@ class Weapon(Base):
 
     """
 
-    __tablename__ = 'weapons'
-
-    name = Column(String(50), primary_key=True)
-    is_suicide = Column(Boolean, default=False)
-    frags = relation('Frag', backref='weapon', cascade=_pc)
+    def __init__(self, name, is_suicide=False):
+        self.name = name
+        self.is_suicide = is_suicide
 
     def __str__(self):
         return '<Weapon %s>' % (self.name)
@@ -204,7 +132,7 @@ class Weapon(Base):
     def __repr__(self):
         return "Weapon('%s', is_suicide=%s)" % (self.name, self.is_suicide)
 
-class Port(Base):
+class Port(object):
 
     """Port represents a Doom source port.
 
@@ -216,10 +144,8 @@ class Port(Base):
 
     """
 
-    __tablename__ = 'ports'
-
-    name = Column(String(50), primary_key=True)
-    game_modes = relation('GameMode', secondary=ports_and_gamemodes)
+    def __init__(self, name):
+        self.name = name
 
     def __str__(self):
         return '<Port %s>' % (self.name)
@@ -227,7 +153,7 @@ class Port(Base):
     def __repr__(self):
         return "Port('%s')" % (self.name)
 
-class GameMode(Base):
+class GameMode(object):
 
     """GameMode represents a game's mode, i.e. TeamDM, CTF, etc.
 
@@ -245,12 +171,9 @@ class GameMode(Base):
 
     """
 
-    __tablename__ = 'game_modes'
-
-    name = Column(String(30), primary_key=True)
-    ports = relation('Port', secondary=ports_and_gamemodes)
-    has_teams = Column(Boolean, default=False, nullable=False)
-    rounds = relation('Round', backref='game_mode', cascade=_pc)
+    def __init__(self, name, has_teams=False):
+        self.name = name
+        self.has_teams = has_teams
 
     def __str__(self):
         return '<GameMode %s>' % (self.name)
@@ -258,7 +181,7 @@ class GameMode(Base):
     def __repr__(self):
         return "GameMode('%s', %s)" % (self.name, self.has_teams)
 
-class Round(Base):
+class Round(object):
 
     """A Round represents a single round of play.
 
@@ -300,25 +223,17 @@ class Round(Base):
 
     """
 
-    __tablename__ = 'rounds'
-
-    id = Column(Integer, primary_key=True)
-    game_mode_name = Column(String(30), ForeignKey('game_modes.name'))
-    map_id = Column(Integer, ForeignKey('maps.id'))
-    start_time = Column(DateTime, default=datetime.datetime.now, nullable=False)
-    end_time = Column(DateTime)
-    players = relation(Alias, secondary=rounds_and_aliases)
-    frags = relation('Frag', backref='round', cascade=_pc)
-    flag_touches = relation('FlagTouch', backref='round',
-                                         cascade=_pc)
-    flag_returns = relation('FlagReturn', backref='round',
-                                          cascade=_pc)
-    rcon_accesses = relation('RCONAccess', backref='round',
-                                           cascade=_pc)
-    rcon_denials = relation('RCONDenial', backref='round',
-                                          cascade=_pc)
-    rcon_actions = relation('RCONAction', backref='round',
-                                          cascade=_pc)
+    def __init__(self, game_mode, map, start_time=None):
+        self.game_mode_name = game_mode.name
+        self.game_mode = game_mode
+        self.map_id = map.id
+        self.map = map
+        if not self in self.game_mode.rounds:
+            self.game_mode.rounds.append(self)
+        if not self in self.map.rounds:
+            self.map.rounds.append(self)
+        if start_time:
+            self.start_time = start_time
 
     def __str__(self):
         s = '<Round on %s at %s>'
@@ -328,7 +243,7 @@ class Round(Base):
         s = "Round(%s, %s)"
         return s % (self.map, self.start_time)
 
-class StoredPlayer(Base):
+class StoredPlayer(object):
 
     """Represents a player.
 
@@ -340,10 +255,8 @@ class StoredPlayer(Base):
 
     """
 
-    __tablename__ = 'stored_players'
-
-    name = Column(String(255), primary_key=True)
-    aliases = relation(Alias, backref='stored_player')
+    def __init__(self, name):
+        self.name = name
 
     def __str__(self):
         return '<Player %s>' % (self.name)
@@ -351,7 +264,7 @@ class StoredPlayer(Base):
     def __repr__(self):
         return "Player('%s')" % (self.name)
 
-class Frag(Base):
+class Frag(object):
 
     """Represents a frag.
 
@@ -411,31 +324,67 @@ class Frag(Base):
 
     """
 
-    __tablename__ = 'frags'
-
-    id = Column(Integer, primary_key=True)
-    fragger_id = Column(Integer, ForeignKey('aliases.id'))
-    fraggee_id = Column(Integer, ForeignKey('aliases.id'))
-    weapon_name = Column(String(50), ForeignKey('weapons.name'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    timestamp = Column(DateTime, nullable=False)
-    fragger_was_holding_flag = Column(Boolean, default=False)
-    fraggee_was_holding_flag = Column(Boolean, default=False)
-    fragger_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
-    fraggee_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
-    red_team_holding_flag = Column(Boolean, default=False)
-    blue_team_holding_flag = Column(Boolean, default=False)
-    green_team_holding_flag = Column(Boolean, default=False)
-    white_team_holding_flag = Column(Boolean, default=False)
-    red_team_score = Column(Integer)
-    blue_team_score = Column(Integer)
-    green_team_score = Column(Integer)
-    white_team_score = Column(Integer)
+    def __init__(self, fragger, fraggee, weapon, round, timestamp,
+                       fragger_was_holding_flag=None,
+                       fraggee_was_holding_flag=None,
+                       fragger_team_color=None,
+                       fraggee_team_color=None,
+                       red_team_holding_flag=None,
+                       blue_team_holding_flag=None,
+                       green_team_holding_flag=None,
+                       white_team_holding_flag=None,
+                       red_team_score=None,
+                       blue_team_score=None,
+                       green_team_score=None,
+                       white_team_score=None):
+        self.fragger_id = fragger.id
+        self.fragger = fragger
+        self.weapon_name = weapon.name
+        self.weapon = weapon
+        self.round_id = round.id
+        self.round = round
+        self.fraggee_id = fraggee.id
+        self.fraggee = fraggee
+        self.fragger_team_color_name = fragger_team_color.color
+        self.fragger_team_color = fragger_team_color
+        self.fraggee_team_color_name = fraggee_team_color.color
+        self.fraggee_team_color = fraggee_team_color
+        stuff = [self.fragger, self.weapon, self.round]
+        if fragger.id != fraggee.id:
+            stuff.append(self.fraggee)
+        if fragger_team_color is not None and fraggee_team_color is not None:
+            stuff.append(self.fragger_team_color)
+            if fragger_team_color.color != fraggee_team_color.color:
+                stuff.append(self.fraggee_team_color)
+        for x in stuff:
+            if self not in x.frags:
+                x.frags.append(self)
+        self.timestamp = timestamp
+        if fragger_was_holding_flag is not None:
+            self.fragger_was_holding_flag = fragger_was_holding_flag
+        if fraggee_was_holding_flag is not None:
+            self.fraggee_was_holding_flag = fraggee_was_holding_flag
+        if red_team_holding_flag is not None:
+            self.red_team_holding_flag = red_team_holding_flag
+        if blue_team_holding_flag is not None:
+            self.blue_team_holding_flag = blue_team_holding_flag
+        if green_team_holding_flag is not None:
+            self.green_team_holding_flag = green_team_holding_flag
+        if white_team_holding_flag is not None:
+            self.white_team_holding_flag = white_team_holding_flag
+        if red_team_score is not None:
+            self.red_team_score = red_team_score
+        if blue_team_score is not None:
+            self.blue_team_score = blue_team_score
+        if green_team_score is not None:
+            self.green_team_score = green_team_score
+        if white_team_score is not None:
+            self.white_team_score = white_team_score
 
     def __str__(self):
         return '<Frag %s>' % (self.weapon)
 
-class FlagTouch(Base):
+class FlagTouch(object):
 
     """Represents a flag touch.
 
@@ -493,29 +442,44 @@ class FlagTouch(Base):
 
     """
 
-    __tablename__ = 'flag_touches'
-
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey('aliases.id'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    touch_time = Column(DateTime, default=datetime.datetime.now, nullable=False)
-    loss_time = Column(DateTime)
-    was_picked = Column(Boolean, default=False, nullable=False)
-    resulted_in_score = Column(Boolean, default=False)
-    player_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
-    red_team_holding_flag = Column(Boolean, default=False)
-    blue_team_holding_flag = Column(Boolean, default=False)
-    green_team_holding_flag = Column(Boolean, default=False)
-    white_team_holding_flag = Column(Boolean, default=False)
-    red_team_score = Column(Integer)
-    blue_team_score = Column(Integer)
-    green_team_score = Column(Integer)
-    white_team_score = Column(Integer)
+    def __init__(self, player, round, touch_time, loss_time=None,
+                       was_picked=False, resulted_in_score=False,
+                       player_team_color=None,
+                       red_team_holding_flag=False,
+                       blue_team_holding_flag=False,
+                       green_team_holding_flag=False,
+                       white_team_holding_flag=False,
+                       red_team_score=None,
+                       blue_team_score=None,
+                       green_team_score=None,
+                       white_team_score=None):
+        self.player_id = player.id
+        self.player = player
+        self.round_id = round.id
+        self.round = round
+        if self not in player.flag_touches:
+            player.flag_touches.append(self)
+        if self not in round.flag_touches:
+            round.flag_touches.append(self)
+        self.touch_time = touch_time
+        if loss_time:
+            self.loss_time = loss_time
+        self.was_picked = was_picked
+        self.resulted_in_score = resulted_in_score
+        self.player_team_color_name = player_team_color.color
+        self.red_team_holding_flag = red_team_holding_flag
+        self.blue_team_holding_flag = blue_team_holding_flag
+        self.green_team_holding_flag = green_team_holding_flag
+        self.white_team_holding_flag = white_team_holding_flag
+        self.red_team_score = red_team_score
+        self.blue_team_score = blue_team_score
+        self.green_team_score = green_team_score
+        self.white_team_score = white_team_score
 
     def __str__(self):
         return '<FlagTouch %s>' % (self.player)
 
-class FlagReturn(Base):
+class FlagReturn(object):
 
     """Represents a flag return.
 
@@ -565,27 +529,41 @@ class FlagReturn(Base):
 
     """
 
-    __tablename__ = 'flag_returns'
-
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey('aliases.id'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    timestamp = Column(DateTime, default=datetime.datetime.now)
-    player_was_holding_flag = Column(Boolean, default=False)
-    player_team_color_name = Column(String(10), ForeignKey('team_colors.color'))
-    red_team_holding_flag = Column(Boolean, default=False)
-    blue_team_holding_flag = Column(Boolean, default=False)
-    green_team_holding_flag = Column(Boolean, default=False)
-    white_team_holding_flag = Column(Boolean, default=False)
-    red_team_score = Column(Integer)
-    blue_team_score = Column(Integer)
-    green_team_score = Column(Integer)
-    white_team_score = Column(Integer)
+    def __init__(self, player, round, timestamp,
+                       player_was_holding_flag=False,
+                       player_team_color=None,
+                       red_team_holding_flag=False,
+                       blue_team_holding_flag=False,
+                       green_team_holding_flag=False,
+                       white_team_holding_flag=False,
+                       red_team_score=None,
+                       blue_team_score=None,
+                       green_team_score=None,
+                       white_team_score=None):
+        self.player_id = player.id
+        self.player = player
+        self.round_id = round.id
+        self.round = round
+        if self not in player.flag_returns:
+            player.flag_returns.append(self)
+        if self not in round.flag_returns:
+            round.flag_returns.append(self)
+        self.timestamp = timestamp
+        self.player_was_holding_flag = player_was_holding_flag
+        self.player_team_color_name = player_team_color.color
+        self.red_team_holding_flag = red_team_holding_flag
+        self.blue_team_holding_flag = blue_team_holding_flag
+        self.green_team_holding_flag = green_team_holding_flag
+        self.white_team_holding_flag = white_team_holding_flag
+        self.red_team_score = red_team_score
+        self.blue_team_score = blue_team_score
+        self.green_team_score = green_team_score
+        self.white_team_score = white_team_score
 
     def __str__(self):
         return '<FlagReturn %s>' % (self.player)
 
-class RCONAccess(Base):
+class RCONAccess(object):
 
     """Represents an RCON access.
 
@@ -604,17 +582,21 @@ class RCONAccess(Base):
 
     """
 
-    __tablename__ = 'rcon_accesses'
-
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey('aliases.id'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    def __init__(self, player, round, timestamp):
+        self.player_id = player.id
+        self.player = player
+        self.round_id = round.id
+        self.round = round
+        if self not in self.player.rcon_accesses:
+            self.player.rcon_accesses.append(self)
+        if self not in self.round.rcon_accesses:
+            self.round.rcon_accesses.append(self)
+        self.timestamp = timestamp
 
     def __str__(self):
         return '<RCON Access %s>' % (self.player)
 
-class RCONDenial(Base):
+class RCONDenial(object):
 
     """Represents an RCON denial.
 
@@ -633,17 +615,21 @@ class RCONDenial(Base):
 
     """
 
-    __tablename__ = 'rcon_denials'
-
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey('aliases.id'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    def __init__(self, player, round, timestamp):
+        self.player_id = player.id
+        self.player = player
+        self.round_id = round.id
+        self.round = round
+        if self not in self.player.rcon_denials:
+            self.player.rcon_denials.append(self)
+        if self not in self.round.rcon_denials:
+            self.round.rcon_denials.append(self)
+        self.timestamp = timestamp
 
     def __str__(self):
         return '<RCON Denial %s>' % (self.player)
 
-class RCONAction(Base):
+class RCONAction(object):
 
     """Represents an RCON action.
 
@@ -660,34 +646,23 @@ class RCONAction(Base):
         A datetime representing the time at which this RCON action
         occurred
 
+    .. attribute:: action
+        A string representing the name of the RCON action
+
     """
 
-    __tablename__ = 'rcon_actions'
-
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey('aliases.id'))
-    round_id = Column(Integer, ForeignKey('rounds.id'))
-    timestamp = Column(DateTime, default=datetime.datetime.now, nullable=False)
-    action = Column(String(255), nullable=False)
+    def __init__(self, player, round, timestamp, action):
+        self.player_id = player.id
+        self.player = player
+        self.round_id = round.id
+        self.round = round
+        if self not in self.player.rcon_actions:
+            self.player.rcon_actions.append(self)
+        if self not in self.round.rcon_actions:
+            self.round.rcon_actions.append(self)
+        self.timestamp = timestamp
+        self.action = action
 
     def __str__(self):
         return '<RCON Action %s - %s>' % (self.action, self.player)
-
-mapper(Alias, aliases_table, properties={
-    'rounds': relation(Round, secondary=rounds_and_aliases),
-    'frags': relation(Frag, backref='fragger', cascade=_pc),
-    'deaths': relation(Frag, backref='fraggee', cascade=_pc),
-    'frags': relation(Frag, backref='fragger', cascade=_pc,
-                      primaryjoin=Frag.fragger_id == aliases_table.c.id),
-    'deaths': relation(Frag, backref='fraggee', cascade=_pc,
-                       primaryjoin=Frag.fraggee_id == aliases_table.c.id),
-    'flag_touches': relation(FlagTouch, backref='player', cascade=_pc),
-    'flag_returns': relation(FlagReturn, backref='player', cascade=_pc),
-    'rcon_accesses': relation(RCONAccess, backref='player', cascade=_pc),
-    'rcon_denials': relation(RCONDenial, backref='player', cascade=_pc),
-    'rcon_actions': relation(RCONAction, backref='player', cascade=_pc)
-})
-
-zdslog.debug("Creating tables")
-Base.metadata.create_all(__engine)
 

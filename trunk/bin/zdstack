@@ -7,7 +7,7 @@ import getopt
 import signal
 
 from ZDStack import set_debugging, set_configfile, get_configparser, \
-                    get_server_proxy
+                    initialize_database, get_server_proxy
 
 def fork(debug=False):
     if hasattr(os, 'devnull'):
@@ -56,6 +56,7 @@ def start(debug=False, restart=False):
             print >> sys.stderr, es % (pid_file)
             sys.exit(-1)
         print "\nStarting ZDStack\n"
+        initialize_database()
         from ZDStack.Stack import Stack
         zdstack = Stack()
         fork(debug)

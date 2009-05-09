@@ -1,10 +1,21 @@
 from __future__ import with_statement
 
+import os
 import sys
-import os.path
+import stat
 import decimal
 
 from datetime import datetime, timedelta
+
+def create_file(filepath):
+    """Creates a file with proper permissions.
+
+    :param filepath: the full path to the file to create
+    :type filepath: string
+
+    """
+    open(filepath, 'w').close()
+    os.chmod(filepath, stat.S_IRWXU)
 
 def check_ip(ip):
     """Checks that a string is a properly formed IP address.
@@ -252,4 +263,37 @@ def requires_instance_lock():
         wrapper.__doc__ = f.__doc__
         return wrapper
     return decorator
+
+def parse_ban_line(line):
+    """Converts a properly formatted string into a \
+:class:`~ZDStack.ZDSAccessList.Ban`
+
+    :param line: a line to convert
+    :type line: string
+    :rtype: :class:`~ZDStack.ZDSAccessList.Ban`
+
+    """
+    from ZDStack.ZDSAccessList import Ban
+    ip_address = ''
+    other = ''
+    current_section = 'ip_address'
+    for c in line:
+        if current_section == 'ip_address':
+            if c == '#':
+                current_section = 'names'
+                continue
+            ip_address += c
+        elif current_section == 'names':
+            other += c
+    if other.endswith('>'):
+        ###
+        # no reason
+        ###
+        reason = None
+    else:
+        i = other.rfind(' ')
+        reason = other[i:].strip()
+        other = other[:i]
+    names = other[1:-1].split('/')
+    return Ban(ip_address, names, reason)
 

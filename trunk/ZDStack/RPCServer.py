@@ -27,7 +27,7 @@ from xmlrpclib import Fault, Transport, SafeTransport, ServerProxy, \
                       FastMarshaller, Marshaller, _Method
 
 from ZDStack import RPCAuthenticationError, get_json_module, get_zdslog, \
-                    get_debugging
+                    get_configparser, get_debugging, get_accesslist
 
 zdslog = get_zdslog()
 
@@ -98,15 +98,52 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
 
     """BaseRPCRequestHandler allows a configurable transport MIME-Type."""
 
-    def __init__(self, transport_mimetype):
-        zdslog.debug('')
-        self.transport_mimetype = transport_mimetype
+    transport_mimetype = 'text/plain'
+
+    def do_GET(self):
+        """Handles an HTTP GET request.
+        
+        This will always return the contents of the ZDStack global
+        banlist file.
+        
+        """
+        zdslog.debug('do_GET')
+        try:
+            zdslog.debug('Getting ConfigParser')
+            cp = get_configparser()
+            zdslog.debug('Getting banlist file')
+            bf = cp.getpath('DEFAULT', 'zdstack_global_banlist_file', None)
+            if not bf:
+                zdslog.debug('Reporting 404')
+                self.report_404()
+                return
+            zdslog.debug('Reading banlist file')
+            fobj = open(bf)
+            try:
+                data = fobj.read()
+            finally:
+                fobj.close()
+        except Exception, e:
+            zdslog.debug("Got exception: %s" % (e))
+            self.send_response(500)
+            self.end_headers()
+        else:
+            zdslog.debug("Sending response")
+            self.send_response(200)
+            self.send_header("Content-Type", 'text/plain')
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            self.wfile.flush()
+            self.connection.shutdown(1)
 
     def do_POST(self):
         """Handles the HTTP POST request.
 
-        Attempts to interpret all HTTP POST requests as JSON-RPC calls,
-        which are forwarded to the server's _dispatch method for handling.
+        Attempts to interpret all HTTP POST requests as RPC calls,
+        which are forwarded to the server's _dispatch method for
+        handling.
+
         """
         zdslog.debug('')
         # Check that the path is legal
@@ -126,11 +163,6 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
                 L.append(self.rfile.read(chunk_size))
                 size_remaining -= len(L[-1])
             data = ''.join(L)
-            # In previous versions of SimpleJSONRPCServer, _dispatch
-            # could be overridden in this class, instead of in
-            # SimpleJSONRPCDispatcher. To maintain backwards compatibility,
-            # check to see if a subclass implements _dispatch and dispatch
-            # using that method if present.
             response = self.server._marshaled_dispatch(
                     data, getattr(self, '_dispatch', None)
                 )
@@ -148,22 +180,26 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
             ###
             # This is just for debugging.
             ###
-            self.send_response(200)
-            self.send_header("Content-type", self.transport_mimetype)
-            self.send_header("Content-length", str(len(s)))
-            self.end_headers()
-            self.wfile.write(s)
-            # shut down the connection
-            self.wfile.flush()
+            if get_debugging():
+                self.send_response(200)
+                self.send_header("Content-type", self.transport_mimetype)
+                self.send_header("Content-length", str(len(s)))
+                self.end_headers()
+                self.wfile.write(s)
+                # shut down the connection
+                self.wfile.flush()
+            else:
+                self.send_response(500)
+                self.end_headers()
             self.connection.shutdown(1)
             self.end_headers()
         else:
-            # got a valid JSON RPC response
+            # got a valid RPC response
             self.send_response(200)
             es = "Sending Content-Type header: %s"
-            logging.debug(es % (self.transport_mimetype))
+            zdslog.debug(es % (self.transport_mimetype))
             es = "Sending Content-Length header: %s"
-            logging.debug(es % (str(len(response))))
+            zdslog.debug(es % (str(len(response))))
             self.send_header("Content-type", self.transport_mimetype)
             self.send_header("Content-length", str(len(response)))
             self.end_headers()
@@ -191,23 +227,20 @@ class XMLRPCRequestHandler(BaseRPCRequestHandler):
 
     """XMLRPCRequestHandler handles XML-RPC requests."""
 
-    def __init__(self):
-        zdslog.debug('')
-        BaseRPCRequestHandler.__init__(self, 'text/xml')
+    transport_mimetype = 'text/xml'
 
 class JSONRPCRequestHandler(BaseRPCRequestHandler):
 
     """JSONRPCRequestHandler handles JSON-RPC requests."""
-    def __init__(self):
-        zdslog.debug('')
-        BaseRPCRequestHandler.__init__(self, 'application/json')
+
+    tranport_mimetype = 'application/json'
 
 class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
 
     allow_reuse_address = True
 
     def __init__(self, addr, username, password,
-                 requestHandler=SimpleXMLRPCRequestHandler, logRequests=True,
+                 requestHandler=XMLRPCRequestHandler, logRequests=True,
                  encoding=None):
         zdslog.debug('')
         self.logRequests = logRequests
@@ -219,6 +252,18 @@ class XMLRPCServer(SocketServer.TCPServer, AuthenticatedRPCDispatcher):
             fcntl.fcntl(self.fileno(), fcntl.F_SETFD, flags)
 
 class JSONRPCServer(XMLRPCServer):
+
+    def __init__(self, addr, username, password,
+                 requestHandler=JSONRPCRequestHandler, logRequests=True,
+                 encoding=None):
+        zdslog.debug('')
+        self.logRequests = logRequests
+        AuthenticatedRPCDispatcher.__init__(self, encoding, username, password)
+        SocketServer.TCPServer.__init__(self, addr, requestHandler)
+        if fcntl is not None and hasattr(fcntl, 'FD_CLOEXEC'):
+            flags = fcntl.fcntl(self.fileno(), fcntl.F_GETFD)
+            flags |= fcntl.FD_CLOEXEC
+            fcntl.fcntl(self.fileno(), fcntl.F_SETFD, flags)
 
     def register_introspection_functions(self):
         zdslog.debug('')
