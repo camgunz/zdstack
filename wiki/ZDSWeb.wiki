@@ -1,4 +1,5 @@
 #summary Information on ZDSWeb
+#labels Phase-Deploy
 
 = Introduction =
 
@@ -43,7 +44,7 @@ defined in your environment.
 
 === Pitfalls ===
 
-Python create an egg cache folder in `~/.python-eggs`.  So if your webserver is running as `nobody`, and `nobody`'s home folder is `/var/www`, the CGI script will try and create the folder `/var/www/.python-eggs`, and will often fail.  You can either create this folder yourself and give it the appropriate permissions, or you can set the `PYTHON_EGG_CACHE` environment variable in your webserver's configuration to a location it can write to.
+Python creates an egg cache folder in `~/.python-eggs`.  So if your webserver is running as `nobody`, and `nobody`'s home folder is `/var/www`, the CGI script will try and create the folder `/var/www/.python-eggs`, and will often fail.  You can either create this folder yourself and give it the appropriate permissions, or you can set the `PYTHON_EGG_CACHE` environment variable in your webserver's configuration to a location it can write to.
 
 And of course, ensure that the `zdsweb` script is readable and executable by the webserver's user as well.
 
@@ -70,9 +71,9 @@ Logs rotate automatically at midnight, and are named ZDSWeb.log or ZDSWeb.log.YY
 
 = Configuration =
 
-ZDSWeb searches for the ZDStack configuration file in the same places and the same order that ZDStack does.  While it does read from this file to minimize that amount and size of RPC calls it makes to ZDStack, it does not write to it, so there should be no corruption of the configuration file.
+ZDSWeb searches for the ZDStack configuration file in the same places and the same order that ZDStack does.  While it does read from this file to configure itself, it does not write to it, so there should be no corruption of the configuration file.
 
-ZDSWeb uses the `zdstack_username` and `zdstack_password` options in the `DEFAULT` section of the configuration file when it makes RPC calls requiring authentication.  If these are not set properly the RPC calls will fail with an `RPCAuthenticationError`.
+ZDSWeb uses the `zdstack_hostname` and `zdstack_port` options in the `DEFAULT` section when it send RPC requests, and `zdstack_username` and `zdstack_password` (also from the the `DEFAULT` section) when using RPC methods requiring authentication.  If `zdstack_hostname` or `zdstack_port` are not set properly, ZDSWeb will be unable to connect to the remote ZDStack process.  If the authentication configuration options are not set properly, methods requiring authentication will fail with an `RPCAuthenticationError`.
 
 = Authentication =
 
