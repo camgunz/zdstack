@@ -54,3 +54,7 @@ Further, the ZDaemon banlist format doesn't support range bans in this format, w
 As a consequence, saving bans in the form Ban('66.245.40.*') makes little sense.  Rather, `zd_bans.txt` should only hold individual bans, and the arguments to the various banlist-managing methods should expand wildcards... or do something to support range-style bans intelligently.
 
 Finally, this means that editing `zd_bans.txt` directly should be discouraged, as it may conflict with an existing whitelist.
+
+----
+
+Actually it turns out that `zd_bans.txt` has a limit on how many bans it can contain, so whitelist implementation requires supplanting ZDaemon's ban-managing system.  `zd_bans.txt` is still honored, and of course ZDaemon master bans are not overriden, but all ban-related commands in ZDStack (with the exception of ZServ's methods) work on ZDStack's ban/whitelists, not ZDaemon's.
