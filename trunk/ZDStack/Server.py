@@ -76,7 +76,7 @@ class Server(object):
         """Loads the config.
 
         :param config: the config to load
-        :type config: :class:`~ZDStack.ZDSConfigParser`
+        :type config: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser`
         :param reload: whether or not the config is being reloaded
         :type reload: boolean
 
@@ -187,20 +187,27 @@ class Server(object):
                                           requires_authentication=True)
         self.rpc_server.register_function(self.reload_config,
                                           requires_authentication=True)
-        self.rpc_server.register_function(self.start,
-                                          requires_authentication=True)
-        self.rpc_server.register_function(self.stop,
-                                          requires_authentication=True)
-        self.rpc_server.register_function(self.restart,
-                                          requires_authentication=True)
 
     def get_status(self):
-        """Returns the current status of the server."""
+        """Gets the current status of the server.
+        
+        :returns: ZDStack's current status as a server
+        :rtype: string
+        
+        """
         # zdslog.debug('')
         return self.status
 
     def get_logfile(self):
-        """Returns the contents of this server's logfile."""
+        """Gets the contents of this server's logfile.
+        
+        :returns: the contents of ZDStack's logfile.
+        :rtype: string
+
+        This logfile can be really large if debugging is enabled, fair
+        warning.
+        
+        """
         # zdslog.debug('')
         ###
         # This could potentially be quite large, maybe we should make this

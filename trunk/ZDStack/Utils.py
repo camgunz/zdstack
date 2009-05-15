@@ -23,6 +23,10 @@ def check_ip(ip):
     :param ip: the string to check
     :type ip: string
 
+    Raises an Exception if the IP address is malformed.  This method
+    also raises an Exception if the address is either a broadcast or
+    private address.
+
     """
     tokens = ip.split('.')
     if not len(tokens) == 4:
@@ -34,7 +38,7 @@ def check_ip(ip):
     for t in int_tokens:
         if t < 0 or t > 255:
             raise ValueError("Malformed IP Address")
-    if tokens[3] == 0 or tokens[3] == 255:
+    if tokens[3] in(0, 255):
         es = "Cannot advertise a broadcast IP address to master"
         raise ValueError(es)
     if tokens[0] == 10 or \
@@ -81,8 +85,8 @@ def parse_player_name(name):
 
     :param name: the raw name to parse
     :type name: string
-    :rtype: tuple
-    :returns: ('tag', 'string')
+    :rtype: a 2-Tuple of strings
+    :returns: ('tag', 'name')
 
     """
     ###
@@ -196,7 +200,7 @@ def send_proxy_method(proxy, method_name, *args):
                 raise
 
 def get_event_from_line(line, regexps, now=None):
-    """Returns a LogEvent from a line.
+    """Gets a :class:`~ZDStack.LogEvent.LogEvent` from a line.
 
     :param line: the line from which to return an event
     :type line: string
@@ -205,6 +209,9 @@ def get_event_from_line(line, regexps, now=None):
     :param now: the time to use for the event's event_dt parameter, if
                 not given, datetime.datetime.now() is used.
     :type now: datetime
+    :returns: a :class:`~ZDStack.LogEvent.LogEvent` parsed from the
+              given line or None
+    :rtype: :class:`~ZDStack.LogEvent.LogEvent`
 
     """
     now = now or datetime.now()
@@ -226,6 +233,12 @@ def get_event_from_line(line, regexps, now=None):
     return e
 
 def requires_lock(lck):
+    """A function decorator that acquires a lock before executing.
+
+    :param lck: the :class:`~threading.Lock` that the function requires
+    :type lck: :class:`~threading.Lock`
+
+    """
     ###
     # Owes pretty heavily to Philip J. Eby's article on function decorators.
     ###
@@ -247,6 +260,12 @@ def requires_lock(lck):
     return decorator
 
 def requires_instance_lock():
+    """Like requires_lock, but it acquires its parent's instance lock.
+
+    This function decorator works on instance methods, acquiring their
+    parent instance's lock before executing.
+
+    """
     def decorator(f):
         def wrapper(self, *__args, **__kwargs):
             __can_skip_lock = False

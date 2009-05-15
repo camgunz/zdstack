@@ -16,8 +16,8 @@ class ZServConfigParser(ZDSConfigParser):
 
     """ZServConfigParser parses a config for a ZServ.
 
-    ZSCP contains special methods for obtain ZServ configuration
-    values.
+    ZServConfigParser contains special methods for obtaining ZServ
+    configuration values.
 
     """
 

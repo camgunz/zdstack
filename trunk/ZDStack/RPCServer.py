@@ -331,7 +331,7 @@ class JSONRPCServer(XMLRPCServer):
         :type e: exception
         :param code: the 3-digit error code
         :type code: string
-        :context: a message to go along with the exception
+        :param context: a message to go along with the exception
         :type context: string
 
         """

@@ -63,7 +63,7 @@ REQUIRED_SERVER_CONFIG_OPTIONS = \
 REQUIRED_GLOBAL_VALID_FOLDERS = \
     (('zdstack_log_folder', os.R_OK | os.W_OK | os.X_OK),
      ('zdstack_zserv_folder', os.R_OK | os.W_OK | os.X_OK),
-     ('zdstack_master_banlist_folder', os.R_OK, os.W_OK, os.X_OK),
+     ('zdstack_master_banlist_folder', os.R_OK | os.W_OK | os.X_OK),
      ('zdstack_plugin_folder', os.R_OK | os.X_OK),
      ('zdstack_iwad_folder', os.R_OK | os.X_OK),
      ('zdstack_wad_folder', os.R_OK | os.X_OK))
@@ -600,6 +600,11 @@ def get_engine():
     return DB_ENGINE
 
 def get_metadata():
+    """Gets the database's metadata.
+
+    :rtype: an SQLAlchemy MetaData instance.
+
+    """
     global DB_METADATA
     if not DB_METADATA:
         DB_METADATA = MetaData()
@@ -627,7 +632,7 @@ def get_session_class():
 def get_db_lock():
     """Gets the global DB lock.
 
-    :rtype: threading.Lock
+    :rtype: :class:`~threading.Lock`
     :returns: the global database lock, although doesn't acquire it
 
     """
@@ -635,6 +640,13 @@ def get_db_lock():
     return DB_LOCK
 
 def get_zdaemon_banlist_file():
+    """Gets the full resolved path to the ZDaemon banlist file.
+
+    :returns: the full resolved path to the ZDaemon master banlist
+              file, properly parsed into ZDStack's banlist format
+    :rtype: string
+
+    """
     global ZDAEMON_BANLIST_FILE
     if not ZDAEMON_BANLIST_FILE:
         cp = get_configparser()
@@ -643,6 +655,12 @@ def get_zdaemon_banlist_file():
     return ZDAEMON_BANLIST_FILE
 
 def get_zdaemon_banlist_data():
+    """Gets the contents of the ZDaemon master banlist.
+
+    :returns: the contents of the ZDaemon master banlist.
+    :rtype: string
+
+    """
     global URL_OPENER
     global ZDAEMON_BANLIST_URL
     url_fobj = URL_OPENER(ZDAEMON_BANLIST_URL)

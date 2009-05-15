@@ -288,6 +288,20 @@ the method siguratures are the same</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="ZDStack.get_metadata">
+<tt class="descclassname">ZDStack.</tt><tt class="descname">get_metadata</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the database&#8217;s metadata.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">an SQLAlchemy MetaData instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="ZDStack.get_db_lock">
 <tt class="descclassname">ZDStack.</tt><tt class="descname">get_db_lock</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.get_db_lock" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the global DB lock.</p>
@@ -295,7 +309,7 @@ the method siguratures are the same</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">threading.Lock</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><tt class="xref docutils literal"><span class="pre">Lock</span></tt></td>
 </tr>
 <tr class="field"><th class="field-name">Returns:</th><td class="field-body">the global database lock, although doesn&#8217;t acquire it</td>
 </tr>
@@ -379,6 +393,39 @@ the method siguratures are the same</p>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSConfigParser.ZDSConfigParser" class="reference internal" href="#ZDStack.ZDSConfigParser.ZDSConfigParser"><tt class="xref docutils literal"><span class="pre">ZDSConfigParser</span></tt></a> or
 <a title="ZDStack.ZDSConfigParser.RawZDSConfigParser" class="reference internal" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser"><tt class="xref docutils literal"><span class="pre">RawZDSConfigParser</span></tt></a></p>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ZDStack.get_zdaemon_banlist_data">
+<tt class="descclassname">ZDStack.</tt><tt class="descname">get_zdaemon_banlist_data</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.get_zdaemon_banlist_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the contents of the ZDaemon master banlist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the contents of the ZDaemon master banlist.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ZDStack.get_zdaemon_banlist_file">
+<tt class="descclassname">ZDStack.</tt><tt class="descname">get_zdaemon_banlist_file</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.get_zdaemon_banlist_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the full resolved path to the ZDaemon banlist file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the full resolved path to the ZDaemon master banlist
+file, properly parsed into ZDStack&#8217;s banlist format</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
 </tr>
 </tbody>
 </table>
@@ -630,14 +677,15 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <dl class="class">
 <dt id="ZDStack.RPCServer.BaseRPCRequestHandler">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">BaseRPCRequestHandler</tt><big>(</big><em>transport_mimetype</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.BaseRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">BaseRPCRequestHandler</tt><big>(</big><em>request</em>, <em>client_address</em>, <em>server</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.BaseRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>BaseRPCRequestHandler allows a configurable transport MIME-Type.</p>
 <dl class="method">
 <dt id="ZDStack.RPCServer.BaseRPCRequestHandler.do_POST">
 <tt class="descname">do_POST</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.BaseRPCRequestHandler.do_POST" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handles the HTTP POST request.</p>
-<p>Attempts to interpret all HTTP POST requests as JSON-RPC calls,
-which are forwarded to the server&#8217;s _dispatch method for handling.</p>
+<p>Attempts to interpret all HTTP POST requests as RPC calls,
+which are forwarded to the server&#8217;s _dispatch method for
+handling.</p>
 </dd></dl>
 
 <dl class="method">
@@ -670,13 +718,13 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <dl class="class">
 <dt id="ZDStack.RPCServer.JSONRPCRequestHandler">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCRequestHandler</tt><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCRequestHandler</tt><big>(</big><em>request</em>, <em>client_address</em>, <em>server</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
 <dd>JSONRPCRequestHandler handles JSON-RPC requests.</dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.RPCServer.JSONRPCServer">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5e89c&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">JSONRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class ZDStack.RPCServer.JSONRPCRequestHandler at 0x900c86c&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="ZDStack.RPCServer.JSONRPCServer.datetime_to_seconds">
 <tt class="descname">datetime_to_seconds</tt><big>(</big><em>dt</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.JSONRPCServer.datetime_to_seconds" title="Permalink to this definition">¶</a></dt>
@@ -699,13 +747,11 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><em>e</em> (exception) &#8211; an exception to convert</li>
 <li><em>code</em> (string) &#8211; the 3-digit error code</li>
+<li><em>context</em> (string) &#8211; a message to go along with the exception</li>
 </ul>
-</td>
-</tr>
-<tr class="field"><th class="field-name">Context:</th><td class="field-body"><p class="first last">a message to go along with the exception</p>
 </td>
 </tr>
 </tbody>
@@ -817,13 +863,13 @@ class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname"
 <dl class="class">
 <dt id="ZDStack.RPCServer.XMLRPCRequestHandler">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCRequestHandler</tt><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCRequestHandler</tt><big>(</big><em>request</em>, <em>client_address</em>, <em>server</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCRequestHandler" title="Permalink to this definition">¶</a></dt>
 <dd>XMLRPCRequestHandler handles XML-RPC requests.</dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.RPCServer.XMLRPCServer">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class SimpleXMLRPCServer.SimpleXMLRPCRequestHandler at 0x8e5e89c&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCServer" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.RPCServer.</tt><tt class="descname">XMLRPCServer</tt><big>(</big><em>addr</em>, <em>username</em>, <em>password</em>, <em>requestHandler=&lt;class ZDStack.RPCServer.XMLRPCRequestHandler at 0x900c7dc&gt;</em>, <em>logRequests=True</em>, <em>encoding=None</em><big>)</big><a class="headerlink" href="#ZDStack.RPCServer.XMLRPCServer" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -893,12 +939,36 @@ class </em><tt class="descclassname">ZDStack.Server.</tt><tt class="descname">Se
 <dl class="method">
 <dt id="ZDStack.Server.Server.get_logfile">
 <tt class="descname">get_logfile</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Server.Server.get_logfile" title="Permalink to this definition">¶</a></dt>
-<dd>Returns the contents of this server&#8217;s logfile.</dd></dl>
+<dd><p>Gets the contents of this server&#8217;s logfile.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the contents of ZDStack&#8217;s logfile.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+<p>This logfile can be really large if debugging is enabled, fair
+warning.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.Server.Server.get_status">
 <tt class="descname">get_status</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Server.Server.get_status" title="Permalink to this definition">¶</a></dt>
-<dd>Returns the current status of the server.</dd></dl>
+<dd><p>Gets the current status of the server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">ZDStack&#8217;s current status as a server</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.Server.Server.handle_signal">
@@ -928,7 +998,7 @@ class </em><tt class="descclassname">ZDStack.Server.</tt><tt class="descname">Se
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>config</em> (<tt class="xref docutils literal"><span class="pre">ZDSConfigParser</span></tt>) &#8211; the config to load</li>
+<li><em>config</em> (<a title="ZDStack.ZDSConfigParser.ZDSConfigParser" class="reference internal" href="#ZDStack.ZDSConfigParser.ZDSConfigParser"><tt class="xref docutils literal"><span class="pre">ZDSConfigParser</span></tt></a>) &#8211; the config to load</li>
 <li><em>reload</em> (boolean) &#8211; whether or not the config is being reloaded</li>
 </ul>
 </td>
@@ -1071,37 +1141,19 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="ZDStack.Stack.Stack.keep_handling_command_events">
-<tt class="descname">keep_handling_command_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.keep_handling_command_events" title="Permalink to this definition">¶</a></dt>
+<dt id="ZDStack.Stack.Stack.keep_handling_events">
+<tt class="descname">keep_handling_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.keep_handling_events" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A boolean that, when set to False, stops the Command Event</tt></dt>
+<tt class="descname">A boolean that, when set to False, stops the Event Handling</tt></dt>
 <dt>
-<tt class="descname">Handling Thread.</tt></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.Stack.Stack.keep_handling_generic_events">
-<tt class="descname">keep_handling_generic_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.keep_handling_generic_events" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">A boolean that, when set to False, stops the Generic Event</tt></dt>
-<dt>
-<tt class="descname">Handling Thread.</tt></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.Stack.Stack.keep_handling_plugin_events">
-<tt class="descname">keep_handling_plugin_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.keep_handling_plugin_events" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">A boolean that, when set to False, stops the Plugin Event</tt></dt>
-<dt>
-<tt class="descname">Handling Thread.</tt></dt>
+<tt class="descname">Thread.</tt></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="ZDStack.Stack.Stack.regexps">
 <tt class="descname">regexps</tt><a class="headerlink" href="#ZDStack.Stack.Stack.regexps" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A list of :class`~ZDStack.ZDSRegexps.Regexp` instances used to</tt></dt>
+<tt class="descname">A list of :class:`~ZDStack.ZDSRegexps.Regexp` instances used to</tt></dt>
 <dt>
 <tt class="descname">parse :class:`~ZDStack.ZServ` events.</tt></dt>
 <dd></dd></dl>
@@ -1110,9 +1162,9 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <dt id="ZDStack.Stack.Stack.event_handler">
 <tt class="descname">event_handler</tt><a class="headerlink" href="#ZDStack.Stack.Stack.event_handler" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A :class:`~ZDStack.ZDSEventHandler.ZServEventHandler that</tt></dt>
+<tt class="descname">A :class:`~ZDStack.ZDSEventHandler.ZServEventHandler` that</tt></dt>
 <dt>
-<tt class="descname">handles :class:`~ZDStack.ZServ` events.</tt></dt>
+<tt class="descname">handles :class:`~ZDStack.ZServ.ZServ` events.</tt></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -1123,31 +1175,19 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="ZDStack.Stack.Stack.plugin_events">
-<tt class="descname">plugin_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.plugin_events" title="Permalink to this definition">¶</a></dt>
+<dt id="ZDStack.Stack.Stack.event_queue">
+<tt class="descname">event_queue</tt><a class="headerlink" href="#ZDStack.Stack.Stack.event_queue" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A Queue where plugin events are placed to be processed.</tt></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.Stack.Stack.generic_events">
-<tt class="descname">generic_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.generic_events" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">A Queue where generic events are placed to be processed.</tt></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.Stack.Stack.command_events">
-<tt class="descname">command_events</tt><a class="headerlink" href="#ZDStack.Stack.Stack.command_events" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">A Queue where command events are placed to be processed.</tt></dt>
+<tt class="descname">A Queue where events are placed to be processed.</tt></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="ZDStack.Stack.Stack.loglink_check_timer">
 <tt class="descname">loglink_check_timer</tt><a class="headerlink" href="#ZDStack.Stack.Stack.loglink_check_timer" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A Timer that checks each ZServ's logfile links every 30 minutes.</tt></dt>
+<tt class="descname">A Timer that checks each :class:`~ZDStack.ZServ.ZServ`'s</tt></dt>
+<dt>
+<tt class="descname">logfile links every 30 minutes.</tt></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -1157,11 +1197,19 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <tt class="descname">A Timer that restarts each crashed ZServ every 500 milliseconds.</tt></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="ZDStack.Stack.Stack.zdaemon_banlist_fetch_timer">
+<tt class="descname">zdaemon_banlist_fetch_timer</tt><a class="headerlink" href="#ZDStack.Stack.Stack.zdaemon_banlist_fetch_timer" title="Permalink to this definition">¶</a></dt>
+<dt>
+<tt class="descname">A Timer that fetches the ZDaemon master banlist ever 15 minutes.</tt></dt>
+<dd></dd></dl>
+
 <p>Stack does the following things:</p>
 <blockquote>
 <ul class="simple">
 <li>Checks that all server log links and FIFOs exist every 30 min.</li>
-<li>Checks that all ZServs are running every 500 milliseconds</li>
+<li>Checks that all ZServs are running every 500
+milliseconds</li>
 <li>Polls all ZServs for output</li>
 <li>Parses ZServ output lines into events</li>
 <li>Passes events to the EventHandler and the ZServ&#8217;s plugins</li>
@@ -1169,15 +1217,53 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 </ul>
 </blockquote>
 <dl class="method">
-<dt id="ZDStack.Stack.Stack.addban">
-<tt class="descname">addban</tt><big>(</big><em>zserv_name</em>, <em>ip_address</em>, <em>reason='rofl'</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.addban" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a ban.</p>
+<dt id="ZDStack.Stack.Stack.add_ban">
+<tt class="descname">add_ban</tt><big>(</big><em>zserv_name</em>, <em>ip_address</em>, <em>reason='rofl'</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.add_ban" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.add_global_ban">
+<tt class="descname">add_global_ban</tt><big>(</big><em>ip_address</em>, <em>reason='rofl'</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.add_global_ban" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an address to the global banlist.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>zserv_name</em> (string) &#8211; the name of the ZServ</li>
+<li><em>ip_address</em> (string) &#8211; the IP address to ban</li>
+<li><em>reason</em> (string) &#8211; the reason for the ban</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.add_global_whitelist">
+<tt class="descname">add_global_whitelist</tt><big>(</big><em>ip_address</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.add_global_whitelist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an address to the global whitelist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>ip_address</em> (string) &#8211; the IP address to whitelist</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.addban">
+<tt class="descname">addban</tt><big>(</big><em>zserv_name</em>, <em>ip_address</em>, <em>reason='rofl'</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.addban" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an address to a ZServ&#8217;s banlist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><em>zserv_name</em> (string) &#8211; the name of the ZServ to which the ban
+should be added</li>
 <li><em>ip_address</em> (string) &#8211; the IP address to ban</li>
 <li><em>reason</em> (string) &#8211; the reason for the ban</li>
 </ul>
@@ -1235,6 +1321,7 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 </tr>
 </tbody>
 </table>
+<p>If a configuration error is found, an Exception is raised.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1250,6 +1337,11 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.fetch_zdaemon_banlist">
+<tt class="descname">fetch_zdaemon_banlist</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.fetch_zdaemon_banlist" title="Permalink to this definition">¶</a></dt>
+<dd>Fetches the ZDaemon banlist for servers who have it copied.</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.Stack.Stack.get">
@@ -1279,7 +1371,7 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <dt id="ZDStack.Stack.Stack.get_all_zserv_info">
 <tt class="descname">get_all_zserv_info</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.get_all_zserv_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of zserv info dicts.</p>
-<p>See _get_zserv_info() for more information.</p>
+<p>See get_zserv_info() for more information.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1330,40 +1422,37 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>zserv_name</em> (string) &#8211; the name of the ZServ to get info for</td>
 </tr>
-</tbody>
-</table>
-<p>See _get_zserv_info() for more information.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.Stack.Stack.handle_generic_events">
-<tt class="descname">handle_generic_events</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.handle_generic_events" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handles generic events.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (<tt class="xref docutils literal"><span class="pre">LogEvent</span></tt>) &#8211; the event to handle</li>
-<li><em>zserv</em> (<tt class="xref docutils literal"><span class="pre">LogEvent</span></tt>) &#8211; the ZServ instance that generated the event.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">{&#8216;name&#8217;: &lt;string: internal name of ZServ&gt;,
+&#8216;hostname&#8217;: &lt;string: hostname of ZServ&gt;,
+&#8216;mode&#8217;: &lt;string: Game mode of ZServ&gt;,
+&#8216;wads&#8217;: &lt;strings: list of ZServ&#8217;s WADs&gt;,
+&#8216;optional_wads&#8217;: &lt;strings: list of ZServ&#8217;s optional WADs&gt;,
+&#8216;ip&#8217;: &lt;string: the ZServ&#8217;s IP address&gt;,
+&#8216;port&#8217;: &lt;int: ZServ&#8217;s port&gt;,
+&#8216;players&#8217;: &lt;int: number of connected players&gt;,
+&#8216;max_players&#8217;: &lt;int: maximum number of connected players&gt;,
+&#8216;map_name&#8217;: &lt;string: name of the current map&gt;,
+&#8216;map_number&#8217;: &lt;int: number of the current map&gt;,
+&#8216;is_running&#8217;: &lt;boolean: whether ZServ is currently running&gt;}</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="ZDStack.Stack.Stack.handle_plugin_events">
-<tt class="descname">handle_plugin_events</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.handle_plugin_events" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handles plugin events.</p>
+<dt id="ZDStack.Stack.Stack.handle_events">
+<tt class="descname">handle_events</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.handle_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles events.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><em>event</em> (<tt class="xref docutils literal"><span class="pre">LogEvent</span></tt>) &#8211; the event to handle</li>
-<li><em>zserv</em> (<tt class="xref docutils literal"><span class="pre">LogEvent</span></tt>) &#8211; the ZServ instance that generated the event.</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> instance that
+generated the event.</li>
 </ul>
 </td>
 </tr>
@@ -1393,14 +1482,15 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <dl class="method">
 <dt id="ZDStack.Stack.Stack.killban">
 <tt class="descname">killban</tt><big>(</big><em>zserv_name</em>, <em>ip_address</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.killban" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes a ban.</p>
+<dd><p>Removes an address from a ZServ&#8217;s banlist.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>zserv_name</em> (string) &#8211; the name of the ZServ</li>
-<li><em>ip_address</em> (string) &#8211; the ip address to un ban</li>
+<li><em>zserv_name</em> (string) &#8211; the name of the ZServ from which the ban
+should be removed</li>
+<li><em>ip_address</em> (string) &#8211; the ip address to remove</li>
 </ul>
 </td>
 </tr>
@@ -1422,7 +1512,7 @@ class </em><tt class="descclassname">ZDStack.Stack.</tt><tt class="descname">Sta
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>config</em> (<tt class="xref docutils literal"><span class="pre">ZDSConfigParser</span></tt>) &#8211; the configuration to load</li>
+<li><em>config</em> (<a title="ZDStack.ZDSConfigParser.ZDSConfigParser" class="reference internal" href="#ZDStack.ZDSConfigParser.ZDSConfigParser"><tt class="xref docutils literal"><span class="pre">ZDSConfigParser</span></tt></a>) &#8211; the configuration to load</li>
 <li><em>reload</em> (boolean) &#8211; whether or not the config is being reloaded</li>
 </ul>
 </td>
@@ -1479,6 +1569,8 @@ in the maplist.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the output&#8217;s originating
+<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 <li><em>dt</em> (datetime) &#8211; the time when the lines were generated</li>
 <li><em>lines</em> (list of strings) &#8211; the output lines</li>
 </ul>
@@ -1523,6 +1615,39 @@ of the zserv&#8217;s response.  The dict looks like:
 <dt id="ZDStack.Stack.Stack.register_functions">
 <tt class="descname">register_functions</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.register_functions" title="Permalink to this definition">¶</a></dt>
 <dd>Registers RPC functions.</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.remove_ban">
+<tt class="descname">remove_ban</tt><big>(</big><em>zserv_name</em>, <em>ip_address</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.remove_ban" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.remove_global_ban">
+<tt class="descname">remove_global_ban</tt><big>(</big><em>ip_address</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.remove_global_ban" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an address from the global banlist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>ip_address</em> (string) &#8211; the IP address to ban</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.Stack.Stack.remove_global_whitelist">
+<tt class="descname">remove_global_whitelist</tt><big>(</big><em>ip_address</em><big>)</big><a class="headerlink" href="#ZDStack.Stack.Stack.remove_global_whitelist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an address from the global whitelist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>ip_address</em> (string) &#8211; the IP address to whitelist</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.Stack.Stack.removebots">
@@ -1782,22 +1907,46 @@ class </em><tt class="descclassname">ZDStack.Token.</tt><tt class="descname">Tok
 </tr>
 </tbody>
 </table>
+<p>Raises an Exception if the IP address is malformed.  This method
+also raises an Exception if the address is either a broadcast or
+private address.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ZDStack.Utils.create_file">
+<tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">create_file</tt><big>(</big><em>filepath</em><big>)</big><a class="headerlink" href="#ZDStack.Utils.create_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a file with proper permissions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>filepath</em> (string) &#8211; the full path to the file to create</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="ZDStack.Utils.get_event_from_line">
 <tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">get_event_from_line</tt><big>(</big><em>line</em>, <em>regexps</em>, <em>now=None</em><big>)</big><a class="headerlink" href="#ZDStack.Utils.get_event_from_line" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a LogEvent from a line.</p>
+<dd><p>Gets a <a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a> from a line.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>line</em> (string) &#8211; the line from which to return an event</li>
 <li><em>regexps</em> (list of compiled regexp instances) &#8211; the regexps with which to parse the line</li>
 <li><em>now</em> (datetime) &#8211; the time to use for the event&#8217;s event_dt parameter, if
 not given, datetime.datetime.now() is used.</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a <a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a> parsed from the
+given line or None</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -1845,6 +1994,22 @@ Mr. Swartz would have a cow, tho.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="ZDStack.Utils.parse_ban_line">
+<tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">parse_ban_line</tt><big>(</big><em>line</em><big>)</big><a class="headerlink" href="#ZDStack.Utils.parse_ban_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a properly formatted string into a <a title="ZDStack.ZDSAccessList.Ban" class="reference internal" href="#ZDStack.ZDSAccessList.Ban"><tt class="xref docutils literal"><span class="pre">Ban</span></tt></a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>line</em> (string) &#8211; a line to convert</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><a title="ZDStack.ZDSAccessList.Ban" class="reference internal" href="#ZDStack.ZDSAccessList.Ban"><tt class="xref docutils literal"><span class="pre">Ban</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="ZDStack.Utils.parse_player_name">
 <tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">parse_player_name</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#ZDStack.Utils.parse_player_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parses a player&#8217;s name into a tag and a base player name.</p>
@@ -1854,9 +2019,9 @@ Mr. Swartz would have a cow, tho.</p>
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>name</em> (string) &#8211; the raw name to parse</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a 2-Tuple of strings</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">(&#8216;tag&#8217;, &#8216;string&#8217;)</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">(&#8216;tag&#8217;, &#8216;name&#8217;)</td>
 </tr>
 </tbody>
 </table>
@@ -1865,12 +2030,24 @@ Mr. Swartz would have a cow, tho.</p>
 <dl class="function">
 <dt id="ZDStack.Utils.requires_instance_lock">
 <tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">requires_instance_lock</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.Utils.requires_instance_lock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Like requires_lock, but it acquires its parent&#8217;s instance lock.</p>
+<p>This function decorator works on instance methods, acquiring their
+parent instance&#8217;s lock before executing.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ZDStack.Utils.requires_lock">
 <tt class="descclassname">ZDStack.Utils.</tt><tt class="descname">requires_lock</tt><big>(</big><em>lck</em><big>)</big><a class="headerlink" href="#ZDStack.Utils.requires_lock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A function decorator that acquires a lock before executing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>lck</em> (<tt class="xref docutils literal"><span class="pre">Lock</span></tt>) &#8211; the <tt class="xref docutils literal"><span class="pre">Lock</span></tt> that the function requires</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="ZDStack.Utils.resolve_path">
@@ -1927,6 +2104,427 @@ with a running ZDStack.</p>
 </tbody>
 </table>
 </dd></dl>
+
+</div>
+<div class="section" id="module-ZDStack.ZDSAccessList">
+<h2>ZDStack.ZDSAccessList<a class="headerlink" href="#module-ZDStack.ZDSAccessList" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="ZDStack.ZDSAccessList.AddressError">
+<em class="property">
+exception </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">AddressError</tt><big>(</big><em>msg</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.AddressList">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">AddressList</tt><big>(</big><em>item_class</em>, <em>filename=None</em>, <em>dummy=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.add">
+<tt class="descname">add</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an address to a ZServ&#8217;s list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> to add the
+address to</li>
+<li><em>address</em> (string) &#8211; an address to add to the list</li>
+<li><em>reason</em> (string) &#8211; reason for adding the address (optional)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.add_global">
+<tt class="descname">add_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.add_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an address to the global list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><em>address</em> (string) &#8211; an address to add to the list</li>
+<li><em>reason</em> (string) &#8211; reason for adding the address (optional)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get">
+<tt class="descname">get</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets an address from a ZServ&#8217;s list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the address</li>
+<li><em>address</em> (string) &#8211; an address to remove from the list</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching IP address; searches both the ZServ&#8217;s
+address list and the global address list; if no
+matching addresses are found, returns None</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a> or None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get_all">
+<tt class="descname">get_all</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all addresses from a ZServ&#8217;s list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the addresses</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a sequence of addresses</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get_all_excluding_global">
+<tt class="descname">get_all_excluding_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get_all_excluding_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all addresses from a ZServ&#8217;s list, excluding globals.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the addresses</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a sequence of addresses</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get_all_global">
+<tt class="descname">get_all_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get_all_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all global addresses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a sequence of addresses</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get_excluding_global">
+<tt class="descname">get_excluding_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get_excluding_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets an address from a ZServ&#8217;s list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the address</li>
+<li><em>address</em> (string) &#8211; an address to remove from the list</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching IP address; searches only the ZServ&#8217;s
+address list</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.get_global">
+<tt class="descname">get_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.get_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a global address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>address</em> (string) &#8211; an address to match up and return</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a matching IP address or None if not found</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.remove">
+<tt class="descname">remove</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an address from a ZServ&#8217;s list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> to remove the
+address from</li>
+<li><em>address</em> (string) &#8211; an address to remove from the list</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">whether or not the address existed</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">boolean</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.remove_global">
+<tt class="descname">remove_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.remove_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an address from the global list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>address</em> (string) &#8211; an address to remove from the list</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">whether or not the address existed</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.search">
+<tt class="descname">search</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for an address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the address</li>
+<li><em>address</em> (string) &#8211; an address to search for</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">False if the address is not found, True or the reason
+listed with the address if found.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">boolean or string</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This method will search for IP addresses in a ZServ&#8217;s address
+list that either match or contain the given address, using the
+wildcard expansions supported by
+<a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.search_excluding_global">
+<tt class="descname">search_excluding_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.search_excluding_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for an address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; a <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a> from which to get
+the address</li>
+<li><em>address</em> (string) &#8211; an address to search for</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">False if the address is not found, True or the reason
+listed with the address if found.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">boolean or string</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This method will search for IP addresses in a ZServ&#8217;s address
+list that either match or contain the given address, using the
+wildcard expansions supported by
+<a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a>.  This method does
+not consider matching addresses found only in the global list
+as matches.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.AddressList.search_global">
+<tt class="descname">search_global</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.AddressList.search_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for an address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>address</em> (string) &#8211; an address to search for</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">False if the address is not found, True or the reason
+listed with the address if found.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean or string</td>
+</tr>
+</tbody>
+</table>
+<p>This method will search for IP addresses in the global address
+list that either match or contain the given address, using the
+wildcard expansions supported by
+<a title="ZDStack.ZDSAccessList.IPAddress" class="reference internal" href="#ZDStack.ZDSAccessList.IPAddress"><tt class="xref docutils literal"><span class="pre">IPAddress</span></tt></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.Ban">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">Ban</tt><big>(</big><em>address_string</em>, <em>reason=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.Ban" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="ZDStack.ZDSAccessList.Ban.render">
+<tt class="descname">render</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.Ban.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders this Ban.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a string representation of the ban in ZDaemon banlist
+format.  Unless saving into a zserv&#8217;s banlist file,
+you probably just want to use the str() method on Ban
+instances instead.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.BanList">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">BanList</tt><big>(</big><em>dummy=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.BanList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.IPAddress">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">IPAddress</tt><big>(</big><em>address_string</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.IPAddress" title="Permalink to this definition">¶</a></dt>
+<dd><p>IPAddress represents an IP address or IP addresses.</p>
+<p>IPAddress supports 2 types of range expansions:</p>
+<blockquote>
+<ul class="simple">
+<li>192.168.2.*:     Matches anything for &#8216;*&#8217;</li>
+<li>192.168.2.17-34: Matches address from 17-34 inclusive</li>
+</ul>
+</blockquote>
+<p>IPAddresses representing IP ranges can also be tested for
+membership, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">IPAddress</span><span class="p">(</span><span class="s">&#39;192.168.2.4&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">IPAddress</span><span class="p">(</span><span class="s">&#39;192.168.2.3-5&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.IPAddress.from_address">
+<tt class="descname">from_address</tt><big>(</big><em>address</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.IPAddress.from_address" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an object of the same type as this instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>address</em> (either string or int/long) &#8211; an IP address</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">An object of the same type as this instance, with a
+separate address.  This is most useful for
+subclasses.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ZDStack.ZDSAccessList.IPAddress.max">
+<tt class="descname">max</tt><a class="headerlink" href="#ZDStack.ZDSAccessList.IPAddress.max" title="Permalink to this definition">¶</a></dt>
+<dd>The highest int/long this IPAddress represents.</dd></dl>
+
+<dl class="attribute">
+<dt id="ZDStack.ZDSAccessList.IPAddress.min">
+<tt class="descname">min</tt><a class="headerlink" href="#ZDStack.ZDSAccessList.IPAddress.min" title="Permalink to this definition">¶</a></dt>
+<dd>The lowest int/long this IPAddress represents.</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSAccessList.IPAddress.render">
+<tt class="descname">render</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.IPAddress.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders this IPAddress.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a nicely formatted string representing this
+IPAddress, suitable for re-parsing or saving to a
+file</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="ZDStack.ZDSAccessList.MalformedIPAddressError">
+<em class="property">
+exception </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">MalformedIPAddressError</tt><big>(</big><em>address</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.MalformedIPAddressError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.WhiteList">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">WhiteList</tt><big>(</big><em>dummy=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.WhiteList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.WhiteListedAddress">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">WhiteListedAddress</tt><big>(</big><em>address_string</em>, <em>reason=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.WhiteListedAddress" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSAccessList.ZDaemonBanList">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSAccessList.</tt><tt class="descname">ZDaemonBanList</tt><big>(</big><em>dummy=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSAccessList.ZDaemonBanList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </div>
 <div class="section" id="module-ZDStack.ZDSConfigParser">
@@ -1998,7 +2596,18 @@ if an option is not found.  This is also the default behavior.</p>
 <dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.defaults">
 <tt class="descname">defaults</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.defaults" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Gets a dict of options &amp; values from the DEFAULT section.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a dict of options &amp; values from the DEFAULT section</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.get">
@@ -2025,6 +2634,38 @@ if not found</li>
 option is not found, but &#8216;default&#8217; is not None,
 the value of the &#8216;default&#8217; argument will be returned.
 Otherwise a NoOptionError is raised.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.get_excluding_defaults">
+<tt class="descname">get_excluding_defaults</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.get_excluding_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets an option&#8217;s value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>section</em> (string) &#8211; the name of the section in which to look for
+the option</li>
+<li><em>option</em> (string) &#8211; the name of the option whose value is to be
+returned</li>
+<li><em>default</em> &#8211; optional, a value to be returned if the option
+if not found</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">string</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the string value of the option if found.  If the
+option is not found, but &#8216;default&#8217; is not None,
+the value of the &#8216;default&#8217; argument will be returned.
+Otherwise a NoOptionError is raised.  This method
+also excludes the DEFAULT section.</p>
 </td>
 </tr>
 </tbody>
@@ -2328,28 +2969,6 @@ returned</td>
 </dd></dl>
 
 <dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.load">
-<tt class="descname">load</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.load" title="Permalink to this definition">¶</a></dt>
-<dd>Loads the data from the configuration file.</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.loadfp">
-<tt class="descname">loadfp</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.loadfp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads configuration data from a file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>fobj</em> (file) &#8211; the file containing configuration data</td>
-</tr>
-</tbody>
-</table>
-<p>This ConfigParser&#8217;s filename will also be set to the resolved
-value of the file object&#8217;s .name attribute, so the passed file
-object must have a .name attribute.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.options">
 <tt class="descname">options</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.options" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a section&#8217;s options.</p>
@@ -2406,28 +3025,6 @@ useless and will also raise an Exception if used.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.reload">
-<tt class="descname">reload</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.reload" title="Permalink to this definition">¶</a></dt>
-<dd>Reloads configuration data from the configuration file.</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.reloadfp">
-<tt class="descname">reloadfp</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.reloadfp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reloads configuration data from a file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>fobj</em> (file) &#8211; the file containing configuration data</td>
-</tr>
-</tbody>
-</table>
-<p>This ConfigParser&#8217;s filename will also be set to the resolved
-value of the file object&#8217;s .name attribute, so the passed file
-object must have a .name attribute.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.remove_option">
 <tt class="descname">remove_option</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.remove_option" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes an option from a section.</p>
@@ -2470,14 +3067,20 @@ object must have a .name attribute.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.save">
-<tt class="descname">save</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.save" title="Permalink to this definition">¶</a></dt>
-<dd>Writes configuration data to the configuration file.</dd></dl>
-
-<dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.sections">
 <tt class="descname">sections</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.sections" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Gets a list of section names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of section names</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a list of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.set">
@@ -2494,34 +3097,6 @@ is to be set</li>
 <li><em>value</em> (string) &#8211; the new value of the option</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.set_file">
-<tt class="descname">set_file</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.set_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the location of the configuration file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>filename</em> (string) &#8211; the new location of the configuration file</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSConfigParser.RawZDSConfigParser.write">
-<tt class="descname">write</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSConfigParser.RawZDSConfigParser.write" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes a string representation of this ConfigParser to disk.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>fp</em> (file) &#8211; the file to write to</td>
 </tr>
 </tbody>
 </table>
@@ -2687,12 +3262,18 @@ is to be set</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>name</em> (string) &#8211; the name of the Alias to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 <li><em>round</em> (Round) &#8211; optional, the round to which this alias belongs</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Alias" class="reference internal" href="#ZDStack.ZDSModels.Alias"><tt class="xref docutils literal"><span class="pre">Alias</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Alias" class="reference internal" href="#ZDStack.ZDSModels.Alias"><tt class="xref docutils literal"><span class="pre">Alias</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2707,11 +3288,17 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>name</em> (string) &#8211; the name of the GameMode to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.GameMode" class="reference internal" href="#ZDStack.ZDSModels.GameMode"><tt class="xref docutils literal"><span class="pre">GameMode</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.GameMode" class="reference internal" href="#ZDStack.ZDSModels.GameMode"><tt class="xref docutils literal"><span class="pre">GameMode</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2726,12 +3313,18 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>number</em> (int) &#8211; the number of the Map to get</li>
 <li><em>name</em> (string) &#8211; the name of the Map to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Map" class="reference internal" href="#ZDStack.ZDSModels.Map"><tt class="xref docutils literal"><span class="pre">Map</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Map" class="reference internal" href="#ZDStack.ZDSModels.Map"><tt class="xref docutils literal"><span class="pre">Map</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2746,11 +3339,17 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>name</em> (string) &#8211; the name of the Port to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Port" class="reference internal" href="#ZDStack.ZDSModels.Port"><tt class="xref docutils literal"><span class="pre">Port</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Port" class="reference internal" href="#ZDStack.ZDSModels.Port"><tt class="xref docutils literal"><span class="pre">Port</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2765,12 +3364,18 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>game_mode</em> (GameMode) &#8211; the GameMode of the Round to get</li>
 <li><em>map</em> (Map) &#8211; the Map of the Round to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Round" class="reference internal" href="#ZDStack.ZDSModels.Round"><tt class="xref docutils literal"><span class="pre">Round</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Round" class="reference internal" href="#ZDStack.ZDSModels.Round"><tt class="xref docutils literal"><span class="pre">Round</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2792,10 +3397,10 @@ session is used</li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a title="ZDStack.ZDSModels.Round" class="reference internal" href="#ZDStack.ZDSModels.Round"><tt class="xref docutils literal"><span class="pre">Round</span></tt></a></p>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Round" class="reference internal" href="#ZDStack.ZDSModels.Round"><tt class="xref docutils literal"><span class="pre">Round</span></tt></a> instance</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the Round with the specified database ID or None</p>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Round" class="reference internal" href="#ZDStack.ZDSModels.Round"><tt class="xref docutils literal"><span class="pre">Round</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2810,11 +3415,17 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>color</em> (string) &#8211; the color of the TeamColor to get</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.TeamColor" class="reference internal" href="#ZDStack.ZDSModels.TeamColor"><tt class="xref docutils literal"><span class="pre">TeamColor</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.TeamColor" class="reference internal" href="#ZDStack.ZDSModels.TeamColor"><tt class="xref docutils literal"><span class="pre">TeamColor</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2829,12 +3440,18 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><em>name</em> (string) &#8211; the name of the Weapon to get</li>
 <li><em>is_suicide</em> (boolean) &#8211; whether or not the Weapon is a suicide</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a matching <a title="ZDStack.ZDSModels.Weapon" class="reference internal" href="#ZDStack.ZDSModels.Weapon"><tt class="xref docutils literal"><span class="pre">Weapon</span></tt></a> instance</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a title="ZDStack.ZDSModels.Weapon" class="reference internal" href="#ZDStack.ZDSModels.Weapon"><tt class="xref docutils literal"><span class="pre">Weapon</span></tt></a></p>
 </td>
 </tr>
 </tbody>
@@ -2849,7 +3466,20 @@ session is used</li>
 <dl class="function">
 <dt id="ZDStack.ZDSDatabase.new_session">
 <tt class="descclassname">ZDStack.ZDSDatabase.</tt><tt class="descname">new_session</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSDatabase.new_session" title="Permalink to this definition">¶</a></dt>
-<dd>Returns a new Session instance.</dd></dl>
+<dd><p>Creates a new Session instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a new Session instance</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Session</td>
+</tr>
+</tbody>
+</table>
+<p>This is a contextmanager that opens a transaction, committing or
+rolling back as necessary.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ZDStack.ZDSDatabase.persist">
@@ -2859,13 +3489,16 @@ session is used</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>model</em> (sqlalchemy.ext.declarative.Base) &#8211; the model to persist.</li>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><em>model</em> (object) &#8211; the model to persist.</li>
 <li><em>update</em> (boolean) &#8211; whether or not to UPDATE the model, or INSERT it as
 completely new; False by default</li>
 <li><em>session</em> (Session) &#8211; the session to use, if none is given, the global
 session is used</li>
 </ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the given model</p>
 </td>
 </tr>
 </tbody>
@@ -2875,7 +3508,10 @@ session is used</li>
 <dl class="function">
 <dt id="ZDStack.ZDSDatabase.requires_session">
 <tt class="descclassname">ZDStack.ZDSDatabase.</tt><tt class="descname">requires_session</tt><big>(</big><em>func</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSDatabase.requires_session" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A function decorator executing the function inside a session.</p>
+<p>If no session is given with the keyword argument &#8216;session&#8217;, the
+global session is used.</p>
+</dd></dl>
 
 </div>
 <div class="section" id="module-ZDStack.ZDSEventHandler">
@@ -2907,6 +3543,8 @@ get_handler() and set_handler()</p>
 <tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>event_category</em> (string) &#8211; the category of an event for which to
 return a handler.</td>
 </tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">function</td>
+</tr>
 </tbody>
 </table>
 </dd></dl>
@@ -2920,8 +3558,8 @@ return a handler.</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the error event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the error event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -2938,8 +3576,8 @@ return a handler.</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the unhandled event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the unhandled event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -2969,44 +3607,6 @@ return a handler.</li>
 </dd></dl>
 
 <dl class="class">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler">
-<em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="descname">FakeEventHandler</tt><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_connection">
-<tt class="descname">handle_connection</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_connection" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_disconnection">
-<tt class="descname">handle_disconnection</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_disconnection" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_map_change">
-<tt class="descname">handle_map_change</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_map_change" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_player_lookup_event">
-<tt class="descname">handle_player_lookup_event</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_player_lookup_event" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_players_command_event">
-<tt class="descname">handle_players_command_event</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_players_command_event" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSEventHandler.FakeEventHandler.handle_unhandled_event">
-<tt class="descname">handle_unhandled_event</tt><big>(</big><em>event</em>, <em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSEventHandler.FakeEventHandler.handle_unhandled_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handles an unhandled event.</p>
-<p>event: a LogEvent instance.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="ZDStack.ZDSEventHandler.ZServEventHandler">
 <em class="property">
 class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="descname">ZServEventHandler</tt><a class="headerlink" href="#ZDStack.ZDSEventHandler.ZServEventHandler" title="Permalink to this definition">¶</a></dt>
@@ -3019,8 +3619,8 @@ class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="des
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the flag event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the flag event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -3037,8 +3637,8 @@ class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="des
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the frag event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the frag event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -3055,8 +3655,8 @@ class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="des
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the game_join event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the game_join event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -3073,8 +3673,8 @@ class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="des
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the map_change event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the map_change event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
 </tr>
@@ -3091,10 +3691,107 @@ class </em><tt class="descclassname">ZDStack.ZDSEventHandler.</tt><tt class="des
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>event</em> (LogEvent) &#8211; the rcon event</li>
-<li><em>zserv</em> (ZServ) &#8211; the event&#8217;s generating ZServ</li>
+<li><em>event</em> (<a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a>) &#8211; the RCON event</li>
+<li><em>zserv</em> (<a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a>) &#8211; the event&#8217;s generating <a title="ZDStack.ZServ.ZServ" class="reference internal" href="#ZDStack.ZServ.ZServ"><tt class="xref docutils literal"><span class="pre">ZServ</span></tt></a></li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-ZDStack.ZDSFile">
+<h2>ZDStack.ZDSFile<a class="headerlink" href="#module-ZDStack.ZDSFile" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ZDStack.ZDSFile.SynchronizedFile">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSFile.</tt><tt class="descname">SynchronizedFile</tt><big>(</big><em>filename=None</em>, <em>dummy=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>SynchronizedFile is a threadsafe interface to an on-disk file.</p>
+<dl class="attribute">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.lock">
+<tt class="descname">lock</tt><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.lock" title="Permalink to this definition">¶</a></dt>
+<dt>
+<tt class="descname">A Lock that must be acquired before using the SynchronizedFile</tt></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.dummy">
+<tt class="descname">dummy</tt><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.dummy" title="Permalink to this definition">¶</a></dt>
+<dt>
+<tt class="descname">A boolean, whether or not the SynchronizedFile is a dummy and</tt></dt>
+<dt>
+<tt class="descname">therefore shouldn't perform checks on the underlying file</tt></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.clear">
+<tt class="descname">clear</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.clear" title="Permalink to this definition">¶</a></dt>
+<dd>Here so subclasses can override.</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.load">
+<tt class="descname">load</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.load" title="Permalink to this definition">¶</a></dt>
+<dd>Loads data from the on-disk file.</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.loadfp">
+<tt class="descname">loadfp</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.loadfp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads data from a file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>fobj</em> (file) &#8211; the file containing data</td>
+</tr>
+</tbody>
+</table>
+<p>This SynchronizedFile&#8217;s filename will also be set to the
+resolved value of the file object&#8217;s .name attribute, so the
+passed file object must have a .name attribute.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.reload">
+<tt class="descname">reload</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.reload" title="Permalink to this definition">¶</a></dt>
+<dd>Reloads data from the on-disk file.</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.reloadfp">
+<tt class="descname">reloadfp</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.reloadfp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reloads data from a file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>fobj</em> (file) &#8211; the file containing data</td>
+</tr>
+</tbody>
+</table>
+<p>This SynchronizedFile&#8217;s filename will also be set to the
+resolved value of the file object&#8217;s .name attribute, so the
+passed file object must have a .name attribute.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.save">
+<tt class="descname">save</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes this SynchronizedFile to disk.</p>
+<p>The data that is written is the output of str(self), so
+subclasses can override __str__.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSFile.SynchronizedFile.set_file">
+<tt class="descname">set_file</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSFile.SynchronizedFile.set_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the location of the on-disk file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>filename</em> (string) &#8211; the new location of the on-disk file</td>
 </tr>
 </tbody>
 </table>
@@ -3126,80 +3823,15 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 
 <p>There is no way for ZDStack to determine player identity
 completely on its own; an administrator must setup mappings between
-StoredPlayers and Aliases.  However, player names and address must
-be stored, so we assume that everything is an Alias and store it as
-such.</p>
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.deaths">
-<tt class="descname">deaths</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.deaths" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.flag_returns">
-<tt class="descname">flag_returns</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.flag_returns" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.flag_touches">
-<tt class="descname">flag_touches</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.flag_touches" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.frags">
-<tt class="descname">frags</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.frags" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.id">
-<tt class="descname">id</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.id" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">ip_address</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.rcon_accesses">
-<tt class="descname">rcon_accesses</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.rcon_accesses" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.rcon_actions">
-<tt class="descname">rcon_actions</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.rcon_actions" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.rcon_denials">
-<tt class="descname">rcon_denials</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.rcon_denials" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.rounds">
-<tt class="descname">rounds</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.rounds" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.stored_player_name">
-<tt class="descname">stored_player_name</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.stored_player_name" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Alias.was_namefake">
-<tt class="descname">was_namefake</tt><a class="headerlink" href="#ZDStack.ZDSModels.Alias.was_namefake" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
+StoredPlayers and Aliases.  However, player names and addresses
+must be stored, so we assume that everything is an Alias and store
+it as such.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.FlagReturn">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">FlagReturn</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.FlagReturn" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">FlagReturn</tt><big>(</big><em>player</em>, <em>round</em>, <em>timestamp</em>, <em>player_was_holding_flag=False</em>, <em>player_team_color=None</em>, <em>red_team_holding_flag=False</em>, <em>blue_team_holding_flag=False</em>, <em>green_team_holding_flag=False</em>, <em>white_team_holding_flag=False</em>, <em>red_team_score=None</em>, <em>blue_team_score=None</em>, <em>green_team_score=None</em>, <em>white_team_score=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.FlagReturn" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a flag return.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.FlagReturn.id">
@@ -3303,82 +3935,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">An int representing the white team's score</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_team_color_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_was_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">timestamp</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.FlagTouch">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">FlagTouch</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.FlagTouch" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">FlagTouch</tt><big>(</big><em>player</em>, <em>round</em>, <em>touch_time</em>, <em>loss_time=None</em>, <em>was_picked=False</em>, <em>resulted_in_score=False</em>, <em>player_team_color=None</em>, <em>red_team_holding_flag=False</em>, <em>blue_team_holding_flag=False</em>, <em>green_team_holding_flag=False</em>, <em>white_team_holding_flag=False</em>, <em>red_team_score=None</em>, <em>blue_team_score=None</em>, <em>green_team_score=None</em>, <em>white_team_score=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.FlagTouch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a flag touch.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.FlagTouch.id">
@@ -3500,92 +4062,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">An int representing the white team's score</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">loss_time</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_team_color_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">resulted_in_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">touch_time</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">was_picked</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.Frag">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Frag</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Frag" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Frag</tt><big>(</big><em>fragger</em>, <em>fraggee</em>, <em>weapon</em>, <em>round</em>, <em>timestamp</em>, <em>fragger_was_holding_flag=None</em>, <em>fraggee_was_holding_flag=None</em>, <em>fragger_team_color=None</em>, <em>fraggee_team_color=None</em>, <em>red_team_holding_flag=None</em>, <em>blue_team_holding_flag=None</em>, <em>green_team_holding_flag=None</em>, <em>white_team_holding_flag=None</em>, <em>red_team_score=None</em>, <em>blue_team_score=None</em>, <em>green_team_score=None</em>, <em>white_team_score=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Frag" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a frag.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.Frag.id">
@@ -3713,102 +4195,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">An int representing the white team's score</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">blue_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fraggee_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fraggee_team_color_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fraggee_was_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fragger_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fragger_team_color_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">fragger_was_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">green_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">red_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">timestamp</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">weapon_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_holding_flag</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">white_team_score</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.GameMode">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">GameMode</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.GameMode" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">GameMode</tt><big>(</big><em>name</em>, <em>has_teams=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.GameMode" title="Permalink to this definition">¶</a></dt>
 <dd><p>GameMode represents a game&#8217;s mode, i.e. TeamDM, CTF, etc.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.GameMode.name">
@@ -3838,32 +4230,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">A list of Rounds played using this GameMode</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">has_teams</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">ports</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">rounds</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.Map">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Map</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Map" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Map</tt><big>(</big><em>number</em>, <em>name</em>, <em>wad=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map represents a map in a WAD.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.Map.id">
@@ -3876,7 +4248,7 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <dt id="ZDStack.ZDSModels.Map.wad">
 <tt class="descname">wad</tt><a class="headerlink" href="#ZDStack.ZDSModels.Map.wad" title="Permalink to this definition">¶</a></dt>
 <dt>
-<tt class="descname">A string representing the name of the containing WAD</tt></dt>
+<tt class="descname">The containing WAD</tt></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -3902,37 +4274,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">A list of Rounds played on this Map</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">number</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">rounds</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">wad</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.Port">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Port</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Port" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Port</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Port" title="Permalink to this definition">¶</a></dt>
 <dd><p>Port represents a Doom source port.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.Port.name">
@@ -3948,22 +4295,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">A list of this Port's GameModes</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">game_modes</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.RCONAccess">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONAccess</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONAccess" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONAccess</tt><big>(</big><em>player</em>, <em>round</em>, <em>timestamp</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONAccess" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents an RCON access.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.RCONAccess.id">
@@ -3995,32 +4332,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">occurred</tt><a class="headerlink" href="#ZDStack.ZDSModels.RCONAccess.occurred" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">timestamp</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.RCONAction">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONAction</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONAction" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONAction</tt><big>(</big><em>player</em>, <em>round</em>, <em>timestamp</em>, <em>action</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONAction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents an RCON action.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.RCONAction.id">
@@ -4055,34 +4372,16 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.RCONAction.action">
 <tt class="descname">action</tt><a class="headerlink" href="#ZDStack.ZDSModels.RCONAction.action" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
 <dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">timestamp</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
+<tt class="descname">A string representing the name of the RCON action</tt></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.RCONDenial">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONDenial</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONDenial" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">RCONDenial</tt><big>(</big><em>player</em>, <em>round</em>, <em>timestamp</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.RCONDenial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents an RCON denial.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.RCONDenial.id">
@@ -4114,32 +4413,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">occurred</tt><a class="headerlink" href="#ZDStack.ZDSModels.RCONDenial.occurred" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">player_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">round_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">timestamp</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.Round">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Round</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Round" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Round</tt><big>(</big><em>game_mode</em>, <em>map</em>, <em>start_time=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Round" title="Permalink to this definition">¶</a></dt>
 <dd><p>A Round represents a single round of play.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.Round.id">
@@ -4218,72 +4497,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">A list of this Round's RCONActions</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Round.end_time">
-<tt class="descname">end_time</tt><a class="headerlink" href="#ZDStack.ZDSModels.Round.end_time" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">flag_returns</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">flag_touches</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">frags</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">game_mode_name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">map_id</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">players</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">rcon_accesses</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">rcon_actions</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">rcon_denials</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">start_time</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.StoredPlayer">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">StoredPlayer</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.StoredPlayer" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">StoredPlayer</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.StoredPlayer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Represents a player.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.StoredPlayer.name">
@@ -4299,22 +4518,12 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <tt class="descname">A list of this StoredPlayer's Aliases</tt></dt>
 <dd></dd></dl>
 
-<dl class="attribute">
-<dt>
-<tt class="descname">aliases</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.TeamColor">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">TeamColor</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.TeamColor" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">TeamColor</tt><big>(</big><em>color</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.TeamColor" title="Permalink to this definition">¶</a></dt>
 <dd><p>TeamColor represents a team&#8217;s color.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.TeamColor.color">
@@ -4357,37 +4566,12 @@ using different &#8216;team colors&#8217;.  So we simply store the team&#8217;s 
 and require the administrator to create their own mapping between
 whatever they think a &#8216;team&#8217; is, and that team&#8217;s color in the
 round.</p>
-<dl class="attribute">
-<dt>
-<tt class="descname">color</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">deaths</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">flag_returns</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">flag_touches</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">frags</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="ZDStack.ZDSModels.Weapon">
 <em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Weapon</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Weapon" title="Permalink to this definition">¶</a></dt>
+class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname">Weapon</tt><big>(</big><em>name</em>, <em>is_suicide=False</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSModels.Weapon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Weapon represents something that kills players.</p>
 <dl class="attribute">
 <dt id="ZDStack.ZDSModels.Weapon.name">
@@ -4402,21 +4586,6 @@ class </em><tt class="descclassname">ZDStack.ZDSModels.</tt><tt class="descname"
 <dt>
 <tt class="descname">A boolean, whether or not the Weapon is a suicide</tt></dt>
 <dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSModels.Weapon.frags">
-<tt class="descname">frags</tt><a class="headerlink" href="#ZDStack.ZDSModels.Weapon.frags" title="Permalink to this definition">¶</a></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">is_suicide</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
-
-<dl class="attribute">
-<dt>
-<tt class="descname">name</tt></dt>
-<dd>Public-facing descriptor, placed in the mapped class dictionary.</dd></dl>
 
 </dd></dl>
 
@@ -4482,6 +4651,15 @@ class </em><tt class="descclassname">ZDStack.ZDSPlayer.</tt><tt class="descname"
 <dd></dd></dl>
 
 <dl class="attribute">
+<dt id="ZDStack.ZDSPlayer.Player.color">
+<tt class="descname">color</tt><a class="headerlink" href="#ZDStack.ZDSPlayer.Player.color" title="Permalink to this definition">¶</a></dt>
+<dt>
+<tt class="descname">A string representing this player's color.  If the server's</tt></dt>
+<dt>
+<tt class="descname">game mode is not a team game mode, this will be None</tt></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="ZDStack.ZDSPlayer.Player.playing">
 <tt class="descname">playing</tt><a class="headerlink" href="#ZDStack.ZDSPlayer.Player.playing" title="Permalink to this definition">¶</a></dt>
 <dt>
@@ -4498,7 +4676,7 @@ class </em><tt class="descclassname">ZDStack.ZDSPlayer.</tt><tt class="descname"
 <dl class="method">
 <dt id="ZDStack.ZDSPlayer.Player.get_alias">
 <tt class="descname">get_alias</tt><big>(</big><em>session=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayer.Player.get_alias" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an alias representing this player.</p>
+<dd><p>Gets this player&#8217;s Alias model.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -4507,6 +4685,23 @@ class </em><tt class="descclassname">ZDStack.ZDSPlayer.</tt><tt class="descname"
 session will be used</td>
 </tr>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body">Alias</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSPlayer.Player.get_team_color">
+<tt class="descname">get_team_color</tt><big>(</big><em>session=None</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayer.Player.get_team_color" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets this player&#8217;s TeamColor model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>session</em> (Session) &#8211; a Session instance, if none is given, the global
+session will be used</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">TeamColor</td>
 </tr>
 </tbody>
 </table>
@@ -4549,40 +4744,9 @@ synchronizes access to its internal list of players so that any
 addition or removal of players is done atomically, and so that the
 internal list doesn&#8217;t change during these operations.</p>
 <dl class="method">
-<dt id="ZDStack.ZDSPlayersList.PlayersList.add">
-<tt class="descname">add</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a player.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>player</em> (Player) &#8211; the player to add</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
-</tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">True if the player was previously connected this
-round, i.e., the connection is in fact a
-re-connection</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSPlayersList.PlayersList.addresses">
-<tt class="descname">addresses</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.addresses" title="Permalink to this definition">¶</a></dt>
-<dd><p>The addresses of all this PlayersList&#8217;s Players.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a list of tuples</td>
-</tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of 2-Tuples (ip, port) for all players.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
+<dt id="ZDStack.ZDSPlayersList.PlayersList.check_bans">
+<tt class="descname">check_bans</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.check_bans" title="Permalink to this definition">¶</a></dt>
+<dd>Kicks banned players.</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.ZDSPlayersList.PlayersList.clear">
@@ -4638,54 +4802,6 @@ name.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="ZDStack.ZDSPlayersList.PlayersList.names">
-<tt class="descname">names</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.names" title="Permalink to this definition">¶</a></dt>
-<dd><p>The names of all this PlayersList&#8217;s Players.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a list of strings</td>
-</tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the names of all the players in this PlayersList</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSPlayersList.PlayersList.remove">
-<tt class="descname">remove</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Disconnects a player.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>player</em> (Player) &#8211; the player to remove</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSPlayersList.PlayersList.set_playing">
-<tt class="descname">set_playing</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.set_playing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets whether or not a player is playing.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>player</em> (Player) &#8211; the player to modify</li>
-<li><em>playing</em> (boolean) &#8211; whether or not the player is playing</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="ZDStack.ZDSPlayersList.PlayersList.sync">
 <tt class="descname">sync</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSPlayersList.PlayersList.sync" title="Permalink to this definition">¶</a></dt>
 <dd><p>Syncs the internal players list with the running zserv.</p>
@@ -4700,6 +4816,8 @@ self.zserv.zplayers()</li>
 manually acquiring the list of players from
 self.zserv; defaults to None, and is only used
 when zplayers is None</li>
+<li><em>check_bans</em> (boolean) &#8211; whether or not to check the sync&#8217;d list of
+players for banned players, and kick them</li>
 </ul>
 </td>
 </tr>
@@ -4813,9 +4931,10 @@ class </em><tt class="descclassname">ZDStack.ZDSRegexps.</tt><tt class="descname
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>s</em> (string) &#8211; the message to parse</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of strings</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of potential names of the sender</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">([&#8216;potential&#8217;, &#8216;names&#8217;, &#8216;of&#8217;, &#8216;the&#8217;, &#8216;sender&#8217;,
+&#8216;message without prefix&#8217;)</td>
 </tr>
 </tbody>
 </table>
@@ -4903,137 +5022,6 @@ output of self.func</li>
 </dd></dl>
 
 </div>
-<div class="section" id="module-ZDStack.ZDSTeamsList">
-<h2>ZDStack.ZDSTeamsList<a class="headerlink" href="#module-ZDStack.ZDSTeamsList" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="ZDStack.ZDSTeamsList.TeamsList">
-<em class="property">
-class </em><tt class="descclassname">ZDStack.ZDSTeamsList.</tt><tt class="descname">TeamsList</tt><big>(</big><em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList" title="Permalink to this definition">¶</a></dt>
-<dd><p>TeamsList is a threadsafe list of teams.</p>
-<dl class="attribute">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.zserv">
-<tt class="descname">zserv</tt><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.zserv" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">This TeamsList's containing ZServ instance.</tt></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.lock">
-<tt class="descname">lock</tt><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.lock" title="Permalink to this definition">¶</a></dt>
-<dt>
-<tt class="descname">A lock that must be acquired before the internal list of teams</tt></dt>
-<dt>
-<tt class="descname">can be modified</tt></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.add">
-<tt class="descname">add</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a team.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>color</em> (string) &#8211; the color of the new team.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.clear">
-<tt class="descname">clear</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.clear" title="Permalink to this definition">¶</a></dt>
-<dd>Clears the team list.</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.contains_player">
-<tt class="descname">contains_player</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.contains_player" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tests whether or not a team contains a player.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>color</em> (string) &#8211; the color of the team to be checked</li>
-<li><em>player</em> (Player) &#8211; the player to check for</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.get">
-<tt class="descname">get</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets a team.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>color</em> (string) &#8211; the color of the team to return</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">TeamColor</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.get_members">
-<tt class="descname">get_members</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.get_members" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets a team&#8217;s members.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>color</em> (string) &#8211; the color of the team whose members are to be
-returned</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of Players</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.get_player_team">
-<tt class="descname">get_player_team</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.get_player_team" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets a player&#8217;s team.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>player</em> (Player) &#8211; the player whose team is to be returned.</td>
-</tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body">TeamColor</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ZDStack.ZDSTeamsList.TeamsList.set_player_team">
-<tt class="descname">set_player_team</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSTeamsList.TeamsList.set_player_team" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets a player&#8217;s team.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><em>player</em> (Player) &#8211; the player whose team is to be set</li>
-<li><em>color</em> (string) &#8211; the color of the team to which the player will
-be added</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-</div>
 <div class="section" id="module-ZDStack.ZDSThreadPool">
 <h2>ZDStack.ZDSThreadPool<a class="headerlink" href="#module-ZDStack.ZDSThreadPool" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -5097,6 +5085,80 @@ optional, defaults to not sleeping at all</li>
 </dd></dl>
 
 </div>
+<div class="section" id="module-ZDStack.ZDSZServAccessList">
+<h2>ZDStack.ZDSZServAccessList<a class="headerlink" href="#module-ZDStack.ZDSZServAccessList" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="ZDStack.ZDSZServAccessList.NoAppropriateListError">
+<em class="property">
+exception </em><tt class="descclassname">ZDStack.ZDSZServAccessList.</tt><tt class="descname">NoAppropriateListError</tt><a class="headerlink" href="#ZDStack.ZDSZServAccessList.NoAppropriateListError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="ZDStack.ZDSZServAccessList.ZServAccessList">
+<em class="property">
+class </em><tt class="descclassname">ZDStack.ZDSZServAccessList.</tt><tt class="descname">ZServAccessList</tt><big>(</big><em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServAccessList.ZServAccessList" title="Permalink to this definition">¶</a></dt>
+<dd><p>ZServAccessList represents a ZServ&#8217;s access list.</p>
+<p>If a single IP ban conflicts with a whitelisted address, an
+exception is raised.  If a ban using wildcards conflicts with
+one or more whitelisted addresses, the ban is sliced into pieces,
+omitting the conflicting whitelisted addresses.</p>
+<dl class="method">
+<dt id="ZDStack.ZDSZServAccessList.ZServAccessList.add">
+<tt class="descname">add</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServAccessList.ZServAccessList.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an access control.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>access_control</em> (either
+<a title="ZDStack.ZDSAccessList.Ban" class="reference internal" href="#ZDStack.ZDSAccessList.Ban"><tt class="xref docutils literal"><span class="pre">Ban</span></tt></a> or
+<a title="ZDStack.ZDSAccessList.WhiteListedAddress" class="reference internal" href="#ZDStack.ZDSAccessList.WhiteListedAddress"><tt class="xref docutils literal"><span class="pre">WhiteListedAddress</span></tt></a>) &#8211; a ban or whitelist to add</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSZServAccessList.ZServAccessList.remove">
+<tt class="descname">remove</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServAccessList.ZServAccessList.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an access control.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>access_control</em> (either
+<a title="ZDStack.ZDSAccessList.Ban" class="reference internal" href="#ZDStack.ZDSAccessList.Ban"><tt class="xref docutils literal"><span class="pre">Ban</span></tt></a> or
+<a title="ZDStack.ZDSAccessList.WhiteListedAddress" class="reference internal" href="#ZDStack.ZDSAccessList.WhiteListedAddress"><tt class="xref docutils literal"><span class="pre">WhiteListedAddress</span></tt></a>) &#8211; a ban or whitelist to add</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ZDStack.ZDSZServAccessList.ZServAccessList.search_bans">
+<tt class="descname">search_bans</tt><big>(</big><em>*__args</em>, <em>**__kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServAccessList.ZServAccessList.search_bans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches this ZServ&#8217;s ban list for the address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>address</em> (string) &#8211; an address to test</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">whether or not the address is banned.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean, string, or None</td>
+</tr>
+</tbody>
+</table>
+<p>Even if an address is present on the ban list, if it is also
+on the white list, False is returned.  If it is not on the
+white list, the reason for the ban is returned as a string.
+If the address is not found at all, None is returned.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-ZDStack.ZDSZServConfig">
 <h2>ZDStack.ZDSZServConfig<a class="headerlink" href="#module-ZDStack.ZDSZServConfig" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
@@ -5104,8 +5166,8 @@ optional, defaults to not sleeping at all</li>
 <em class="property">
 class </em><tt class="descclassname">ZDStack.ZDSZServConfig.</tt><tt class="descname">ZServConfigParser</tt><big>(</big><em>zserv</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser" title="Permalink to this definition">¶</a></dt>
 <dd><p>ZServConfigParser parses a config for a ZServ.</p>
-<p>ZSCP contains special methods for obtain ZServ configuration
-values.</p>
+<p>ZServConfigParser contains special methods for obtaining ZServ
+configuration values.</p>
 <dl class="method">
 <dt id="ZDStack.ZDSZServConfig.ZServConfigParser.add_section">
 <tt class="descname">add_section</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#ZDStack.ZDSZServConfig.ZServConfigParser.add_section" title="Permalink to this definition">¶</a></dt>
@@ -5655,7 +5717,18 @@ global session is used</td>
 <dl class="method">
 <dt id="ZDStack.ZServ.ZServ.is_running">
 <tt class="descname">is_running</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZServ.ZServ.is_running" title="Permalink to this definition">¶</a></dt>
-<dd>Returns True if the internal zserv process is running.</dd></dl>
+<dd><p>Tests whether or not the internal zserv process is running.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">whether or not the internal zserv process is running</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">boolean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="ZDStack.ZServ.ZServ.load_config">
@@ -5723,7 +5796,7 @@ response</li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list of <tt class="xref docutils literal"><span class="pre">LogEvent</span></tt> instances</p>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list of <a title="ZDStack.LogEvent.LogEvent" class="reference internal" href="#ZDStack.LogEvent.LogEvent"><tt class="xref docutils literal"><span class="pre">LogEvent</span></tt></a> instances</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list of response events, if event_response_type is
@@ -5920,6 +5993,23 @@ to be returned</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="ZDStack.ZServ.ZServ.zplayerinfo">
+<tt class="descname">zplayerinfo</tt><big>(</big><em>player_number</em><big>)</big><a class="headerlink" href="#ZDStack.ZServ.ZServ.zplayerinfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns information about a player.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>player_number</em> (string) &#8211; the number of the player for which to return
+player information.</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of <tt class="xref docutils literal"><span class="pre">LogEvent</span></tt> instances</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="ZDStack.ZServ.ZServ.zplayers">
 <tt class="descname">zplayers</tt><big>(</big><big>)</big><a class="headerlink" href="#ZDStack.ZServ.ZServ.zplayers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of players in the server.</p>
@@ -6042,16 +6132,18 @@ to be un-set</td>
 <li><a class="reference external" href="#module-ZDStack.Stack">ZDStack.Stack</a></li>
 <li><a class="reference external" href="#module-ZDStack.Token">ZDStack.Token</a></li>
 <li><a class="reference external" href="#module-ZDStack.Utils">ZDStack.Utils</a></li>
+<li><a class="reference external" href="#module-ZDStack.ZDSAccessList">ZDStack.ZDSAccessList</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSConfigParser">ZDStack.ZDSConfigParser</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSDatabase">ZDStack.ZDSDatabase</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSEventHandler">ZDStack.ZDSEventHandler</a></li>
+<li><a class="reference external" href="#module-ZDStack.ZDSFile">ZDStack.ZDSFile</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSModels">ZDStack.ZDSModels</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSPlayer">ZDStack.ZDSPlayer</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSPlayersList">ZDStack.ZDSPlayersList</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSRegexps">ZDStack.ZDSRegexps</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSTask">ZDStack.ZDSTask</a></li>
-<li><a class="reference external" href="#module-ZDStack.ZDSTeamsList">ZDStack.ZDSTeamsList</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSThreadPool">ZDStack.ZDSThreadPool</a></li>
+<li><a class="reference external" href="#module-ZDStack.ZDSZServAccessList">ZDStack.ZDSZServAccessList</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZDSZServConfig">ZDStack.ZDSZServConfig</a></li>
 <li><a class="reference external" href="#module-ZDStack.ZServ">ZDStack.ZServ</a></li>
 </ul>

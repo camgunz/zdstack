@@ -15,37 +15,6 @@ zdslog = get_zdslog()
 
 __GLOBAL_SESSION = None
 
-###
-# SQLite strategy:
-#
-# Problem: SQLite connections can't be shared across threads.
-# Problem: SQLite can't handle two transactions committing at the same time.
-#
-# Solutions:
-#
-#   - Disable SQLAlchemy autoflushing, enable autocommitting (so there is no
-#     persistent transaction)
-#   - Set 'check_same_thread' to False when creating the engine
-#   - Set 'isolation_level' to 'IMMEDIATE' when creating the engine
-#   - Use a global (contextual) session by default
-#   - Employ a lock to ensure only 1 thread is accessing the session at a time
-#   - Return all models as bound to the global (contextual) session
-#
-# Real database strategy:
-#
-# Problem: Using the same strategy as for SQLite can seriously hurt performance
-#          when using a RDBMS that can handle concurrent access.
-#
-# Solutions (in contrast to SQLite solutions):
-#
-#   - Enable SQLAlchemy autoflushing, disable autocommitting (so there is
-#     always a persistent transaction)
-#   - Replace the session lock with a dummy lock, which never actually locks
-#     at all
-#   - Because autoflushing takes care of updates and refreshes, set the
-#     functions ZDStack uses to explicitly do those things to be no-ops
-###
-
 @contextmanager
 @requires_lock(get_db_lock())
 def _locked_session(get_global=False, remove=False):
@@ -82,24 +51,42 @@ def _locked_session(get_global=False, remove=False):
         
 
 def new_session():
-    """Returns a new Session instance."""
+    """Creates a new Session instance.
+    
+    :returns: a new Session instance
+    :rtype: Session
+
+    This is a contextmanager that opens a transaction, committing or
+    rolling back as necessary.
+
+    """
     return _locked_session(get_global=False, remove=True)
 
 def global_session():
     """Returns the global Session instance."""
+    """Gets the global Session instance.
+    
+    :returns: the global Session instance
+    :rtype: Session
+
+    This is a contextmanager that opens a transaction, committing or
+    rolling back as necessary.
+
+    """
     return _locked_session(get_global=True, remove=False)
 
 def persist(model, update=False, session=None):
     """Persists a model.
 
     :param model: the model to persist.
-    :type model: sqlalchemy.ext.declarative.Base
+    :type model: object
     :param update: whether or not to UPDATE the model, or INSERT it as
                    completely new; False by default
     :type update: boolean
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: the given model
 
     """
     if update:
@@ -127,6 +114,12 @@ def persist(model, update=False, session=None):
             return blah(session)
 
 def requires_session(func):
+    """A function decorator executing the function inside a session.
+
+    If no session is given with the keyword argument 'session', the
+    global session is used.
+
+    """
     zdslog.debug("Wrapping %s" % (func.__name__))
     def wrapper(*args, **kwargs):
         # zdslog.debug("Running %s, %s, %s" % (func.__name__, str(args),
@@ -183,6 +176,8 @@ def get_weapon(name, is_suicide, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.Weapon` instance
+    :rtype: :class:`~ZDStack.ZDSModels.Weapon`
 
     """
     q = session.query(Weapon).filter_by(name=name, is_suicide=is_suicide)
@@ -203,6 +198,8 @@ def get_alias(name, ip_address, session, round=None):
     :type session: Session
     :param round: optional, the round to which this alias belongs
     :type round: Round
+    :returns: a matching :class:`~ZDStack.ZDSModels.Alias` instance
+    :rtype: :class:`~ZDStack.ZDSModels.Alias`
 
     """
     q = session.query(Alias).filter_by(name=name, ip_address=ip_address)
@@ -223,6 +220,8 @@ def get_team_color(color, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.TeamColor` instance
+    :rtype: :class:`~ZDStack.ZDSModels.TeamColor`
 
     """
     q = session.query(TeamColor).filter_by(color=color)
@@ -240,6 +239,8 @@ def get_port(name, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.Port` instance
+    :rtype: :class:`~ZDStack.ZDSModels.Port`
 
     """
     q = session.query(Port).filter_by(name=name)
@@ -257,6 +258,8 @@ def get_game_mode(name, has_teams, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.GameMode` instance
+    :rtype: :class:`~ZDStack.ZDSModels.GameMode`
 
     """
     q = session.query(GameMode).filter_by(name=name, has_teams=has_teams)
@@ -277,6 +280,8 @@ def get_map(number, name, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.Map` instance
+    :rtype: :class:`~ZDStack.ZDSModels.Map`
 
     """
     q = session.query(Map).filter_by(number=number, name=name)
@@ -296,6 +301,8 @@ def get_round(game_mode, map, session, start_time=None):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.Round` instance
+    :rtype: :class:`~ZDStack.ZDSModels.Round`
 
     """
     start_time = start_time or datetime.datetime.now()
@@ -312,8 +319,8 @@ def get_round_by_id(round_id, session):
     :param session: the session to use, if none is given, the global
                     session is used
     :type session: Session
+    :returns: a matching :class:`~ZDStack.ZDSModels.Round` instance
     :rtype: :class:`~ZDStack.ZDSModels.Round`
-    :returns: the Round with the specified database ID or None
 
     """
     return session.query(Round).filter_by(id=round_id).one()

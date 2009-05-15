@@ -1,6 +1,7 @@
 from threading import Lock
 
 from ZDStack.Utils import requires_instance_lock
+from ZDStack.ZDSAccessList import WhiteListedAddress, Ban
 
 class NoAppropriateListError(Exception): pass
 
@@ -49,10 +50,7 @@ class ZServAccessList(object):
         except NoAppropriateListError:
             raise TypeError("Cannot add access control of type %s" % (t))
         access_list.add(self.zserv, access_control)
-        ###
-        # TODO: This should also check if any players with this IP address are
-        #       currently connected to the ZServ, and kick them if so.
-        ###
+        self.zserv.check_bans()
 
     @requires_instance_lock()
     def remove(self, access_control):
@@ -98,7 +96,8 @@ class ZServAccessList(object):
             if reason:
                 return reason
         else:
-            reason = self.zserv.zdstack.banlist.search_excluding_global(address)
+            reason = \
+                self.zserv.zdstack.banlist.search_excluding_global(address)
             if reason:
                 return reason
         if not self.zserv.advertise and self.zserv.copy_zdaemon_banlist:

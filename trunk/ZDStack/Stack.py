@@ -71,12 +71,12 @@ class Stack(Server):
         Thread.
 
     .. attribute:: regexps
-        A list of :class`~ZDStack.ZDSRegexps.Regexp` instances used to
+        A list of :class:`~ZDStack.ZDSRegexps.Regexp` instances used to
         parse :class:`~ZDStack.ZServ` events.
 
     .. attribute:: event_handler
-        A :class:`~ZDStack.ZDSEventHandler.ZServEventHandler that
-        handles :class:`~ZDStack.ZServ` events.
+        A :class:`~ZDStack.ZDSEventHandler.ZServEventHandler` that
+        handles :class:`~ZDStack.ZServ.ZServ` events.
 
     .. attribute:: output_queue
         A Queue where output lines are placed to be processed.
@@ -85,7 +85,8 @@ class Stack(Server):
         A Queue where events are placed to be processed.
 
     .. attribute:: loglink_check_timer
-        A Timer that checks each ZServ's logfile links every 30 minutes.
+        A Timer that checks each :class:`~ZDStack.ZServ.ZServ`'s
+        logfile links every 30 minutes.
 
     .. attribute:: zserv_check_timer
         A Timer that restarts each crashed ZServ every 500 milliseconds.
@@ -96,7 +97,8 @@ class Stack(Server):
     Stack does the following things:
 
       * Checks that all server log links and FIFOs exist every 30 min.
-      * Checks that all ZServs are running every 500 milliseconds
+      * Checks that all ZServs are running every 500
+        milliseconds
       * Polls all ZServs for output
       * Parses ZServ output lines into events
       * Passes events to the EventHandler and the ZServ's plugins
@@ -356,6 +358,9 @@ class Stack(Server):
     def parse_zserv_output(self, zserv, dt, lines):
         """Parses ZServ output into events, places them in the event queue.
         
+        :param zserv: the output's originating
+                      :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
         :param dt: the time when the lines were generated
         :type dt: datetime
         :param lines: the output lines
@@ -462,8 +467,9 @@ class Stack(Server):
 
         :param event: the event to handle
         :type event: :class:`~ZDStack.LogEvent`
-        :param zserv: the ZServ instance that generated the event.
-        :type zserv: :class:`~ZDStack.LogEvent`
+        :param zserv: the :class:`~ZDStack.ZServ.ZServ` instance that
+                      generated the event.
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         ds = "Handling %s event (Line: [%s])"
@@ -498,6 +504,8 @@ class Stack(Server):
         
         :param configparser: the configuration to check
         :type configparser: :class:`~ZDStack.ZDSConfigParser`
+
+        If a configuration error is found, an Exception is raised.
         
         """
         # zdslog.debug('')
@@ -521,7 +529,7 @@ class Stack(Server):
         """Loads the configuration.
 
         :param config: the configuration to load
-        :type config: :class:`~ZDStack.ZDSConfigParser`
+        :type config: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser`
         :param reload: whether or not the config is being reloaded
         :type reload: boolean
 
@@ -648,24 +656,12 @@ class Stack(Server):
         # zdslog.debug('')
         return self.zservs.keys()
 
-    def _get_zserv_info(self, zserv):
+    def _get_zserv_info(self, zserv_name):
         """Returns a dict of zserv info.
 
-        :param zserv: the name of the ZServ to get info for
-        :type zserv: string
+        :param zserv: the :class:`~ZDStack.ZServ.ZServ` to get info for
+        :type zserv: :class:`~ZDStack.ZServ.ZServ
         :rtype: dict
-        :returns: {'name': <string: internal name of ZServ>,
-                   'hostname': <string: hostname of ZServ>,
-                   'mode': <string: Game mode of ZServ>,
-                   'wads': <strings: list of ZServ's WADs>,
-                   'optional_wads': <strings: list of ZServ's optional WADs>,
-                   'ip': <string: the ZServ's IP address>,
-                   'port': <int: ZServ's port>,
-                   'players': <int: number of connected players>,
-                   'max_players': <int: maximum number of connected players>,
-                   'map_name': <string: name of the current map>,
-                   'map_number': <int: number of the current map>,
-                   'is_running': <boolean: whether ZServ is currently running>}
 
         """
         players = len([x for x in zserv.players if not x.disconnected])
@@ -695,8 +691,19 @@ class Stack(Server):
 
         :param zserv_name: the name of the ZServ to get info for
         :type zserv_name: string
-
-        See _get_zserv_info() for more information.
+        :rtype: dict
+        :returns: {'name': <string: internal name of ZServ>,
+                   'hostname': <string: hostname of ZServ>,
+                   'mode': <string: Game mode of ZServ>,
+                   'wads': <strings: list of ZServ's WADs>,
+                   'optional_wads': <strings: list of ZServ's optional WADs>,
+                   'ip': <string: the ZServ's IP address>,
+                   'port': <int: ZServ's port>,
+                   'players': <int: number of connected players>,
+                   'max_players': <int: maximum number of connected players>,
+                   'map_name': <string: name of the current map>,
+                   'map_number': <int: number of the current map>,
+                   'is_running': <boolean: whether ZServ is currently running>}
 
         """
         zserv = self.get_zserv(zserv_name)
@@ -705,7 +712,7 @@ class Stack(Server):
     def get_all_zserv_info(self):
         """Returns a list of zserv info dicts.
 
-        See _get_zserv_info() for more information.
+        See get_zserv_info() for more information.
 
         """
         return [self._get_zserv_info(x) for x in self.zservs.values()]
@@ -789,9 +796,10 @@ class Stack(Server):
         return self.get_zserv(zserv_name).send_to_zserv(message)
 
     def addban(self, zserv_name, ip_address, reason='rofl'):
-        """Adds a ban.
+        """Adds an address to a ZServ's banlist.
 
-        :param zserv_name: the name of the ZServ
+        :param zserv_name: the name of the ZServ to which the ban
+                           should be added
         :type zserv_name: string
         :param ip_address: the IP address to ban
         :type ip_address: string
@@ -800,10 +808,22 @@ class Stack(Server):
 
         """
         # zdslog.debug('')
-        return self.get_zserv(zserv_name).zaddban(ip_address, reason)
+        return self.banlist.add(self.get_zserv(zserv_name), ip_address, reason)
+
+    ###
+    # A couple aliases, because the ZDaemon server commands are not formatted
+    # according to the convention within ZDStack, and because killban is
+    # completely unintuitive... bans aren't alive... /me rolls eyes.
+    ###
+
+    def add_ban(self, zserv_name, ip_address, reason='rofl'):
+        return self.addban(zserv_name, ip_address, reason)
+    
+    def remove_ban(self, zserv_name, ip_address):
+        return self.killban(zserv_name, ip_address)
 
     def add_global_ban(self, ip_address, reason='rofl'):
-        """Adds a ban to all servers.
+        """Adds an address to the global banlist.
 
         :param ip_address: the IP address to ban
         :type ip_address: string
@@ -811,69 +831,34 @@ class Stack(Server):
         :type reason: string
 
         """
-        with self.global_banlist_lock:
-            ###
-            # We need some kind of ban parsing thing here, so we don't add
-            # duplicate bans.
-            ###
-            ###
-            # Do some ban adding stuff here
-            ###
-            pass
+        self.banlist.add_global(ip_address, reason)
 
     def remove_global_ban(self, ip_address):
-        """Removes a ban from all servers.
+        """Removes an address from the global banlist.
 
         :param ip_address: the IP address to ban
         :type ip_address: string
 
         """
-        for zserv in self.zservs.values():
-            if zserv.is_running():
-                zserv.zkillban(ip_address)
-        with self.global_banlist_lock:
-            ###
-            # We need some kind of ban parsing thing here, so we don't leave
-            # duplicate bans.
-            ###
-            ###
-            # Do some ban removing stuff here
-            ###
-            pass
+        self.banlist.remove_global(ip_address)
 
     def add_global_whitelist(self, ip_address):
-        """Whitelists an IP address.
+        """Adds an address to the global whitelist.
 
         :param ip_address: the IP address to whitelist
         :type ip_address: string
 
         """
-        with self.global_whitelist_lock:
-            ###
-            # We need some kind of ban parsing thing here, so we don't add
-            # duplicate whitelists.
-            ###
-            ###
-            # Do some whitelist adding stuff here
-            ###
-            pass
+        self.whitelist.add_global(ip_address)
 
     def remove_global_whitelist(self, ip_address):
-        """Whitelists an IP address.
+        """Removes an address from the global whitelist.
 
         :param ip_address: the IP address to whitelist
         :type ip_address: string
 
         """
-        with self.global_whitelist_lock:
-            ###
-            # We need some kind of ban parsing thing here, so we don't leave
-            # duplicate whitelists.
-            ###
-            ###
-            # Do some whitelist removing stuff here
-            ###
-            pass
+        self.whitelist.remove_global(ip_address)
 
     def addbot(self, zserv_name, bot_name=None):
         """Adds a bot.
@@ -938,16 +923,17 @@ class Stack(Server):
         return self.get_zserv(zserv_name).zkick(player_number, reason)
 
     def killban(self, zserv_name, ip_address):
-        """Removes a ban.
+        """Removes an address from a ZServ's banlist.
 
-        :param zserv_name: the name of the ZServ
+        :param zserv_name: the name of the ZServ from which the ban
+                           should be removed
         :type zserv_name: string
-        :param ip_address: the ip address to un ban
+        :param ip_address: the ip address to remove
         :type ip_address: string
 
         """
         # zdslog.debug('')
-        return self.get_zserv(zserv_name).zkillban(ip_address)
+        return self.banlist.remove(self.get_zserv(zserv_name), ip_address)
 
     def map(self, zserv_name, map_number):
         """Changes the current map.
@@ -1093,7 +1079,16 @@ class Stack(Server):
         # self.rpc_server.register_function(self.list_player_names)
         ###
         ###
-        # Process management functions
+        # General ZDStack management functions
+        ###
+        self.rpc_server.register_function(self.start,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.stop,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.restart,
+                                          requires_authentication=True)
+        ###
+        # zserv process management functions
         ###
         self.rpc_server.register_function(self.start_zserv,
                                           requires_authentication=True)
@@ -1122,6 +1117,8 @@ class Stack(Server):
         ###
         self.rpc_server.register_function(self.send_to_zserv,
                                           requires_authentication=True)
+        self.rpc_server.register_function(self.add_ban,
+                                          requires_authentication=True)
         self.rpc_server.register_function(self.addban,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.add_global_ban,
@@ -1141,6 +1138,8 @@ class Stack(Server):
         self.rpc_server.register_function(self.get,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.kick,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.remove_ban,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.killban,
                                           requires_authentication=True)

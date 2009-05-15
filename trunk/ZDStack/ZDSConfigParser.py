@@ -51,10 +51,22 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
 
     @requires_instance_lock()
     def defaults(self):
+        """Gets a dict of options & values from the DEFAULT section.
+
+        :returns: a dict of options & values from the DEFAULT section
+        :rtype: dict
+
+        """
         return dict(RCP.defaults(self).items())
 
     @requires_instance_lock()
     def sections(self):
+        """Gets a list of section names.
+
+        :returns: a list of section names
+        :rtype: a list of strings
+
+        """
         return [x for x in self._section_list]
 
     @requires_instance_lock()

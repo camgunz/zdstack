@@ -304,7 +304,12 @@ class ZServ(object):
         return "<ZServ [%s:%d]>" % (self.name, self.port)
 
     def is_running(self):
-        """Returns True if the internal zserv process is running."""
+        """Tests whether or not the internal zserv process is running.
+
+        :returns: whether or not the internal zserv process is running
+        :rtype: boolean
+        
+        """
         ###
         # If the internal zserv process has exited, it will have a
         # returncode... which we can get with .poll().  Otherwise
@@ -470,7 +475,7 @@ class ZServ(object):
         :param event_response_type: the type of event to wait for in
                                     response
         :type event_response_type: string
-        :rtype: list of :class:`~ZDStack.LogEvent` instances
+        :rtype: list of :class:`~ZDStack.LogEvent.LogEvent` instances
         :returns: a list of response events, if event_response_type is
                   None, the list will be empty
 

@@ -31,6 +31,10 @@ class Player(object):
         A string representing this player's name without the tag, can
         be the same as 'name'
 
+    .. attribute:: color
+        A string representing this player's color.  If the server's
+        game mode is not a team game mode, this will be None
+
     .. attribute:: playing
         A boolean, whether or not the player is currently playing
 

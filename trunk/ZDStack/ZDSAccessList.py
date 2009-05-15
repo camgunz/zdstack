@@ -4,7 +4,7 @@ import os.path
 
 from ConfigParser import NoSectionError, NoOptionError
 
-from ZDStack import get_zdslog, get_zdaemon_master_banlist_file
+from ZDStack import get_zdslog, get_zdaemon_banlist_file
 from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSConfigParser import RawZDSConfigParser
 
@@ -13,16 +13,6 @@ zdslog = get_zdslog()
 class AddressError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
-
-class AddressExistsError(AddressError):
-    def __init__(self, address):
-        msg = 'Address %s already exists' % (address)
-        AddressError.__init__(self, msg)
-
-class AddressNotFoundError(AddressError):
-    def __init__(self, address):
-        msg = 'Address %s not found' % (address)
-        AddressError.__init__(self, msg)
 
 class MalformedIPAddressError(AddressError):
     def __init__(self, address):
@@ -35,7 +25,7 @@ class IPAddress(object):
 
     IPAddress supports 2 types of range expansions:
 
-      * 192.168.2.*:     Matches anything for '*'
+      * 192.168.2.\*:     Matches anything for '*'
       * 192.168.2.17-34: Matches address from 17-34 inclusive
 
     IPAddresses representing IP ranges can also be tested for
@@ -205,11 +195,7 @@ class IPAddress(object):
 
     @property
     def min(self):
-        """The lowest integer this IPAddress represents.
-
-        :rtype: int/long
-
-        """
+        """The lowest int/long this IPAddress represents."""
         out = 0
         for x in self.__ranges:
             out = (out << 8) | x[0]
@@ -217,11 +203,7 @@ class IPAddress(object):
 
     @property
     def max(self):
-        """The highest integer this IPAddress represents.
-
-        :rtype: int/long
-
-        """
+        """The highest int/long this IPAddress represents."""
         out = 0
         for x in self.__ranges:
             out = (out << 8) | x[-1]
@@ -273,17 +255,22 @@ class Ban(IPAddress):
     def __repr__(self):
         return 'Ban(%r, %r)' % (IPAddress.__str__(self), self.reason)
 
-    def __str__(self):
-        return repr(self)
-
     def render(self):
+        """Renders this Ban.
+
+        :rtype: string
+        :returns: a string representation of the ban in ZDaemon banlist
+                  format.  Unless saving into a zserv's banlist file,
+                  you probably just want to use the str() method on Ban
+                  instances instead.
+        """
         default = IPAddress.to_list(self)
         if self.reason:
             extra_stuff = '#' + self.reason
             default = [x + extra_stuff for x in default]
         return '\n'.join(default)
 
-class WhitelistedAddress(IPAddress):
+class WhiteListedAddress(IPAddress):
 
     def __init__(self, address_string, reason=None):
         ###
@@ -291,17 +278,14 @@ class WhitelistedAddress(IPAddress):
         # in option: value pairs, and this corresponds to
         # address_string: reason in our case... even though whitelisted are
         # all obviously whitelisted for the same reason.  Thus a
-        # WhitelistedAddress takes a reason argument, but it is always set to
+        # WhiteListedAddress takes a reason argument, but it is always set to
         # None.
         ###
         IPAddress.__init__(self, address_string)
         self.reason = None
 
     def __repr__(self):
-        return 'WhitelistedAddress(%r)' % (IPAddress.__str__(self))
-
-    def __str__(self):
-        return repr(self)
+        return 'WhiteListedAddress(%r)' % (IPAddress.__str__(self))
 
 class AddressList(RawZDSConfigParser):
 
@@ -398,6 +382,21 @@ class AddressList(RawZDSConfigParser):
         return [self.item_class(*x) for x in items]
 
     @requires_instance_lock()
+    def get_all_excluding_global(self, zserv):
+        """Gets all addresses from a ZServ's list, excluding globals.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the addresses
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :rtype: a sequence of addresses
+
+        """
+        if not self.has_section(zserv.name, acquire_lock=False):
+            raise NoSectionError(zserv.name)
+        out = [self.item_class(*x) for x in self._sections(zserv.name).items()]
+        return out
+
+    @requires_instance_lock()
     def get_global(self, address):
         """Gets a global address.
 
@@ -426,7 +425,7 @@ class AddressList(RawZDSConfigParser):
         :rtype: :class:`~ZDStack.ZDSAccessList.IPAddress` or None
 
         """
-        v = RawZDSConfigParser.get(self, zserv.name, address, default=False
+        v = RawZDSConfigParser.get(self, zserv.name, address, default=False,
                                          acquire_lock=False)
         return v and self.item_class(address, v) or False
 
@@ -474,7 +473,7 @@ class AddressList(RawZDSConfigParser):
 
         """
         addresses = [self.item_class(*x) for x in self._defaults.items()]
-        return self._search(address, addresses)
+        return self._search(address, self.get_all_global(acquire_lock=False))
 
     @requires_instance_lock()
     def search(self, zserv, address):
@@ -495,8 +494,7 @@ class AddressList(RawZDSConfigParser):
         :class:`~ZDStack.ZDSAccessList.IPAddress`.
 
         """
-        items = self.items(zserv.name, acquire_lock=False)
-        return self._search(address, [self.item_class(*x) for x in items])
+        return self._search(address, self.get_all(zserv, acquire_lock=False))
 
     @requires_instance_lock()
     def search_excluding_global(self, zserv, address):
@@ -519,17 +517,15 @@ class AddressList(RawZDSConfigParser):
         as matches.
 
         """
-        if not self.has_section(zserv.name, acquire_lock=False):
-            raise NoSectionError(zserv.name)
-        items = self._sections(zserv).items()
-        return self._search(address, [self.item_class(*x) for x in items])
+        addresses = self.get_all_excluding_global(zserv, acquire_lock=False)
+        return self._search(address, addresses)
 
 class WhiteList(AddressList):
 
     def __init__(self, dummy=False):
         cp = get_configparser()
         filename = cp.getpath('DEFAULT', 'zdstack_whitelist_file')
-        AddressList.__init__(self, WhitelistedAddress, filename=filename,
+        AddressList.__init__(self, WhiteListedAddress, filename=filename,
                                    dummy=dummy)
 
 class BanList(AddressList):
@@ -542,6 +538,6 @@ class BanList(AddressList):
 class ZDaemonBanList(AddressList):
 
     def __init__(self, dummy=False):
-        filename = get_zdaemon_master_banlist_file()
+        filename = get_zdaemon_banlist_file()
         AddressList.__init__(self, Ban, filename=filename, dummy=dummy)
 

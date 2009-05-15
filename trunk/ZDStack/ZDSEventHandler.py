@@ -64,9 +64,9 @@ class BaseEventHandler(object):
         """Handles an error event.
 
         :param event: the error event
-        :type event: :class:`~ZDStack.LogEvent`
-        :param zserv: the event's generating :class:`~ZDStack.ZServ`
-        :type zserv: :class:`~ZDStack.ZServ`
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         ###
@@ -87,9 +87,9 @@ class BaseEventHandler(object):
         """Handles an unhandled event.
 
         :param event: the unhandled event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         pass # do nothing... actually do not handle the event
@@ -134,9 +134,9 @@ class ZServEventHandler(BaseEventHandler):
         """Syncs players.
 
         :param event: an event indicating that players should be sync'd
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         zdslog.debug("_sync_players(%s)" % (event))
@@ -154,9 +154,9 @@ class ZServEventHandler(BaseEventHandler):
         """Handles a game_join event.
 
         :param event: the game_join event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         zdslog.debug("handle_game_join_event(%s)" % (event))
@@ -214,10 +214,10 @@ class ZServEventHandler(BaseEventHandler):
     def handle_rcon_event(self, event, zserv):
         """Handles an RCON-related event.
 
-        :param event: the rcon event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :param event: the RCON event
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         if event.type not in ('rcon_denied', 'rcon_granted', 'rcon_action'):
@@ -252,9 +252,9 @@ class ZServEventHandler(BaseEventHandler):
         """Handles a flag_touch event.
 
         :param event: the flag event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         zdslog.debug("handle_flag_event(%s)" % (event))
@@ -370,9 +370,9 @@ class ZServEventHandler(BaseEventHandler):
         """Handles a frag event.
 
         :param event: the frag event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         zdslog.debug("handle_frag_event(%s)" % (event))
@@ -482,9 +482,9 @@ class ZServEventHandler(BaseEventHandler):
         """Handles a map_change event.
 
         :param event: the map_change event
-        :type event: LogEvent
-        :param zserv: the event's generating ZServ
-        :type zserv: ZServ
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
         if not event.type == 'map_change':

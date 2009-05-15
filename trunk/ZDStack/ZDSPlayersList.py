@@ -221,7 +221,7 @@ class PlayersList(object):
             self.check_bans(acquire_lock=False)
         zdslog.debug("Sync: done")
 
-    @requires_instance_lock():
+    @requires_instance_lock()
     def check_bans(self):
         """Kicks banned players."""
         t_string = "You have been banned for the following reason: %s"
