@@ -3,6 +3,7 @@ import sys
 import stat
 import time
 import socket
+import urllib
 import logging
 import logging.handlers
 import datetime
@@ -43,14 +44,16 @@ __all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
            'DB_AUTOCOMMIT', 'ZDAEMON_BANLIST_URL', 'get_hostname',
            'get_loopback', 'get_engine', 'get_metadata', 'get_db_lock',
            'get_session_class', 'get_configfile', 'set_configfile',
-           'load_configparser', 'get_configparser', 'get_server_proxy',
-           'get_plugins', 'set_debugging', 'get_zdslog', 'get_debugging']
+           'load_configparser', 'get_configparser', 'get_zdaemon_banlist_data',
+           'get_zdaemon_banlist_file', 'get_server_proxy', 'get_plugins',
+           'set_debugging', 'get_zdslog', 'get_debugging']
 
 REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
      'zdstack_rpc_protocol', 'zdstack_log_folder', 'zdstack_pid_file',
      'zdstack_zserv_folder', 'zdstack_plugin_folder', 'zdstack_iwad_folder',
-     'zdstack_wad_folder', 'zdstack_global_accesslist_file']
+     'zdstack_wad_folder', 'zdstack_master_banlist_folder',
+     'zdstack_banlist_file', 'zdstack_whitelist_file')
 
 REQUIRED_SERVER_CONFIG_OPTIONS = \
     ('zserv_exe', 'iwad', 'enable_events', 'enable_stats', 'enable_plugins',
@@ -60,18 +63,19 @@ REQUIRED_SERVER_CONFIG_OPTIONS = \
 REQUIRED_GLOBAL_VALID_FOLDERS = \
     (('zdstack_log_folder', os.R_OK | os.W_OK | os.X_OK),
      ('zdstack_zserv_folder', os.R_OK | os.W_OK | os.X_OK),
+     ('zdstack_master_banlist_folder', os.R_OK, os.W_OK, os.X_OK),
      ('zdstack_plugin_folder', os.R_OK | os.X_OK),
      ('zdstack_iwad_folder', os.R_OK | os.X_OK),
      ('zdstack_wad_folder', os.R_OK | os.X_OK))
 
-REQUIRED_GLOBAL_VALID_FILES = \
-     (('zdstack_global_accesslist_file', os.R_OK | os.X_OK),)
+REQUIRED_GLOBAL_VALID_FILES = (('zdstack_banlist_file', os.R_OK | os.X_OK),
+                               ('zdstack_whitelist_file', os.R_OK | os.X_OK))
 
-REQUIRED_SERVER_VALID_FILES = \
-    (('zserv_exe', os.R_OK | os.X_OK, False), ('iwad', os.R_OK, False))
+REQUIRED_SERVER_VALID_FILES = (('zserv_exe', os.R_OK | os.X_OK, False),
+                               ('iwad', os.R_OK, False))
 
-SUPPORTED_ENGINE_TYPES = \
-    ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql', 'firebird')
+SUPPORTED_ENGINE_TYPES = ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql',
+                          'firebird')
 
 SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 
@@ -82,8 +86,9 @@ DATEFMT = '%Y-%m-%d %H:%M:%S.%f'
 TEAM_COLORS = ('red', 'blue', 'green', 'white')
 TICK = Decimal('0.027')
 MAX_TIMEOUT = 1
-ZDAEMON_BANLIST_URL = 'http://zdaemon.ath.cx/bans/'
 DIE_THREADS_DIE = False
+ZDAEMON_BANLIST_URL = 'http://zdaemon.ath.cx/bans/'
+URL_OPENER = urllib.FancyURLopener()
 
 ###
 # These are all internal __init__ globals, and they all have getters that
@@ -97,18 +102,18 @@ CONFIGFILE = None
 CONFIGPARSER = None
 DEBUGGING = None
 PLUGINS = None
+ZDAEMON_BANLIST_FILE = None
 DB_LOCK = None
-DB_ENGINE = None
-JSON_MODULE = None
-RPC_CLASS = None
-RPC_PROXY_CLASS = None
-ZDSLOG = None
-
 ###
 # I'm deciding to only have 1 DB engine, and to make all zservs use it.  I
 # suppose I could allow each zserv to have its own engine but that seems a
 # little ridiculous.
 ###
+DB_ENGINE = None
+JSON_MODULE = None
+RPC_CLASS = None
+RPC_PROXY_CLASS = None
+ZDSLOG = None
 
 class PlayerNotFoundError(Exception):
 
@@ -160,9 +165,9 @@ class DebugFormatter(logging.Formatter):
             # Python 2.5 doesn't interpolate microseconds for '%f', so we do it
             # here manually if necessary.
             ###
-            microsecond = str(dt.microsecond).zfill(6)
+            microseconds = str(dt.microsecond).zfill(6)
             while '%f' in s:
-                s = s.replace('%f', microsecond)
+                s = s.replace('%f', microseconds)
         return s
 
 class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
@@ -316,16 +321,6 @@ def check_server_config_section(server_name, config):
                 raise ValueError("Couldn't locate %s" % (fo))
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (f))
-    if config.getboolean(s, 'use_global_banlist', 'no'):
-        global_banlist_file = \
-            config.getpath('DEFAULT', 'zdstack_global_banlist_file', None)
-        if not global_banlist_file:
-            es = "%s cannot use global banlist file, it is undefined"
-            raise ValueError(es % (s))
-        if not (os.path.isfile(global_banlist_file) or \
-                os.path.islink(global_banlist_file)):
-            es = "%s cannot use global banlist file, cannot locate the file"
-            raise ValueError(es % (s))
     if d['mode'].lower() not in SUPPORTED_GAME_MODES:
         raise ValueError("Unsupported game mode %s" % (d['mode']))
     if ports.count(d['port']) > 1:
@@ -377,7 +372,6 @@ def load_configparser():
         # cp.set('DEFAULT', fo, f)
     for s in cp.sections():
         check_server_config_section(s, cp)
-            
     ###
     # Below are some checks for specific options & values
     ###
@@ -639,6 +633,30 @@ def get_db_lock():
     """
     global DB_LOCK
     return DB_LOCK
+
+def get_zdaemon_banlist_file():
+    global ZDAEMON_BANLIST_FILE
+    if not ZDAEMON_BANLIST_FILE:
+        cp = get_configparser()
+        bd = cp.getpath('DEFAULT', 'zdstack_master_banlist_folder')
+        ZDAEMON_BANLIST_FILE = os.path.join(bd, 'zdaemon_master_banlist.ini')
+    return ZDAEMON_BANLIST_FILE
+
+def get_zdaemon_banlist_data():
+    global URL_OPENER
+    global ZDAEMON_BANLIST_URL
+    url_fobj = URL_OPENER(ZDAEMON_BANLIST_URL)
+    banlist_data = url_fobj.read()
+    url_fobj.close()
+    if banlist_data and len(banlist_data) > 200:
+        ###
+        # Not the best test, but whatever.
+        ###
+        return banlist_data
+    else:
+        e = ValueError("ZDaemon banlist data was malformed")
+        e.banlist_data = banlist_data
+        raise e
 
 def get_rpc_server_class():
     """Gets the RPC server class.

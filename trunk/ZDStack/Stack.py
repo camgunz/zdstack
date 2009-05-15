@@ -14,12 +14,15 @@ from collections import deque
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, MAX_TIMEOUT, TICK, PlayerNotFoundError, \
                     ZServNotFoundError, get_configfile, get_configparser, \
-                    load_configparser, check_server_config_section, get_zdslog
-from ZDStack.Utils import get_event_from_line, requires_instance_lock
+                    load_configparser, check_server_config_section, \
+                    get_zdslog, get_zdaemon_banlist_data
+from ZDStack.Utils import get_event_from_line, requires_instance_lock, \
+                          parse_ban_line
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSRegexps import get_server_regexps
+from ZDStack.ZDSAccessList import WhiteList, BanList, ZDaemonBanList
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
 from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 from ZDStack.ZDSEventHandler import ZServEventHandler
@@ -87,6 +90,9 @@ class Stack(Server):
     .. attribute:: zserv_check_timer
         A Timer that restarts each crashed ZServ every 500 milliseconds.
 
+    .. attribute:: zdaemon_banlist_fetch_timer
+        A Timer that fetches the ZDaemon master banlist ever 15 minutes.
+
     Stack does the following things:
 
       * Checks that all server log links and FIFOs exist every 30 min.
@@ -104,18 +110,20 @@ class Stack(Server):
         """Initializes a Stack instance."""
         self.spawn_lock = Lock()
         self.szn_lock = Lock()
-        self.global_banlist_lock = Lock()
-        self.global_whitelist_lock = Lock()
         # self.poller = select.poll()
         self.zservs = {}
         self.stopped_zserv_names = set()
         self.start_time = datetime.now()
         self.keep_checking_loglinks = False
         self.keep_spawning_zservs = False
+        self.keep_fetching_zdaemon_banlist = False
         self.keep_polling = False
         self.keep_parsing = False
         self.keep_handling_events = False
         self.regexps = get_server_regexps()
+        self.whitelist = WhiteList()
+        self.banlist = BanList()
+        self.zdaemon_banlist = ZDaemonBanList()
         Server.__init__(self)
         self.load_zservs()
         self.event_handler = ZServEventHandler()
@@ -128,18 +136,13 @@ class Stack(Server):
         self.loglink_check_timer = None
         self.zserv_check_timer = None
         self.zdaemon_banlist_fetch_timer = None
-        ###
-        # We need a 3rd timer, unfortunately, to periodically get the ZDaemon
-        # master banlist and check it against the current master banlist file,
-        # updating it if necessary.  This is so unadvertised servers can use
-        # the master banlist as well.
-        ###
 
     def start(self):
         """Starts this Stack."""
         # zdslog.debug('')
         self.keep_spawning_zservs = True
         self.keep_checking_loglinks = True
+        self.keep_fetching_zdaemon_banlist = True
         self.keep_polling = True
         self.keep_parsing = True
         self.keep_handling_events = True
@@ -172,6 +175,9 @@ class Stack(Server):
         self.keep_spawning_zservs = False
         if self.zserv_check_timer:
             self.zserv_check_timer.cancel()
+        self.keep_fetching_zdaemon_banlist = False
+        if self.zdaemon_banlist_fetch_timer:
+            self.zdaemon_banlist_fetch_timer.cancel()
         zdslog.debug("Stopping all ZServs")
         self.stop_all_zservs()
         zdslog.debug("Stopping polling thread")
@@ -249,7 +255,23 @@ class Stack(Server):
 
     def fetch_zdaemon_banlist(self):
         """Fetches the ZDaemon banlist for servers who have it copied."""
-        pass
+        try:
+            bans = []
+            for x in get_zdaemon_banlist_data().splitlines():
+                x = x.strip()
+                if not x or x.startswith(';') or not x[0].isdigit():
+                    continue
+                bans.append(parse_ban_line(x))
+            with self.zdaemon_banlist.lock:
+                self.zdaemon_banlist.clear(acquire_lock=False)
+                for ban in bans:
+                    self.zdaemon_banlist.add_global(str(ban), ban.reason,
+                                                    acquire_lock=False)
+        finally:
+            if self.keep_fetching_zdaemon_banlist:
+                t = Timer(1800, self.fetch_zdaemon_banlist)
+                self.zdaemon_banlist_fetch_timer = t
+                self.zdaemon_banlist_fetch_timer.start()
 
     def poll_zservs(self):
         """Polls all ZServs for output."""
@@ -511,6 +533,20 @@ class Stack(Server):
         self.check_all_zserv_configs(config)
         Server.load_config(self, config, reload)
         self.raw_config = raw_config
+        ###
+        # accesslist_file = self.config.getpath('DEFAULT',
+        #                                       'zdstack_global_accesslist_file')
+        # new_access_list = AccessList(filename=accesslist_file)
+        # if self.access_list:
+        #     with self.access_list.lock:
+        #         self.access_list.clear(acquire_lock=False)
+        #         for s in new_access_list.sections():
+        #             self.access_list.add_section(s, acquire_lock=False)
+        #             for k, v in new_access_list.items(s):
+        #                 self.access_list.set(s, k, v, acquire_lock=False)
+        # else:
+        #     self.access_list = new_access_list
+        ###
         if reload:
             self.load_zservs()
 

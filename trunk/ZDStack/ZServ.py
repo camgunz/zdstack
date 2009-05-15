@@ -92,6 +92,7 @@ class ZServ(object):
         self.zserv = None
         self.fifo = None
         self.config = ZServConfigParser(self)
+        self.access_list = ZServAccessList(self)
         self.load_config()
         self.clear_state()
         if self.events_enabled and self.plugins_enabled:

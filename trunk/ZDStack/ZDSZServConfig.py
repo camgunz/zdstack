@@ -388,6 +388,7 @@ class ZServConfigParser(ZDSConfigParser):
             ###
             save_logfile = self.getboolean('save_logfiles', False)
         use_global_banlist = self.getboolean('use_global_banlist', False)
+        use_global_whitelist = self.getboolean('use_global_whitelist', False)
         copy_zdaemon_banlist = self.getboolean('copy_zdaemon_banlist', False)
         whitelist_file = self.getpath('whitelist_file', None)
         rcon_password = self.get('rcon_password')
@@ -514,15 +515,8 @@ class ZServConfigParser(ZDSConfigParser):
         ds = "save_logfile is %s for %s"
         zdslog.debug(ds % (self.zserv.save_logfile, self.zserv.name))
         self.zserv.use_global_banlist = use_global_banlist
+        self.zserv.use_global_whitelist = use_global_whitelist
         self.zserv.copy_zdaemon_banlist = copy_zdaemon_banlist
-        self.zserv.whitelist_file = whitelist_file
-        if self.zserv.whitelist_file == \
-            self.zserv.zdstack.config.getpath('DEFAULT',
-                                              'zdstack_global_whitelist_file'):
-            self.zserv.whitelist_lock = self.zserv.zdstack.global_whitelist_lock
-        else:
-            self.zserv.whitelist_lock = Lock()
-        self.zserv.use_global_banlist = use_global_banlist
         self.zserv.rcon_password = rcon_password
         self.zserv.rcon_enabled = rcon_enabled
         self.zserv.rcon_password_1 = rcon_password_1

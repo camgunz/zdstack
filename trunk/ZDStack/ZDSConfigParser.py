@@ -123,6 +123,36 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
         raise Exception("Don't use this method")
 
     @requires_instance_lock()
+    def get_excluding_defaults(self, section, option, default=None):
+        """Gets an option's value.
+
+        :param section: the name of the section in which to look for
+                        the option
+        :type section: string
+        :param option: the name of the option whose value is to be
+                       returned
+        :type option: string
+        :param default: optional, a value to be returned if the option
+                        if not found
+        :rtype: string
+        :returns: the string value of the option if found.  If the
+                  option is not found, but 'default' is not None,
+                  the value of the 'default' argument will be returned.
+                  Otherwise a NoOptionError is raised.  This method
+                  also excludes the DEFAULT section.
+
+        """
+        opt = self.optionxform(option)
+        if not self.has_section(section, acquire_lock=False):
+            raise NoSectionError(section)
+        if opt in self._sections[section]:
+            return self._sections[section][opt]
+        elif default is not None:
+            return default
+        else:
+            raise NoOptionError(section, opt)
+
+    @requires_instance_lock()
     def get(self, section, option, default=None):
         """Gets an option's value.
 
@@ -415,8 +445,7 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
     @requires_instance_lock()
     def clear(self):
         """Removes all sections, including the DEFAULT section."""
-        sections = self.sections(acquire_lock=False) + [DEFAULTSECT]
-        for s in sections:
+        for s in self.sections(acquire_lock=False) + [DEFAULTSECT]:
             self.remove_section(s, acquire_lock=False)
 
     @requires_instance_lock()

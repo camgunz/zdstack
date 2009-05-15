@@ -1,14 +1,18 @@
+from __future__ import with_statement
+
 import os.path
 
-from ZDStack import get_zdslog
-from ZDStack.Utils import create_file, resolve_path, requires_instance_lock
+from ConfigParser import NoSectionError, NoOptionError
+
+from ZDStack import get_zdslog, get_zdaemon_master_banlist_file
+from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSConfigParser import RawZDSConfigParser
 
 zdslog = get_zdslog()
 
 class AddressError(Exception):
     def __init__(self, msg):
-        Exception.__init__(msg)
+        Exception.__init__(self, msg)
 
 class AddressExistsError(AddressError):
     def __init__(self, address):
@@ -25,35 +29,114 @@ class MalformedIPAddressError(AddressError):
         msg = 'Malformed IP address: [%s]' % (address)
         AddressError.__init__(self, msg)
 
-class IPAddress:
+class IPAddress(object):
+
+    """IPAddress represents an IP address or IP addresses.
+
+    IPAddress supports 2 types of range expansions:
+
+      * 192.168.2.*:     Matches anything for '*'
+      * 192.168.2.17-34: Matches address from 17-34 inclusive
+
+    IPAddresses representing IP ranges can also be tested for
+    membership, for example:
+
+    >>> IPAddress('192.168.2.4') in IPAddress('192.168.2.3-5')
+    True
+
+    """
+
+    ###
+    # There's a new 'ipaddr' module in Python 3.1 that was originally
+    # written by Google (project is at
+    # http://code.google.com/p/ipaddr-py/) but it doesn't do range
+    # expansion exactly how we want - and would be another (albeit very
+    # small) dependency anyway.
+    ###
+
+    MAX = (256 << 24) - 1 # mwahaha
+    MIN = 0
 
     def __init__(self, address_string):
-        if not address_string.count('.') == 3:
-            raise MalformedIPAddressError(address_string)
-        self.stars_in_ip = False
-        tokens = list()
-        for x in address_string.split('.'):
-            if x != '*':
-                if self.stars_in_ip:
-                    es = "'*'s must also be applied to all lower classes"
-                    raise ValueError(es)
-                x = int(x)
-                if n < 0 or n > 255:
+        if isinstance(address_string, int) or isinstance(address_string, long):
+            tokens = list()
+            for x in range(4):
+                tokens.append(str(address_string & 0xFF))
+                n >>= 8
+            self.__tokens = [x for x in reversed(tokens)]
+            self.__ranges = [[x] for x in self.tokens]
+        else:
+            if not address_string.count('.') == 3:
+                raise MalformedIPAddressError(address_string)
+            self.__tokens = list()
+            self.__ranges = list()
+            for x in address_string.split('.'):
+                if x.isdigit():
+                    x = int(x)
+                    if x < 0 or x > 255:
+                        raise MalformedIPAddressError(address_string)
+                    self.__ranges.append([x])
+                elif x == '*':
+                    self.__ranges.append(range(0, 256))
+                elif '-' in x:
+                    min, max = x.split('-')
+                    if not min.isdigit() or not max.isdigit():
+                        raise MalformedIPAddressError(address_string)
+                    self.__ranges.append(range(int(min), int(max) + 1))
+                else:
                     raise MalformedIPAddressError(address_string)
-            else:
-                self.stars_in_ip = True
-            tokens.append(x)
-        self.class_a, self.class_b, self.class_c, self.class_d = tokens
-
-    def __iter__(self):
-        x = [self.class_a, self.class_b, self.class_c, self.class_d]
-        return x.__iter__()
+                self.__tokens.append(x)
+        self.is_range = False
+        for x in self.__ranges:
+            if len(x) > 1:
+                self.is_range = True
+                break
 
     def __str__(self):
-        return '.'.join([str(x) for x in self])
+        return '.'.join([str(x) for x in self.__tokens])
+
+    def __int__(self):
+        if self.is_range:
+            raise TypeError("Cannot represent an IP range numerically")
+        out = 0
+        for x in self.__tokens:
+            out = (out << 8) | x
+        return out
+
+    def __long__(self):
+        return long(int(self))
 
     def __repr__(self):
-        return u'IPAddress(%r)' % (str(self))
+        return u'IPAddress(%r)' % (self.__str__())
+
+    def __iter__(self):
+        """Creates a list from this IPAddress.
+
+        :param numeric: whether to return numeric or string
+                        representations of IP addresses
+        :type numeric: boolean
+        :rtype: list of ints/longs
+        :returns: a list representation of this IPAddress.
+
+        IPAddresses can represent multiple actual IP addresses, i.e.
+        205.171.3.64-66 or 205.171.3.*.  This method returns each IP
+        address this IPAddress contains as a list of strings.  If this
+        IPAddress is not a range, a list with a single element is
+        returned.
+
+        """
+        if not self.is_range:
+            return [int(self)]
+        out = list()
+        for a in self.ranges[0]:
+            for b in self.ranges[1]:
+                for c in self.ranges[2]:
+                    for d in self.ranges[3]:
+                        address = 0
+                        for x in (a, b, c, d):
+                            address = (address << 8) | x
+                        out.append(address)
+        return out.__iter__()
 
     def __contains__(self, ip_address):
         """Tests whether this IP address matches the given address.
@@ -64,36 +147,20 @@ class IPAddress:
                           string
         :rtype: boolean
 
-        This will expand '*' characters to match anything.
-
         """
-        ###
-        # I would rather this didn't also match equal IPAddresses, but meh.
-        ###
+        if not self.is_range:
+            es = "Non-range IPAddresses cannot contain other IPAddresses"
+            raise TypeError(es)
         if not isinstance(ip_address, IPAddress):
-            if not isinstance(ip_address, basestring):
+            try:
+                ip_address = self.from_address(ip_address)
+            except (MalformedIPAddressError, ValueError, TypeError):
                 return False
-            else:
-                try:
-                    ip_address = IPAddress(ip_address)
-                except (MalformedIPAddressError, ValueError):
-                    return False
-        for x, y in zip(self, ip_address):
-            if x != '*' and x != y:
-                return False
-        return True
-
-    def __lt__(self, ip_address):
-        for x, y in zip(self, ip_address):
-            if x != '*' and x >= y:
-                return False
-        return True
-
-    def __gt__(self, ip_address):
-        for x, y in zip(self, ip_address):
-            if x == '*' or x <= y:
-                return False
-        return True
+        if not ip_address.is_range:
+            n = int(ip_address)
+            return n >= self.min and n <= self.max
+        else:
+            return ip_address.min > self.min and ip_address.max < self.max
 
     def __eq__(self, ip_address):
         """Tests whether this IP address matches the given address.
@@ -102,231 +169,379 @@ class IPAddress:
                            to test
         :type ip_address: :class:`~ZDStack.ZDSAccessList.IPAddress` or
                           string
-
-        This does not expand '*' characters, addresses must match
-        exactly, wildcards included.
+        :rtype: boolean
 
         """
         if not isinstance(ip_address, IPAddress):
-            if not isinstance(ip_address, basestring):
+            try:
+                ip_address = self.from_address(ip_address)
+            except (MalformedIPAddressError, ValueError, TypeError):
                 return False
-            else:
-                try:
-                    ip_address = IPAddress(ip_address)
-                except (MalformedIPAddressError, ValueError):
-                    return False
-        for x, y in zip(self, ip_address):
-            if x != y:
-                return False
-        return True
+        if not self.is_range == ip_address.is_range:
+            return False
+        if self.is_range:
+            return self.min == ip_address.min and self.max == ip_address.max
+        else:
+            return int(self) == int(ip_address)
 
-    def __ne__(self, a):
-        return not self.__eq__(a)
+    def __lt__(self, ip_address):
+        return int(self) < int(ip_address)
 
-    ###
-    # I could accomplish the following by not using strings/integers...
-    # but laziness....
-    ###
+    def __gt__(self, ip_address):
+        return int(self) > int(ip_address)
 
-    def increment(self):
-        """Adds 1 to this IP address.
+    def __ne__(self, ip_address):
+        return not self.__eq__(ip_address)
 
-        This works across classes, so '206.205.128.255'.increment()
-        produces '206.205.129.0'.  However, using this method on an
-        IPAddress using wildcards raises an Exception.
+    def __add__(self, x):
+        if self.is_range:
+            raise TypeError("Can't increment an IPAddress using wildcards")
+        return self.from_address(int(self) + int(x))
+
+    def __sub__(self, x):
+        if self.is_range:
+            raise TypeError("Can't increment an IPAddress using wildcards")
+        return self.from_address(int(self) - int(x))
+
+    @property
+    def min(self):
+        """The lowest integer this IPAddress represents.
+
+        :rtype: int/long
 
         """
-        if self.stars_in_ip:
-            raise TypeError("Can't increment an IPAddress using wildcards")
-        if self.class_d != 255:
-            self.class_d += 1
-        elif self.class_c != 255:
-            self.class_d = 0
-            self.class_c += 1
-        elif self.class_b != 255:
-            self.class_d = 0
-            self.class_c = 0
-            self.class_b += 1
-        elif self.class_a != 255:
-            self.class_d = 0
-            self.class_c = 0
-            self.class_b = 0
-            self.class_a += 1
-        else:
-            raise TypeError("Can't increment IPAddress any further")
+        out = 0
+        for x in self.__ranges:
+            out = (out << 8) | x[0]
+        return out
 
-    def decrement(self):
-        """Subtracts 1 from this IP address.
+    @property
+    def max(self):
+        """The highest integer this IPAddress represents.
 
-        This works across classes, so '206.205.129.0'.decrement()
-        produces '206.205.128.255'.  However, using this method on an
-        IPAddress using wildcards raises an Exception.
+        :rtype: int/long
 
         """
-        if self.stars_in_ip:
-            raise TypeError("Can't increment an IPAddress using wildcards")
-        if self.class_d != 0:
-            self.class_d -= 1
-        elif self.class_c != 0:
-            self.class_d = 255
-            self.class_c -= 1
-        elif self.class_b != 0:
-            self.class_d = 255
-            self.class_c = 255
-            self.class_b -= 1
-        elif self.class_a != 0:
-            self.class_d = 255
-            self.class_c = 255
-            self.class_b = 255
-            self.class_a -= 1
-        else:
-            raise TypeError("Can't decrement IPAddress any further")
+        out = 0
+        for x in self.__ranges:
+            out = (out << 8) | x[-1]
+        return out
 
-class AddressList(list):
+    def from_address(self, address):
+        """Creates an object of the same type as this instance.
 
-    def __contains__(self, x):
-        for y in self:
-            if x == y or y in x:
-                return True
-        return False
+        :param address: an IP address
+        :type address: either string or int/long
+        :returns: An object of the same type as this instance, with a
+                  separate address.  This is most useful for
+                  subclasses.
+
+        """
+        return type(self)(address)
+
+    def render(self):
+        """Renders this IPAddress.
+
+        :rtype: string
+        :returns: a nicely formatted string representing this
+                  IPAddress, suitable for re-parsing or saving to a
+                  file
+
+        """
+        if not self.is_range:
+            return str(self)
+        return '\n'.join([str(self.from_address(x)) for x in self])
 
 class Ban(IPAddress):
 
-    def __init__(self, address_string, names=[], reason=None):
+    ###
+    # It would be neat if we could add names to this somehow, but the ZDaemon
+    # banlist file format is no help, example:
+    #
+    # 69.183.41.*#wazzup
+    # 69.88.42.*#cheating
+    #
+    # 1st line is a name, second line is a reason, and without a magic list
+    # of "reasons" (which will never be 100% anyway), we can't do anything
+    # about this.  So meh.
+    ###
+
+    def __init__(self, address_string, reason=None):
         IPAddress.__init__(self, address_string)
-        self.names = names
         self.reason = reason
 
+    def __repr__(self):
+        return 'Ban(%r, %r)' % (IPAddress.__str__(self), self.reason)
+
     def __str__(self):
-        s = IPAddress.__str__(self) + '#'
-        if self.names:
-            names = '/'.join(self.names).join(['<', '>'])
-            s += names
+        return repr(self)
+
+    def render(self):
+        default = IPAddress.to_list(self)
         if self.reason:
-            s += ': ' + self.reason
-        return s
+            extra_stuff = '#' + self.reason
+            default = [x + extra_stuff for x in default]
+        return '\n'.join(default)
+
+class WhitelistedAddress(IPAddress):
+
+    def __init__(self, address_string, reason=None):
+        ###
+        # The initializer takes 2 arguments because configparser options come
+        # in option: value pairs, and this corresponds to
+        # address_string: reason in our case... even though whitelisted are
+        # all obviously whitelisted for the same reason.  Thus a
+        # WhitelistedAddress takes a reason argument, but it is always set to
+        # None.
+        ###
+        IPAddress.__init__(self, address_string)
+        self.reason = None
 
     def __repr__(self):
-        return 'Ban(%s)' % (IPAddress.__str__(self))
+        return 'WhitelistedAddress(%r)' % (IPAddress.__str__(self))
 
-class AccessList(RawZDSConfigParser):
+    def __str__(self):
+        return repr(self)
 
-    """AccessList maintains a list of banned and whitelisted addresses.
+class AddressList(RawZDSConfigParser):
 
-    .. attribute:: whitelist
-      A :class:`~ZDStack.ZDSAccessList.AddressList containing
-      :class:`~ZDStack.ZDSAccessList.IPAddress` instances
-
-    .. attribute:: banlist
-      A :class:`~ZDStack.ZDSAccessList.AddressList containing
-      :class:`~ZDStack.ZDSAccessList.Ban` instances
-
-    """
-
-    def __init__(self, filename=None, dummy=False):
-        """Initializes an AccessList.
-        
-        :param filename: the accesslist filename
-        :type filename: string
-        :param dummy: indicates that this AccessList is a dummy, and
-                      therefore shouldn't perform checks on the
-                      underlying file
-        :type dummy: boolean
-
-        All arguments are optional.
-
-        """
-        self.whitelist = AddressList()
-        self.banlist = AddressList()
+    def __init__(self, item_class, filename=None, dummy=False):
+        self.item_class = item_class
         RawZDSConfigParser.__init__(self, filename, dummy)
 
     @requires_instance_lock()
-    def _sync_lists(self):
-        for address_string in self.options('bans'):
-            self.banlist.append(Ban(address_string))
-        for address_string in self.options('whitelist'):
-            self.whitelist.append(IPAddress(address_string))
+    def add_global(self, address, reason=None):
+        """Adds an address to the global list.
 
-    def _read(self, fobj, filename):
-        RawZDSConfigParser._read(self, fobj, filename)
-        modified = False
-        if not 'bans' in self._sections:
-            self.add_section('bans')
-            modified = True
-        if not 'whitelist' in self._sections:
-            self.add_section('whitelist')
-            modified = True
-        self._sync_lists(acquire_lock=False)
-        if modified:
-            self.save(acquire_lock=False)
-
-    @requires_instance_lock()
-    def add_ban(self, address, reason=''):
-        """Bans an address.
-
-        :param address: an IP address to unban
+        :param address: an address to add to the list
         :type address: string
-        :param reason: a reason for the ban
+        :param reason: reason for adding the address (optional)
         :type reason: string
 
         """
-        self.set('bans', address, reason, acquire_lock=False)
-        self._sync_lists(acquire_lock=False)
-        self.save(acquire_lock=False)
+        reason = reason or ''
+        RawZDSConfigParser.set(self, 'DEFAULT', address, reason,
+                               acquire_lock=False)
+        RawZDSConfigParser.save(self, acquire_lock=False)
 
     @requires_instance_lock()
-    def remove_ban(self, address):
-        """Un-bans an address
+    def remove_global(self, address):
+        """Removes an address from the global list.
 
-        :param address: an IP address to un-ban
+        :param address: an address to remove from the list
         :type address: string
+        :returns: whether or not the address existed
+        :rtype: boolean
 
         """
-        self.remove_option('bans', address, acquire_lock=False)
-        self._sync_lists(acquire_lock=False)
-        self.save(acquire_lock=False)
+        out = RawZDSConfigParser.remove_option(self, 'DEFAULT', address,
+                                               acquire_lock=False)
+        RawZDSConfigParser.save(self, acquire_lock=False)
+        return out
 
     @requires_instance_lock()
-    def add_whitelist(self, address):
-        """Whitelists an address.
+    def add(self, zserv, address, reason=None):
+        """Adds an address to a ZServ's list.
 
-        :param address: an IP address to un-ban
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` to add the
+                      address to
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to add to the list
         :type address: string
+        :param reason: reason for adding the address (optional)
+        :type reason: string
 
         """
-        self.set('whitelist', address, '', acquire_lock=False)
-        self._sync_lists(acquire_lock=False)
-        self.save(acquire_lock=False)
+        reason = reason or ''
+        RawZDSConfigParser.set(self, zserv.name, address, reason,
+                               acquire_lock=False)
+        RawZDSConfigParser.save(self, acquire_lock=False)
 
     @requires_instance_lock()
-    def remove_whitelist(self, address):
-        """Un-whitelists an address.
+    def remove(self, zserv, address):
+        """Removes an address from a ZServ's list.
 
-        :param address: an IP address to un-ban
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` to remove the
+                      address from
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to remove from the list
         :type address: string
+        :returns: whether or not the address existed
+        :rtype: boolean
 
         """
-        self.remove_option('whitelist', address, acquire_lock=False)
-        self._sync_lists(acquire_lock=False)
-        self.save(acquire_lock=False)
+        out = RawZDSConfigParser.remove_option(self, zserv.name, address,
+                                               acquire_lock=False)
+        RawZDSConfigParser.save(self, acquire_lock=False)
+        return out
 
     @requires_instance_lock()
-    def clear_bans(self):
-        """Clears all bans."""
-        self.remove_section('bans', acquire_lock=False)
-        self.add_section('bans', acquire_lock=False)
-        self.save(acquire_lock=False)
+    def get_all_global(self):
+        """Gets all global addresses.
+
+        :rtype: a sequence of addresses
+
+        """
+        return [self.item_class(*x) for x in self._defaults.items()]
 
     @requires_instance_lock()
-    def clear_whitelist(self):
-        """Clears whitelist."""
-        self.remove_section('whitelist', acquire_lock=False)
-        self.add_section('whitelist', acquire_lock=False)
-        self.save(acquire_lock=False)
+    def get_all(self, zserv):
+        """Gets all addresses from a ZServ's list.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the addresses
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :rtype: a sequence of addresses
+
+        """
+        items = self.items(zserv.name, acquire_lock=False)
+        return [self.item_class(*x) for x in items]
 
     @requires_instance_lock()
-    def clear(self):
-        """Clears whitelist and all bans."""
-        self.clear_whitelist(acquire_lock=False)
-        self.clear_bans(acquire_lock=False)
+    def get_global(self, address):
+        """Gets a global address.
+
+        :param address: an address to match up and return
+        :type address: string
+        :returns: a matching IP address or None if not found
+        :rtype: :class:`~ZDStack.ZDSAccessList.IPAddress`
+
+        """
+        v = RawZDSConfigParser.get(self, 'DEFAULT', address, default=False,
+                                         acquire_lock=False)
+        return v and self.item_class(address, v) or False
+
+    @requires_instance_lock()
+    def get(self, zserv, address):
+        """Gets an address from a ZServ's list.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the address
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to remove from the list
+        :type address: string
+        :returns: a matching IP address; searches both the ZServ's
+                  address list and the global address list; if no
+                  matching addresses are found, returns None
+        :rtype: :class:`~ZDStack.ZDSAccessList.IPAddress` or None
+
+        """
+        v = RawZDSConfigParser.get(self, zserv.name, address, default=False
+                                         acquire_lock=False)
+        return v and self.item_class(address, v) or False
+
+    @requires_instance_lock()
+    def get_excluding_global(self, zserv, address):
+        """Gets an address from a ZServ's list.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the address
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to remove from the list
+        :type address: string
+        :returns: a matching IP address; searches only the ZServ's
+                  address list
+        :rtype: :class:`~ZDStack.ZDSAccessList.IPAddress`
+
+        """
+        v = RawZDSConfigParser.get_excluding_defaults(self, zserv.name,
+                                                            address,
+                                                            default=False,
+                                                            acquire_lock=False)
+        return v and self.item_class(address, v) or False
+
+    def _search(self, address, addresses):
+        ip_address = self.item_class(address)
+        for x in addresses:
+            if ip_address == x or ip_address in x:
+                return x.reason and x.reason or True
+        return False
+
+    @requires_instance_lock()
+    def search_global(self, address):
+        """Searches for an address.
+
+        :param address: an address to search for
+        :type address: string
+        :returns: False if the address is not found, True or the reason
+                  listed with the address if found.
+        :rtype: boolean or string
+
+        This method will search for IP addresses in the global address
+        list that either match or contain the given address, using the
+        wildcard expansions supported by
+        :class:`~ZDStack.ZDSAccessList.IPAddress`.
+
+        """
+        addresses = [self.item_class(*x) for x in self._defaults.items()]
+        return self._search(address, addresses)
+
+    @requires_instance_lock()
+    def search(self, zserv, address):
+        """Searches for an address.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the address
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to search for
+        :type address: string
+        :returns: False if the address is not found, True or the reason
+                  listed with the address if found.
+        :rtype: boolean or string
+
+        This method will search for IP addresses in a ZServ's address
+        list that either match or contain the given address, using the
+        wildcard expansions supported by
+        :class:`~ZDStack.ZDSAccessList.IPAddress`.
+
+        """
+        items = self.items(zserv.name, acquire_lock=False)
+        return self._search(address, [self.item_class(*x) for x in items])
+
+    @requires_instance_lock()
+    def search_excluding_global(self, zserv, address):
+        """Searches for an address.
+
+        :param zserv: a :class:`~ZDStack.ZServ.ZServ` from which to get
+                      the address
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param address: an address to search for
+        :type address: string
+        :returns: False if the address is not found, True or the reason
+                  listed with the address if found.
+        :rtype: boolean or string
+
+        This method will search for IP addresses in a ZServ's address
+        list that either match or contain the given address, using the
+        wildcard expansions supported by
+        :class:`~ZDStack.ZDSAccessList.IPAddress`.  This method does
+        not consider matching addresses found only in the global list
+        as matches.
+
+        """
+        if not self.has_section(zserv.name, acquire_lock=False):
+            raise NoSectionError(zserv.name)
+        items = self._sections(zserv).items()
+        return self._search(address, [self.item_class(*x) for x in items])
+
+class WhiteList(AddressList):
+
+    def __init__(self, dummy=False):
+        cp = get_configparser()
+        filename = cp.getpath('DEFAULT', 'zdstack_whitelist_file')
+        AddressList.__init__(self, WhitelistedAddress, filename=filename,
+                                   dummy=dummy)
+
+class BanList(AddressList):
+
+    def __init__(self, dummy=False):
+        cp = get_configparser()
+        filename = cp.getpath('DEFAULT', 'zdstack_banlist_file')
+        AddressList.__init__(self, Ban, filename=filename, dummy=dummy)
+
+class ZDaemonBanList(AddressList):
+
+    def __init__(self, dummy=False):
+        filename = get_zdaemon_master_banlist_file()
+        AddressList.__init__(self, Ban, filename=filename, dummy=dummy)
 

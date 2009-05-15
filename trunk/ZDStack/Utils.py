@@ -274,26 +274,9 @@ def parse_ban_line(line):
 
     """
     from ZDStack.ZDSAccessList import Ban
-    ip_address = ''
-    other = ''
-    current_section = 'ip_address'
-    for c in line:
-        if current_section == 'ip_address':
-            if c == '#':
-                current_section = 'names'
-                continue
-            ip_address += c
-        elif current_section == 'names':
-            other += c
-    if other.endswith('>'):
-        ###
-        # no reason
-        ###
-        reason = None
+    if '#' in line:
+        ip_address, reason = line.strip().split('#')
     else:
-        i = other.rfind(' ')
-        reason = other[i:].strip()
-        other = other[:i]
-    names = other[1:-1].split('/')
-    return Ban(ip_address, names, reason)
+        ip_address, reason = (line.strip(), None)
+    return Ban(ip_address, reason)
 

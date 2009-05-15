@@ -119,7 +119,7 @@ class PlayersList(object):
         raise PlayerNotFoundError(name, ip_address_and_port)
 
     @requires_instance_lock()
-    def sync(self, zplayers=None, sleep=None):
+    def sync(self, zplayers=None, sleep=None, check_bans=False):
         """Syncs the internal players list with the running zserv.
 
         :param zplayers: optional, the output from
@@ -130,6 +130,9 @@ class PlayersList(object):
                       self.zserv; defaults to None, and is only used
                       when zplayers is None
         :type sleep: int or Decimal or float
+        :param check_bans: whether or not to check the sync'd list of
+                           players for banned players, and kick them
+        :type check_bans: boolean
 
         """
         ds = "sync(zplayers=%s)"
@@ -213,19 +216,30 @@ class PlayersList(object):
                             t = (player.name, player.color, team_color)
                             zdslog.debug(ds % t)
                         player.color = team_color
-        # to_kick = list()
-        # for p in self:
-        #     if not p.disconnected and not \
-        #        p.ip in self.zserv.access_list.whitelist and \
-        #        p.ip in self.zserv.access_list.banlist:
-        #         to_kick.append(p.number)
-        # for n in reversed(sorted(to_kick)):
-        #     ###
-        #     # Again, I'm hoping that lower player numbers don't re-arrange
-        #     # when players with higher numbers disconnect.
-        #     ###
-        #     self.zserv.kick(n)
+
+        if check_bans:
+            self.check_bans(acquire_lock=False)
         zdslog.debug("Sync: done")
+
+    @requires_instance_lock():
+    def check_bans(self):
+        """Kicks banned players."""
+        t_string = "You have been banned for the following reason: %s"
+        while 1:
+            for p in self.__players:
+                if p.disconnected:
+                    continue
+                reason = self.zserv.access_list.is_banned(address)
+                if reason:
+                    if isinstance(reason, basestring):
+                        reason = t_string % (reason)
+                    else:
+                        reason = 'Banned'
+                    self.zserv.zkick(p.number, reason)
+                    self.sync(acquire_lock=False)
+                    break
+            else:
+                break
 
     @requires_instance_lock()
     def get_first_matching_player(self, possible_player_names):

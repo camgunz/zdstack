@@ -27,7 +27,7 @@ from xmlrpclib import Fault, Transport, SafeTransport, ServerProxy, \
                       FastMarshaller, Marshaller, _Method
 
 from ZDStack import RPCAuthenticationError, get_json_module, get_zdslog, \
-                    get_configparser, get_debugging, get_accesslist
+                    get_configparser, get_debugging
 
 zdslog = get_zdslog()
 
@@ -99,43 +99,6 @@ class BaseRPCRequestHandler(SimpleXMLRPCRequestHandler):
     """BaseRPCRequestHandler allows a configurable transport MIME-Type."""
 
     transport_mimetype = 'text/plain'
-
-    def do_GET(self):
-        """Handles an HTTP GET request.
-        
-        This will always return the contents of the ZDStack global
-        banlist file.
-        
-        """
-        zdslog.debug('do_GET')
-        try:
-            zdslog.debug('Getting ConfigParser')
-            cp = get_configparser()
-            zdslog.debug('Getting banlist file')
-            bf = cp.getpath('DEFAULT', 'zdstack_global_banlist_file', None)
-            if not bf:
-                zdslog.debug('Reporting 404')
-                self.report_404()
-                return
-            zdslog.debug('Reading banlist file')
-            fobj = open(bf)
-            try:
-                data = fobj.read()
-            finally:
-                fobj.close()
-        except Exception, e:
-            zdslog.debug("Got exception: %s" % (e))
-            self.send_response(500)
-            self.end_headers()
-        else:
-            zdslog.debug("Sending response")
-            self.send_response(200)
-            self.send_header("Content-Type", 'text/plain')
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            self.wfile.flush()
-            self.connection.shutdown(1)
 
     def do_POST(self):
         """Handles the HTTP POST request.
