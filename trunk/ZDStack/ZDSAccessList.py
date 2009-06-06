@@ -4,7 +4,7 @@ import os.path
 
 from ConfigParser import NoSectionError, NoOptionError
 
-from ZDStack import get_zdslog, get_zdaemon_banlist_file
+from ZDStack import get_zdslog, get_zdaemon_banlist_file, get_configparser
 from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSConfigParser import RawZDSConfigParser
 

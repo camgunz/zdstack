@@ -27,7 +27,7 @@ class Alias(object):
 
     """
 
-    def __init__(self, name, ip_address):
+    def __init__(self, name=None, ip_address=None):
         self.name = name
         self.ip_address = ip_address
 
@@ -66,7 +66,7 @@ class TeamColor(object):
 
     """
 
-    def __init__(self, color):
+    def __init__(self, color=None):
         self.color = color
 
     def __str__(self):
@@ -74,6 +74,80 @@ class TeamColor(object):
 
     def __repr__(self):
         return "TeamColor('%s')" % (self.color)
+
+class Wad(object):
+
+    """Wad represents a WAD file.
+
+    .. attribute:: name
+        A string representing the name of the wad.
+
+    """
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __unicode__(self):
+        return self.name
+
+    __repr__ = __str__ = __unicode__
+
+    @property
+    def short_name(self):
+        """The short name of this WAD.
+
+        :rtype: unicode
+        :returns: the short name of the WAD.  WADs have history of
+                  having their names shortened, i.e. ZDCTF or EpicCTF,
+                  this method attempts to figure these short-hand names
+                  out for the given WAD.
+
+        """
+        if self.name == 'zdctfmp.wad':
+            return u'ZDCTF'
+        elif self.name == 'zdctfmp2.wad':
+            return u'ZDCTF2'
+        elif self.name == 'zdctfmp3-.wad':
+            return u'ZDCTF3'
+        elif self.name == u'32in24-4final.wad':
+            return u'THIRTY4'
+        elif self.name == u'32in24-7.wad':
+            return u'THIRTY7'
+        elif self.name == u'zdcctfmpc.wad':
+            return u'CRAZY'
+        elif self.name == u'odactf1.wad':
+            return u'ODACTF'
+        elif self.name == u'dwango5.wad':
+            return u'DWANGO5'
+        elif self.name == u'dwango6.wad':
+            return u'DWANGO6'
+        elif self.name == u'doom2.wad':
+            return u'doom2'
+        else:
+            s = self.name.upper().replace('.wad', '').replace('-', '')
+            return s.replace('_', '').decode('utf8')
+
+    @property
+    def prefix(self):
+        """The prefix of this WAD.
+
+        :rtype: unicode
+        :returns: the short name of the WAD.  WADs have history of
+                  prefixes assigned to them, i.e. ZDCTF, this method
+                  attempts to figure these prefixes out for the given
+                  WAD.
+
+        """
+        sn = self.short_name
+        if sn in (u'ZDCTF2', u'ZDCTF3'):
+            return u'ZDCTF'
+        if sn == u'ODACTF':
+            return u'ODA'
+        if sn == u'DWANGO5':
+            return u'D5'
+        if sn == u'DWANGO6':
+            return u'D5'
+        return sn in (u'ZDCTF2', u'ZDCTF3') and u'ZDCTF' or sn
 
 class Map(object):
 
@@ -97,17 +171,36 @@ class Map(object):
 
     """
 
-    def __init__(self, number, name, wad=None):
+    def __init__(self, number=None, name=None, wad=None):
         self.number = number
         self.name = name
         if wad:
             self.wad_name = wad.name
 
-    def __str__(self):
-        return "<Map%s: %s>" % (str(self.number).zfill(2), self.name)
+    def __unicode__(self):
+        return u"<%s: %s>" % (self.short_name, self.name)
+
+    __str__ = __unicode__
 
     def __repr__(self):
-        return "Map(%s, '%s')" % (self.number, self.name)
+        return u"Map(%s, '%s')" % (self.number, self.name)
+
+    @property
+    def short_name(self):
+        """The shortname of a map.
+
+        :rtype: unicode
+        :returns: the short-hand name of a map.  Maps have a history of
+                  shorthand names, i.e. D5M1, E2M1, ZDCTF04, ODA02,
+                  etc.  This method attempts to figure these out for
+                  the given map.
+
+        """
+        if self.wad:
+            if u'DWANGO' in self.wad.short_name:
+                return self.wad.prefix + u'M' + unicode(self.number)
+            return self.wad.prefix + unicode(self.number).zfill(2)
+        return u'MAP%s' % (unicode(self.number).zfill(2))
 
 class Weapon(object):
 
@@ -122,7 +215,7 @@ class Weapon(object):
 
     """
 
-    def __init__(self, name, is_suicide=False):
+    def __init__(self, name=None, is_suicide=False):
         self.name = name
         self.is_suicide = is_suicide
 
@@ -144,7 +237,7 @@ class Port(object):
 
     """
 
-    def __init__(self, name):
+    def __init__(self, name=None):
         self.name = name
 
     def __str__(self):
@@ -171,7 +264,7 @@ class GameMode(object):
 
     """
 
-    def __init__(self, name, has_teams=False):
+    def __init__(self, name=None, has_teams=False):
         self.name = name
         self.has_teams = has_teams
 
@@ -223,15 +316,17 @@ class Round(object):
 
     """
 
-    def __init__(self, game_mode, map, start_time=None):
-        self.game_mode_name = game_mode.name
+    def __init__(self, game_mode=None, map=None, start_time=None):
         self.game_mode = game_mode
-        self.map_id = map.id
         self.map = map
-        if not self in self.game_mode.rounds:
-            self.game_mode.rounds.append(self)
-        if not self in self.map.rounds:
-            self.map.rounds.append(self)
+        if game_mode:
+            self.game_mode_name = game_mode.name
+            if not self in self.game_mode.rounds:
+                self.game_mode.rounds.append(self)
+        if map:
+            self.map_id = map.id
+            if not self in self.map.rounds:
+                self.map.rounds.append(self)
         if start_time:
             self.start_time = start_time
 
@@ -255,7 +350,7 @@ class StoredPlayer(object):
 
     """
 
-    def __init__(self, name):
+    def __init__(self, name=None):
         self.name = name
 
     def __str__(self):
@@ -324,7 +419,8 @@ class Frag(object):
 
     """
 
-    def __init__(self, fragger, fraggee, weapon, round, timestamp,
+    def __init__(self, fragger=None, fraggee=None, weapon=None, round=None,
+                       timestamp=None,
                        fragger_was_holding_flag=None,
                        fraggee_was_holding_flag=None,
                        fragger_team_color=None,
@@ -337,28 +433,36 @@ class Frag(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.fragger_id = fragger.id
         self.fragger = fragger
-        self.weapon_name = weapon.name
-        self.weapon = weapon
-        self.round_id = round.id
-        self.round = round
-        self.fraggee_id = fraggee.id
         self.fraggee = fraggee
-        self.fragger_team_color_name = fragger_team_color.color
+        self.weapon = weapon
+        self.round = round
         self.fragger_team_color = fragger_team_color
-        self.fraggee_team_color_name = fraggee_team_color.color
         self.fraggee_team_color = fraggee_team_color
-        stuff = [self.fragger, self.weapon, self.round]
-        if fragger.id != fraggee.id:
-            stuff.append(self.fraggee)
-        if fragger_team_color is not None and fraggee_team_color is not None:
-            stuff.append(self.fragger_team_color)
-            if fragger_team_color.color != fraggee_team_color.color:
-                stuff.append(self.fraggee_team_color)
-        for x in stuff:
-            if self not in x.frags:
-                x.frags.append(self)
+        if fragger:
+            self.fragger_id = fragger.id
+        if fraggee:
+            self.fraggee_id = fraggee.id
+        if weapon:
+            self.weapon_name = weapon.name
+        if round:
+            self.round_id = round.id
+        if fragger_team_color:
+            self.fragger_team_color_name = fragger_team_color.color
+        if fraggee_team_color:
+            self.fraggee_team_color_name = fraggee_team_color.color
+        if fragger and weapon and round:
+            stuff = [x for x in [self.fragger, self.weapon, self.round] if x]
+            if fraggee and fragger.id != fraggee.id:
+                stuff.append(self.fraggee)
+            if fragger_team_color:
+                stuff.append(self.fragger_team_color)
+                if fraggee_team_color and \
+                   fragger_team_color.color != fraggee_team_color.color:
+                    stuff.append(self.fraggee_team_color)
+            for x in stuff:
+                if self not in x.frags:
+                    x.frags.append(self)
         self.timestamp = timestamp
         if fragger_was_holding_flag is not None:
             self.fragger_was_holding_flag = fragger_was_holding_flag
@@ -442,8 +546,9 @@ class FlagTouch(object):
 
     """
 
-    def __init__(self, player, round, touch_time, loss_time=None,
-                       was_picked=False, resulted_in_score=False,
+    def __init__(self, player=None, round=None, touch_time=None,
+                       loss_time=None, was_picked=False,
+                       resulted_in_score=False,
                        player_team_color=None,
                        red_team_holding_flag=False,
                        blue_team_holding_flag=False,
@@ -453,20 +558,23 @@ class FlagTouch(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.player_id = player.id
         self.player = player
-        self.round_id = round.id
         self.round = round
-        if self not in player.flag_touches:
-            player.flag_touches.append(self)
-        if self not in round.flag_touches:
-            round.flag_touches.append(self)
+        if player:
+            self.player_id = player.id
+            if self not in player.flag_touches:
+                player.flag_touches.append(self)
+        if round:
+            self.round_id = round.id
+            if self not in round.flag_touches:
+                round.flag_touches.append(self)
         self.touch_time = touch_time
         if loss_time:
             self.loss_time = loss_time
         self.was_picked = was_picked
         self.resulted_in_score = resulted_in_score
-        self.player_team_color_name = player_team_color.color
+        if player_team_color:
+            self.player_team_color_name = player_team_color.color
         self.red_team_holding_flag = red_team_holding_flag
         self.blue_team_holding_flag = blue_team_holding_flag
         self.green_team_holding_flag = green_team_holding_flag
@@ -529,7 +637,7 @@ class FlagReturn(object):
 
     """
 
-    def __init__(self, player, round, timestamp,
+    def __init__(self, player=None, round=None, timestamp=None,
                        player_was_holding_flag=False,
                        player_team_color=None,
                        red_team_holding_flag=False,
@@ -540,17 +648,20 @@ class FlagReturn(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.player_id = player.id
         self.player = player
-        self.round_id = round.id
         self.round = round
-        if self not in player.flag_returns:
-            player.flag_returns.append(self)
-        if self not in round.flag_returns:
-            round.flag_returns.append(self)
+        if player:
+            self.player_id = player.id
+            if self not in player.flag_returns:
+                player.flag_returns.append(self)
+        if round:
+            self.round_id = round.id
+            if self not in round.flag_returns:
+                round.flag_returns.append(self)
         self.timestamp = timestamp
         self.player_was_holding_flag = player_was_holding_flag
-        self.player_team_color_name = player_team_color.color
+        if player_team_color:
+            self.player_team_color_name = player_team_color.color
         self.red_team_holding_flag = red_team_holding_flag
         self.blue_team_holding_flag = blue_team_holding_flag
         self.green_team_holding_flag = green_team_holding_flag
@@ -582,15 +693,17 @@ class RCONAccess(object):
 
     """
 
-    def __init__(self, player, round, timestamp):
-        self.player_id = player.id
-        self.player = player
-        self.round_id = round.id
-        self.round = round
-        if self not in self.player.rcon_accesses:
-            self.player.rcon_accesses.append(self)
-        if self not in self.round.rcon_accesses:
-            self.round.rcon_accesses.append(self)
+    def __init__(self, player=None, round=None, timestamp=None):
+        if player:
+            self.player_id = player.id
+            self.player = player
+            if self not in self.player.rcon_accesses:
+                self.player.rcon_accesses.append(self)
+        if round:
+            self.round_id = round.id
+            self.round = round
+            if self not in self.round.rcon_accesses:
+                self.round.rcon_accesses.append(self)
         self.timestamp = timestamp
 
     def __str__(self):
@@ -615,15 +728,17 @@ class RCONDenial(object):
 
     """
 
-    def __init__(self, player, round, timestamp):
-        self.player_id = player.id
+    def __init__(self, player=None, round=None, timestamp=None):
         self.player = player
-        self.round_id = round.id
         self.round = round
-        if self not in self.player.rcon_denials:
-            self.player.rcon_denials.append(self)
-        if self not in self.round.rcon_denials:
-            self.round.rcon_denials.append(self)
+        if player:
+            self.player_id = player.id
+            if self not in self.player.rcon_denials:
+                self.player.rcon_denials.append(self)
+        if round:
+            self.round_id = round.id
+            if self not in self.round.rcon_denials:
+                self.round.rcon_denials.append(self)
         self.timestamp = timestamp
 
     def __str__(self):
@@ -651,15 +766,17 @@ class RCONAction(object):
 
     """
 
-    def __init__(self, player, round, timestamp, action):
-        self.player_id = player.id
+    def __init__(self, player=None, round=None, timestamp=None, action=None):
         self.player = player
-        self.round_id = round.id
         self.round = round
-        if self not in self.player.rcon_actions:
-            self.player.rcon_actions.append(self)
-        if self not in self.round.rcon_actions:
-            self.round.rcon_actions.append(self)
+        if player:
+            self.player_id = player.id
+            if self not in self.player.rcon_actions:
+                self.player.rcon_actions.append(self)
+        if round:
+            self.round_id = round.id
+            if self not in self.round.rcon_actions:
+                self.round.rcon_actions.append(self)
         self.timestamp = timestamp
         self.action = action
 

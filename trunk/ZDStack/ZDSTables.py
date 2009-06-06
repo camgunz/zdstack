@@ -1,8 +1,7 @@
 import datetime
 
 from sqlalchemy import Table, Column, ForeignKey, Index, String, DateTime, \
-                       Integer, Boolean, UniqueConstraint, MetaData
-from sqlalchemy.orm import relation, mapper
+                       Integer, Boolean, Unicode, UniqueConstraint, MetaData
 
 from ZDStack import get_engine, get_metadata, get_zdslog
 
@@ -32,7 +31,7 @@ aliases_table = Table('aliases', __metadata,
     Column('name', String(255), index=True, nullable=False),
     Column('ip_address', String(16), index=True, nullable=False),
     Column('was_namefake', Boolean, default=False),
-    Column('stored_player_name', String(255),
+    Column('stored_player_name', Unicode(255),
            ForeignKey('stored_players.name'), nullable=True),
     UniqueConstraint('name', 'ip_address')
 )
@@ -47,7 +46,7 @@ wads_table = Table('wads', __metadata,
 
 maps_table = Table('maps', __metadata,
     Column('id', Integer, primary_key=True),
-    Column('wad', String(20)),
+    Column('wad_name', String(20), ForeignKey('wads.name')),
     Column('number', Integer, nullable=False),
     Column('name', String(255), nullable=False),
     UniqueConstraint('number', 'name')
@@ -77,7 +76,7 @@ rounds_table = Table('rounds', __metadata,
 )
 
 stored_players_table = Table('stored_players', __metadata,
-    Column('name', String(255), primary_key=True)
+    Column('name', Unicode(255), primary_key=True)
 )
 
 frags_table = Table('frags', __metadata,

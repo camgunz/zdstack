@@ -842,8 +842,12 @@ def get_debugging():
     global DEBUGGING
     return DEBUGGING == True
 
-def initialize_database():
+def initialize_database(do_not_map=False):
     """Initializes the Database.
+
+    :param do_not_map: whether or not initialize_database() should map
+                       classes to tables.
+    :type do_not_map: boolean
 
     This *MUST* be called before running importing Stack, but can only
     be called AFTER initializing logging (set_debugging and all that).
@@ -869,91 +873,95 @@ def initialize_database():
     # Wow do I ever wish I could do from ZDStack.ZDSModels import * here.
     # Fuck!
     ###
-    from ZDStack.ZDSModels import Alias, TeamColor, Map, Weapon, Port, \
+    from ZDStack.ZDSModels import Alias, TeamColor, Wad, Map, Weapon, Port, \
                                   GameMode, Round, StoredPlayer, Frag, \
                                   FlagTouch, FlagReturn, RCONAccess, \
                                   RCONAction, RCONDenial
     ###
     # Parent cascades.
     ###
-    _pc = 'save-update, delete, delete-orphan'
-    mapper(Alias, aliases_table, properties={
-     'rounds': relation(Round, secondary=rounds_and_aliases),
-     'frags': relation(Frag, backref='fragger', cascade=_pc),
-     'deaths': relation(Frag, backref='fraggee', cascade=_pc),
-     'frags': relation(Frag, backref='fragger', cascade=_pc,
-                   primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
-     'deaths': relation(Frag, backref='fraggee', cascade=_pc,
-                   primaryjoin=frags_table.c.fraggee_id==aliases_table.c.id),
-     'flag_touches': relation(FlagTouch, backref='player', cascade=_pc),
-     'flag_returns': relation(FlagReturn, backref='player', cascade=_pc),
-     'rcon_accesses': relation(RCONAccess, backref='player', cascade=_pc),
-     'rcon_denials': relation(RCONDenial, backref='player', cascade=_pc),
-     'rcon_actions': relation(RCONAction, backref='player', cascade=_pc)
-    })
+    if not do_not_map:
+        _pc = 'save-update, delete, delete-orphan'
+        mapper(Alias, aliases_table, properties={
+         'rounds': relation(Round, secondary=rounds_and_aliases),
+         'frags': relation(Frag, backref='fragger', cascade=_pc),
+         'deaths': relation(Frag, backref='fraggee', cascade=_pc),
+         'frags': relation(Frag, backref='fragger', cascade=_pc,
+                       primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
+         'deaths': relation(Frag, backref='fraggee', cascade=_pc,
+                       primaryjoin=frags_table.c.fraggee_id==aliases_table.c.id),
+         'flag_touches': relation(FlagTouch, backref='player', cascade=_pc),
+         'flag_returns': relation(FlagReturn, backref='player', cascade=_pc),
+         'rcon_accesses': relation(RCONAccess, backref='player', cascade=_pc),
+         'rcon_denials': relation(RCONDenial, backref='player', cascade=_pc),
+         'rcon_actions': relation(RCONAction, backref='player', cascade=_pc)
+        })
 
-    mapper(TeamColor, team_colors_table, properties={
-     'frags': relation(Frag, backref='fragger_team_color', cascade=_pc,
-                       primaryjoin=frags_table.c.fragger_team_color_name==\
-                                   team_colors_table.c.color),
-     'deaths': relation(Frag, backref='fraggee_team_color', cascade=_pc,
-                        primaryjoin=frags_table.c.fraggee_team_color_name==\
-                                    team_colors_table.c.color),
-     'flag_touches': relation(FlagTouch, backref='player_team_color',
-                              cascade=_pc),
-     'flag_returns': relation(FlagReturn, backref='player_team_color',
-                              cascade=_pc)
-    })
+        mapper(TeamColor, team_colors_table, properties={
+         'frags': relation(Frag, backref='fragger_team_color', cascade=_pc,
+                           primaryjoin=frags_table.c.fragger_team_color_name==\
+                                       team_colors_table.c.color),
+         'deaths': relation(Frag, backref='fraggee_team_color', cascade=_pc,
+                            primaryjoin=frags_table.c.fraggee_team_color_name==\
+                                        team_colors_table.c.color),
+         'flag_touches': relation(FlagTouch, backref='player_team_color',
+                                  cascade=_pc),
+         'flag_returns': relation(FlagReturn, backref='player_team_color',
+                                  cascade=_pc)
+        })
 
-    mapper(Map, maps_table, properties={
-     'rounds': relation(Round, backref='map', cascade=_pc)
-    })
+        mapper(Wad, wads_table, properties={
+          'maps': relation(Map, order_by=maps_table.c.number, backref='wad',
+                                                              cascade=_pc)
+        })
 
-    mapper(Weapon, weapons_table, properties={
-     'frags': relation(Frag, backref='weapon', cascade=_pc)
-    })
+        mapper(Map, maps_table, properties={
+         'rounds': relation(Round, backref='map', cascade=_pc)
+        })
 
-    mapper(Port, ports_table, properties={
-     'game_modes': relation(GameMode, secondary=ports_and_gamemodes)
-    })
+        mapper(Weapon, weapons_table, properties={
+         'frags': relation(Frag, backref='weapon', cascade=_pc)
+        })
 
-    mapper(GameMode, game_modes_table, properties={
-     'ports': relation(Port, secondary=ports_and_gamemodes),
-     'rounds': relation(Round, backref='game_mode', cascade=_pc)
-    })
+        mapper(Port, ports_table, properties={
+         'game_modes': relation(GameMode, secondary=ports_and_gamemodes)
+        })
 
-    mapper(Round, rounds_table, properties={
-     'players': relation(Alias, secondary=rounds_and_aliases),
-     'frags': relation(Frag, backref='round', cascade=_pc),
-     'flag_touches': relation(FlagTouch, backref='round', cascade=_pc),
-     'flag_returns': relation(FlagReturn, backref='round', cascade=_pc),
-     'rcon_accesses': relation(RCONAccess, backref='round', cascade=_pc),
-     'rcon_denials': relation(RCONDenial, backref='round', cascade=_pc),
-     'rcon_actions': relation(RCONAction, backref='round', cascade=_pc)
-    })
+        mapper(GameMode, game_modes_table, properties={
+         'ports': relation(Port, secondary=ports_and_gamemodes),
+         'rounds': relation(Round, backref='game_mode', cascade=_pc)
+        })
 
-    mapper(StoredPlayer, stored_players_table, properties={
-     'aliases': relation(Alias, backref='stored_player')
-    })
+        mapper(Round, rounds_table, properties={
+         'players': relation(Alias, secondary=rounds_and_aliases),
+         'frags': relation(Frag, backref='round', cascade=_pc),
+         'flag_touches': relation(FlagTouch, backref='round', cascade=_pc),
+         'flag_returns': relation(FlagReturn, backref='round', cascade=_pc),
+         'rcon_accesses': relation(RCONAccess, backref='round', cascade=_pc),
+         'rcon_denials': relation(RCONDenial, backref='round', cascade=_pc),
+         'rcon_actions': relation(RCONAction, backref='round', cascade=_pc)
+        })
 
-    mapper(Frag, frags_table)
-    mapper(FlagTouch, flag_touches_table)
-    mapper(FlagReturn, flag_returns_table)
-    mapper(RCONAccess, rcon_accesses_table)
-    mapper(RCONDenial, rcon_denials_table)
-    mapper(RCONAction, rcon_actions_table)
-    
+        mapper(StoredPlayer, stored_players_table, properties={
+         'aliases': relation(Alias, backref='stored_player')
+        })
+
+        mapper(Frag, frags_table)
+        mapper(FlagTouch, flag_touches_table)
+        mapper(FlagReturn, flag_returns_table)
+        mapper(RCONAccess, rcon_accesses_table)
+        mapper(RCONDenial, rcon_denials_table)
+        mapper(RCONAction, rcon_actions_table)
+
     zdslog.debug("Creating tables")
     metadata.create_all(engine)
     zdslog.debug("Persisting all supported team colors")
     session = get_session_class()()
     try:
         session.begin()
-        for color in TEAM_COLORS:
-            try:
-                session.query(TeamColor).filter_by(color=color).one()
-            except NoResultFound:
-                session.add(TeamColor(color=color))
+        existing_colors = [x.color for x in session.query(TeamColor).all()]
+        for color in [x for x in TEAM_COLORS if x not in existing_colors]:
+            session.add(TeamColor(color=color))
         session.commit()
     except:
         session.rollback()
