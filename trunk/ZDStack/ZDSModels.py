@@ -61,9 +61,15 @@ class Alias(object):
         zdslog.debug("playing, self._playing, self.playing: %s, %s, %s" % (playing, self._playing, self.playing))
         zdslog.debug("disconnected, self._disconnected, self.disconnected: %s, %s, %s" % (disconnected, self._disconnected, self.disconnected))
 
-    @property
-    def ip(self):
+    def _get_ip(self):
+        """Alias for ip_address"""
         return self.ip_address
+
+    def _set_ip(self, ip):
+        self.ip_address = ip
+
+    def _del_ip(self):
+        del self.ip_address
 
     def _get_color(self):
         """The color of this Alias"""
@@ -108,6 +114,7 @@ class Alias(object):
     def _del_disconnected(self):
         del self._disconnected
 
+    ip = property(_get_ip, _set_ip, _del_ip)
     color = property(_get_color, _set_color, _del_color)
     playing = property(_get_playing, _set_playing, _del_playing)
     disconnected = property(_get_disconnected, _set_disconnected,
