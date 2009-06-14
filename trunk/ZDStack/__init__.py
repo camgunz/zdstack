@@ -20,8 +20,9 @@ from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 # ORM Stuff
 ###
 
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import scoped_session, sessionmaker, relation, mapper
+from sqlalchemy import create_engine, MetaData, select, and_
+from sqlalchemy.orm import scoped_session, sessionmaker, relation, mapper, \
+                           column_property
 from sqlalchemy.pool import StaticPool, NullPool
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -52,7 +53,7 @@ REQUIRED_GLOBAL_CONFIG_OPTIONS = \
     ('zdstack_username', 'zdstack_password', 'zdstack_port',
      'zdstack_rpc_protocol', 'zdstack_log_folder', 'zdstack_pid_file',
      'zdstack_zserv_folder', 'zdstack_plugin_folder', 'zdstack_iwad_folder',
-     'zdstack_wad_folder', 'zdstack_master_banlist_folder',
+     'zdstack_wad_folder', 'zdstack_master_banlist_file',
      'zdstack_banlist_file', 'zdstack_whitelist_file')
 
 REQUIRED_SERVER_CONFIG_OPTIONS = \
@@ -63,13 +64,14 @@ REQUIRED_SERVER_CONFIG_OPTIONS = \
 REQUIRED_GLOBAL_VALID_FOLDERS = \
     (('zdstack_log_folder', os.R_OK | os.W_OK | os.X_OK),
      ('zdstack_zserv_folder', os.R_OK | os.W_OK | os.X_OK),
-     ('zdstack_master_banlist_folder', os.R_OK | os.W_OK | os.X_OK),
      ('zdstack_plugin_folder', os.R_OK | os.X_OK),
      ('zdstack_iwad_folder', os.R_OK | os.X_OK),
      ('zdstack_wad_folder', os.R_OK | os.X_OK))
 
-REQUIRED_GLOBAL_VALID_FILES = (('zdstack_banlist_file', os.R_OK | os.X_OK),
-                               ('zdstack_whitelist_file', os.R_OK | os.X_OK))
+REQUIRED_GLOBAL_VALID_FILES = \
+    (('zdstack_banlist_file', os.R_OK | os.W_OK),
+     ('zdstack_whitelist_file', os.R_OK | os.W_OK),
+     ('zdstack_master_banlist_file', os.R_OK | os.W_OK))
 
 REQUIRED_SERVER_VALID_FILES = (('zserv_exe', os.R_OK | os.X_OK, False),
                                ('iwad', os.R_OK, False))
@@ -463,8 +465,6 @@ def _get_embedded_engine(db_engine, cp):
 
     """
     ZDSLOG.debug("Getting embedded engine")
-    global DB_LOCK
-    DB_LOCK = Lock()
     if db_engine == 'sqlite':
         db_name = cp.get('DEFAULT', 'zdstack_database_name', ':memory:')
     else:
@@ -502,8 +502,6 @@ def _get_full_engine(db_engine, cp):
 
     """
     ZDSLOG.debug("Getting full engine")
-    global DB_LOCK
-    DB_LOCK = Lock()
     db_str = '%s://' % (db_engine.replace('-', ''))
     ###
     # Some databases might be configured for user-less/password-less
@@ -581,6 +579,8 @@ def get_engine():
     global DB_ENGINE
     global DB_AUTOFLUSH
     global DB_AUTOCOMMIT
+    global DB_LOCK
+    DB_LOCK = Lock()
     if not DB_ENGINE:
         cp = get_configparser()
         db_engine = cp.get('DEFAULT', 'zdstack_database_engine', 'sqlite')
@@ -637,6 +637,8 @@ def get_db_lock():
 
     """
     global DB_LOCK
+    ZDSLOG.debug('Trying to acquire DB lock')
+    DB_LOCK = DB_LOCK or Lock()
     return DB_LOCK
 
 def get_zdaemon_banlist_file():
@@ -650,8 +652,8 @@ def get_zdaemon_banlist_file():
     global ZDAEMON_BANLIST_FILE
     if not ZDAEMON_BANLIST_FILE:
         cp = get_configparser()
-        bd = cp.getpath('DEFAULT', 'zdstack_master_banlist_folder')
-        ZDAEMON_BANLIST_FILE = os.path.join(bd, 'zdaemon_master_banlist.ini')
+        bd = cp.getpath('DEFAULT', 'zdstack_master_banlist_file')
+        ZDAEMON_BANLIST_FILE = bd
     return ZDAEMON_BANLIST_FILE
 
 def get_zdaemon_banlist_data():
@@ -663,7 +665,7 @@ def get_zdaemon_banlist_data():
     """
     global URL_OPENER
     global ZDAEMON_BANLIST_URL
-    url_fobj = URL_OPENER(ZDAEMON_BANLIST_URL)
+    url_fobj = URL_OPENER.open(ZDAEMON_BANLIST_URL)
     banlist_data = url_fobj.read()
     url_fobj.close()
     if banlist_data and len(banlist_data) > 200:
@@ -876,7 +878,7 @@ def initialize_database(do_not_map=False):
     from ZDStack.ZDSModels import Alias, TeamColor, Wad, Map, Weapon, Port, \
                                   GameMode, Round, StoredPlayer, Frag, \
                                   FlagTouch, FlagReturn, RCONAccess, \
-                                  RCONAction, RCONDenial
+                                  RCONAction, RCONDenial, RoundsAndAliases
     ###
     # Parent cascades.
     ###
@@ -890,11 +892,11 @@ def initialize_database(do_not_map=False):
                        primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
          'deaths': relation(Frag, backref='fraggee', cascade=_pc,
                        primaryjoin=frags_table.c.fraggee_id==aliases_table.c.id),
-         'flag_touches': relation(FlagTouch, backref='player', cascade=_pc),
-         'flag_returns': relation(FlagReturn, backref='player', cascade=_pc),
-         'rcon_accesses': relation(RCONAccess, backref='player', cascade=_pc),
-         'rcon_denials': relation(RCONDenial, backref='player', cascade=_pc),
-         'rcon_actions': relation(RCONAction, backref='player', cascade=_pc)
+         'flag_touches': relation(FlagTouch, backref='alias', cascade=_pc),
+         'flag_returns': relation(FlagReturn, backref='alias', cascade=_pc),
+         'rcon_accesses': relation(RCONAccess, backref='alias', cascade=_pc),
+         'rcon_denials': relation(RCONDenial, backref='alias', cascade=_pc),
+         'rcon_actions': relation(RCONAction, backref='alias', cascade=_pc)
         })
 
         mapper(TeamColor, team_colors_table, properties={
@@ -911,8 +913,7 @@ def initialize_database(do_not_map=False):
         })
 
         mapper(Wad, wads_table, properties={
-          'maps': relation(Map, order_by=maps_table.c.number, backref='wad',
-                                                              cascade=_pc)
+          'maps': relation(Map, order_by=maps_table.c.number, backref='wad')
         })
 
         mapper(Map, maps_table, properties={
@@ -933,7 +934,7 @@ def initialize_database(do_not_map=False):
         })
 
         mapper(Round, rounds_table, properties={
-         'players': relation(Alias, secondary=rounds_and_aliases),
+         'aliases': relation(Alias, secondary=rounds_and_aliases),
          'frags': relation(Frag, backref='round', cascade=_pc),
          'flag_touches': relation(FlagTouch, backref='round', cascade=_pc),
          'flag_returns': relation(FlagReturn, backref='round', cascade=_pc),
@@ -942,8 +943,26 @@ def initialize_database(do_not_map=False):
          'rcon_actions': relation(RCONAction, backref='round', cascade=_pc)
         })
 
+        mapper(RoundsAndAliases, rounds_and_aliases, properties={
+          'alias': relation(Alias),
+          'round': relation(Round),
+          'player': relation(StoredPlayer, backref='rounds_and_aliases',
+            primaryjoin=rounds_and_aliases.c.alias_id == aliases_table.c.id,
+            secondary=aliases_table,
+            secondaryjoin=and_(aliases_table.c.stored_player_name == \
+                                 stored_players_table.c.name),
+            viewonly=True)
+        })
+
         mapper(StoredPlayer, stored_players_table, properties={
-         'aliases': relation(Alias, backref='stored_player')
+         'aliases': relation(Alias, backref='stored_player'),
+         # 'frags': relation(Frag, backref='player'),
+         # 'flag_touches': relation(FlagTouch, backref='player',
+         #   primaryjoin=FlagTouch.round in ),
+         # 'flag_returns': relation(FlagReturn, backref='player'),
+         # 'rcon_accesses': relation(RCONAccess, backref='player'),
+         # 'rcon_denials': relation(RCONDenial, backref='player'),
+         # 'rcon_actions': relation(RCONAction, backref='player')
         })
 
         mapper(Frag, frags_table)

@@ -817,9 +817,15 @@ class Stack(Server):
     ###
 
     def add_ban(self, zserv_name, ip_address, reason='rofl'):
+        """Alias for :func:addban."""
         return self.addban(zserv_name, ip_address, reason)
     
     def remove_ban(self, zserv_name, ip_address):
+        """Alias for :func:killban."""
+        return self.killban(zserv_name, ip_address)
+
+    def delete_ban(self, zserv_name, ip_address):
+        """Alias for :func:killban."""
         return self.killban(zserv_name, ip_address)
 
     def add_global_ban(self, ip_address, reason='rofl'):
@@ -841,6 +847,34 @@ class Stack(Server):
 
         """
         self.banlist.remove_global(ip_address)
+
+    def add_whitelist(self, zserv_name, ip_address):
+        """Adds an address to a ZServ's whitelist."
+
+        :param zserv_name: the name of the ZServ to which the
+                           whitelist should be added
+        :type zserv_name: string
+        :param ip_address: the IP address to whitelist
+        :type ip_address: string
+
+        """
+        self.whitelist.add(self.get_zserv(zserv_name), ip_address)
+
+    def remove_whitelist(self, zserv_name, ip_address):
+        """Adds an address to a ZServ's whitelist."
+
+        :param zserv_name: the name of the ZServ to which the
+                           whitelist should be added
+        :type zserv_name: string
+        :param ip_address: the IP address to whitelist
+        :type ip_address: string
+
+        """
+        self.whitelist.remove(self.get_zserv(zserv_name), ip_address)
+
+    def delete_whitelist(self, zserv_name, ip_address):
+        """Alias for :func:remove_whitelist."""
+        self.remove_whitelist(zserv_name, ip_address)
 
     def add_global_whitelist(self, ip_address):
         """Adds an address to the global whitelist.
@@ -1119,6 +1153,8 @@ class Stack(Server):
                                           requires_authentication=True)
         self.rpc_server.register_function(self.add_ban,
                                           requires_authentication=True)
+        self.rpc_server.register_function(self.add_whitelist,
+                                          requires_authentication=True)
         self.rpc_server.register_function(self.addban,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.add_global_ban,
@@ -1135,11 +1171,17 @@ class Stack(Server):
                                           requires_authentication=True)
         self.rpc_server.register_function(self.clearmaplist,
                                           requires_authentication=True)
+        self.rpc_server.register_function(self.delete_ban,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.delete_whitelist,
+                                          requires_authentication=True)
         self.rpc_server.register_function(self.get,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.kick,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.remove_ban,
+                                          requires_authentication=True)
+        self.rpc_server.register_function(self.remove_whitelist,
                                           requires_authentication=True)
         self.rpc_server.register_function(self.killban,
                                           requires_authentication=True)

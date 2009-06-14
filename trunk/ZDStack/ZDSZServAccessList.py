@@ -1,7 +1,10 @@
 from threading import Lock
 
+from ZDStack import get_zdslog
 from ZDStack.Utils import requires_instance_lock
-from ZDStack.ZDSAccessList import WhiteListedAddress, Ban
+from ZDStack.ZDSAccessList import WhiteListedAddress, Ban, IPAddress
+
+zdslog = get_zdslog()
 
 class NoAppropriateListError(Exception): pass
 
@@ -24,6 +27,10 @@ class ZServAccessList(object):
 
         """
         self.zserv = zserv
+        if not self.zserv.name in self.zserv.zdstack.banlist.sections():
+            self.zserv.zdstack.banlist.add_section(self.zserv.name)
+        if not self.zserv.name in self.zserv.zdstack.whitelist.sections():
+            self.zserv.zdstack.whitelist.add_section(self.zserv.name)
         self.lock = Lock()
 
     def _discern_list(self, access_control):
@@ -86,23 +93,35 @@ class ZServAccessList(object):
         ip_address = IPAddress(address)
         if ip_address.is_range:
             raise TypeError("Cannot test whether or not an IP range is banned")
-        if zserv.use_global_whitelist:
-            if self.zserv.zdstack.whitelist.search(address):
+        if self.zserv.use_global_whitelist:
+            zdslog.debug("Searching global whitelist")
+            if self.zserv.zdstack.whitelist.search(self.zserv, address):
                 return False
-        elif self.zserv.zdstack.whitelist.search_excluding_global(address):
-            return False
-        if zserv.use_global_banlist:
-            reason = self.zserv.zdstack.banlist.search(address)
+        else:
+            zdslog.debug("Searching global whitelist")
+            x = \
+                self.zserv.zdstack.whitelist.search_excluding_global(self.zserv,
+                                                                     address)
+            if x:
+                return False
+        if self.zserv.use_global_banlist:
+            zdslog.debug("Searching global banlist")
+            reason = self.zserv.zdstack.banlist.search(self.zserv, address)
             if reason:
                 return reason
         else:
+            zdslog.debug("Excluding global banlist")
             reason = \
-                self.zserv.zdstack.banlist.search_excluding_global(address)
+                self.zserv.zdstack.banlist.search_excluding_global(self.zserv,
+                                                                   address)
             if reason:
                 return reason
         if not self.zserv.advertise and self.zserv.copy_zdaemon_banlist:
+            zdslog.debug("Searching ZDaemon master banlist")
             reason = self.zserv.zdstack.zdaemon_banlist.search_global(address)
             if reason:
                 return reason
+        else:
+            zdslog.debug("Excluding ZDaemon master banlist")
         return None
 

@@ -1,3 +1,9 @@
+from __future__ import with_statement
+
+from sqlalchemy.orm.exc import NoResultFound
+
+from ZDStack.Utils import parse_player_name
+from ZDStack.ZDSDatabase import global_session, persist
 from ZDStack import get_engine, get_metadata, get_zdslog
 from ZDStack.ZDSTables import *
 
@@ -27,9 +33,110 @@ class Alias(object):
 
     """
 
-    def __init__(self, name=None, ip_address=None):
-        self.name = name
+    port = None
+    number = None
+
+    def __init__(self, zserv=None, ip_address=None, port=None, name=None,
+                       number=None, stored_player_name=None, 
+                       disconnected=None, playing=False, color=None):
+        zdslog.debug("Hey, this is __init__.  What the fuck.")
+        self.zserv = zserv
         self.ip_address = ip_address
+        self.ip = self.ip_address
+        self.port = port
+        self.stored_player_name = stored_player_name
+        self.name = name or ''
+        if name:
+            self.tag, self.player_name = parse_player_name(self.name)
+        self._color = color
+        self._playing = False
+        self._disconnected = False
+        zdslog.debug("zserv, self.zserv: %s, %s" % (zserv, self.zserv))
+        zdslog.debug("ip_address, self.ip_address: %s, %s" % (ip_address, self.ip_address))
+        zdslog.debug("ip, self.ip: %s, %s" % (ip, self.ip))
+        zdslog.debug("port, self.port: %s, %s" % (port, self.port))
+        zdslog.debug("stored_player_name, self.stored_player_name: %s, %s" % (stored_player_name, self.stored_player_name))
+        zdslog.debug("name, self.name: %s, %s" % (name, self.name))
+        zdslog.debug("color, self._color, self.color: %s, %s, %s" % (color, self._color, self.color))
+        zdslog.debug("playing, self._playing, self.playing: %s, %s, %s" % (playing, self._playing, self.playing))
+        zdslog.debug("disconnected, self._disconnected, self.disconnected: %s, %s, %s" % (disconnected, self._disconnected, self.disconnected))
+
+    @property
+    def ip(self):
+        return self.ip_address
+
+    def _get_color(self):
+        """The color of this Alias"""
+        try:
+            self._color
+        except AttributeError:
+            self._color = None
+        return self._color
+
+    def _set_color(self, color):
+        self._color = color
+
+    def _del_color(self):
+        del self._color
+
+    def _get_playing(self):
+        """Whether or not this Alias is currently playing."""
+        try:
+            self._playing
+        except AttributeError:
+            self._playing = False
+        return self._playing
+
+    def _set_playing(self, playing):
+        self._playing = playing
+
+    def _del_playing(self):
+        del self._playing
+
+    def _get_disconnected(self):
+        """Whether or not this Alias is currently disconnected."""
+        try:
+            self._disconnected
+        except AttributeError:
+            self._disconnected = False
+        return self._disconnected
+
+    def _set_disconnected(self, disconnected):
+        zdslog.debug("Setting disconnected to %s" % (disconnected))
+        self._disconnected = disconnected
+
+    def _del_disconnected(self):
+        del self._disconnected
+
+    color = property(_get_color, _set_color, _del_color)
+    playing = property(_get_playing, _set_playing, _del_playing)
+    disconnected = property(_get_disconnected, _set_disconnected,
+                            _del_disconnected)
+
+    def get_current_team_color(self, session=None):
+        """Gets this player's TeamColor model.
+
+        :param session: a Session instance, if none is given, the global
+                        session will be used
+        :type session: Session
+        :rtype: TeamColor
+        
+        """
+        zdslog.debug("Getting TeamColor for %s, %s" % (self.name, self.ip))
+        s = lambda: session or global_session()
+        if session:
+            try:
+                q = session.query(TeamColor)
+                return q.filter_by(color=self.color).one()
+            except NoResultFound:
+                return persist(TeamColor(color=self.color, session=session))
+        else:
+            with global_session() as session:
+                try:
+                    q = session.query(TeamColor)
+                    return q.filter_by(color=self.color).one()
+                except NoResultFound:
+                    return persist(TeamColor(color=self.color, session=session))
 
     def __str__(self):
         return '<Alias %s>' % (self.name)
@@ -359,6 +466,84 @@ class StoredPlayer(object):
     def __repr__(self):
         return "Player('%s')" % (self.name)
 
+    @property
+    def rounds(self):
+        out = set()
+        for alias in self.aliases:
+            for round in alias.rounds:
+                out.add(round)
+        return list(out)
+
+    @property
+    def frags(self):
+        out = set()
+        for round in self.rounds:
+            for frag in round.frags:
+                if frag.fragger in self.aliases and \
+                   frag.fragger_id != frag.fraggee_id:
+                    out.add(frag)
+        return list(out)
+
+    @property
+    def deaths(self):
+        out = set()
+        for round in self.rounds:
+            for frag in round.frags:
+                if frag.fraggee in self.aliases:
+                    out.add(frag)
+        return list(out)
+
+    @property
+    def suicides(self):
+        return [x for x in deaths if x.fragger_id == x.fraggee_id]
+
+    @property
+    def flag_touches(self):
+        out = set()
+        for round in self.rounds:
+            for flag_touch in round.flag_touches:
+                out.add(flag_touch)
+        return list(out)
+
+    @property
+    def flag_captures(self):
+        return [x for x in self.flag_touches if x.resulted_in_score]
+
+    @property
+    def flag_returns(self):
+        out = set()
+        for round in self.rounds:
+            for flag_return in round.flag_returns:
+                out.add(flag_return)
+        return list(out)
+
+    @property
+    def rcon_accesses(self):
+        out = set()
+        for round in self.rounds:
+            for rcon_access in round.rcon_accesses:
+                out.add(rcon_access)
+        return list(out)
+
+    @property
+    def rcon_denials(self):
+        out = set()
+        for round in self.rounds:
+            for rcon_denial in round.rcon_denials:
+                out.add(rcon_denial)
+        return list(out)
+
+    @property
+    def rcon_actions(self):
+        out = set()
+        for round in self.rounds:
+            for rcon_action in round.rcon_actions:
+                out.add(rcon_action)
+        return list(out)
+
+    # rounds = association_proxy('aliases', 'rounds')
+    # frags = association_proxy('aliases', 'frags')
+
 class Frag(object):
 
     """Represents a frag.
@@ -439,6 +624,11 @@ class Frag(object):
         self.round = round
         self.fragger_team_color = fragger_team_color
         self.fraggee_team_color = fraggee_team_color
+        if timestamp:
+            zdslog.debug('Timestamp: %s' % (timestamp))
+            self.timestamp = timestamp
+        else:
+            zdslog.debug('NULL Timestamp? %s' % (timestamp))
         if fragger:
             self.fragger_id = fragger.id
         if fraggee:
@@ -463,7 +653,6 @@ class Frag(object):
             for x in stuff:
                 if self not in x.frags:
                     x.frags.append(self)
-        self.timestamp = timestamp
         if fragger_was_holding_flag is not None:
             self.fragger_was_holding_flag = fragger_was_holding_flag
         if fraggee_was_holding_flag is not None:
@@ -495,8 +684,8 @@ class FlagTouch(object):
     .. attribute:: id
         The database ID of this FlagTouch
 
-    .. attribute:: player_id
-        The database ID of this FlagTouch's player (Alias)
+    .. attribute:: alias_id
+        The database ID of this FlagTouch's alias
 
     .. attribute:: round_id
         The database ID of this FlagTouch's Round
@@ -546,7 +735,7 @@ class FlagTouch(object):
 
     """
 
-    def __init__(self, player=None, round=None, touch_time=None,
+    def __init__(self, alias=None, round=None, touch_time=None,
                        loss_time=None, was_picked=False,
                        resulted_in_score=False,
                        player_team_color=None,
@@ -558,12 +747,12 @@ class FlagTouch(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.player = player
+        self.alias = alias
         self.round = round
-        if player:
-            self.player_id = player.id
-            if self not in player.flag_touches:
-                player.flag_touches.append(self)
+        if alias:
+            self.alias_id = alias.id
+            if self not in alias.flag_touches:
+                alias.flag_touches.append(self)
         if round:
             self.round_id = round.id
             if self not in round.flag_touches:
@@ -585,7 +774,7 @@ class FlagTouch(object):
         self.white_team_score = white_team_score
 
     def __str__(self):
-        return '<FlagTouch %s>' % (self.player)
+        return '<FlagTouch %s>' % (self.alias)
 
 class FlagReturn(object):
 
@@ -594,8 +783,8 @@ class FlagReturn(object):
     .. attribute:: id
         The database ID of this FlagReturn
 
-    .. attribute:: player_id
-        The database ID of this FlagReturn's player (Alias)
+    .. attribute:: alias_id
+        The database ID of this FlagReturn's alias
 
     .. attribute:: round_id
         The database ID of this FlagReturn's Round
@@ -637,7 +826,7 @@ class FlagReturn(object):
 
     """
 
-    def __init__(self, player=None, round=None, timestamp=None,
+    def __init__(self, alias=None, round=None, timestamp=None,
                        player_was_holding_flag=False,
                        player_team_color=None,
                        red_team_holding_flag=False,
@@ -648,12 +837,12 @@ class FlagReturn(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.player = player
+        self.alias = alias
         self.round = round
-        if player:
-            self.player_id = player.id
-            if self not in player.flag_returns:
-                player.flag_returns.append(self)
+        if alias:
+            self.alias_id = alias.id
+            if self not in alias.flag_returns:
+                alias.flag_returns.append(self)
         if round:
             self.round_id = round.id
             if self not in round.flag_returns:
@@ -672,7 +861,7 @@ class FlagReturn(object):
         self.white_team_score = white_team_score
 
     def __str__(self):
-        return '<FlagReturn %s>' % (self.player)
+        return '<FlagReturn %s>' % (self.alias)
 
 class RCONAccess(object):
 
@@ -681,8 +870,8 @@ class RCONAccess(object):
     .. attribute:: id
         The database ID of this RCON access
 
-    .. attribute:: player_id
-        The database ID of this RCON access's player (Alias)
+    .. attribute:: alias_id
+        The database ID of this RCON access's alias
 
     .. attribute:: round_id
         The database ID of this RCON access's Round
@@ -693,12 +882,12 @@ class RCONAccess(object):
 
     """
 
-    def __init__(self, player=None, round=None, timestamp=None):
-        if player:
-            self.player_id = player.id
-            self.player = player
-            if self not in self.player.rcon_accesses:
-                self.player.rcon_accesses.append(self)
+    def __init__(self, alias=None, round=None, timestamp=None):
+        if alias:
+            self.alias_id = alias.id
+            self.alias = alias
+            if self not in self.alias.rcon_accesses:
+                self.alias.rcon_accesses.append(self)
         if round:
             self.round_id = round.id
             self.round = round
@@ -707,7 +896,7 @@ class RCONAccess(object):
         self.timestamp = timestamp
 
     def __str__(self):
-        return '<RCON Access %s>' % (self.player)
+        return '<RCON Access %s>' % (self.alias)
 
 class RCONDenial(object):
 
@@ -716,8 +905,8 @@ class RCONDenial(object):
     .. attribute:: id
         The database ID of this RCON denial
 
-    .. attribute:: player_id
-        The database ID of this RCON denial's player (Alias)
+    .. attribute:: alias_id
+        The database ID of this RCON denial's alias
 
     .. attribute:: round_id
         The database ID of this RCON denial's Round
@@ -728,13 +917,13 @@ class RCONDenial(object):
 
     """
 
-    def __init__(self, player=None, round=None, timestamp=None):
-        self.player = player
+    def __init__(self, alias=None, round=None, timestamp=None):
+        self.alias = alias
         self.round = round
-        if player:
-            self.player_id = player.id
-            if self not in self.player.rcon_denials:
-                self.player.rcon_denials.append(self)
+        if alias:
+            self.alias_id = alias.id
+            if self not in self.alias.rcon_denials:
+                self.alias.rcon_denials.append(self)
         if round:
             self.round_id = round.id
             if self not in self.round.rcon_denials:
@@ -742,7 +931,7 @@ class RCONDenial(object):
         self.timestamp = timestamp
 
     def __str__(self):
-        return '<RCON Denial %s>' % (self.player)
+        return '<RCON Denial %s>' % (self.alias)
 
 class RCONAction(object):
 
@@ -751,8 +940,8 @@ class RCONAction(object):
     .. attribute:: id
         The database ID of this RCON action
 
-    .. attribute:: player_id
-        The database ID of this RCON action's player (Alias)
+    .. attribute:: alias_id
+        The database ID of this RCON action's alias
 
     .. attribute:: round_id
         The database ID of this RCON action's Round
@@ -766,13 +955,13 @@ class RCONAction(object):
 
     """
 
-    def __init__(self, player=None, round=None, timestamp=None, action=None):
-        self.player = player
+    def __init__(self, alias=None, round=None, timestamp=None, action=None):
+        self.alias = alias
         self.round = round
-        if player:
-            self.player_id = player.id
-            if self not in self.player.rcon_actions:
-                self.player.rcon_actions.append(self)
+        if alias:
+            self.alias_id = alias.id
+            if self not in self.alias.rcon_actions:
+                self.alias.rcon_actions.append(self)
         if round:
             self.round_id = round.id
             if self not in self.round.rcon_actions:
@@ -781,5 +970,7 @@ class RCONAction(object):
         self.action = action
 
     def __str__(self):
-        return '<RCON Action %s - %s>' % (self.action, self.player)
+        return '<RCON Action %s - %s>' % (self.action, self.alias)
+
+class RoundsAndAliases(object): pass
 

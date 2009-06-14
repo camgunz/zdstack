@@ -1,6 +1,6 @@
 from ZDStack import get_zdslog
 from ZDStack.Utils import homogenize, parse_player_name, html_escape
-from ZDStack.ZDSDatabase import get_alias, get_team_color
+# from ZDStack.ZDSDatabase import get_alias, get_team_color
 
 zdslog = get_zdslog()
 

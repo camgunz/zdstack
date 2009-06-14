@@ -22,12 +22,13 @@ NUMBERS_TO_COLORS = {0: 'red', 1: 'blue', 2: 'green', 3: 'white'}
 COLORS_TO_NUMBERS = {'red': 0, 'blue': 1, 'green': 2, 'white': 3}
 
 from ZDStack.ZDSTask import Task
-from ZDStack.ZDSModels import Round
-from ZDStack.ZDSDatabase import get_port, get_game_mode, get_map, get_round, \
-                                get_round_by_id, get_alias, persist, \
-                                global_session
+from ZDStack.ZDSModels import Round, GameMode, Port, Map, Alias
+from ZDStack.ZDSDatabase import persist, global_session
 from ZDStack.ZDSPlayersList import PlayersList
 from ZDStack.ZDSZServConfig import ZServConfigParser
+from ZDStack.ZDSZServAccessList import ZServAccessList
+
+from sqlalchemy.orm.exc import NoResultFound
 
 zdslog = get_zdslog()
 
@@ -129,16 +130,18 @@ class ZServ(object):
             zdslog.debug("self.round_id: [%s]" % (self.round_id))
             return
         with global_session() as session:
-            round = get_round_by_id(self.round_id, session=session)
+            round = session.query(Round).get(self.round_id)
             if self.stats_enabled:
                 zdslog.debug("Setting round end_time to [%s]" % (now))
                 round.end_time = now
                 s = "Adding %s to %s"
-                for p in self.players:
-                    a = get_alias(p.name, p.ip, round=round, session=session)
-                    if round not in a.rounds:
-                        zdslog.debug(s % (round, a))
-                        a.rounds.append(round)
+                ###
+                # for p in self.players:
+                #     a = get_alias(p.name, p.ip, round=round, session=session)
+                #     if round not in a.rounds:
+                #         zdslog.debug(s % (round, a))
+                #         a.rounds.append(round)
+                ###
                 zdslog.debug("Updating %s" % (round))
                 persist(round, update=True, session=session)
                 for flag_touch in round.flag_touches:
@@ -188,8 +191,13 @@ class ZServ(object):
         :returns: the current Round or None
 
         """
+        zdslog.debug('Getting round')
         if self.round_id:
-            return get_round_by_id(self.round_id, session=session)
+            if session:
+                return session.query(Round).get(self.round_id)
+            else:
+                with global_session() as session:
+                    return session.query(Round).get(self.round_id)
 
     def get_map(self, session=None):
         """Gets this ZServ's current Map.
@@ -201,8 +209,36 @@ class ZServ(object):
         :returns: the current Map or None
 
         """
+        zdslog.debug('Getting map, session: %s' % (session))
         if self.map_number and self.map_name:
-            return get_map(number=self.map_number, name=self.map_name)
+            zdslog.debug('Should be able to return a map')
+            if session:
+                q = session.query(Map)
+                q = q.filter_by(name=self.map_name, number=self.map_number)
+                try:
+                    out = q.one()
+                    zdslog.debug('Returning %s 1' % (out))
+                    return out
+                except NoResultFound:
+                    m = Map(name=self.map_name, number=self.map_number)
+                    m = persist(m, session=session)
+                    zdslog.debug('Returning %s 2' % (m))
+                    return m
+            else:
+                with global_session() as session:
+                    q = session.query(Map)
+                    q = q.filter_by(name=self.map_name, number=self.map_number)
+                    try:
+                        out = q.one()
+                        zdslog.debug('Returning %s 3' % (out))
+                        return out
+                    except NoResultFound:
+                        m = Map(name=self.map_name, number=self.map_number)
+                        zdslog.debug('Returning %s 4' % (m))
+                        return persist(m, session=session)
+        else:
+            zdslog.debug('Returning None')
+            return None
 
     def get_game_mode(self, session=None):
         """Gets this ZServ's current GameMode.
@@ -214,8 +250,34 @@ class ZServ(object):
         :returns: the current GameMode
 
         """
-        return get_game_mode(name=self.game_mode,
-                             has_teams=self.game_mode in TEAM_MODES)
+        zdslog.debug('Getting game mode')
+        if session:
+            try:
+                has_teams = self.game_mode in TEAM_MODES
+                q = session.query(GameMode)
+                q = q.filter_by(name=self.game_mode, has_teams=has_teams)
+                out = q.one()
+                zdslog.debug('Returning %s 1' % (out))
+                return out
+            except NoResultFound:
+                gm = GameMode(name=self.game_mode, has_teams=has_teams)
+                gm = persist(gm, session=session)
+                zdslog.debug('Returning %s 2' % (gm))
+                return gm
+        else:
+            with global_session() as session:
+                has_teams = self.game_mode in TEAM_MODES
+                q = session.query(GameMode).filter_by(name=self.game_mode,
+                                                   has_teams=has_teams)
+                try:
+                    out = q.one()
+                    zdslog.debug('Returning %s 3' % (out))
+                    return out
+                except NoResultFound:
+                    gm = GameMode(name=self.game_mode, has_teams=has_teams)
+                    gm = persist(gm, session=session)
+                    zdslog.debug('Returning %s 4' % (gm))
+                    return gm
 
     def get_source_port(self, session=None):
         """Gets this ZServ's current (source) Port.
@@ -227,7 +289,20 @@ class ZServ(object):
         :returns: the current (source) Port
 
         """
-        return get_port(name=self.source_port)
+        zdslog.debug('Getting source port')
+        if session:
+            q = session.query(Port).filter_by(name=self.source_port)
+            try:
+                return q.one()
+            except NoResultFound:
+                return persist(Port(name=name), session=session)
+        else:
+            with global_session() as session:
+                q = session.query(Port).filter_by(name=self.source_port)
+                try:
+                    return q.one()
+                except NoResultFound:
+                    return persist(Port(name=name), session=session)
 
     def change_map(self, map_number, map_name):
         """Handles a map change event.
@@ -248,9 +323,20 @@ class ZServ(object):
             self.clean_up()
             self.map_number = map_number
             self.map_name = map_name
-            self.round_id = get_round(self.get_game_mode(), self.get_map()).id
+            zdslog.debug('Acquiring session')
+            with global_session() as session:
+                game_mode = self.get_game_mode(session=session)
+                map = self.get_map(session=session)
+                zdslog.debug('Getting now')
+                now = datetime.now()
+                zdslog.debug('Creating new round')
+                r = Round(game_mode=game_mode, map=map, start_time=now)
+                zdslog.debug('Created new round %s' % (r))
+                r = persist(r, session=session)
+                zdslog.debug('Persisted new round %s' % (r))
+            self.round_id = r.id
             zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
-            self.players.sync(acquire_lock=False)
+            self.players.sync(acquire_lock=False, check_bans=True)
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.

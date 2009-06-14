@@ -782,10 +782,10 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.website, 'set website "%s"')
         add_var_line(self.zserv.admin_email, 'set email "%s"')
         add_bool_line(self.zserv.advertise, 'set master_advertise "%s"')
-        if self.zserv.use_global_banlist:
-            addr = (self.zserv.zdstack.hostname, self.zserv.zdstack.port)
-            banlist_url = 'http://%s:%s/bans' % addr
-            add_var_line(banlist_url, 'set banlist_url "%s"')
+        # if self.zserv.use_global_banlist:
+        #     addr = (self.zserv.zdstack.hostname, self.zserv.zdstack.port)
+        #     banlist_url = 'http://%s:%s/bans' % addr
+        #     add_var_line(banlist_url, 'set banlist_url "%s"')
         if add_bool_line(self.zserv.rcon_enabled, 'set enable_rcon "%s"'):
             add_var_line(self.zserv.rcon_password, 'set rcon_password "%s"')
         if add_bool_line(self.zserv.requires_password, \

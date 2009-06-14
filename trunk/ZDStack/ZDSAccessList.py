@@ -56,7 +56,7 @@ class IPAddress(object):
             self.__tokens = [x for x in reversed(tokens)]
             self.__ranges = [[x] for x in self.tokens]
         else:
-            if not address_string.count('.') == 3:
+            if not address_string or not address_string.count('.') == 3:
                 raise MalformedIPAddressError(address_string)
             self.__tokens = list()
             self.__ranges = list()
@@ -393,7 +393,10 @@ class AddressList(RawZDSConfigParser):
         """
         if not self.has_section(zserv.name, acquire_lock=False):
             raise NoSectionError(zserv.name)
-        out = [self.item_class(*x) for x in self._sections(zserv.name).items()]
+        out = []
+        for item in self._sections[zserv.name].items():
+            if item[0] != '__name__':
+                out.append(self.item_class(*item))
         return out
 
     @requires_instance_lock()
@@ -452,7 +455,7 @@ class AddressList(RawZDSConfigParser):
     def _search(self, address, addresses):
         ip_address = self.item_class(address)
         for x in addresses:
-            if ip_address == x or ip_address in x:
+            if ip_address == x or (ip_address.is_range and ip_address in x):
                 return x.reason and x.reason or True
         return False
 

@@ -21,6 +21,7 @@ ports_and_gamemodes = Table('ports_and_gamemodes', __metadata,
 )
 
 rounds_and_aliases = Table('rounds_and_aliases', __metadata,
+    Column('id', Integer, primary_key=True),
     Column('round_id', Integer, ForeignKey('rounds.id')),
     Column('alias_id', Integer, ForeignKey('aliases.id')),
     UniqueConstraint('round_id', 'alias_id')
