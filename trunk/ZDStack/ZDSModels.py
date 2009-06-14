@@ -612,8 +612,8 @@ class Frag(object):
 
     """
 
-    def __init__(self, fragger=None, fraggee=None, weapon=None, round=None,
-                       timestamp=None,
+    def __init__(self, fragger_id=None, fraggee_id=None, weapon_name=None,
+                       round_id=None, timestamp=None,
                        fragger_was_holding_flag=None,
                        fraggee_was_holding_flag=None,
                        fragger_team_color=None,
@@ -626,10 +626,10 @@ class Frag(object):
                        blue_team_score=None,
                        green_team_score=None,
                        white_team_score=None):
-        self.fragger = fragger
-        self.fraggee = fraggee
-        self.weapon = weapon
-        self.round = round
+        self.fragger_id = fragger_id
+        self.fraggee_id = fraggee_id
+        self.weapon_name = weapon_name
+        self.round_id = round_id
         self.fragger_team_color = fragger_team_color
         self.fraggee_team_color = fraggee_team_color
         if timestamp:
@@ -637,30 +637,25 @@ class Frag(object):
             self.timestamp = timestamp
         else:
             zdslog.debug('NULL Timestamp? %s' % (timestamp))
-        if fragger:
-            self.fragger_id = fragger.id
-        if fraggee:
-            self.fraggee_id = fraggee.id
-        if weapon:
-            self.weapon_name = weapon.name
-        if round:
-            self.round_id = round.id
         if fragger_team_color:
             self.fragger_team_color_name = fragger_team_color.color
         if fraggee_team_color:
             self.fraggee_team_color_name = fraggee_team_color.color
-        if fragger and weapon and round:
-            stuff = [x for x in [self.fragger, self.weapon, self.round] if x]
-            if fraggee and fragger.id != fraggee.id:
-                stuff.append(self.fraggee)
-            if fragger_team_color:
-                stuff.append(self.fragger_team_color)
-                if fraggee_team_color and \
-                   fragger_team_color.color != fraggee_team_color.color:
-                    stuff.append(self.fraggee_team_color)
-            for x in stuff:
-                if self not in x.frags:
-                    x.frags.append(self)
+        ###
+        # stuff = [x for x in weapon and round if x]
+        # if fragger and weapon and round:
+        #     stuff = [x for x in [self.fragger, self.weapon, self.round] if x]
+        #     if fraggee and fragger.id != fraggee.id:
+        #         stuff.append(self.fraggee)
+        #     if fragger_team_color:
+        #         stuff.append(self.fragger_team_color)
+        #         if fraggee_team_color and \
+        #            fragger_team_color.color != fraggee_team_color.color:
+        #             stuff.append(self.fraggee_team_color)
+        #     for x in stuff:
+        #         if self not in x.frags:
+        #             x.frags.append(self)
+        ###
         if fragger_was_holding_flag is not None:
             self.fragger_was_holding_flag = fragger_was_holding_flag
         if fraggee_was_holding_flag is not None:

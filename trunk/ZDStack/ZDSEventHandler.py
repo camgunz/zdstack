@@ -450,9 +450,11 @@ class ZServEventHandler(BaseEventHandler):
                     persist(weapon, session=session)
                 zdslog.debug("Getting ZServ's round")
                 round = zserv.get_round(session=session)
-                zdslog.debug("Getting Frag, timestamp: %s" % (event.dt))
-                s = Frag(fragger=fragger, fraggee=fraggee,
-                         weapon=weapon, round=round, timestamp=event.dt,
+                ds = "Getting Frag, fragger, fraggee, timestamp: %s, %s, %s"
+                zdslog.debug(ds % (fragger, fraggee, event.dt))
+                s = Frag(fragger_id=fragger.id, fraggee_id=fraggee.id,
+                         weapon_name=weapon.name, round_id=round.id,
+                         timestamp=event.dt,
                          fragger_was_holding_flag=fragger_was_holding_flag,
                          fraggee_was_holding_flag=fraggee_was_holding_flag,
                          fragger_team_color=fragger_team_color,

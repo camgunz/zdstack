@@ -298,7 +298,7 @@ class PlayersList(object):
                   'possible_player_names'
 
         """
-        names = self.names()
+        names = [x.name for x in self]
         if isinstance(possible_player_names, basestring):
             possible_player_names = [possible_player_names]
         for pn in possible_player_names:
