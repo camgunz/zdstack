@@ -51,15 +51,16 @@ class Alias(object):
         self._color = color
         self._playing = False
         self._disconnected = False
-        zdslog.debug("zserv, self.zserv: %s, %s" % (zserv, self.zserv))
-        zdslog.debug("ip_address, self.ip_address: %s, %s" % (ip_address, self.ip_address))
-        zdslog.debug("ip, self.ip: %s, %s" % (ip, self.ip))
-        zdslog.debug("port, self.port: %s, %s" % (port, self.port))
-        zdslog.debug("stored_player_name, self.stored_player_name: %s, %s" % (stored_player_name, self.stored_player_name))
-        zdslog.debug("name, self.name: %s, %s" % (name, self.name))
-        zdslog.debug("color, self._color, self.color: %s, %s, %s" % (color, self._color, self.color))
-        zdslog.debug("playing, self._playing, self.playing: %s, %s, %s" % (playing, self._playing, self.playing))
-        zdslog.debug("disconnected, self._disconnected, self.disconnected: %s, %s, %s" % (disconnected, self._disconnected, self.disconnected))
+        ###
+        # zdslog.debug("zserv, self.zserv: %s, %s" % (zserv, self.zserv))
+        # zdslog.debug("ip_address, self.ip_address: %s, %s" % (ip_address, self.ip_address))
+        # zdslog.debug("ip, self.ip: %s, %s" % (ip, self.ip))
+        # zdslog.debug("port, self.port: %s, %s" % (port, self.port))
+        # zdslog.debug("stored_player_name, self.stored_player_name: %s, %s" % (stored_player_name, self.stored_player_name))
+        # zdslog.debug("name, self.name: %s, %s" % (name, self.name))
+        # zdslog.debug("color, self._color, self.color: %s, %s, %s" % (color, self._color, self.color))
+        # zdslog.debug("playing, self._playing, self.playing: %s, %s, %s" % (playing, self._playing, self.playing))
+        # zdslog.debug("disconnected, self._disconnected, self.disconnected: %s, %s, %s" % (disconnected, self._disconnected, self.disconnected))
 
     def _get_ip(self):
         """Alias for ip_address"""
