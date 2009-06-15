@@ -1,0 +1,29 @@
+#summary Banlist/Whitelist management in ZDStack
+
+= Introduction =
+
+Managing bans over multiple ZDaemon servers is tiresome.  Multiple files need to be updated, no whitelist support exists, and there is no mechanism for applying the ZDaemon master banlist to an unadvertised server (while respecting theoretical whitelist entries).  ZDStack resolves all of this by providing its own access list implementation.
+
+= Files =
+
+ZDStack's access list implementation uses 2 files, `zdstack_banlist_file` and `zdstack_whitelist_file`.  These are INI-format files, for example:
+
+{{{
+[DEFAULT]
+128.255.18.37: jerkbag
+
+[Private CTF]
+128.255.18.38: your skill is not enough!
+}}}
+
+Here you can see a global ban on `128.255.18.37` for being a "jerkbag", and a server-specific ban in the Private CTF server on `128.255.18.38` for not being good enough to enter the server.  Whitelists are formatted much the same way, but reasons are not required nor used:
+
+{{{
+[DEFAULT]
+127.0.0.1:
+
+[Private CTF]
+128.255.18.37
+}}}
+
+In this case, should the player from `128.255.18.37` attempt to join the Private CTF server, she'll be allowed to because whitelisted addresses take precedence over banned addresses.
