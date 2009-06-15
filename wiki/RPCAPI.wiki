@@ -26,6 +26,18 @@
 = ZServ Action Methods =
 || Method || Usage || Return Value || Implemented || Tested ||
 || addban() || {{{addban(zserv_name, ip_address, reason='rofl')}}} || True on success || yes || no ||
+|| add_ban() || {{{add_ban(zserv_name, ip_address, reason='rofl')}}} || True on success || yes || no ||
+|| add_global_ban() || {{{add_global_ban(ip_address, reason='rofl')}}} || True on success || yes || no ||
+|| delete_ban() || {{{delete_ban(zserv_name, ip_address)}}} || True on success || yes || no ||
+|| remove_ban() || {{{remove_ban(zserv_name, ip_address)}}} || True on success || yes || no ||
+|| delete_global_ban() || {{{delete_global_ban(ip_address)}}} || True on success || yes || no ||
+|| remove_global_ban() || {{{remove_global_ban(ip_address)}}} || True on success || yes || no ||
+|| add_whitelist() || {{{add_whitelist(zserv_name, ip_address)}}} || True on success || yes || no ||
+|| add_global_whitelist() || {{{add_global_whitelist(ip_address)}}} || True on success || yes || no ||
+|| delete_whitelist() || {{{delete_ban(zserv_name, ip_address}}} || True on success || yes || no ||
+|| remove_whitelist() || {{{remove_ban(zserv_name, ip_address)}}} || True on success || yes || no ||
+|| delete_global_whitelist() || {{{delete_global_whitelist(ip_address)}}} || True on success || yes || no ||
+|| remove_global_whitelist() || {{{remove_global_whitelist(ip_address)}}} || True on success || yes || no ||
 || addbot() || {{{addbot(zserv_name, bot_name=None)}}} || True on success || yes || no ||
 || addmap() || {{{addmap(zserv_name, map_number)}}} || True on success || yes || no ||
 || clearmaplist() || {{{clearmaplist(zserv_name)}}} || True on success || yes || no ||
