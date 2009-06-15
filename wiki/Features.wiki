@@ -11,4 +11,4 @@
 || ConnectionQualityStatistics || 0% || After comparing ping output with iperf output, it was decided to not include these stats as using ping is non-representative of connection quality. ||
 || CSV Stat Export || 0% || Not started. ||
 || Client Log Parsing || 20% || Some of the basic implementation is there, but it's currently inaccessible. ||
-|| Ban/Exception Management || 50% || I've created a robust utility for this outside of ZDStack, all I have to do is integrate it. ||
+|| Ban/Whitelist Management || 90% || Implemented, needs more thorough testing. ||
