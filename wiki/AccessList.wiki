@@ -27,3 +27,7 @@ Here you can see a global ban on `128.255.18.37` for being a "jerkbag", and a se
 }}}
 
 In this case, should the player from `128.255.18.37` attempt to join the Private CTF server, she'll be allowed to because whitelisted addresses take precedence over banned addresses.
+
+= Management =
+
+These files should not be edited manually.  Rather the relevant RPC methods should be used.
