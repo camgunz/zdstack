@@ -68,21 +68,10 @@ class BaseEventHandler(object):
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
-        ###
-        # Should we really raise an exception here?  I think the rest of the
-        # code doesn't assume that event handling stops on an error, so we
-        # should at least correct that inconsistency.
-        ###
-        ###
-        # Nah.
-        #
-        # raise Exception(event.data['error'])
-        #
-        ###
         zdslog.error("Event error: %s" % (event.data['error']))
         zdslog.error("Event traceback: \n%s\n" % (event.data['traceback']))
 
-    def handle_unhandled_event(self, event, zserv):
+    def handle_unhandled_event(self, event, zserv=None):
         """Handles an unhandled event.
 
         :param event: the unhandled event
@@ -310,7 +299,7 @@ class ZServEventHandler(BaseEventHandler):
                         zdslog.debug("Player Name: [%s]" % (player.name))
                         zdslog.debug("Round ID: [%s]" % (zserv.round_id))
                         q = session.query(FlagTouch)
-                        q = q.filter(Alias.name==player.name)
+                        q = q.filter(FlagTouch.player_id==player.id)
                         q = q.filter(Round.id==zserv.round_id)
                         q = q.filter(FlagTouch.loss_time==None)
                         q = q.order_by(desc(FlagTouch.touch_time))

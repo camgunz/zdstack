@@ -302,7 +302,7 @@ class ZServ(object):
                 try:
                     return q.one()
                 except NoResultFound:
-                    return persist(Port(name=name), session=session)
+                    return persist(Port(name=self.source_port), session=session)
 
     def change_map(self, map_number, map_name):
         """Handles a map change event.

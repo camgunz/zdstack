@@ -523,21 +523,20 @@ def _get_full_engine(db_engine, cp):
     elif cp.get('DEFAULT', 'zdstack_database_passwd', False):
         db_pass = cp.get('DEFAULT', 'zdstack_database_passwd')
     if db_user:
-        db_str += db_user
+        db_str += urllib.quote(db_user)
         if db_pass:
-            db_str += ':' + db_pass
+            db_str += ':' + urllib.quote(db_pass)
         db_str += '@'
     elif db_pass:
         es = "Cannot give a database password without a database user"
         raise ValueError(es)
-    db_host = cp.get('DEFAULT', 'zdstack_database_host')
-    if db_host == 'localhost':
-        if db_engine != 'mysql':
-            ###
-            # MySQL supports local socket connections.  Everything else needs
-            # a real socket though.
-            ###
-            db_host = get_loopback()
+    db_host = urllib.quote(cp.get('DEFAULT', 'zdstack_database_host'))
+    if db_host == 'localhost' and db_engine != 'mysql':
+        ###
+        # MySQL supports local socket connections.  Everything else needs
+        # a real socket though.
+        ###
+        db_host = get_loopback()
     db_str += db_host
     db_port = cp.get('DEFAULT', 'zdstack_database_port', False)
     if db_port:
@@ -547,7 +546,7 @@ def _get_full_engine(db_engine, cp):
     if not db_name:
         es = "Required global option zdstack_database_name not found"
         raise ValueError(es)
-    db_str += '/' + db_name
+    db_str += '/' + urllib.quote(db_name)
     if db_engine == 'mysql':
         ###
         # MySQL's handing of Unicode is apparently a little dumb,

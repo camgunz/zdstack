@@ -228,7 +228,7 @@ def get_event_from_line(line, regexps, now=None):
         elif e.category == 'join':
             if 'team' in e.data:
                 e.data['team'] = e.data['team'].lower()
-        if e.type == 'map_change':
+        if e.type == 'map_change' and 'number' in e.data:
             e.data['number'] = int(e.data['number'])
     return e
 

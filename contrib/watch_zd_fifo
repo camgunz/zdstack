@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+from signal import signal, SIGTERM
+
+from ZDStack.Utils import get_event_from_line, resolve_path
+from ZDStack.ZDSRegexps import get_client_regexps
+
+REGEXPS = get_client_regexps()
+__INPUT_FOBJ = None
+__OUTPUT_FOBJ = None
+DEBUGGING = False
+
+def handle_signal(signum, frame):
+    if signum == SIGTERM:
+        if not DEBUGGING:
+            __OUTPUT_FOBJ.close()
+        sys.exit(0)
+
+def print_usage():
+    us = "\nUsage: %s [ zd_fifo ] [ output_file ]\n"
+    print >> sys.stderr, us % (os.path.basename(sys.argv[0]))
+    sys.exit(1)
+
+def main(zd_fifoname, output_filename):
+    __INPUT_FOBJ = open(zd_fifoname)
+    if not DEBUGGING:
+        __OUTPUT_FOBJ = open(output_filename, 'w')
+    while 1:
+        line = __INPUT_FOBJ.readline().rstrip('\r\n')
+        if DEBUGGING:
+            print line
+        else:
+            __OUTPUT_FOBJ.write('# ' + line + '\n')
+        event = get_event_from_line(line, REGEXPS)
+        if event:
+            if event.category != 'command' or event.type == 'map_change':
+                if DEBUGGING:
+                    print repr(event)
+                else:
+                    __OUTPUT_FOBJ.write(repr(event) + ',\n')
+        if not DEBUGGING:
+            __OUTPUT_FOBJ.flush()
+
+if __name__ == "__main__":
+    if not len(sys.argv) == 3:
+        print_usage()
+    zd_fifoname, output_filename = [resolve_path(x) for x in sys.argv[1:]]
+    if not os.path.exists(zd_fifoname):
+        print_usage()
+    main(zd_fifoname, output_filename)
+

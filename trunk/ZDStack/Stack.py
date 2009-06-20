@@ -614,30 +614,51 @@ class Stack(Server):
         self.start_zserv(zserv_name)
         zdslog.debug("Done restarting %s" % (zserv_name))
 
-    def start_all_zservs(self):
-        """Starts all ZServs."""
+    def start_all_zservs(self, names=None):
+        """Starts all ZServs.
+
+        :param names: an optional list of zserv_names which are to
+                      be started - used as a limit
+        :type names: list of strings
+
+        """
         # zdslog.debug('')
         for zserv in self.get_stopped_zservs():
-            self.start_zserv(zserv.name)
+            if not names or zserv.name in names:
+                self.start_zserv(zserv.name)
 
-    def stop_all_zservs(self):
-        """Stops all ZServs."""
+    def stop_all_zservs(self, names=None):
+        """Stops all ZServs.
+
+        :param names: an optional list of zserv_names which are to
+                      be stopped - used as a limit
+        :type names: list of strings
+
+        """
         # zdslog.debug('')
         for zserv in self.get_running_zservs():
-            try:
-                self.stop_zserv(zserv.name)
-            except Exception, e:
-                if not str(e).endswith('is not running'):
-                    ###
-                    # We still want to stop the other servers.
-                    ###
-                    continue
+            if not names or zserv.name in names:
+                try:
+                    self.stop_zserv(zserv.name)
+                except Exception, e:
+                    if not str(e).endswith('is not running'):
+                        ###
+                        # We still want to stop the other servers.
+                        ###
+                        continue
 
-    def restart_all_zservs(self):
-        """Restars all ZServs."""
+    def restart_all_zservs(self, names=None):
+        """Restarts all ZServs.
+
+        :param names: an optional list of zserv_names which are to
+                      be stopped - used as a limit
+        :type names: list of strings
+
+        """
         # zdslog.debug('')
         for zserv in self.get_running_zservs():
-            self.restart_zserv(zserv.name)
+            if not names or zserv.name in names:
+                self.restart_zserv(zserv.name)
 
     def get_zserv(self, zserv_name):
         """Returns a ZServ instance.
@@ -651,10 +672,19 @@ class Stack(Server):
             raise ZServNotFoundError(zserv_name)
         return self.zservs[zserv_name]
 
-    def list_zserv_names(self):
-        """Returns a list of ZServ names."""
+    def list_zserv_names(self, names):
+        """Returns a list of ZServ names.
+
+        :param names: an optional list of zserv_names which are to
+                      be returned - used as a limit
+        :type names: list of strings
+
+        """
         # zdslog.debug('')
-        return self.zservs.keys()
+        if names:
+            return [x for x in self.zservs.keys() if x in names]
+        else:
+            return self.zservs.keys()
 
     def _get_zserv_info(self, zserv_name):
         """Returns a dict of zserv info.
@@ -709,13 +739,24 @@ class Stack(Server):
         zserv = self.get_zserv(zserv_name)
         return self._get_zserv_info(self.get_zserv(zserv_name))
 
-    def get_all_zserv_info(self):
+    def get_all_zserv_info(self, names=None):
         """Returns a list of zserv info dicts.
+
+        :param names: an optional list of zserv_names for which to
+                      return information - used as a limit.
+        :type names: list of strings
 
         See get_zserv_info() for more information.
 
         """
-        return [self._get_zserv_info(x) for x in self.zservs.values()]
+        if names:
+            out = []
+            for zserv_name, zserv in self.zservs.items():
+                if zserv_name in names:
+                    out.append(self._get_zserv_info(zserv))
+        else:
+            out = [self._get_zserv_info(x) for x in self.zservs.values()]
+        return out
 
     def _items_to_section(self, name, items):
         """Converts a list of items into a ConfigParser section.

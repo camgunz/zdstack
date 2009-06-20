@@ -26,7 +26,7 @@ class LogEvent(object):
         return "<Event %s at %s>" % (self.type, self.dt)
 
     def __repr__(self):
-        return "LogEvent(%s, %s, %s, %s)" % (self.dt, self.type, self.data,
+        return "LogEvent(%r, %r, %r, %r)" % (self.dt, self.type, self.data,
                                              self.category)
 
     def __eq__(self, x):

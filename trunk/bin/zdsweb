@@ -52,16 +52,20 @@ zdsweb can be used 2 different ways:
     configuration file (in the DEFAULT section).  The method for employing
     either method follows:
 
-      - address:     -a [ address ]     | 'zdsweb_hostname = <address>'
-      - port:        -p [ port ]        | 'zdsweb_port = <port>'
-      - log folder:  -l [ log_folder ]  | 'zdsweb_log_folder = <folderpath>'
-      - PID file:    -i [ pid_file ]    | 'zdsweb_pidfile = <filepath>'
-      - config file: -c [ config_file ] | n/a
+      - address:     -a [ address ]        | 'zdsweb_hostname = <address>'
+      - port:        -p [ port ]           | 'zdsweb_port = <port>'
+      - log folder:  -l [ log_folder ]     | 'zdsweb_log_folder = <folderpath>'
+      - PID file:    -i [ pid_file ]       | 'zdsweb_pidfile = <filepath>'
+      - config file: -c [ config_file ]    | n/a
+      - servers      -s [ server; server ] | 'zdsweb_servers = <server; server>'
 
   If options are defined in the ZDStack configuration file, they can be over-
     ridden here on the command-line (command-line options take precedence).
     Log folder defaults to the system's temporary folder, and PID file defaults
     to 'zdsweb.pid' in the system's temporary folder.
+
+  Servers ( -s ) will limit zdsweb to only the listed servers.  If this option
+    is not given here or in the configuration file, the default is no limit.
 
   It can also be used as a CGI script.  To use a custom configuration file,
     you must specify its location within this file itself.  To do so, edit this
@@ -79,7 +83,7 @@ defined in your environment.
     sys.exit(-1)
 
 try:
-    __opts, __args = getopt.gnu_getopt(sys.argv[1:], 'c:a:p:l:i:', [])
+    __opts, __args = getopt.gnu_getopt(sys.argv[1:], 's:c:a:p:l:i:', [])
 except getopt.GetoptError, ge:
     __print_usage(ge)
 __opts = dict(__opts)
@@ -98,6 +102,7 @@ RCP = get_configparser(raw=True)
 
 __x = [('-a', 'zdsweb_hostname', 'localhost'),
        ('-l', 'zdsweb_logfolder', tempfile.gettempdir()),
+       ('-s', 'zdsweb_servers', None),
        ('-i', 'zdsweb_pidfile', os.path.join(tempfile.gettempdir(),
                                              'ZDSWeb.pid'))]
 
@@ -108,7 +113,10 @@ def __get_vals(index):
 ADDRESS = __get_vals(0)
 PORT = int(__opts.get('-p', 0) or CP.get('DEFAULT', 'zdsweb_port', '80'))
 LOG_FOLDER = __get_vals(1)
-PID_FILE = __get_vals(2)
+SERVERS = __get_vals(2)
+PID_FILE = __get_vals(3)
+
+SERVERS = SERVERS and [x.strip() for x in SERVERS.split(';')] or SERVERS
 
 ###
 # End dumbness
@@ -163,15 +171,22 @@ def _items_to_section(name, items):
     new_items.sort()
     return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in new_items])
 
+class ServerNotFoundError(Exception):
+
+    def __init__(self, zserv_name):
+        Exception.__init__(self, "ZServ [%s] not found")
+
 class ZDSInterface:
 
     proxy = get_server_proxy()
 
     def _get_zserv_info(self, zserv_name):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.get_zserv_info(zserv_name)
 
     def _get_all_zserv_info(self):
-        return self.proxy.get_all_zserv_info()
+        return self.proxy.get_all_zserv_info(SERVERS)
 
     def _get_zserv_dict(self, zserv_info):
         # zserv_info['name'] = zserv_info['name
@@ -203,12 +218,18 @@ class ZDSInterface:
         return out
 
     def start_zserv(self, zserv_name):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.start_zserv(USERNAME, PASSWORD, zserv_name)
 
     def stop_zserv(self, zserv_name):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.stop_zserv(USERNAME, PASSWORD, zserv_name)
 
     def restart_zserv(self, zserv_name):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.restart_zserv(USERNAME, PASSWORD, zserv_name)
 
     def start_all_zservs(self):
@@ -237,9 +258,13 @@ class ZDSInterface:
         return [x for x in self.get_all_zservs() if not x['is_running']]
 
     def get_zserv_config(self, zserv_name):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.get_zserv_config(USERNAME, PASSWORD, zserv_name)
 
     def set_zserv_config(self, zserv_name, d):
+        if zserv_name not in SERVERS:
+            raise ServerNotFoundError(zserv_name)
         return self.proxy.set_zserv_config(USERNAME, PASSWORD, zserv_name, d)
 
 IFACE = ZDSInterface()
