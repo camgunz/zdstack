@@ -6,7 +6,7 @@ In version 0.11, ZDStack started to use a relational database to store its data 
 
 = Caveats =
 
-MySQL does not store milliseconds, let alone microseconds, in its DATETIME, DATE, TIME, or TIMESTAMP fields.  This severely lowers the resolution at which events are saved in ZDStack.  Should you select a RDBMS as your storage solution, we highly recommend PostgreSQL - both TotalTrash and IDL use it with no problems.
+MySQL does not store milliseconds, let alone microseconds, in its DATETIME, DATE, TIME, or TIMESTAMP fields.  This severely lowers the resolution at which events are saved in ZDStack.  Should you select a RDBMS as your storage solution, we highly recommend PostgreSQL - both !TotalTrash and IDL use it with no problems.
 
 = ZDStack Features =
 
