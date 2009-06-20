@@ -14,6 +14,10 @@ MySQL does not store milliseconds, let alone microseconds, in its DATETIME, DATE
 
 ZDStack uses the `psycopg2` PostgreSQL database adapter to connect and interact with PostgreSQL databases.  This adapter has a limitation where passwords with spaces cannot be used.  It's possible that `MySQLdb` (the MySQL database adapter) also has this limitation, but this has not been verified.  Because SQLite does not use passwords, it cannot have this limitation.
 
+== Testing ==
+
+ZDStack has only been used or tested with PostgreSQL, MySQL, and SQLite.  Other databases are likely to have quirks that need specific workarounds and therefore are unlikely to work.  If you do use these databases and discover problems, please use the [http://code.google.com/p/zdstack/issues/list Issue Tracker] to report them.
+
 = ZDStack Features =
 
 ZDStack has 3 main features that can potentially use the database:
