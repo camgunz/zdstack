@@ -6,7 +6,13 @@ In version 0.11, ZDStack started to use a relational database to store its data 
 
 = Caveats =
 
-MySQL does not store milliseconds, let alone microseconds, in its DATETIME, DATE, TIME, or TIMESTAMP fields.  This severely lowers the resolution at which events are saved in ZDStack.  Should you select a RDBMS as your storage solution, we highly recommend PostgreSQL - both !TotalTrash and IDL use it with no problems.
+== MySQL Millisecond/Microsecond Limitation ==
+
+MySQL does not store milliseconds, let alone microseconds, in its DATETIME, DATE, TIME, or TIMESTAMP fields.  This severely lowers the resolution at which events are saved in ZDStack.  Should you select a RDBMS as your storage solution, we highly recommend PostgreSQL - both !TotalTrash and IDL use it.
+
+== psycopg2's Password Limitation ==
+
+ZDStack uses the `psycopg2` PostgreSQL database adapter to connect and interact with PostgreSQL databases.  This adapter has a limitation where passwords with spaces cannot be used.  It's possible that `MySQLdb` (the MySQL database adapter) also has this limitation, but this has not been verified.  Because SQLite does not use passwords, it cannot have this limitation.
 
 = ZDStack Features =
 
@@ -50,7 +56,7 @@ By default, ZDStack uses an in-memory SQLite database.
 
 == Recommendations ==
 
-If the goal is to avoid using an RDBMS, it is recommended to use SQLite.  Otherwise, PostgreSQL is the best RDBMS to use with ZDStack.  MySQL expects a different usage pattern than ZDStack's (it's not a PHP app opening up hundreds of connections a second), and this results in connection issues at times (which are still being ironed out in ZDStack).  Also MySQL's only real benefit over PostgreSQL is replication, and it's very unlikely any ZDStack user needs replication.
+If the goal is to avoid using an RDBMS, it is recommended to use SQLite.  Otherwise, PostgreSQL is the best RDBMS to use with ZDStack.  Aside from the millisecond/microsecond issue explained above, it's much more difficult to switch from MySQL than it is to switch to.  Also MySQL's only real benefit over PostgreSQL is replication, and it's very unlikely any ZDStack user needs replication.  In fact, I'm sure that PostgreSQL could handle stats for all ZDaemon servers out there right now.
 
 == Configuration 1 ==
 
