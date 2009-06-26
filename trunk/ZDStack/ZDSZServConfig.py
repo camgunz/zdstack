@@ -415,8 +415,8 @@ class ZServConfigParser(ZDSConfigParser):
         rcon_commands_7 = rcon_password_7 and self.getlist(rcs + '7', None, pf)
         rcon_commands_8 = rcon_password_8 and self.getlist(rcs + '8', None, pf)
         rcon_commands_9 = rcon_password_9 and self.getlist(rcs + '9', None, pf)
-        server_password = self.get('server_password')
-        requires_password = server_password is not None
+        server_password = self.get('server_password', '')
+        requires_password = len(server_password) > 0
         deathlimit = self.getint('deathlimit')
         spam_window = self.getint('spam_window')
         spam_limit = self.getint('spam_window')

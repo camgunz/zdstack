@@ -714,6 +714,7 @@ class Stack(Server):
                 'max_players': max_players,
                 'map_name': zserv.map_name,
                 'map_number': zserv.map_number,
+                'round_id': zserv.round_id,
                 'is_running': zserv.is_running()}
 
     def get_zserv_info(self, zserv_name):
@@ -733,6 +734,7 @@ class Stack(Server):
                    'max_players': <int: maximum number of connected players>,
                    'map_name': <string: name of the current map>,
                    'map_number': <int: number of the current map>,
+                   'round_id': <int: ID of the current round>,
                    'is_running': <boolean: whether ZServ is currently running>}
 
         """
