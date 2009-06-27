@@ -77,48 +77,6 @@ def global_session():
     """
     return _locked_session(get_global=True, remove=False)
 
-def persist(model, update=False, session=None):
-    """Persists a model.
-
-    :param model: the model to persist.
-    :type model: object
-    :param update: whether or not to UPDATE the model, or INSERT it as
-                   completely new; False by default
-    :type update: boolean
-    :param session: the session to use, if none is given, the global
-                    session is used
-    :type session: Session
-    :returns: the given model
-
-    """
-    zdslog.debug('Persisting [%s]' % (model))
-    if update:
-        def blah(s):
-            zdslog.debug("Merging: [%s]" % (model))
-            s.merge(model)
-            return model
-    else:
-        def blah(s):
-            zdslog.debug("Adding: [%s]" % (model))
-            s.add(model)
-            return model
-    if session:
-        ###
-        # We are within a new_session() block, so all of our locking and
-        # committing is already handled for us.
-        ###
-        zdslog.debug('Using existing session %s' % (session))
-        return blah(session)
-    else:
-        ###
-        # There is no current session, so we need to create one.  The commit
-        # will still happen outside of this function/block however.
-        ###
-        zdslog.debug('Trying to use global session')
-        with global_session() as session:
-            zdslog.debug('Using global session %s' % (session))
-            return blah(session)
-
 def requires_session(func):
     """A function decorator executing the function inside a session.
 
@@ -141,14 +99,4 @@ def requires_session(func):
     wrapper.__dict__ = func.__dict__
     wrapper.__doc__ = func.__doc__
     return wrapper
-
-###
-# TODO:
-#
-#   Because Sessions freak out when their database connection dies, we simply
-#   can't hold onto models anymore.  Fortunately, the only things we hold onto
-#   at this point are Rounds and Aliases (ZServ and ZDSPlayer respectively),
-#   so these attributes need to be replaced with methods, and those methods
-#   need to call functions here... which don't exist yet.
-###
 

@@ -23,7 +23,7 @@ COLORS_TO_NUMBERS = {'red': 0, 'blue': 1, 'green': 2, 'white': 3}
 
 from ZDStack.ZDSTask import Task
 from ZDStack.ZDSModels import Round, GameMode, Port, Map, Alias
-from ZDStack.ZDSDatabase import persist, global_session
+from ZDStack.ZDSDatabase import requires_session, global_session
 from ZDStack.ZDSPlayersList import PlayersList
 from ZDStack.ZDSZServConfig import ZServConfigParser
 from ZDStack.ZDSZServAccessList import ZServAccessList
@@ -131,7 +131,10 @@ class ZServ(object):
             return
         with global_session() as session:
             round = session.query(Round).get(self.round_id)
-            if self.stats_enabled:
+            if not self.stats_enabled or (not self.save_empty_rounds and \
+                                          not len(round.aliases)):
+                session.delete(round)
+            else:
                 zdslog.debug("Setting round end_time to [%s]" % (now))
                 round.end_time = now
                 s = "Adding %s to %s"
@@ -143,7 +146,7 @@ class ZServ(object):
                 #         a.rounds.append(round)
                 ###
                 zdslog.debug("Updating %s" % (round))
-                persist(round, update=True, session=session)
+                session.merge(round)
                 for flag_touch in round.flag_touches:
                     ###
                     # Players can hold flags until a round ends, thus the
@@ -156,55 +159,34 @@ class ZServ(object):
                     if not flag_touch.loss_time:
                         flag_touch.loss_time = now
                         zdslog.debug("Updating %s" % (flag_touch))
-                        persist(flag_touch, update=True, session=session)
-            else:
-                ###
-                # Because statistics are not enabled, all generated stats must
-                # be deleted at the conclusion of a round.  Not everything is
-                # deleted.  Some things we want to persist, like weapons, team
-                # colors, ports, game modes and maps.  This stuff shouldn't
-                # take up too much memory anyway.  The rest of the stuff, like
-                # stats & aliases, can go out the window.
-                ###
-                zdslog.debug("Deleting a bunch of stuff")
-                # for stat in round.players + \
-                #             round.frags + \
-                #             round.flag_touches + \
-                #             round.flag_returns + \
-                #             round.rcon_accesses + \
-                #             round.rcon_denials + \
-                #             round.rcon_actions:
-                #     zdslog.debug("Deleting %s" % (stat))
-                #     session.delete(stat)
-                zdslog.debug("Deleting %s" % (round))
-                session.delete(round)
+                        session.merge(flag_touch)
         self.round_id = None
         self.clear_state()
 
-    def get_round(self, session=None):
+    @property
+    def has_teams(self):
+        return self.game_mode in TEAM_MODES
+
+    @requires_session
+    def get_round(self, session):
         """Gets this ZServ's current Round.
 
-        :param session: the session to use, if none is given, the
-                        global session is used
-        :type session: Session
+        :param session: a database session
+        :type session: SQLAlchemy Session
         :rtype: :class:`~ZDStack.ZDSModels.Round`
         :returns: the current Round or None
 
         """
         zdslog.debug('Getting round')
         if self.round_id:
-            if session:
-                return session.query(Round).get(self.round_id)
-            else:
-                with global_session() as session:
-                    return session.query(Round).get(self.round_id)
+            return session.query(Round).get(self.round_id)
 
-    def get_map(self, session=None):
+    @requires_session
+    def get_map(self, session):
         """Gets this ZServ's current Map.
 
-        :param session: the session to use, if none is given, the
-                        global session is used
-        :type session: Session
+        :param session: a database session
+        :type session: SQLAlchemy Session
         :rtype: :class:`~ZDStack.ZDSModels.Map`
         :returns: the current Map or None
 
@@ -212,97 +194,62 @@ class ZServ(object):
         zdslog.debug('Getting map, session: %s' % (session))
         if self.map_number and self.map_name:
             zdslog.debug('Should be able to return a map')
-            if session:
-                q = session.query(Map)
-                q = q.filter_by(name=self.map_name, number=self.map_number)
-                try:
-                    out = q.one()
-                    zdslog.debug('Returning %s 1' % (out))
-                    return out
-                except NoResultFound:
-                    m = Map(name=self.map_name, number=self.map_number)
-                    m = persist(m, session=session)
-                    zdslog.debug('Returning %s 2' % (m))
-                    return m
-            else:
-                with global_session() as session:
-                    q = session.query(Map)
-                    q = q.filter_by(name=self.map_name, number=self.map_number)
-                    try:
-                        out = q.one()
-                        zdslog.debug('Returning %s 3' % (out))
-                        return out
-                    except NoResultFound:
-                        m = Map(name=self.map_name, number=self.map_number)
-                        zdslog.debug('Returning %s 4' % (m))
-                        return persist(m, session=session)
-        else:
-            zdslog.debug('Returning None')
-            return None
+            q = session.query(Map)
+            q = q.filter_by(name=self.map_name, number=self.map_number)
+            try:
+                m = q.one()
+                zdslog.debug('Returning %s 1' % (m))
+            except NoResultFound:
+                m = Map()
+                m.name = self.map_name
+                m.number = self.map_number
+                session.add(m)
+                zdslog.debug('Returning %s 2' % (m))
+            return m
 
-    def get_game_mode(self, session=None):
+    @requires_session
+    def get_game_mode(self, session):
         """Gets this ZServ's current GameMode.
 
-        :param session: the session to use, if none is given, the
-                        global session is used
-        :type session: Session
+        :param session: a database session
+        :type session: SQLAlchemy Session
         :rtype: :class:`~ZDStack.ZDSModels.GameMode`
         :returns: the current GameMode
 
         """
         zdslog.debug('Getting game mode')
-        if session:
-            try:
-                has_teams = self.game_mode in TEAM_MODES
-                q = session.query(GameMode)
-                q = q.filter_by(name=self.game_mode, has_teams=has_teams)
-                out = q.one()
-                zdslog.debug('Returning %s 1' % (out))
-                return out
-            except NoResultFound:
-                gm = GameMode(name=self.game_mode, has_teams=has_teams)
-                gm = persist(gm, session=session)
-                zdslog.debug('Returning %s 2' % (gm))
-                return gm
-        else:
-            with global_session() as session:
-                has_teams = self.game_mode in TEAM_MODES
-                q = session.query(GameMode).filter_by(name=self.game_mode,
-                                                   has_teams=has_teams)
-                try:
-                    out = q.one()
-                    zdslog.debug('Returning %s 3' % (out))
-                    return out
-                except NoResultFound:
-                    gm = GameMode(name=self.game_mode, has_teams=has_teams)
-                    gm = persist(gm, session=session)
-                    zdslog.debug('Returning %s 4' % (gm))
-                    return gm
+        try:
+            q = session.query(GameMode)
+            q = q.filter_by(name=self.game_mode, has_teams=self.has_teams)
+            gm = q.one()
+            zdslog.debug('Returning %s 1' % (gm))
+        except NoResultFound:
+            gm = GameMode()
+            gm.name = self.game_mode
+            gm.has_teams = self.has_teams
+            session.add(gm)
+            zdslog.debug('Returning %s 2' % (gm))
+        return gm
 
-    def get_source_port(self, session=None):
+    @requires_session
+    def get_source_port(self, session):
         """Gets this ZServ's current (source) Port.
 
-        :param session: the session to use, if none is given, the
-                        global session is used
-        :type session: Session
+        :param session: a database session
+        :type session: SQLAlchemy Session
         :rtype: :class:`~ZDStack.ZDSModels.Port`
         :returns: the current (source) Port
 
         """
         zdslog.debug('Getting source port')
-        if session:
+        try:
             q = session.query(Port).filter_by(name=self.source_port)
-            try:
-                return q.one()
-            except NoResultFound:
-                return persist(Port(name=name), session=session)
-        else:
-            with global_session() as session:
-                q = session.query(Port).filter_by(name=self.source_port)
-                try:
-                    return q.one()
-                except NoResultFound:
-                    return persist(Port(name=self.source_port), session=session)
+            p = q.one()
+        except NoResultFound:
+            p = Port()
+            p.name = self.source_port
+            session.add(p)
+        return p
 
     def change_map(self, map_number, map_name):
         """Handles a map change event.
@@ -330,9 +277,14 @@ class ZServ(object):
                 zdslog.debug('Getting now')
                 now = datetime.now()
                 zdslog.debug('Creating new round')
-                r = Round(game_mode=game_mode, map=map, start_time=now)
+                r = Round()
+                r.game_mode_name = game_mode.name
+                r.game_mode = game_mode
+                r.map_id = map.id
+                r.map = map
+                r.start_time = now
                 zdslog.debug('Created new round %s' % (r))
-                r = persist(r, session=session)
+                session.add(r)
                 zdslog.debug('Persisted new round %s' % (r))
             self.round_id = r.id
             zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
@@ -354,12 +306,13 @@ class ZServ(object):
             self.config.process_config(reload=reload) # does tons of ugly stuff
             gm = self.get_game_mode()
             source_port = self.get_source_port()
-            if gm not in source_port.game_modes:
-                source_port.game_modes.append(gm)
-                persist(source_port, update=True)
-            if source_port not in gm.ports:
-                gm.ports.append(source_port)
-                persist(gm, update=True)
+            with global_session() as session:
+                if gm not in source_port.game_modes:
+                    source_port.game_modes.append(gm)
+                    session.merge(source_port)
+                if source_port not in gm.ports:
+                    gm.ports.append(source_port)
+                    session.merge(gm)
             if not reload and not self.is_running():
                 if os.path.exists(self.fifo_path):
                     ###
@@ -442,10 +395,8 @@ class ZServ(object):
                     return
                 self.start_time = datetime.now()
                 self.restarts.append(datetime.now())
-                fobj = open(self.config_file, 'w')
-                fobj.write(self.config.get_config_data())
-                fobj.flush()
-                fobj.close()
+                with open(self.config_file, 'w') as fobj:
+                    fobj.write(self.config.get_config_data())
                 self.ensure_loglinks_exist()
                 if self.plugins_enabled:
                     for plugin in self.plugins:

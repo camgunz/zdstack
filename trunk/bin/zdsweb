@@ -13,8 +13,7 @@ import operator
 import tempfile
 import urlparse
 
-import ConfigParser
-
+from ConfigParser import NoOptionError
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 
@@ -108,7 +107,10 @@ __x = [('-a', 'zdsweb_hostname', 'localhost'),
 
 def __get_vals(index):
     x = __x[index]
-    return __opts.get(x[0], CP.get('DEFAULT', x[1], x[2]))
+    try:
+        return __opts.get(x[0], CP.get('DEFAULT', x[1], x[2]))
+    except NoOptionError:
+        return None
 
 ADDRESS = __get_vals(0)
 PORT = int(__opts.get('-p', 0) or CP.get('DEFAULT', 'zdsweb_port', '80'))
@@ -449,6 +451,7 @@ SERVERS_TEMPLATE = """\
                     <th class="centered">Players</th>
                     <th class="centered">Type</th>
                     <th class="centered">PWADs</th>
+                    <th class="centered">Round ID</th>
                     <th class="centered">Current Map</th>
                     <th class="centered">Port</th>
                     <th class="centered">Controls</th>
@@ -466,28 +469,7 @@ CONTROL_TEMPLATE = """\
                              <button class="control" type="submit" name="action" value="%(action)s">%(cap_action)s</button>"""
 
 ###
-# name, players, max_players, mode, wads, map_name, map_number, port
-###
-SERVER_TEMPLATE = """    <tr>
-                    <td class="nolinebreak left">
-                        <a href="zds://%s:%%(port)s">%%(html_name)s</a>
-                    </td>
-                    <td class="centered">%%(players)s / %%(max_players)s</td>
-                    <td class="centered">%%(mode)s</td>
-                    <td class="left">%%(wads)s</td>
-                    <td class="nolinebreak left">%%(map_name)s :: MAP%%(map_number)s</td>
-                    <td class="centered">%%(port)s</td>
-                    <td class="centered">
-                        <form action="%s" method="POST"
-                              enctype="application/x-www-form-urlencoded">
-                            <input type="hidden" name="name" value="%%(name)s"/>
-%%(controls)s
-                        </form>
-                    </td>
-                </tr>""" % (ZDS_HOSTNAME, SCRIPT_NAME)
-
-###
-# name, players, max_players, mode, wads, map_name, map_number, port
+# name, players, max_players, mode, wads, round_id, map_name, map_number, port
 ###
 SERVER_TEMPLATE = """    <tr class="%%(color)sbg">
                     <td class="nolinebreak left %%(color)sbg">
@@ -496,6 +478,7 @@ SERVER_TEMPLATE = """    <tr class="%%(color)sbg">
                     <td class="centered %%(color)sbg">%%(players)s / %%(max_players)s</td>
                     <td class="centered %%(color)sbg">%%(mode)s</td>
                     <td class="left %%(color)sbg">%%(wads)s</td>
+                    <td class="centered">%%(round_id)s</td>
                     <td class="nolinebreak left %%(color)sbg">%%(map_name)s :: MAP%%(map_number)s</td>
                     <td class="centered %%(color)sbg">%%(port)s</td>
                     <td class="centered %%(color)sbg">

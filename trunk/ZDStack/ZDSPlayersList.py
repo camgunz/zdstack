@@ -10,7 +10,7 @@ from ZDStack.ZServ import TEAM_MODES
 from ZDStack.Utils import requires_instance_lock
 from ZDStack.ZDSPlayer import Player
 from ZDStack.ZDSModels import Alias
-from ZDStack.ZDSDatabase import global_session, persist
+from ZDStack.ZDSDatabase import global_session
 
 zdslog = get_zdslog()
 
@@ -226,7 +226,7 @@ class PlayersList(object):
                         p.ip_address = d['player_ip']
                         p.port = d['player_port']
                         p.name = d['player_name']
-                        persist(p, session=session)
+                        session.add(p)
                 p.zserv = self.zserv
                 p.number = d['player_num']
                 p.disconnected = False

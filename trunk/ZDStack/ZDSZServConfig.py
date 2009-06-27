@@ -8,6 +8,8 @@ from ConfigParser import NoOptionError
 
 from ZDStack import TEAM_COLORS, get_zdslog
 from ZDStack.Utils import check_ip, resolve_path, requires_instance_lock
+from ZDStack.ZDSModels import TeamColor
+from ZDStack.ZDSDatabase import global_session
 from ZDStack.ZDSConfigParser import ZDSConfigParser
 
 zdslog = get_zdslog()
@@ -374,13 +376,22 @@ class ZServConfigParser(ZDSConfigParser):
         events_enabled = self.getboolean('enable_events', False)
         stats_enabled = self.getboolean('enable_stats', False)
         plugins_enabled = self.getboolean('enable_plugins', False)
+        save_empty_rounds = self.getboolean('save_empty_rounds', False)
         if not events_enabled:
+            if save_empty_rounds:
+                es = "Saving of empty rounds requires events, but they have "
+                es += "been disabled"
+                raise ValueError(es)
             if stats_enabled:
                 es = "Statistics require events, but they have been disabled"
                 raise ValueError(es)
             if plugins_enabled:
                 es = "Plugins require events, but they have been disabled"
                 raise ValueError(es)
+        if not stats_enabled and save_empty_rounds:
+            es = "Saving of empty rounds requires statistics, but they have "
+            es += "been disabled"
+            raise ValueError(es)
         save_logfile = self.getboolean('save_logfile', False)
         if not save_logfile:
             ###
@@ -463,6 +474,10 @@ class ZServConfigParser(ZDSConfigParser):
         max_teams = self.getint('max_teams')
         zdslog.debug("Max Teams: %s" % (max_teams))
         playing_colors = max_teams and TEAM_COLORS[:max_teams]
+        with global_session() as session:
+            q = session.query(TeamColor)
+            q = q.filter(TeamColor.color.in_(TEAM_COLORS))
+            team_color_instances = dict([(tc.color, tc) for tc in q.all()])
         max_players_per_team = self.getint('max_players_per_team')
         scorelimit = self.getint('team_score_limit')
         ###
@@ -511,6 +526,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.events_enabled = events_enabled
         self.zserv.stats_enabled = stats_enabled
         self.zserv.plugins_enabled = plugins_enabled
+        self.zserv.save_empty_rounds = save_empty_rounds
         self.zserv.save_logfile = save_logfile
         ds = "save_logfile is %s for %s"
         zdslog.debug(ds % (self.zserv.save_logfile, self.zserv.name))
@@ -580,6 +596,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.teamdamage = teamdamage
         self.zserv.max_teams = max_teams
         self.zserv.playing_colors = playing_colors
+        self.zserv.team_color_instances = team_color_instances
         self.zserv.max_players_per_team = max_players_per_team
         self.zserv.team_score_limit = scorelimit
         ###

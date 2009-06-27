@@ -686,7 +686,7 @@ class Stack(Server):
         else:
             return self.zservs.keys()
 
-    def _get_zserv_info(self, zserv_name):
+    def _get_zserv_info(self, zserv):
         """Returns a dict of zserv info.
 
         :param zserv: the :class:`~ZDStack.ZServ.ZServ` to get info for
@@ -738,7 +738,6 @@ class Stack(Server):
                    'is_running': <boolean: whether ZServ is currently running>}
 
         """
-        zserv = self.get_zserv(zserv_name)
         return self._get_zserv_info(self.get_zserv(zserv_name))
 
     def get_all_zserv_info(self, names=None):
@@ -752,13 +751,10 @@ class Stack(Server):
 
         """
         if names:
-            out = []
-            for zserv_name, zserv in self.zservs.items():
-                if zserv_name in names:
-                    out.append(self._get_zserv_info(zserv))
+            x = [y for y in self.zservs if y in names]
         else:
-            out = [self._get_zserv_info(x) for x in self.zservs.values()]
-        return out
+            x = [y for y in self.zservs]
+        return [self.get_zserv_info(y) for y in x]
 
     def _items_to_section(self, name, items):
         """Converts a list of items into a ConfigParser section.

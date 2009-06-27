@@ -162,7 +162,7 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
         elif default is not None:
             return default
         else:
-            raise NoOptionError(section, opt)
+            raise NoOptionError(option, section)
 
     @requires_instance_lock()
     def get(self, section, option, default=None):
@@ -192,7 +192,7 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
             elif default is not None:
                 return default
             else:
-                raise NoOptionError(section, option)
+                raise NoOptionError(option, section)
         elif section != DEFAULTSECT:
             raise NoSectionError(section)
         elif opt in self._defaults:
@@ -200,7 +200,7 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
         elif default is not None:
             return default
         else:
-            raise NoOptionError(section, option)
+            raise NoOptionError(option, section)
 
     @requires_instance_lock()
     def items(self, section):

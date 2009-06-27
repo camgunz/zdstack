@@ -885,8 +885,8 @@ def initialize_database(do_not_map=False):
         _pc = 'save-update, delete, delete-orphan'
         mapper(Alias, aliases_table, properties={
          'rounds': relation(Round, secondary=rounds_and_aliases),
-         'frags': relation(Frag, backref='fragger', cascade=_pc),
-         'deaths': relation(Frag, backref='fraggee', cascade=_pc),
+         # 'frags': relation(Frag, backref='fragger', cascade=_pc),
+         # 'deaths': relation(Frag, backref='fraggee', cascade=_pc),
          'frags': relation(Frag, backref='fragger', cascade=_pc,
                        primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
          'deaths': relation(Frag, backref='fraggee', cascade=_pc,
