@@ -1,7 +1,9 @@
 ﻿#summary Todo list for the current release of ZDStack
 
   * ~~Make sure MySQL segfault is figured out & fixed, or at least understood~~
-  * Figure out how to make ban-list management easier ([http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb] interface?)
+  * Add ban-list management to [http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb]
+  * Add an option to only save rounds where players have joined
+    * Actually this should be the default, and the option should be `save_empty_rounds`
   * Re-write plugins for 0.11
     * unique players only
     * ~~robust anti-teamkill~~
