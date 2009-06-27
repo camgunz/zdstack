@@ -2,8 +2,8 @@
 
   * ~~Make sure MySQL segfault is figured out & fixed, or at least understood~~
   * Add ban-list management to [http://code.google.com/p/zdstack/wiki/ZDSWeb ZDSWeb]
-  * Add an option to only save rounds where players have joined
-    * Actually this should be the default, and the option should be `save_empty_rounds`
+  * ~~Add an option to only save rounds where players have joined~~
+    * ~~Actually this should be the default, and the option should be `save_empty_rounds`~~
   * Re-write plugins for 0.11
     * unique players only
     * ~~robust anti-teamkill~~
