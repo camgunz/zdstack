@@ -137,6 +137,31 @@ class PlayersList(object):
         :type check_bans: boolean
 
         """
+        ###
+        #
+        # Connections ===
+        #
+        # xxx.xxx.xxx.xxx:30666 connection (v. 108)
+        # > xxxxxxx is now on the Blue team.
+        # > xxxxxxx has connected.
+        #
+        # -------------------------------------------------------
+        # | CATEGORY   | TYPE          | HANDLER FUNCTION       |
+        # |------------|---------------|------------------------|
+        # | connection | connection    | unhandled              |
+        # |------------|---------------|------------------------|
+        # | join       | team_switch   | handle_game_join_event |
+        # |------------|---------------|------------------------|
+        # | connection | player_lookup | _sync_players          |
+        # -------------------------------------------------------
+        #
+        # Disconnections ===
+        #
+        # > xxxxxx disconnected.
+        #
+        #
+        #
+        ###
         ds = "sync(zplayers=%s)"
         zdslog.debug(ds % (zplayers))
         if zplayers is None:

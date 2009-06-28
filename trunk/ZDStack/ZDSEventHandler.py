@@ -91,7 +91,7 @@ class ZServEventHandler(BaseEventHandler):
         BaseEventHandler.__init__(self)
         self.set_handler('frag', self.handle_frag_event)
         self.set_handler('join', self.handle_game_join_event)
-        self.set_handler('connection', self._sync_players)
+        self.set_handler('connection', self.handle_connection_event)
         self.set_handler('flag', self.handle_flag_event)
         self.set_handler('death', self.handle_frag_event)
         self.set_handler('rcon', self.handle_rcon_event)
@@ -260,8 +260,8 @@ class ZServEventHandler(BaseEventHandler):
             model.white_team_score = zserv.team_scores.get('white', None)
         return model
 
-    def _sync_players(self, event, zserv):
-        """Syncs players.
+    def handle_connection_event(self, event, zserv):
+        """Handles a connection event.
 
         :param event: an event indicating that players should be sync'd
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
@@ -270,15 +270,20 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         zdslog.debug("_sync_players(%s)" % (event))
-        if event.type == 'connection':
-            ###
-            # A 'connection' event has no player name, only an IP address and a
-            # port.  So in order to be meaningful, we must wait until the zserv
-            # process assigns that connection a name.  This happens with
-            # game_join, team_join, and player_lookup events.
-            ###
-            return
-        zserv.players.sync(check_bans=True)
+        ###
+        # Handled event types:
+        #
+        #   - connection    (xxx.xxx.xxx.xxx:30666 connection (v. 108)
+        #   - disconnection (> xxxxxx disconnected)
+        #   - player_lookup (> xxxxxx has connected.)
+        #
+        # It's not useful to do anything upon receipt of a 'connection' event,
+        # because the zserv hasn't associated a player name with it yet.
+        # However, the other two events require a player sync.
+        #
+        ###
+        if event.type in ('disconnection', 'player_lookup'):
+            zserv.players.sync(check_bans=True)
 
     def handle_game_join_event(self, event, zserv):
         """Handles a game_join event.
@@ -299,17 +304,26 @@ class ZServEventHandler(BaseEventHandler):
         #
         # These lines map thusly:
         #
+        # ------------------------------------------------------------
+        # | CATEGORY   | TYPE          | HANDLER FUNCTION            |
+        # |------------|---------------|-----------------------------|
         # | connection | connection    | unhandled                   |
+        # |------------|---------------|-----------------------------|
         # | join       | team_switch   | self.handle_game_join_event |
+        # |------------|---------------|-----------------------------|
         # | connection | player_lookup | self._sync_players          |
+        # ------------------------------------------------------------
         #
         ###
-        player = self._get_alias(event, 'player', zserv)
-        if not player:
-            return
-        if event.type in ('team_join', 'team_switch'):
-            color = event.data['team']
-            with zserv.players.lock:
+        with zserv.players.lock:
+            if event.type == 'team_switch':
+                zserv.players.sync(check_bans=True)
+            player = self._get_alias(event, 'player', zserv)
+            if not player:
+                return
+            if 'team' in event.data:
+                color = event.data['team'].lower()
+            if event.type in ('team_join', 'team_switch'):
                 player.color = color
                 if event.type == 'team_join':
                     ###
@@ -326,14 +340,13 @@ class ZServEventHandler(BaseEventHandler):
                     ###
                     player.playing = player.playing and \
                                          color in zserv.playing_colors
-        else:
-            with zserv.players.lock:
+            else:
                 player.playing = True
-        with global_session() as session:
-            round = zserv.get_round(session=session)
-            if player.playing and not round in player.rounds:
-                player.rounds.append(round)
-            session.merge(player)
+            with global_session() as session:
+                round = zserv.get_round(session=session)
+                if player.playing and not round in player.rounds:
+                    player.rounds.append(round)
+                session.merge(player)
 
     def handle_rcon_event(self, event, zserv):
         """Handles an RCON-related event.
