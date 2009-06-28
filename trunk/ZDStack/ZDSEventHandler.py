@@ -128,8 +128,7 @@ class ZServEventHandler(BaseEventHandler):
                 es = "Received an %s event for non-existent player [%s]"
             else:
                 es = "Received a %s event for non-existent player [%s]"
-            zdslog.error(es % (event.type.replace('_', ' '),
-                               event.data['key']))
+            zdslog.error(es % (event.type.replace('_', ' '), event.data[key]))
 
     @requires_session
     def _add_common_state(self, model, event, zserv, session):
