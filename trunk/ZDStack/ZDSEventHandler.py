@@ -120,9 +120,10 @@ class ZServEventHandler(BaseEventHandler):
         #
         ###
 
-    def _get_alias(self, event, key, zserv):
+    def _get_alias(self, event, key, zserv, acquire_lock=True):
         try:
-            return zserv.players.get(event.data[key])
+            return zserv.players.get(event.data[key],
+                                     acquire_lock=acquire_lock)
         except PlayerNotFoundError:
             if event.type[0] in 'aeiou':
                 es = "Received an %s event for non-existent player [%s]"
@@ -317,8 +318,9 @@ class ZServEventHandler(BaseEventHandler):
         ###
         with zserv.players.lock:
             if event.type == 'team_switch':
-                zserv.players.sync(check_bans=True)
-            player = self._get_alias(event, 'player', zserv)
+                zserv.players.sync(check_bans=True, acquire_lock=False)
+            player = self._get_alias(event, 'player', zserv,
+                                     acquire_lock=False)
             if not player:
                 return
             if 'team' in event.data:

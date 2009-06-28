@@ -979,7 +979,9 @@ def initialize_database(do_not_map=False):
         session.begin()
         existing_colors = [x.color for x in session.query(TeamColor).all()]
         for color in [x for x in TEAM_COLORS if x not in existing_colors]:
-            session.add(TeamColor(color=color))
+            tc = TeamColor()
+            tc.color = color
+            session.add(tc)
         session.commit()
     except:
         session.rollback()

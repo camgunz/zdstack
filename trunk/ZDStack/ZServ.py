@@ -310,9 +310,9 @@ class ZServ(object):
                 if gm not in source_port.game_modes:
                     source_port.game_modes.append(gm)
                     session.merge(source_port)
-                if source_port not in gm.ports:
-                    gm.ports.append(source_port)
-                    session.merge(gm)
+                # if source_port not in gm.ports:
+                #     gm.ports.append(source_port)
+                #     session.merge(gm)
             if not reload and not self.is_running():
                 if os.path.exists(self.fifo_path):
                     ###
