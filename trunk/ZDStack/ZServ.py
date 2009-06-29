@@ -69,6 +69,9 @@ class ZServ(object):
         """
         self.start_time = None
         self.restarts = list()
+        self.map_name = None
+        self.map_number = None
+        self.round_id = None
         self.name = name
         self.zdstack = zdstack
         self._fragment = None
