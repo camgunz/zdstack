@@ -34,9 +34,12 @@ zdslog = get_zdslog()
 ###
 
 SERVER_PREFIX = r"^>\s"
-OLD_TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])"
+OLDER_TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])"
+OLDER_SERVER_TIMESTAMP_PREFIX = r"(" + OLDER_TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
+OLD_TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
+__TS = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
 OLD_SERVER_TIMESTAMP_PREFIX = r"(" + OLD_TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
-TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
+TIMESTAMP_PREFIX = r"(" + __TS + r"\s|)"
 SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r">\s|" + SERVER_PREFIX + r")"
 
 __SR = re.compile(r'(<.*?>\s)')
@@ -116,6 +119,7 @@ class Regexp(object):
             self.regexp = re.compile(s)
         except Exception, e:
             raise Exception("Choked on regexp [%s]: %s" % (s, e))
+        self.regexp_string = s
 
     def match(self, s):
         """Tests whether a string matches this Regexp.

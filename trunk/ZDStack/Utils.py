@@ -225,9 +225,8 @@ def get_event_from_line(line, regexps, now=None):
             e.data['weapon'] = e.type
         elif e.category == 'death':
             e.data.update({'fragger': e.data['fraggee'], 'weapon': e.type})
-        elif e.category == 'join':
-            if 'team' in e.data:
-                e.data['team'] = e.data['team'].lower()
+        if 'team' in e.data:
+            e.data['team'] = e.data['team'].lower()
         if e.type == 'map_change' and 'number' in e.data:
             e.data['number'] = int(e.data['number'])
     return e

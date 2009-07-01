@@ -321,9 +321,9 @@ class Stack(Server):
                     ###
                     data = os.read(fd, 1024)
                     if data:
-                        logging.getLogger(zserv.name).info(data)
                         ds = "Got data from %r: [%r]"
                         zdslog.debug(ds % (zserv.name, data))
+                        logging.getLogger(zserv.name).info(data)
                         lines = data.splitlines()
                         if zserv._fragment:
                             lines[0] = zserv._fragment + lines[0]
