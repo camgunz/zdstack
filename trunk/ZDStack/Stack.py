@@ -321,8 +321,9 @@ class Stack(Server):
                     ###
                     data = os.read(fd, 1024)
                     if data:
-                        ds = "Got data from %s: [%s]"
-                        zdslog.debug(ds % (zserv.name, data.strip()))
+                        logging.getLogger(zserv.name).info(data)
+                        ds = "Got data from %r: [%r]"
+                        zdslog.debug(ds % (zserv.name, data))
                         lines = data.splitlines()
                         if zserv._fragment:
                             lines[0] = zserv._fragment + lines[0]
@@ -368,8 +369,6 @@ class Stack(Server):
         
         """
         # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
-        if zserv.save_logfile:
-            logging.getLogger(zserv.name).info('\n'.join(lines))
         if not zserv.events_enabled:
             ###
             # If events are disabled, this is as far as we go.
@@ -397,6 +396,7 @@ class Stack(Server):
                 # response is finished, if it's waiting on something.
                 #
                 ###
+                zdslog.debug("No event for [%s]" % (line))
                 if zserv.event_type_to_watch_for:
                     zdslog.debug("Response is finished")
                     ###
