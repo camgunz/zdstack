@@ -29,11 +29,10 @@ def fork(debug=False):
     # We used to not close this stuff if debugging was on, but if we leave
     # them open and the buffer fills up, ZDStack crashes - no good.
     ###
-    if not debug:
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout = open(devnull, 'a+')
-        sys.stderr = open(devnull, 'a+')
+    sys.stdout.close()
+    sys.stderr.close()
+    sys.stdout = open(devnull, 'a+')
+    sys.stderr = open(devnull, 'a+')
 
 def print_usage(msg=None):
     if msg:
