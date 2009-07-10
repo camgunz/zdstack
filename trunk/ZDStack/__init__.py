@@ -795,6 +795,15 @@ def set_debugging(debugging):
     if needs_reloading:
         get_zdslog(reload=True)
 
+def get_debugging():
+    """Gets whether debugging is set or not.
+
+    :rtype: boolean.
+
+    """
+    global DEBUGGING
+    return DEBUGGING == True
+
 def get_zdslog(reload=False):
     """Gets the ZDStack logger.
 
@@ -814,6 +823,7 @@ def get_zdslog(reload=False):
         log_file = os.path.join(log_folder, 'ZDStack.log')
         if DEBUGGING:
             log_level = logging.DEBUG
+            sa_log_level = logging.DEBUG
             log_format = '[%(asctime)s] '
             log_format += '%(filename)-18s - %(funcName)-25s '
             log_format += '- %(lineno)-4d: '
@@ -822,6 +832,7 @@ def get_zdslog(reload=False):
             formatter = DebugFormatter(log_format, datefmt=DATEFMT)
         else:
             log_level = logging.INFO
+            sa_log_level = logging.ERROR
             log_format = '[%(asctime)s] '
             log_format += '%(levelname)-8s %(message)s'
             handler = logging.handlers.TimedRotatingFileHandler(log_file,
@@ -832,16 +843,9 @@ def get_zdslog(reload=False):
         handler.setFormatter(formatter)
         ZDSLOG.addHandler(handler)
         ZDSLOG.setLevel(log_level)
+        logging.getLogger('sqlalchemy.engine').addHandler(handler)
+        logging.getLogger('sqlalchemy.engine').setLevel(sa_log_level)
     return ZDSLOG
-
-def get_debugging():
-    """Gets whether debugging is set or not.
-
-    :rtype: boolean.
-
-    """
-    global DEBUGGING
-    return DEBUGGING == True
 
 def initialize_database(do_not_map=False):
     """Initializes the Database.
@@ -878,15 +882,13 @@ def initialize_database(do_not_map=False):
                                   GameMode, Round, StoredPlayer, Frag, \
                                   FlagTouch, FlagReturn, RCONAccess, \
                                   RCONAction, RCONDenial, RoundsAndAliases
-    ###
-    # Parent cascades.
-    ###
     if not do_not_map:
+        ###
+        # Parent cascades.
+        ###
         _pc = 'save-update, delete, delete-orphan'
         mapper(Alias, aliases_table, properties={
          'rounds': relation(Round, secondary=rounds_and_aliases),
-         # 'frags': relation(Frag, backref='fragger', cascade=_pc),
-         # 'deaths': relation(Frag, backref='fraggee', cascade=_pc),
          'frags': relation(Frag, backref='fragger', cascade=_pc,
                        primaryjoin=frags_table.c.fragger_id==aliases_table.c.id),
          'deaths': relation(Frag, backref='fraggee', cascade=_pc,
@@ -955,13 +957,6 @@ def initialize_database(do_not_map=False):
 
         mapper(StoredPlayer, stored_players_table, properties={
          'aliases': relation(Alias, backref='stored_player'),
-         # 'frags': relation(Frag, backref='player'),
-         # 'flag_touches': relation(FlagTouch, backref='player',
-         #   primaryjoin=FlagTouch.round in ),
-         # 'flag_returns': relation(FlagReturn, backref='player'),
-         # 'rcon_accesses': relation(RCONAccess, backref='player'),
-         # 'rcon_denials': relation(RCONDenial, backref='player'),
-         # 'rcon_actions': relation(RCONAction, backref='player')
         })
 
         mapper(Frag, frags_table)

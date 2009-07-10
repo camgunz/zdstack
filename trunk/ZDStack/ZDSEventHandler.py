@@ -120,9 +120,10 @@ class ZServEventHandler(BaseEventHandler):
         #
         ###
 
-    def _get_alias(self, event, key, zserv, acquire_lock=True):
+    @requires_session
+    def _get_alias(self, event, key, zserv, acquire_lock=True, session=None):
         try:
-            return zserv.players.get(event.data[key],
+            return zserv.players.get(event.data[key], session=session,
                                      acquire_lock=acquire_lock)
         except PlayerNotFoundError:
             if event.type[0] in 'aeiou':
@@ -132,7 +133,7 @@ class ZServEventHandler(BaseEventHandler):
             zdslog.error(es % (event.type.replace('_', ' '), event.data[key]))
 
     @requires_session
-    def _add_common_state(self, model, event, zserv, session):
+    def _add_common_state(self, model, event, zserv, session=None):
         """Adds common state information to a model.
 
         :param model: an instance of a model, i.e. FlagTouch
@@ -261,13 +262,16 @@ class ZServEventHandler(BaseEventHandler):
             model.white_team_score = zserv.team_scores.get('white', None)
         return model
 
-    def handle_connection_event(self, event, zserv):
+    @requires_session
+    def handle_connection_event(self, event, zserv, session=None):
         """Handles a connection event.
 
         :param event: an event indicating that players should be sync'd
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
         :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug("_sync_players(%s)" % (event))
@@ -284,15 +288,18 @@ class ZServEventHandler(BaseEventHandler):
         #
         ###
         if event.type in ('disconnection', 'player_lookup'):
-            zserv.players.sync(check_bans=True)
+            zserv.players.sync(check_bans=True, session=session)
 
-    def handle_game_join_event(self, event, zserv):
+    @requires_session
+    def handle_game_join_event(self, event, zserv, session=None):
         """Handles a game_join event.
 
         :param event: the game_join event
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
         :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug("handle_game_join_event(%s)" % (event))
@@ -318,8 +325,9 @@ class ZServEventHandler(BaseEventHandler):
         ###
         with zserv.players.lock:
             if event.type == 'team_switch':
-                zserv.players.sync(check_bans=True, acquire_lock=False)
-            player = self._get_alias(event, 'player', zserv,
+                zserv.players.sync(check_bans=True, acquire_lock=False,
+                                   session=session)
+            player = self._get_alias(event, 'player', zserv, session=session,
                                      acquire_lock=False)
             if not player:
                 return
@@ -344,41 +352,46 @@ class ZServEventHandler(BaseEventHandler):
                                          color in zserv.playing_colors
             else:
                 player.playing = True
-            with global_session() as session:
-                round = zserv.get_round(session=session)
-                if player.playing and not round in player.rounds:
-                    player.rounds.append(round)
-                session.merge(player)
+            round = zserv.get_round(session=session)
+            if player.playing and not player in round.aliases:
+                round.aliases.append(player)
+            session.merge(player)
+            session.merge(round)
 
-    def handle_rcon_event(self, event, zserv):
+    @requires_session
+    def handle_rcon_event(self, event, zserv, session=None):
         """Handles an RCON-related event.
 
         :param event: the RCON event
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
         :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug('handle_rcon_event(%s)' % (event))
-        with global_session() as session:
-            if event.type == 'rcon_denied':
-                s = RCONDenial()
-            elif event.type == 'rcon_granted':
-                s = RCONAccess()
-            elif event.type == 'rcon_action':
-                s = RCONAction()
-            with zserv.state_lock:
-                zdslog.debug("Persisting [%s]" % (s))
-                session.add(self._add_common_state(s, event, zserv,
-                                                   session=session))
+        if event.type == 'rcon_denied':
+            s = RCONDenial()
+        elif event.type == 'rcon_granted':
+            s = RCONAccess()
+        elif event.type == 'rcon_action':
+            s = RCONAction()
+        with zserv.state_lock:
+            zdslog.debug("Persisting [%s]" % (s))
+            s = self._add_common_state(s, event, zserv, session=session)
+            session.add(s)
 
-    def handle_flag_event(self, event, zserv):
+    @requires_session
+    def handle_flag_event(self, event, zserv, session=None):
         """Handles a flag_touch event.
 
         :param event: the flag event
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
         :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug("handle_flag_event(%s)" % (event))
@@ -387,66 +400,76 @@ class ZServEventHandler(BaseEventHandler):
             # Nothing really to be done here.
             ###
             return
-        with global_session() as session:
-            with zserv.state_lock:
-                if event.type in ('flag_cap', 'flag_loss'):
-                    player = self._get_alias(event, 'player', zserv)
-                    q = session.query(FlagTouch)
-                    q = q.filter(and_(FlagTouch.player_id==player.id,
-                                      FlagTouch.round_id==zserv.round_id))
-                    stat = q.order_by(FlagTouch.touch_time.desc()).first()
-                    if not stat:
-                        es = "Couldn't find FlagTouch by %s in %d"
-                        zdslog.error(es % (player.name, zserv.round_id))
-                        return
-                    player = self._get_alias(event, 'player', zserv)
-                    stat.loss_time = event.dt
+        with zserv.state_lock:
+            if event.type in ('flag_cap', 'flag_loss'):
+                player = self._get_alias(event, 'player', zserv,
+                                         session=session)
+                q = session.query(FlagTouch)
+                q = q.filter(and_(FlagTouch.player_id==player.id,
+                                  FlagTouch.round_id==zserv.round_id))
+                stat = q.order_by(FlagTouch.touch_time.desc()).first()
+                if not stat:
+                    es = "Couldn't find FlagTouch by %s in %d"
+                    zdslog.error(es % (player.name, zserv.round_id))
+                    return
+                player = self._get_alias(event, 'player', zserv)
+                stat.loss_time = event.dt
+                try:
                     zserv.players_holding_flags.remove(player)
+                except KeyError:
+                    ds = "%s not in %s"
+                    zdslog.error(ds % (player, zserv.players_holding_flags))
+                try:
                     zserv.teams_holding_flags.remove(player.color.lower())
-                    if event.type == 'flag_cap':
-                        stat.resulted_in_score = True
-                        color = player.color.lower()
-                        ds = "Player team score: %d"
-                        zdslog.debug(ds % (zserv.team_scores[color]))
-                        zserv.team_scores[color] += 1
-                    else:
-                        stat.resulted_in_score = False
-                        zserv.fragged_runners.append(player)
-                    zdslog.debug("Updating [%s]" % (stat))
-                    session.merge(stat)
-                elif event.type in ('flag_touch', 'flag_pick', 'flag_return'):
-                    if event.type == 'flag_return':
-                        stat = FlagReturn()
-                    else:
-                        stat = FlagTouch()
-                    stat = self._add_common_state(stat, event, zserv,
-                                                  session=session)
-                    zdslog.debug("Persisting[%s]" % (stat))
-                    session.add(stat)
+                except KeyError:
+                    ds = "%s not in %s"
+                    zdslog.error(ds % (player.color.lower(),
+                                       zserv.teams_holding_flags))
+                if event.type == 'flag_cap':
+                    stat.resulted_in_score = True
+                    color = player.color.lower()
+                    ds = "Player team score: %d"
+                    zdslog.debug(ds % (zserv.team_scores[color]))
+                    zserv.team_scores[color] += 1
                 else:
-                    zdslog.error("Unsupported event type: [%s]" % (event.type))
+                    stat.resulted_in_score = False
+                    zserv.fragged_runners.append(player)
+                zdslog.debug("Updating [%s]" % (stat))
+                session.merge(stat)
+            elif event.type in ('flag_touch', 'flag_pick', 'flag_return'):
+                if event.type == 'flag_return':
+                    stat = FlagReturn()
+                else:
+                    stat = FlagTouch()
+                stat = self._add_common_state(stat, event, zserv,
+                                              session=session)
+                zdslog.debug("Persisting[%s]" % (stat))
+                session.add(stat)
+            else:
+                zdslog.error("Unsupported event type: [%s]" % (event.type))
 
-    def handle_frag_event(self, event, zserv):
+    @requires_session
+    def handle_frag_event(self, event, zserv, session=None):
         """Handles a frag event.
 
         :param event: the frag event
         :type event: :class:`~ZDStack.LogEvent.LogEvent`
         :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug("handle_frag_event(%s)" % (event))
-        with global_session() as session:
-            with zserv.state_lock:
-                zdslog.debug("Persisting Frag")
-                frag = self._add_common_state(Frag(), event, zserv,
-                                              session=session)
-                if not frag:
-                    es = "Something horrible happened in _add_common_state"
-                    zdslog.error(es)
-                else:
-                    session.add(frag)
-                zdslog.debug("Done!")
+        with zserv.state_lock:
+            zdslog.debug("Persisting Frag")
+            frag = self._add_common_state(Frag(), event, zserv, session=session)
+            if frag:
+                session.add(frag)
+            else:
+                es = "Something horrible happened in _add_common_state"
+                zdslog.error(es)
+            zdslog.debug("Done!")
 
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.

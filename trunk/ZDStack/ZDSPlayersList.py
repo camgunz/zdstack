@@ -8,9 +8,8 @@ from collections import deque
 from ZDStack import PlayerNotFoundError, get_zdslog
 from ZDStack.ZServ import TEAM_MODES
 from ZDStack.Utils import requires_instance_lock
-from ZDStack.ZDSPlayer import Player
 from ZDStack.ZDSModels import Alias
-from ZDStack.ZDSDatabase import global_session
+from ZDStack.ZDSDatabase import global_session, requires_session
 
 zdslog = get_zdslog()
 
@@ -55,8 +54,9 @@ class PlayersList(object):
     def __len__(self):
         return len(self.__players)
 
+    @requires_session
     @requires_instance_lock()
-    def get(self, name=None, ip_address_and_port=None, sync=True):
+    def get(self, name=None, ip_address_and_port=None, sync=True, session=None):
         """Returns an Alias instance.
 
         :param name: the name of the player to return
@@ -67,6 +67,8 @@ class PlayersList(object):
         :param sync: a boolean, if True this method performs a sync and
                      reattempts to lookup a player if it is not
                      initially found; True by default
+        :param session: a database session
+        :type session: SQLAlchemy Session
         :rtype: Alias
 
         Either name or ip_address_and_port is optional, but at least
@@ -107,7 +109,7 @@ class PlayersList(object):
             # Didn't find the player, sync & try again.
             ###
             zdslog.debug("Alias not found, re-syncing")
-            self.sync(acquire_lock=False, check_bans=True)
+            self.sync(session, acquire_lock=False, check_bans=True)
             p = find_player()
         if p:
             return p
@@ -120,8 +122,9 @@ class PlayersList(object):
             zdslog.debug("Alias not found, erroring")
         raise PlayerNotFoundError(name, ip_address_and_port)
 
+    @requires_session
     @requires_instance_lock()
-    def sync(self, zplayers=None, sleep=None, check_bans=False):
+    def sync(self, zplayers=None, sleep=None, check_bans=False, session=None):
         """Syncs the internal players list with the running zserv.
 
         :param zplayers: optional, the output from
@@ -135,6 +138,8 @@ class PlayersList(object):
         :param check_bans: whether or not to check the sync'd list of
                            players for banned players, and kick them
         :type check_bans: boolean
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         ###
@@ -227,8 +232,9 @@ class PlayersList(object):
                                                   d['player_port']))
             addr = (d['player_ip'], d['player_port'])
             try:
-                p = self.get(name=d['player_name'], ip_address_and_port=addr,
-                             sync=False, acquire_lock=False)
+                p = self.get(session, name=d['player_name'],
+                             ip_address_and_port=addr, sync=False,
+                             acquire_lock=False)
             except PlayerNotFoundError:
                 ###
                 # Found a new player!
@@ -237,27 +243,34 @@ class PlayersList(object):
                 # Try and look them up first:
                 ###
                 zdslog.debug("Found a new player!")
-                with global_session() as session:
-                    q = session.query(Alias)
-                    q = q.filter_by(name=d['player_name'],
-                                    ip_address=d['player_ip'])
-                    p = q.first()
-                    if not p:
-                        if not d['player_ip']:
-                            es = "Somehow a players command did not return "
-                            es += "an IP address to us"
-                            raise Exception(es)
-                        p = Alias()
-                        p.ip_address = d['player_ip']
-                        p.port = d['player_port']
-                        p.name = d['player_name']
-                        session.add(p)
+                q = session.query(Alias).filter_by(name=d['player_name'],
+                                                   ip_address=d['player_ip'])
+                p = q.first()
+                if not p:
+                    if not d['player_ip']:
+                        es = "Somehow a players command did not return "
+                        es += "an IP address to us"
+                        raise Exception(es)
+                    p = Alias()
+                    p.name = d['player_name']
+                    p.ip_address = d['player_ip']
+                    p.port = d['player_port']
+                    session.add(p)
+                else:
+                    p.name = d['player_name']
+                    p.ip_address = d['player_ip']
+                    p.port = d['player_port']
+                    session.merge(p)
                 p.zserv = self.zserv
                 p.number = d['player_num']
                 p.disconnected = False
                 p.playing = False
-                zdslog.debug("Adding new player [%s]" % (p.name))
-                self.__players.append(p)
+                if p not in self.__players:
+                    zdslog.debug("Adding new player [%s]" % (p.name))
+                    self.__players.append(p)
+                else:
+                    ds = "Somehow player [%s] was already in %s"
+                    zdslog.debug(ds % (p, self.__players))
         zdslog.debug("Players list: %s" % (self.__players))
         zdslog.debug("Disconnected list: %s" % ([x for x in self if x.disconnected]))
         if self.zserv.game_mode in TEAM_MODES:
@@ -273,14 +286,20 @@ class PlayersList(object):
                             zdslog.debug(ds % t)
                         player.color = team_color
         if check_bans:
-            self.check_bans(acquire_lock=False)
+            self.check_bans(session, acquire_lock=False)
         else:
             zdslog.debug('Skipping ban check')
         zdslog.debug("Sync: done")
 
+    @requires_session
     @requires_instance_lock()
-    def check_bans(self):
-        """Kicks banned players."""
+    def check_bans(self, session=None):
+        """Kicks banned players.
+        
+        :param session: a database session
+        :type session: SQLAlchemy Session
+        
+        """
         zdslog.debug('Checking bans')
         t_string = "You have been banned for the following reason: %s"
         while 1:
@@ -304,7 +323,7 @@ class PlayersList(object):
                             reason = 'Banned'
                         zdslog.debug('Kicking %s' % (p))
                         self.zserv.zkick(p.number, reason)
-                        self.sync(acquire_lock=False, check_bans=False)
+                        self.sync(session, acquire_lock=False, check_bans=False)
                         break
                     else:
                         zdslog.debug('No ban found for %s@%s' % (p.name, p.ip))
@@ -312,12 +331,15 @@ class PlayersList(object):
                 zdslog.debug('No bans found')
                 break
 
+    @requires_session
     @requires_instance_lock()
-    def get_first_matching_player(self, possible_player_names):
+    def get_first_matching_player(self, possible_player_names, session=None):
         """Returns the player whose name matches a list of names.
 
         :param possible_player_names: the player names to check
         :type possible_player_names: a list of strings
+        :param session: an SQLAlchemy Session
+        :type session: an SQLAlchemy Session
         :rtype: Player
         :returns: the player whose name matches the earliest name in
                   'possible_player_names'
