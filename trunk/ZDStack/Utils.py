@@ -4,6 +4,9 @@ import os
 import sys
 import stat
 import decimal
+import logging
+
+zdslog = logging.getLogger('ZDStack')
 
 from datetime import datetime, timedelta
 
@@ -248,9 +251,14 @@ def requires_lock(lck):
                 __can_skip_lock = not __kwargs['acquire_lock']
                 del __kwargs['acquire_lock']
             if not __can_skip_lock:
+                zdslog.debug('Acquiring %s in %s' % (lck, f.__name__))
                 with lck:
-                    return f(*__args, **__kwargs)
+                    zdslog.debug('Acquired %s in %s' % (lck, f.__name__))
+                    output = f(*__args, **__kwargs)
+                zdslog.debug('Released %s' % (lck))
+                return output
             else:
+                zdslog.debug('Skipping acquisition of %s' % (lck))
                 return f(*__args, **__kwargs)
         wrapper.__name__ = f.__name__
         wrapper.__dict__ = f.__dict__

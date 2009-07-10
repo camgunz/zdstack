@@ -39,7 +39,7 @@ OLDER_SERVER_TIMESTAMP_PREFIX = r"(" + OLDER_TIMESTAMP_PREFIX + r" >\s|" + SERVE
 OLD_TIMESTAMP_PREFIX = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
 __TS = r"^(?:2|1)\d{3}(?:-|\/)(?:(?:0[1-9])|(?:1[0-2]))(?:-|\/)(?:(?:0[1-9])|(?:[1-2][0-9])|(?:3[0-1]))(?:T|\s)(?:(?:[0-1][0-9])|(?:2[0-3])):(?:[0-5][0-9]):(?:[0-5][0-9])\s"
 OLD_SERVER_TIMESTAMP_PREFIX = r"(" + OLD_TIMESTAMP_PREFIX + r" >\s|" + SERVER_PREFIX + r")"
-TIMESTAMP_PREFIX = r"(" + __TS + r"\s|)"
+TIMESTAMP_PREFIX = r"(" + __TS + r"|)"
 SERVER_TIMESTAMP_PREFIX = r"(" + TIMESTAMP_PREFIX + r">\s|" + SERVER_PREFIX + r")"
 
 __SR = re.compile(r'(<.*?>\s)')
@@ -213,6 +213,11 @@ class ServerRegexp(Regexp):
             prefix = r"^"
         Regexp.__init__(self, regexp, category, event_type, prefix)
 
+###
+# True:  prepends [ts] >
+# False: prepends [ts]
+# None:  prepends
+
 COMMANDS = (
 (r'Unknown command "(?P<command>.*)"$', 'unknown_command', False),
 (r"(?P<player_ip>(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)\.(?:\d\d\d|\d\d|\d|\*)) added to banlist$", 'addban_command', False),
@@ -227,6 +232,7 @@ COMMANDS = (
 (r"map(?P<number>\d\d): (?P<name>.*)$", 'map_change', None),
 ("\x1c\\+(?P<name>.*)$", 'map_change', None),
 (r"(?P<sequence_number>\d\d\d|\d\d|\d)\. (?P<map_number>.*)$", 'maplist_command', False),
+# 2009/07/10 14:23:48 0:  ButtBag (127.0.0.1:37518) (Points: 0) (Time: 0)   *SPEC*
 (r'(?P<player_num>\d\d|\d):\s*(?P<player_name>.*)\s\((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)):(?P<player_port>\d\d\d\d\d|\d\d\d\d|\d\d\d|\d\d|\d)', 'players_command', False),
 (r"Removed all bots.$", 'removebots_command', False),
 (r"=== ALL SCORES RESET BY SERVER ADMIN ===$", 'resetscores_command', True),

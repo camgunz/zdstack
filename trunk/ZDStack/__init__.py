@@ -636,7 +636,6 @@ def get_db_lock():
 
     """
     global DB_LOCK
-    ZDSLOG.debug('Trying to acquire DB lock')
     DB_LOCK = DB_LOCK or Lock()
     return DB_LOCK
 

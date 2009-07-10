@@ -109,7 +109,7 @@ class PlayersList(object):
             # Didn't find the player, sync & try again.
             ###
             zdslog.debug("Alias not found, re-syncing")
-            self.sync(session, acquire_lock=False, check_bans=True)
+            self.sync(session=session, acquire_lock=False, check_bans=True)
             p = find_player()
         if p:
             return p
@@ -232,7 +232,7 @@ class PlayersList(object):
                                                   d['player_port']))
             addr = (d['player_ip'], d['player_port'])
             try:
-                p = self.get(session, name=d['player_name'],
+                p = self.get(session=session, name=d['player_name'],
                              ip_address_and_port=addr, sync=False,
                              acquire_lock=False)
             except PlayerNotFoundError:
@@ -286,7 +286,7 @@ class PlayersList(object):
                             zdslog.debug(ds % t)
                         player.color = team_color
         if check_bans:
-            self.check_bans(session, acquire_lock=False)
+            self.check_bans(session=session, acquire_lock=False)
         else:
             zdslog.debug('Skipping ban check')
         zdslog.debug("Sync: done")
@@ -323,7 +323,8 @@ class PlayersList(object):
                             reason = 'Banned'
                         zdslog.debug('Kicking %s' % (p))
                         self.zserv.zkick(p.number, reason)
-                        self.sync(session, acquire_lock=False, check_bans=False)
+                        self.sync(session=session, acquire_lock=False,
+                                  check_bans=False)
                         break
                     else:
                         zdslog.debug('No ban found for %s@%s' % (p.name, p.ip))
@@ -354,10 +355,11 @@ class PlayersList(object):
         ###
         # Here we sync, and try again.
         ###
-        self.sync(acquire_lock=False, check_bans=True)
+        self.sync(session=session, acquire_lock=False, check_bans=True)
         for pn in possible_player_names:
             if pn in names:
-                return self.get(name=pn, sync=False, acquire_lock=False)
+                return self.get(session=session, name=pn, sync=False,
+                                acquire_lock=False)
         ###
         # Otherwise, debug some stuff.
         ###

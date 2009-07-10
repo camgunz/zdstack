@@ -152,9 +152,9 @@ class ZServEventHandler(BaseEventHandler):
         zdslog.debug("Event type is %s" % (event.type))
         if event.category in ('frag', 'death'):
             zdslog.debug("Handling a frag/death event")
-            fraggee = self._get_alias(event, 'fraggee', zserv)
+            fraggee = self._get_alias(event, 'fraggee', zserv, session=session)
             if not fraggee:
-                zdslog.debug("Could find fraggee")
+                zdslog.debug("Couldn't find fraggee")
                 return
             fraggee_color = fraggee.color.lower()
             model.fraggee_team_color_name = fraggee_color
@@ -168,7 +168,8 @@ class ZServEventHandler(BaseEventHandler):
             else:
                 model.fraggee_was_holding_flag = False
             if 'fragger' in event.data:
-                fragger = self._get_alias(event, 'fragger', zserv)
+                fragger = self._get_alias(event, 'fragger', zserv,
+                                          session=session)
                 if not fragger:
                     zdslog.debug("Could find fraggee")
                     return
@@ -193,7 +194,7 @@ class ZServEventHandler(BaseEventHandler):
                                                         'flag_touch',
                                                         'flag_return'):
             zdslog.debug("Handling an rcon or flag event")
-            alias = self._get_alias(event, 'player', zserv)
+            alias = self._get_alias(event, 'player', zserv, session=session)
             if not alias:
                 return
             model.alias = alias
@@ -237,7 +238,10 @@ class ZServEventHandler(BaseEventHandler):
                 except NoResultFound:
                     weapon = Weapon()
                     weapon.name = event.data['weapon']
-                    weapon.is_suicide = model.is_suicide
+                    if event.category == 'death' or model.is_suicide:
+                        weapon.is_suicide = True
+                    else:
+                        weapon.is_suicide = False
                     session.add(weapon)
                 model.weapon_name = weapon.name
                 model.weapon = weapon
@@ -412,7 +416,8 @@ class ZServEventHandler(BaseEventHandler):
                     es = "Couldn't find FlagTouch by %s in %d"
                     zdslog.error(es % (player.name, zserv.round_id))
                     return
-                player = self._get_alias(event, 'player', zserv)
+                player = self._get_alias(event, 'player', zserv,
+                                         session=session)
                 stat.loss_time = event.dt
                 try:
                     zserv.players_holding_flags.remove(player)

@@ -125,44 +125,49 @@ class ZServ(object):
             else:
                 self.team_scores = dict()
 
-    def clean_up(self):
-        """Cleans up after a round."""
+    @requires_session
+    def clean_up(self, session=None):
+        """Cleans up after a round.
+
+        :param session: a database session
+        :type session: SQLAlchemy Session
+
+        """
         zdslog.debug('Cleaning up')
         now = datetime.now()
         if not self.round_id:
             zdslog.debug("self.round_id: [%s]" % (self.round_id))
             return
-        with global_session() as session:
-            round = session.query(Round).get(self.round_id)
-            if not self.stats_enabled or (not self.save_empty_rounds and \
-                                          not len(round.aliases)):
-                session.delete(round)
-            else:
-                zdslog.debug("Setting round end_time to [%s]" % (now))
-                round.end_time = now
-                s = "Adding %s to %s"
+        round = session.query(Round).get(self.round_id)
+        if not self.stats_enabled or (not self.save_empty_rounds and \
+                                      not len(round.aliases)):
+            session.delete(round)
+        else:
+            zdslog.debug("Setting round end_time to [%s]" % (now))
+            round.end_time = now
+            s = "Adding %s to %s"
+            ###
+            # for p in self.players:
+            #     a = get_alias(p.name, p.ip, round=round, session=session)
+            #     if round not in a.rounds:
+            #         zdslog.debug(s % (round, a))
+            #         a.rounds.append(round)
+            ###
+            zdslog.debug("Updating %s" % (round))
+            session.merge(round)
+            for flag_touch in round.flag_touches:
                 ###
-                # for p in self.players:
-                #     a = get_alias(p.name, p.ip, round=round, session=session)
-                #     if round not in a.rounds:
-                #         zdslog.debug(s % (round, a))
-                #         a.rounds.append(round)
+                # Players can hold flags until a round ends, thus the
+                # FlagTouch will never have a loss_time.  Technically,
+                # however, the loss_time would be at the end of a round,
+                # because you can't hold a flag when there is no round.
                 ###
-                zdslog.debug("Updating %s" % (round))
-                session.merge(round)
-                for flag_touch in round.flag_touches:
-                    ###
-                    # Players can hold flags until a round ends, thus the
-                    # FlagTouch will never have a loss_time.  Technically,
-                    # however, the loss_time would be at the end of a round,
-                    # because you can't hold a flag when there is no round.
-                    ###
-                    ds = "Checking that %s has a loss_time"
-                    zdslog.debug(ds % (flag_touch))
-                    if not flag_touch.loss_time:
-                        flag_touch.loss_time = now
-                        zdslog.debug("Updating %s" % (flag_touch))
-                        session.merge(flag_touch)
+                ds = "Checking that %s has a loss_time"
+                zdslog.debug(ds % (flag_touch))
+                if not flag_touch.loss_time:
+                    flag_touch.loss_time = now
+                    zdslog.debug("Updating %s" % (flag_touch))
+                    session.merge(flag_touch)
         self.round_id = None
         self.clear_state()
 
@@ -171,7 +176,7 @@ class ZServ(object):
         return self.game_mode in TEAM_MODES
 
     @requires_session
-    def get_round(self, session):
+    def get_round(self, session=None):
         """Gets this ZServ's current Round.
 
         :param session: a database session
@@ -182,10 +187,15 @@ class ZServ(object):
         """
         zdslog.debug('Getting round')
         if self.round_id:
-            return session.query(Round).get(self.round_id)
+            round = session.query(Round).get(self.round_id)
+            zdslog.debug("Returning %s from [%s]" % (round, self.round_id))
+            return round
+        else:
+            es = "[%s]: No round associated with round_id [%s]"
+            zdslog.error(es % (self.name, self.round_id))
 
     @requires_session
-    def get_map(self, session):
+    def get_map(self, session=None):
         """Gets this ZServ's current Map.
 
         :param session: a database session
@@ -211,7 +221,7 @@ class ZServ(object):
             return m
 
     @requires_session
-    def get_game_mode(self, session):
+    def get_game_mode(self, session=None):
         """Gets this ZServ's current GameMode.
 
         :param session: a database session
@@ -235,7 +245,7 @@ class ZServ(object):
         return gm
 
     @requires_session
-    def get_source_port(self, session):
+    def get_source_port(self, session=None):
         """Gets this ZServ's current (source) Port.
 
         :param session: a database session
@@ -254,13 +264,16 @@ class ZServ(object):
             session.add(p)
         return p
 
-    def change_map(self, map_number, map_name):
+    @requires_session
+    def change_map(self, map_number, map_name, session=None):
         """Handles a map change event.
 
         :param map_number: the number of the new map
         :type map_number: int
         :param map_name: the name of the new map
         :type map_name: string
+        :param session: a database session
+        :type session: SQLAlchemy Session
 
         """
         zdslog.debug('Change Map')
@@ -270,28 +283,33 @@ class ZServ(object):
         # players until we sync it up.
         ###
         with self.players.lock:
-            self.clean_up()
+            self.clean_up(session=session)
             self.map_number = map_number
             self.map_name = map_name
             zdslog.debug('Acquiring session')
-            with global_session() as session:
-                game_mode = self.get_game_mode(session=session)
-                map = self.get_map(session=session)
-                zdslog.debug('Getting now')
-                now = datetime.now()
-                zdslog.debug('Creating new round')
-                r = Round()
-                r.game_mode_name = game_mode.name
-                r.game_mode = game_mode
-                r.map_id = map.id
-                r.map = map
-                r.start_time = now
-                zdslog.debug('Created new round %s' % (r))
-                session.add(r)
-                zdslog.debug('Persisted new round %s' % (r))
+            game_mode = self.get_game_mode(session=session)
+            map = self.get_map(session=session)
+            zdslog.debug('Getting now')
+            now = datetime.now()
+            zdslog.debug('Creating new round')
+            r = Round()
+            r.game_mode_name = game_mode.name
+            r.game_mode = game_mode
+            r.map_id = map.id
+            r.map = map
+            r.start_time = now
+            zdslog.debug('Created new round %s, id: %s' % (r, r.id))
+            session.add(r)
+            session.flush()
+            session.refresh(r)
+            zdslog.debug('Persisted new round %s, id: %s' % (r, r.id))
+            if r.id is None:
+                zdslog.error("Round %s has no ID")
             self.round_id = r.id
             zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
-            self.players.sync(acquire_lock=False, check_bans=True)
+            self.players.sync(acquire_lock=False, session=session,
+                              check_bans=True)
+            zdslog.debug('Done changing map')
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.

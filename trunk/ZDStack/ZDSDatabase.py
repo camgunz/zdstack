@@ -18,7 +18,6 @@ __GLOBAL_SESSION = None
 @contextmanager
 @requires_lock(get_db_lock())
 def _locked_session(get_global=False, remove=False):
-    zdslog.debug('Acquired DB lock')
     global __GLOBAL_SESSION
     SessionClass = get_session_class()
     with get_db_lock():
