@@ -124,7 +124,7 @@ class ZServEventHandler(BaseEventHandler):
     def _get_alias(self, event, key, zserv, acquire_lock=True, session=None):
         try:
             return zserv.players.get(event.data[key], session=session,
-                                     acquire_lock=acquire_lock)
+                                     acquire_lock=False)
         except PlayerNotFoundError:
             if event.type[0] in 'aeiou':
                 es = "Received an %s event for non-existent player [%s]"
@@ -327,7 +327,9 @@ class ZServEventHandler(BaseEventHandler):
         # ------------------------------------------------------------
         #
         ###
+        zdslog.debug("Acquiring %s" % (zserv.players.lock))
         with zserv.players.lock:
+            zdslog.debug("Acquired %s" % (zserv.players.lock))
             if event.type == 'team_switch':
                 zserv.players.sync(check_bans=True, acquire_lock=False,
                                    session=session)
@@ -361,6 +363,7 @@ class ZServEventHandler(BaseEventHandler):
                 round.aliases.append(player)
             session.merge(player)
             session.merge(round)
+        zdslog.debug("Released %s" % (zserv.players.lock))
 
     @requires_session
     def handle_rcon_event(self, event, zserv, session=None):
@@ -381,10 +384,13 @@ class ZServEventHandler(BaseEventHandler):
             s = RCONAccess()
         elif event.type == 'rcon_action':
             s = RCONAction()
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
             zdslog.debug("Persisting [%s]" % (s))
             s = self._add_common_state(s, event, zserv, session=session)
             session.add(s)
+            zdslog.debug("Released %s" % (zserv.state_lock))
 
     @requires_session
     def handle_flag_event(self, event, zserv, session=None):
@@ -404,7 +410,9 @@ class ZServEventHandler(BaseEventHandler):
             # Nothing really to be done here.
             ###
             return
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
             if event.type in ('flag_cap', 'flag_loss'):
                 player = self._get_alias(event, 'player', zserv,
                                          session=session)
@@ -452,6 +460,7 @@ class ZServEventHandler(BaseEventHandler):
                 session.add(stat)
             else:
                 zdslog.error("Unsupported event type: [%s]" % (event.type))
+        zdslog.debug("Released %s" % (zserv.state_lock))
 
     @requires_session
     def handle_frag_event(self, event, zserv, session=None):
@@ -466,7 +475,9 @@ class ZServEventHandler(BaseEventHandler):
 
         """
         zdslog.debug("handle_frag_event(%s)" % (event))
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
             zdslog.debug("Persisting Frag")
             frag = self._add_common_state(Frag(), event, zserv, session=session)
             if frag:
@@ -475,6 +486,7 @@ class ZServEventHandler(BaseEventHandler):
                 es = "Something horrible happened in _add_common_state"
                 zdslog.error(es)
             zdslog.debug("Done!")
+        zdslog.debug("Released %s" % (zserv.state_lock))
 
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.

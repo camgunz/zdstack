@@ -280,8 +280,11 @@ def requires_instance_lock():
                 __can_skip_lock = not __kwargs['acquire_lock']
                 del __kwargs['acquire_lock']
             if not __can_skip_lock:
+                zdslog.debug('Acquiring %s in %s' % (self.lock, f.__name__))
                 with self.lock:
+                    zdslog.debug('Acquired %s in %s' % (self.lock, f.__name__))
                     return f(self, *__args, **__kwargs)
+                zdslog.debug('Released %s' % (self.lock))
             else:
                 return f(self, *__args, **__kwargs)
         wrapper.__name__ = f.__name__
