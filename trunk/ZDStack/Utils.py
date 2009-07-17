@@ -283,8 +283,9 @@ def requires_instance_lock():
                 zdslog.debug('Acquiring %s in %s' % (self.lock, f.__name__))
                 with self.lock:
                     zdslog.debug('Acquired %s in %s' % (self.lock, f.__name__))
-                    return f(self, *__args, **__kwargs)
+                    output = f(self, *__args, **__kwargs)
                 zdslog.debug('Released %s' % (self.lock))
+                return output
             else:
                 return f(self, *__args, **__kwargs)
         wrapper.__name__ = f.__name__
