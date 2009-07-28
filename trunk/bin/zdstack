@@ -19,25 +19,10 @@ Usage: %s [ start | stop | restart | reload-config ] [ -c config file ]
 """ % (script_name, script_name)
     sys.exit(-1)
 
-def start(config_file, debug=False, restart=False):
+def start(config_file=None, debug=False, restart=False):
     try:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        sys.stdin.close()
-        sys.stdout.close()
-        sys.stderr.close()
-        for fd in range(1, 1025):
-            try:
-                os.close(fd)
-            except OSError, e:
-                if e.errno == 9:
-                    ###
-                    # Bad file descriptor, fd wasn't open.
-                    ###
-                    continue
-                else:
-                    raise
-        from ZDStack import set_debugging, set_configfile, get_configparser
+        from ZDStack import set_debugging, set_configfile, get_configparser, \
+                            get_zdslog
         if debug:
             set_debugging(True)
         if config_file:
@@ -57,15 +42,35 @@ def start(config_file, debug=False, restart=False):
         os.chdir('/')
         os.umask(0)
         os.setsid()
+        ###
+        # After forking once, we should close all of our file descriptors.
+        ###
+        sys.stdout.flush()
+        sys.stderr.flush()
+        sys.stdin.close()
+        sys.stdout.close()
+        sys.stderr.close()
+        for fd in range(1, 1025):
+            try:
+                os.close(fd)
+            except OSError, e:
+                if e.errno == 9:
+                    ###
+                    # Bad file descriptor, fd wasn't open.
+                    ###
+                    continue
+                else:
+                    raise
         if os.fork():
             os._exit(0)
         ###
-        # We used to not close this stuff if debugging was on, but if we leave
-        # them open and the buffer fills up, ZDStack crashes - no good.
+        # Now we need to re-init logging, because its file-descriptors were
+        # closed.
         ###
-        # sys.stdin = open(devnull, 'r')
-        # sys.stdout = open(devnull, 'a+')
-        # sys.stderr = open(devnull, 'a+')
+        get_zdslog(reload=True)
+        ###
+        # Finally we can initialize the database.
+        ###
         initialize_database()
         from ZDStack.Stack import Stack
         Stack().startup()
@@ -75,10 +80,11 @@ def start(config_file, debug=False, restart=False):
         print >> sys.stderr, "\nError: %s\n" % (str(e))
         sys.exit(-1)
 
-def stop(config_file):
+def stop(config_file=None):
     from ZDStack import set_configfile, get_configparser
     try:
-        set_configfile(opts['-c'])
+        if config_file:
+            set_configfile(config_file)
         cp = get_configparser()
         pid_file = cp.getpath('DEFAULT', 'zdstack_pid_file')
         try:
@@ -100,14 +106,14 @@ def stop(config_file):
         print >> sys.stderr, "\nError: %s\n" % (str(e))
         sys.exit(-1)
 
-def restart():
+def restart(config_file=None):
     print "\nRestarting ZDStack"
     stop()
     print "Waiting for ZDStack to shut down"
     time.sleep(5)
-    start()
+    start(config_file, debug=False, restart=True)
 
-def reload_config()
+def reload_config():
     from ZDStack import get_configparser, get_server_proxy
     cp = get_configparser() # implicitly loads the configuration file as well
     username = cp.get('DEFAULT', 'zdstack_username')
@@ -132,11 +138,11 @@ if '-c' in opts:
 if action == 'debug':
     start(debug=True)
 elif action == 'start':
-    start()
+    start(config_file, debug=False, restart=False)
 elif action == 'stop':
-    stop()
+    stop(config_file)
 elif action == 'restart':
-    restart()
+    restart(config_file)
 elif action == 'reload-config':
     reload_config()
 
