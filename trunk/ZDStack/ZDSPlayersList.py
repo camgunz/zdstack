@@ -46,6 +46,7 @@ class PlayersList(object):
     @requires_instance_lock()
     def clear(self):
         """Clears the list of players."""
+        zdslog.debug('')
         self.__players.clear()
 
     def __iter__(self):
@@ -346,23 +347,21 @@ class PlayersList(object):
                   'possible_player_names'
 
         """
+        zdslog("possible_player_names: %s" % (possible_player_names))
         names = [x.name for x in self]
         if isinstance(possible_player_names, basestring):
             possible_player_names = [possible_player_names]
-        for pn in possible_player_names:
-            if pn in names:
-                return self.get(name=pn, sync=False, acquire_lock=False)
-        ###
-        # Here we sync, and try again.
-        ###
-        self.sync(session=session, acquire_lock=False, check_bans=True)
-        for pn in possible_player_names:
-            if pn in names:
-                return self.get(session=session, name=pn, sync=False,
-                                acquire_lock=False)
+        for x in range(2):
+            for pn in possible_player_names:
+                if pn in names:
+                    return self.get(session=session, name=pn, sync=False,
+                                    acquire_lock=False)
+            if x < 1:
+                self.sync(session=session, acquire_lock=False, check_bans=True)
         ###
         # Otherwise, debug some stuff.
         ###
-        zdslog.debug("Names: [%s]" % (names))
-        zdslog.debug("PPN: [%s]" % (possible_player_names))
+        zdslog.debug('No match found')
+        zdslog.debug('Names: [%s]' % (names))
+        zdslog.debug('PPN: [%s]' % (possible_player_names))
 

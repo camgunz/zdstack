@@ -93,6 +93,7 @@ def requires_session(func):
     def wrapper(*args, **kwargs):
         # zdslog.debug("Running %s, %s, %s" % (func.__name__, str(args),
         #                                       str(kwargs)))
+        zdslog.debug("%s acquiring session" % (func.__name__))
         if kwargs.get('session', None):
             return func(*args, **kwargs)
         else:
