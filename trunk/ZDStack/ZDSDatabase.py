@@ -42,6 +42,8 @@ def _locked_session(get_global=False, remove=False):
             import traceback
             zdslog.debug("Traceback: %s" % (traceback.format_exc()))
             s.rollback()
+            stuff_in_old_session = [x for x in s]
+            s.expunge_all()
             zdslog.info("Successfully rolled back")
             if get_global:
                 ###
@@ -49,6 +51,7 @@ def _locked_session(get_global=False, remove=False):
                 # if we the destroyed session was the global one.
                 ###
                 __GLOBAL_SESSION = SessionClass()
+                __GLOBAL_SESSION.add_all(stuff_in_old_session)
             # raise
         finally:
             if remove:
