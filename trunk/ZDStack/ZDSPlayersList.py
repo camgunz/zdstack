@@ -347,7 +347,7 @@ class PlayersList(object):
                   'possible_player_names'
 
         """
-        zdslog("possible_player_names: %s" % (possible_player_names))
+        zdslog.debug("possible_player_names: %s" % (possible_player_names))
         names = [x.name for x in self]
         if isinstance(possible_player_names, basestring):
             possible_player_names = [possible_player_names]
