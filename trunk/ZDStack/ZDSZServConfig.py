@@ -818,7 +818,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.vote_map, 'set sv_vote_map "%s"')
         add_var_line(self.zserv.vote_map_percent, 'set sv_vote_map_percent "%s"')
         add_var_line(self.zserv.vote_map_skip, 'set sv_vote_map_skip "%s"')
-        add_var_line(self.zserv.vote_kick, 'set sv_vote_kick "%s"')
+        add_bool_line(self.zserv.vote_kick, 'set sv_vote_kick "%s"')
         add_var_line(self.zserv.vote_kick_percent,
                      'set sv_vote_kick_percent "%s"')
         if self.zserv.rcon_password_1 and self.zserv.rcon_commands_1:

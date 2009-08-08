@@ -6,10 +6,6 @@ import time
 import getopt
 import signal
 
-from ZDStack import set_debugging, set_configfile, get_configparser, \
-                    initialize_database, get_server_proxy
-
-
 def print_usage(msg=None):
     if msg:
         print >> sys.stderr, msg
@@ -22,7 +18,7 @@ Usage: %s [ start | stop | restart | reload-config ] [ -c config file ]
 def start(config_file=None, debug=False, restart=False):
     try:
         from ZDStack import set_debugging, set_configfile, get_configparser, \
-                            get_zdslog
+                            get_zdslog, initialize_database
         if debug:
             set_debugging(True)
         if config_file:
@@ -37,39 +33,15 @@ def start(config_file=None, debug=False, restart=False):
             print >> sys.stderr, es % (pid_file)
             sys.exit(-1)
         print "\nStarting ZDStack\n"
-        if os.fork():
-            os._exit(0)
-        os.chdir('/')
-        os.umask(0)
-        os.setsid()
         ###
-        # After forking once, we should close all of our file descriptors.
-        ###
-        sys.stdout.flush()
-        sys.stderr.flush()
-        sys.stdin.close()
-        sys.stdout.close()
-        sys.stderr.close()
-        for fd in range(1, 1025):
-            try:
-                os.close(fd)
-            except OSError, e:
-                if e.errno == 9:
-                    ###
-                    # Bad file descriptor, fd wasn't open.
-                    ###
-                    continue
-                else:
-                    raise
-        if os.fork():
-            os._exit(0)
-        ###
-        # Now we need to re-init logging, because its file-descriptors were
-        # closed.
-        ###
-        get_zdslog(reload=True)
-        ###
-        # Finally we can initialize the database.
+        # ###
+        # # We need to re-init logging, because its file-descriptors were
+        # # closed.
+        # ###
+        # get_zdslog(reload=True)
+        # ###
+        # # Finally we can initialize the database.
+        # ###
         ###
         initialize_database()
         from ZDStack.Stack import Stack

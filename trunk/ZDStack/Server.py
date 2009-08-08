@@ -115,10 +115,44 @@ class Server(object):
         if os.path.isfile(self.pidfile):
             es = "PID file [%s] already exists, is ZDStack already running?"
             raise Exception(es % (self.pidfile))
-        fobj = open(self.pidfile, 'w')
-        fobj.write(str(os.getpid()))
-        fobj.flush()
-        fobj.close()
+
+        if os.fork():
+            os._exit(0)
+        os.chdir('/')
+        os.umask(0)
+        os.setsid()
+        if os.fork():
+            os._exit(0)
+
+        # print "Closing STDIN, STDOUT & STDERR"
+        # for x in [sys.stdin, sys.stdout, sys.stderr]:
+        #     try:
+        #         os.close(x.fileno())
+        #     except Exception, e:
+        #         zdslog.debug("Exception closing %s: %s" % (x, e))
+        #         continue
+        ###
+        # print "Closing STDIN, STDOUT & STDERR again"
+        os.close(sys.stdin.fileno())
+        sys.stdin.close()
+        sys.stdout.flush()
+        os.close(sys.stdout.fileno())
+        sys.stdout.close()
+        sys.stderr.flush()
+        os.close(sys.stderr.fileno())
+        sys.stderr.close()
+        ###
+        sys.stdin = open('/dev/null', 'r+b')
+        sys.stdout = open(self.logfile, 'a+b')
+        sys.stderr = open(self.logfile, 'a+b')
+        print "STDOUT now redirected to %s" % (self.logfile)
+        print >> sys.stderr, "STDERR now redirected to %s" % (self.logfile)
+
+        pid_fobj = open(self.pidfile, 'w')
+        pid_fobj.write(str(os.getpid()))
+        pid_fobj.flush()
+        pid_fobj.close()
+
         self.start()
         zdslog.info("ZDStack listening on %s:%s" % addr)
         zdslog.info("ZDStack Startup Complete")

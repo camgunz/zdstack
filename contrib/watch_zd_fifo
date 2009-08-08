@@ -3,7 +3,7 @@
 import os
 import sys
 
-from signal import signal, SIGTERM
+from signal import signal, SIGQUIT, SIGTERM
 
 from ZDStack.Utils import get_event_from_line, resolve_path
 from ZDStack.ZDSRegexps import get_client_regexps
@@ -12,12 +12,19 @@ REGEXPS = get_client_regexps()
 __INPUT_FOBJ = None
 __OUTPUT_FOBJ = None
 DEBUGGING = False
+MAX_BLANK = 10
 
 def handle_signal(signum, frame):
-    if signum == SIGTERM:
-        if not DEBUGGING:
-            __OUTPUT_FOBJ.close()
-        sys.exit(0)
+    if signum in (SIGQUIT, SIGTERM):
+        quit()
+
+def quit():
+    global __OUTPUT_FOBJ
+    global DEBUGGING
+    if not DEBUGGING:
+        __OUTPUT_FOBJ.write('\n]')
+        __OUTPUT_FOBJ.close()
+    sys.exit(0)
 
 def print_usage():
     us = "\nUsage: %s [ zd_fifo ] [ output_file ]\n"
@@ -25,15 +32,28 @@ def print_usage():
     sys.exit(1)
 
 def main(zd_fifoname, output_filename):
+    global __INPUT_FOBJ
+    global __OUTPUT_FOBJ
+    global REGEXPS
+    global DEBUGGING
+    global MAX_BLANK
+    blank_counter = 0
     __INPUT_FOBJ = open(zd_fifoname)
     if not DEBUGGING:
         __OUTPUT_FOBJ = open(output_filename, 'w')
+        __OUTPUT_FOBJ.write('events = [\n')
     while 1:
         line = __INPUT_FOBJ.readline().rstrip('\r\n')
         if DEBUGGING:
             print line
         else:
             __OUTPUT_FOBJ.write('# ' + line + '\n')
+        if not line:
+            blank_counter += 1
+            if blank_counter > MAX_BLANK:
+                quit()
+        else:
+            blank_counter = 0
         event = get_event_from_line(line, REGEXPS)
         if event:
             if event.category != 'command' or event.type == 'map_change':
@@ -50,5 +70,8 @@ if __name__ == "__main__":
     zd_fifoname, output_filename = [resolve_path(x) for x in sys.argv[1:]]
     if not os.path.exists(zd_fifoname):
         print_usage()
-    main(zd_fifoname, output_filename)
+    try:
+        main(zd_fifoname, output_filename)
+    except KeyboardInterrupt:
+        quit()
 
