@@ -3,7 +3,7 @@
 
 = Supported Platforms =
 
-ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04, and Slackware 12.2).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported.
+ZDStack has been developed, tested, and used on 32-bit Linux (CentOS 5, Ubuntu 7.10 and 8.04, and Slackware 12.2).  It should work on any POSIX platform (Mac OS X, BSD, 64-bit varieties thereof) and bug reports to the contrary are welcome.  Windows will probably never work, and is unsupported (see WindowsSupport).
 
 = Basic Software Requirements =
 
@@ -12,7 +12,7 @@ In order to run, ZDStack requires the following:
   * zserv ([http://www.zdaemon.org])
     * zserv requires a file called an IWAD.  IWADs are contained in commercial versions of DooM (The Ultimate DooM, Plutonia, TNT, Final DooM, etc.).  The awesome Freedoom ([http://freedoom.sourceforge.net]) is a great alternative, although you'll be missing out on the intense battles of doom2map01.
   * Python 2.5 or greater ([http://www.python.org]) -- note: Python 3.0 or greater will not work
-  * SQLAlchemy 0.5 or greater ([http://www.sqlalchemy.org])
+  * SQLAlchemy 0.5.5 or greater ([http://www.sqlalchemy.org])
 
 The following features are available using only the above packages:
 
