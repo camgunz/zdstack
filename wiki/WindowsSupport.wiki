@@ -16,7 +16,7 @@ A core concept of ZDStack is that its basic functionality doesn't require a hard
 
 `zserv` doesn't fork (at least, not completely so that it becomes a child of `init`), and the typical solution to that is to write a wrapper script around it that does fork, or runs `zserv` in the background and polls it.  In fact, newer versions of `zserv` include a script that does this, even going so far as to trap signals.  Some admins use a script like this in conjunction with GNU Screen, so they have server console access to all running servers.
 
-`zserv` can be configured to output different types of log files.  There's a connection log, a weapon log, a general log, a frag log, etc.  Each of these is, obviously, a file, and they're named predictably (gen-20090810.log, frag-20090810.log, etc.).  `zserv` duplicates the general log to STDOUT, although this output seems to be buffered about 1K.  So a normal configuration of zserv is zserv running in the foreground and writing output to logfiles on disk.
+`zserv` can be configured to output different types of log files.  There's a connection log, a weapon log, a general log, a frag log, etc.  Each of these is, obviously, a file, and they're named predictably (`gen-20090810.log`, `frag-20090810.log`, etc.).  `zserv` duplicates the general log to STDOUT, although this output seems to be buffered about 1K.  So a normal configuration of zserv is zserv running in the foreground and writing output to logfiles on disk.
 
 === ZDStack's setup ===
 
