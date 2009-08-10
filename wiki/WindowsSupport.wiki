@@ -1,0 +1,40 @@
+#summary Running ZDStack on Windows
+
+= Overview =
+
+ZDStack will probably never run on Windows, and the reason is mainly philosophical - although I can rationalize a little with a couple technical points.
+
+== You never know what Windows is doing ==
+
+I'm sure it's possible to strip Windows down so that it's not running any extraneous services, or checking for updates, or using up cycles/bandwidth/disk-IO.  I'm also sure it's extremely complicated, poorly documented, and error-prone.  Most *nix systems provide really simple ways of disabling services, and don't have secret things built into them that might lag your servers.
+
+== Windows doesn't support FIFOs ==
+
+A core concept of ZDStack is that its basic functionality doesn't require a hard drive.
+
+=== Normal `zserv` setup ===
+
+`zserv` doesn't fork (at least, not completely so that it becomes a child of `init`), and the typical solution to that is to write a wrapper script around it that does fork, or runs `zserv` in the background and polls it.  In fact, newer versions of `zserv` include a script that does this, even going so far as to trap signals.  Some admins use a script like this in conjunction with GNU Screen, so they have server console access to all running servers.
+
+`zserv` can be configured to output different types of log files.  There's a connection log, a weapon log, a general log, a frag log, etc.  Each of these is, obviously, a file, and they're named predictably (gen-20090810.log, frag-20090810.log, etc.).  `zserv` duplicates the general log to STDOUT, although this output seems to be buffered about 1K.  So a normal configuration of zserv is zserv running in the foreground and writing output to logfiles on disk.
+
+=== ZDStack's setup ===
+
+ZDStack tricks zserv a little.  ZDStack itself forks, and spawns `zserv` processes as children.  These `zserv` processes are configured to enable the general log, which is output to a `gen-%Y%m%d.log` file.  Before ZDStack spawns the `zserv` process, it changes to a folder created specifically for that server, creates a FIFO file `zd.fifo`, and 3 symbolic links that point to that FIFO:
+
+{{{
+cd $SERVERS/D5M1
+mkfifo zd.fifo
+ln -s zd.fifo gen-20090809.log
+ln -s zd.fifo gen-20090810.log
+ln -s zd.fifo gen-20090811.log
+[spawn zserv here]
+}}}
+
+The reason 3 links are created is that `zserv` does its own log rolling, and we want to be sure that no matter what date (within reason) `zserv` thinks it is, we're getting output.
+
+In this way the disk is never touched, preventing a potential source of scalability problems (50 `zserv` processes all writing to their own logfiles at the same time), and a potential source of crashes (lack of disk space).
+
+=== What has to be changed to run on Windows ===
+
+So currently ZDStack just polls `zd.fifo`.  Because Windows doesn't support FIFO files, ZDStack would have to read directly from `zserv`'s log file and track log rolls.  It's not complicated, it's just a hassle and unclean.
