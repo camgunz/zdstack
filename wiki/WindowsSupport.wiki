@@ -20,7 +20,7 @@ A core concept of ZDStack is that its basic functionality doesn't require a hard
 
 === ZDStack's setup ===
 
-ZDStack tricks zserv a little.  ZDStack itself forks, and spawns `zserv` processes as children.  These `zserv` processes are configured to enable the general log, which is output to a `gen-%Y%m%d.log` file.  Before ZDStack spawns the `zserv` process, it changes to a folder created specifically for that server, creates a FIFO file `zd.fifo`, and 3 symbolic links that point to that FIFO:
+ZDStack tricks `zserv` a little.  ZDStack itself forks, and spawns `zserv` processes as children.  These `zserv` processes are configured to enable the general log, which is output to a `gen-%Y%m%d.log` file.  Before ZDStack spawns the `zserv` process, it changes to a folder created specifically for that server, creates a FIFO file `zd.fifo`, and 3 symbolic links that point to that FIFO:
 
 {{{
 cd $SERVERS/D5M1
