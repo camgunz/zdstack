@@ -6,7 +6,7 @@ ZDStack will probably never run on Windows, and the reason is mainly philosophic
 
 == You never know what Windows is doing ==
 
-I'm sure it's possible to strip Windows down so that it's not running any extraneous services, or checking for updates, or using up cycles/bandwidth/disk-IO.  I'm also sure it's extremely complicated, poorly documented, and error-prone.  Most *nix systems provide really simple ways of disabling services, and don't have secret things built into them that might lag your servers.
+I'm sure it's possible to strip Windows down so that it's not running any extraneous services, or checking for updates, or using up cycles/bandwidth/disk-IO.  I'm also sure it's extremely complicated, poorly documented, and error-prone.  Most \*nix systems provide really simple ways of disabling services, and don't have secret things built into them that might lag your servers.
 
 == Windows doesn't support FIFOs ==
 
