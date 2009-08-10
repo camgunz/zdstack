@@ -9,7 +9,7 @@ from datetime import datetime
 from ZDStack import ZDSThreadPool
 from ZDStack import DIE_THREADS_DIE, get_configfile, set_configfile, \
                     load_configparser, get_configparser, set_debugging, \
-                    get_rpc_server_class, get_zdslog
+                    get_debugging, get_rpc_server_class, get_zdslog
 from ZDStack.Utils import resolve_path
 
 zdslog = get_zdslog()
@@ -109,13 +109,13 @@ class Server(object):
         addr = (self.hostname, self.port)
         RPCServer = get_rpc_server_class()
         self.rpc_server = RPCServer(addr, self.username, self.password)
+???END
         self.rpc_server.timeout = 1
         self.register_functions()
         self.keep_serving = True
         if os.path.isfile(self.pidfile):
             es = "PID file [%s] already exists, is ZDStack already running?"
             raise Exception(es % (self.pidfile))
-
         if os.fork():
             os._exit(0)
         os.chdir('/')
@@ -123,7 +123,6 @@ class Server(object):
         os.setsid()
         if os.fork():
             os._exit(0)
-
         # print "Closing STDIN, STDOUT & STDERR"
         # for x in [sys.stdin, sys.stdout, sys.stderr]:
         #     try:
@@ -147,12 +146,17 @@ class Server(object):
         sys.stderr = open(self.logfile, 'a+b')
         print "STDOUT now redirected to %s" % (self.logfile)
         print >> sys.stderr, "STDERR now redirected to %s" % (self.logfile)
-
+        if get_debugging():
+            print >> sys.stderr, "Re-initializing logging (DEBUG)"
+            ###
+            # Ugly yeah... but so what?
+            ###
+            global zdslog
+            zdslog = get_zdslog(reload=True)
         pid_fobj = open(self.pidfile, 'w')
         pid_fobj.write(str(os.getpid()))
         pid_fobj.flush()
         pid_fobj.close()
-
         self.start()
         zdslog.info("ZDStack listening on %s:%s" % addr)
         zdslog.info("ZDStack Startup Complete")
