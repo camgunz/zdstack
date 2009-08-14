@@ -173,6 +173,9 @@ def _items_to_section(name, items):
     new_items.sort()
     return '[%s]\n' % (name) + '\n'.join(["%s: %s" % x for x in new_items])
 
+def ellipsize(s, max_length):
+    return s[:max_length] + '...'
+
 class ServerNotFoundError(Exception):
 
     def __init__(self, zserv_name):
@@ -194,13 +197,15 @@ class ZDSInterface:
         # zserv_info['name'] = zserv_info['name
         zserv_name = zserv_info['name']
         zserv_info['html_name'] = html_escape(zserv_name)
-        if len(zserv_info['html_name']) > MAX_NAME_LENGTH:
-            zserv_info['html_name'] = \
-                            zserv_info['html_name'][:MAX_NAME_LENGTH] + '...'
-        if len(zserv_info['map_name']) > MAX_MAP_NAME_LENGTH:
-            zserv_info['map_name'] = \
-                        zserv_info['map_name'][:MAX_MAP_NAME_LENGTH] + '...'
-        zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
+        zserv_info['html_name'] = ellipsize(zserv_info['html_name'],
+                                            MAX_NAME_LENGTH)
+        if zserv_info['map_name']:
+            zserv_info['map_name'] = ellipsize(zserv_info['map_name'],
+                                               MAX_NAME_LENGTH)
+            zserv_info['map_number'] = str(zserv_info['map_number']).zfill(2)
+        else:
+            zserv_info['map_name'] = 'n/a'
+            zserv_info['map_number'] = 'XX'
         # optional_wads = _parse_list(CP.get(zserv_name, 'optional_wads'))
         optional_wads = zserv_info['optional_wads']
         wads = list()

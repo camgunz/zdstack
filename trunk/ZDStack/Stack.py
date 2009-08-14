@@ -672,7 +672,7 @@ class Stack(Server):
             raise ZServNotFoundError(zserv_name)
         return self.zservs[zserv_name]
 
-    def list_zserv_names(self, names):
+    def list_zserv_names(self, names=None):
         """Returns a list of ZServ names.
 
         :param names: an optional list of zserv_names which are to
