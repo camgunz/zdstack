@@ -5,7 +5,7 @@ import time
 import socket
 import urllib
 import logging
-import logging.handlers
+from logging.handlers import TimedRotatingFileHandler
 import datetime
 
 from threading import Lock
@@ -171,12 +171,6 @@ class DebugFormatter(logging.Formatter):
             while '%f' in s:
                 s = s.replace('%f', microseconds)
         return s
-
-class DebugTRFH(logging.handlers.TimedRotatingFileHandler):
-
-    def emit(self, record):
-        logging.handlers.TimedRotatingFileHandler.emit(self, record)
-        # print >> sys.stderr, self.format(record)
 
 class JSONNotFoundError(Exception):
 
@@ -827,22 +821,19 @@ def get_zdslog(reload=False):
             log_format += '%(filename)-18s - %(funcName)-25s '
             log_format += '- %(lineno)-4d: '
             log_format += '%(levelname)-5s %(message)s'
-            handler = DebugTRFH(log_file, when='midnight', backupCount=4)
             formatter = DebugFormatter(log_format, datefmt=DATEFMT)
         else:
             log_level = logging.INFO
             sa_log_level = logging.ERROR
             log_format = '[%(asctime)s] '
             log_format += '%(levelname)-8s %(message)s'
-            handler = logging.handlers.TimedRotatingFileHandler(log_file,
-                                                                when='midnight',
-                                                                backupCount=4)
             formatter = logging.Formatter(log_format)
-        handler.setLevel(log_level)
-        handler.setFormatter(formatter)
-        ZDSLOG.addHandler(handler)
+        h = TimedRotatingFileHandler(log_file, when='midnight', backupCount=4)
+        h.setLevel(log_level)
+        h.setFormatter(formatter)
+        ZDSLOG.addHandler(h)
         ZDSLOG.setLevel(log_level)
-        logging.getLogger('sqlalchemy.engine').addHandler(handler)
+        logging.getLogger('sqlalchemy.engine').addHandler(h)
         logging.getLogger('sqlalchemy.engine').setLevel(sa_log_level)
     return ZDSLOG
 

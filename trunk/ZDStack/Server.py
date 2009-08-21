@@ -109,7 +109,6 @@ class Server(object):
         addr = (self.hostname, self.port)
         RPCServer = get_rpc_server_class()
         self.rpc_server = RPCServer(addr, self.username, self.password)
-???END
         self.rpc_server.timeout = 1
         self.register_functions()
         self.keep_serving = True
@@ -123,15 +122,6 @@ class Server(object):
         os.setsid()
         if os.fork():
             os._exit(0)
-        # print "Closing STDIN, STDOUT & STDERR"
-        # for x in [sys.stdin, sys.stdout, sys.stderr]:
-        #     try:
-        #         os.close(x.fileno())
-        #     except Exception, e:
-        #         zdslog.debug("Exception closing %s: %s" % (x, e))
-        #         continue
-        ###
-        # print "Closing STDIN, STDOUT & STDERR again"
         os.close(sys.stdin.fileno())
         sys.stdin.close()
         sys.stdout.flush()
@@ -140,7 +130,6 @@ class Server(object):
         sys.stderr.flush()
         os.close(sys.stderr.fileno())
         sys.stderr.close()
-        ###
         sys.stdin = open('/dev/null', 'r+b')
         sys.stdout = open(self.logfile, 'a+b')
         sys.stderr = open(self.logfile, 'a+b')

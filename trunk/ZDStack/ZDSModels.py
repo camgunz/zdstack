@@ -39,11 +39,20 @@ class Alias(object):
     stored_player_name = None
     port = None
     number = None
+    color = None
+    playing = False
+    disconnected = False
 
-    def __init__(self):
-        self.color = None
-        self.playing = False
-        self.disconnected = False
+    def __init__(self, **kwargs):
+        self.name = kwargs.get('name', None)
+        self.ip_address = kwargs.get('ip_address', None)
+        self.was_namefake = kwargs.get('was_namefake', None)
+        self.stored_player_name = kwargs.get('stored_player_name', None)
+        self.port = kwargs.get('port', None)
+        self.number = kwargs.get('number', None)
+        self.color = kwargs.get('color', None)
+        self.playing = kwargs.get('playing', False)
+        self.disconnected = kwargs.get('disconnected', False)
 
     def _get_ip(self):
         """Alias for ip_address"""
@@ -94,6 +103,9 @@ class TeamColor(object):
 
     color = None
 
+    def __init__(self, color=None):
+        self.color = color
+
     def __str__(self):
         return '<TeamColor %s>' % (self.color)
 
@@ -110,6 +122,9 @@ class Wad(object):
     """
 
     name = None
+
+    def __init__(self, name=None):
+        self.name = name
 
     def __unicode__(self):
         return self.name
@@ -203,6 +218,11 @@ class Map(object):
     number = None
     name = None
 
+    def __init__(self, wad_name=None, number=None, name=None):
+        self.wad_name = wad_name
+        self.number = number
+        self.name = name
+
     def __unicode__(self):
         return u"<%s: %s>" % (self.short_name, self.name)
 
@@ -247,6 +267,10 @@ class Weapon(object):
     name = None
     is_suicide = None
 
+    def __init__(self, name=None, is_suicide=None):
+        self.name = name
+        self.is_suicide = is_suicide
+
     def __str__(self):
         return '<Weapon %s>' % (self.name)
 
@@ -266,6 +290,9 @@ class Port(object):
     """
 
     name = None
+
+    def __init__(self, name=None):
+        self.name = name
 
     def __str__(self):
         return '<Port %s>' % (self.name)
@@ -351,6 +378,12 @@ class Round(object):
     start_time = None
     end_time = None
 
+    def __init__(self, game_mode_name=None, map_id=None, start_time=None, end_time=None):
+        self.game_mode_name = game_mode_name
+        self.map_id = map_id
+        self.start_time = start_time
+        self.end_time = end_time
+
     def __str__(self):
         s = '<Round on %s at %s>'
         return s % (self.map, self.start_time)
@@ -372,6 +405,9 @@ class StoredPlayer(object):
     """
 
     name = None
+
+    def __init__(self, name=None):
+        self.name = None
 
     def __str__(self):
         return '<Player %s>' % (self.name)
@@ -535,6 +571,32 @@ class Frag(object):
     green_team_score = None
     white_team_score = None
 
+    def __init__(self, **kwargs):
+        self.fragger_id = kwargs.get('fragger_id', None)
+        self.fraggee_id = kwargs.get('fraggee_id', None)
+        self.weapon_name = kwargs.get('weapon_name', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.timestamp = kwargs.get('timestamp', None)
+        self.fragger_was_holding_flag = \
+                kwargs.get('fragger_was_holding_flag', None)
+        self.fraggee_was_holding_flag = \
+                kwargs.get('fraggee_was_holding_flag', None)
+        self.fragger_team_color_name = \
+                kwargs.get('fragger_team_color_name', None)
+        self.fraggee_team_color_name = \
+                kwargs.get('fraggee_team_color_name', None)
+        self.red_team_holding_flag = kwargs.get('red_team_holding_flag', None)
+        self.blue_team_holding_flag = \
+                kwargs.get('blue_team_holding_flag', None)
+        self.green_team_holding_flag = \
+                kwargs.get('green_team_holding_flag', None)
+        self.white_team_holding_flag = \
+                kwargs.get('white_team_holding_flag', None)
+        self.red_team_score = kwargs.get('red_team_score', None)
+        self.blue_team_score = kwargs.get('blue_team_score', None)
+        self.green_team_score = kwargs.get('green_team_score', None)
+        self.white_team_score = kwargs.get('white_team_score', None)
+
     def __str__(self):
         return '<Frag %s>' % (self.weapon)
 
@@ -612,6 +674,27 @@ class FlagTouch(object):
     green_team_score = None
     white_team_score = None
 
+    def __init__(self, **kwargs):
+        self.player_id = kwargs.get('player_id', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.touch_time = kwargs.get('touch_time', None)
+        self.loss_time = kwargs.get('touch_time', None)
+        self.was_picked = kwargs.get('was_picked', None)
+        self.resulted_in_score = kwargs.get('resulted_in_score', None)
+        self.player_team_color_name = \
+                kwargs.get('player_team_color_name', None)
+        self.red_team_holding_flag = kwargs.get('red_team_holding_flag', None)
+        self.blue_team_holding_flag = \
+                kwargs.get('blue_team_holding_flag', None)
+        self.green_team_holding_flag = \
+                kwargs.get('green_team_holding_flag', None)
+        self.white_team_holding_flag = \
+                kwargs.get('white_team_holding_flag', None)
+        self.red_team_score = kwargs.get('red_team_score', None)
+        self.blue_team_score = kwargs.get('blue_team_score', None)
+        self.green_team_score = kwargs.get('green_team_score', None)
+        self.white_team_score = kwargs.get('white_team_score', None)
+
     def __str__(self):
         return '<FlagTouch %s>' % (self.alias)
 
@@ -679,6 +762,26 @@ class FlagReturn(object):
     green_team_score = None
     white_team_score = None
 
+    def __init__(self, **kwargs):
+        self.player_id = kwargs.get('player_id', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.timestamp = kwargs.get('timestamp', None)
+        self.player_was_holding_flag = kwargs.get('player_was_holding_flag', None)
+        self.resulted_in_score = kwargs.get('resulted_in_score', None)
+        self.player_team_color_name = \
+                kwargs.get('player_team_color_name', None)
+        self.red_team_holding_flag = kwargs.get('red_team_holding_flag', None)
+        self.blue_team_holding_flag = \
+                kwargs.get('blue_team_holding_flag', None)
+        self.green_team_holding_flag = \
+                kwargs.get('green_team_holding_flag', None)
+        self.white_team_holding_flag = \
+                kwargs.get('white_team_holding_flag', None)
+        self.red_team_score = kwargs.get('red_team_score', None)
+        self.blue_team_score = kwargs.get('blue_team_score', None)
+        self.green_team_score = kwargs.get('green_team_score', None)
+        self.white_team_score = kwargs.get('white_team_score', None)
+
     def __str__(self):
         return '<FlagReturn %s>' % (self.alias)
 
@@ -705,6 +808,11 @@ class RCONAccess(object):
     round_id = None
     timestamp = None
 
+    def __init__(self, **kwargs):
+        self.player_id = kwargs.get('player_id', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.timestamp = kwargs.get('timestamp', None)
+
     def __str__(self):
         return '<RCON Access %s>' % (self.alias)
 
@@ -730,6 +838,11 @@ class RCONDenial(object):
     player_id = None
     round_id = None
     timestamp = None
+
+    def __init__(self, **kwargs):
+        self.player_id = kwargs.get('player_id', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.timestamp = kwargs.get('timestamp', None)
 
     def __str__(self):
         return '<RCON Denial %s>' % (self.alias)
@@ -760,6 +873,11 @@ class RCONAction(object):
     round_id = None
     timestamp = None
     action = None
+
+    def __init__(self, **kwargs):
+        self.player_id = kwargs.get('player_id', None)
+        self.round_id = kwargs.get('round_id', None)
+        self.timestamp = kwargs.get('timestamp', None)
 
     def __str__(self):
         return '<RCON Action %s - %s>' % (self.action, self.alias)

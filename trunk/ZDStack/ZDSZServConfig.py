@@ -1,7 +1,9 @@
 from __future__ import with_statement
 
 import os
+import types
 import logging
+from logging.handlers import TimedRotatingFileHandler
 
 from decimal import Decimal
 from ConfigParser import NoOptionError
@@ -13,6 +15,33 @@ from ZDStack.ZDSDatabase import global_session
 from ZDStack.ZDSConfigParser import ZDSConfigParser
 
 zdslog = get_zdslog()
+
+class ZServTRFH(TimedRotatingFileHandler):
+
+    def emit(self, record):
+        """
+        Emit a record.
+
+        If a formatter is specified, it is used to format the record.
+        The record is then written to the stream with a trailing newline
+        [N.B. this may be removed depending on feedback]. If exception
+        information is present, it is formatted using
+        traceback.print_exception and appended to the stream.
+        """
+        try:
+            msg = self.format(record)
+            if hasattr(types, "UnicodeType"):
+                try:
+                    self.stream.write(msg)
+                except UnicodeError:
+                    self.stream.write(msg.encode("UTF-8"))
+            else:
+                self.stream.write(msg)
+            self.flush()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
 
 class ZServConfigParser(ZDSConfigParser):
 
@@ -488,15 +517,13 @@ class ZServConfigParser(ZDSConfigParser):
         # We want to setup the ZServ's logger here too, if applicable.
         ###
         if save_logfile:
-            zdslog.debug("Setting up %s's logger" % (self.zserv.name))
+            zdslog.debug("Setting up logger for %s" % (self.zserv.name))
             cp = self.zserv.zdstack.config
             to_keep = self.getint('number_of_zserv_logs_to_backup')
             to_keep = to_keep or 0
             log_folder = cp.getpath('DEFAULT', 'zdstack_log_folder')
             log_file = os.path.join(log_folder, self.zserv.name + '.log')
-            h = logging.handlers.TimedRotatingFileHandler(log_file,
-                                                          when='midnight',
-                                                          backupCount=to_keep)
+            h = ZServTRFH(log_file, when='midnight', backupCount=to_keep)
             h.setFormatter(logging.Formatter('%(message)s'))
             logger = logging.getLogger(self.zserv.name)
             logger.addHandler(h)
