@@ -5,6 +5,7 @@ import time
 
 from decimal import Decimal
 from datetime import date, datetime, timedelta
+from contextlib import nested
 from threading import Timer, Lock, Event
 from subprocess import Popen, PIPE, STDOUT
 
@@ -279,10 +280,10 @@ class ZServ(object):
         zdslog.debug('Change Map')
         ###
         # Because there are no player reconnections at the beginning of rounds
-        # in 1.08.08, we need to prevent anything from accessing the list of
-        # players until we sync it up.
+        # in 1.08.08, we need to prevent anything from processing events or
+        # accessing the list of players until we sync it up.
         ###
-        with self.players.lock:
+        with nested(self.players.lock, self.event_lock):
             self.clean_up(session=session)
             self.map_number = map_number
             self.map_name = map_name

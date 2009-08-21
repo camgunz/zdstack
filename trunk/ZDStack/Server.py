@@ -105,6 +105,7 @@ class Server(object):
     def startup(self):
         """Starts the server up."""
         # zdslog.debug('')
+        global zdslog
         zdslog.info("ZDStack Starting Up")
         addr = (self.hostname, self.port)
         RPCServer = get_rpc_server_class()
@@ -140,7 +141,6 @@ class Server(object):
             ###
             # Ugly yeah... but so what?
             ###
-            global zdslog
             zdslog = get_zdslog(reload=True)
         pid_fobj = open(self.pidfile, 'w')
         pid_fobj.write(str(os.getpid()))
