@@ -283,7 +283,8 @@ class ZServ(object):
         # in 1.08.08, we need to prevent anything from processing events or
         # accessing the list of players until we sync it up.
         ###
-        with nested(self.players.lock, self.event_lock):
+        # with nested(self.players.lock, self.event_lock):
+        with self.players.lock:
             self.clean_up(session=session)
             self.map_number = map_number
             self.map_name = map_name
