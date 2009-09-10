@@ -7,7 +7,8 @@ from threading import Lock
 
 from ConfigParser import RawConfigParser as RCP
 from ConfigParser import SafeConfigParser as SCP
-from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError
+from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError, \
+                         ParsingError
 
 from ZDStack.Utils import resolve_path, requires_instance_lock
 from ZDStack.ZDSFile import SynchronizedFile

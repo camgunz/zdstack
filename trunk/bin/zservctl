@@ -17,8 +17,7 @@ Usage:
     zservctl restart -n [ zserv_name ] -c [ config_file ]
     zservctl start-all -c [ config_file ]
     zservctl stop-all -c [ config_file ]
-    zservctl restart-all -c [ config_file ]
-    zservctl reload-config -c [ config_file ]\n\n"""
+    zservctl restart-all -c [ config_file ]\n\n"""
     sys.exit(-1)
 
 actions = ('start', 'stop', 'restart', 'start-all', 'stop-all', 'restart-all')

@@ -68,6 +68,7 @@ class ZServ(object):
         :type zdstack: :class:`~ZDStack.Stack`
 
         """
+        self.round_initialized = Event()
         self.start_time = None
         self.restarts = list()
         self.map_name = None
@@ -284,6 +285,7 @@ class ZServ(object):
         # accessing the list of players until we sync it up.
         ###
         # with nested(self.players.lock, self.event_lock):
+        self.round_initialized.clear()
         with self.players.lock:
             self.clean_up(session=session)
             self.map_number = map_number
@@ -312,6 +314,7 @@ class ZServ(object):
             self.players.sync(acquire_lock=False, session=session,
                               check_bans=True)
             zdslog.debug('Done changing map')
+        self.round_initialized.set()
 
     def load_config(self, reload=False):
         """Loads this ZServ's config.
@@ -503,6 +506,7 @@ class ZServ(object):
             self.fifo = None
             self.zserv = None
             self.clean_up()
+            self.round_initialized.set()
             return error_stopping
         else:
             raise Exception("[%s] already stopped" % (self.name))
@@ -561,10 +565,12 @@ class ZServ(object):
             ###
             if not self.events_enabled or event_response_type is None:
                 return _send(message)
+            ##################################################################
             #                                                                #
             # Everything past this point only happens if event_response_type #
             # is not None and events are enabled.                            #
             #                                                                #
+            ##################################################################
             zdslog.debug("Setting response type")
             self.response_events = []
             self.event_type_to_watch_for = event_response_type

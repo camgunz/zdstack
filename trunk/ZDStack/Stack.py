@@ -392,8 +392,8 @@ class Stack(Server):
                 #
                 #   return LogEvent(now, 'junk', d, 'junk', line))
                 #
-                # We do, on the other hand, want to let the ZServ know that its
-                # response is finished, if it's waiting on something.
+                # We do, however, want to let the ZServ know that its response
+                # is finished, if it's waiting on something.
                 #
                 ###
                 zdslog.debug("No event for [%s]" % (line))
@@ -434,7 +434,7 @@ class Stack(Server):
                 if zserv.event_type_to_watch_for:
                     s = "%s is watching for %s events"
                     zdslog.debug(s % (zserv.name,
-                                       zserv.event_type_to_watch_for))
+                                      zserv.event_type_to_watch_for))
                     if event.type == zserv.event_type_to_watch_for:
                         zdslog.debug("Found a response event")
                         zserv.response_events.append(event)
@@ -475,9 +475,13 @@ class Stack(Server):
         ds = "Handling %s event (Line: [%s])"
         zdslog.debug(ds % (event.type, event.line))
         handler = self.event_handler.get_handler(event.category)
-        # zdslog.debug("Acquiring %s's event lock" % (zserv.name))
         with zserv.event_lock:
-            # zdslog.debug("Acquired %s's event lock" % (zserv.name))
+            ###
+            # We want to wait until the ZServ is finished initializing the
+            # round.  This isn't a potential shutdown problem because ZServ
+            # sets it upon stopping.
+            ###
+            zserv.round_initialized.wait()
             handler(event, zserv)
             if zserv.plugins_enabled:
                 for plugin in zserv.plugins:
