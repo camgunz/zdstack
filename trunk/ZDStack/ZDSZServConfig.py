@@ -458,7 +458,6 @@ class ZServConfigParser(ZDSConfigParser):
         rcon_commands_9 = rcon_password_9 and self.getlist(rcs + '9', None, pf)
         server_password = self.get('server_password', '')
         requires_password = len(server_password) > 0
-        deathlimit = self.getint('deathlimit')
         spam_window = self.getint('spam_window')
         spam_limit = self.getint('spam_window')
         speed_check = self.getboolean('speed_check')
@@ -499,7 +498,6 @@ class ZServConfigParser(ZDSConfigParser):
             self.game_mode in DUEL_MODES and 2 or self.getint('max_players')
         timelimit = self.getint('timelimit')
         fraglimit = self.getint('fraglimit')
-        auto_respawn = self.getint('auto_respawn')
         teamdamage = self.getdecimal('teamdamage')
         max_teams = self.getint('max_teams')
         zdslog.debug("Max Teams: %s" % (max_teams))
@@ -540,6 +538,7 @@ class ZServConfigParser(ZDSConfigParser):
             self.zserv.banlist = BanList(filename=banlist_file)
         else:
             self.zserv.banlist_file = banlist_file
+        force_respawn = self.getint('force_respawn', 0)
         self.zserv.zserv_exe = zserv_exe
         self.zserv.fifo_path = fifo_path
         self.zserv.wad_folder = wad_folder
@@ -584,7 +583,6 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.rcon_commands_9 = rcon_commands_9
         self.zserv.server_password = server_password
         self.zserv.requires_password = requires_password
-        self.zserv.deathlimit = deathlimit
         self.zserv.spam_window = spam_window
         self.zserv.spam_limit = spam_limit
         self.zserv.speed_check = speed_check
@@ -621,7 +619,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.timelimit = timelimit
         self.zserv.fraglimit = fraglimit
         self.zserv.scorelimit = scorelimit
-        self.zserv.auto_respawn = auto_respawn
+        self.zserv.force_respawn = force_respawn
         self.zserv.teamdamage = teamdamage
         self.zserv.max_teams = max_teams
         self.zserv.playing_colors = playing_colors
@@ -838,7 +836,6 @@ class ZServConfigParser(ZDSConfigParser):
         if add_bool_line(self.zserv.requires_password, \
                                                     'set force_password "%s"'):
             add_var_line(self.zserv.server_password, 'set password "%s"')
-        add_var_line(self.zserv.deathlimit, 'set sv_deathlimit "%s"')
         add_var_line(self.zserv.spam_window, 'set spam_window "%s"')
         add_var_line(self.zserv.spam_limit, 'set spam_limit "%s"')
         add_bool_line(self.zserv.speed_check, 'set speed_check "%s"')
@@ -932,7 +929,11 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.max_players, 'set maxplayers "%s"')
         add_var_line(self.zserv.timelimit, 'set timelimit "%s"')
         add_var_line(self.zserv.fraglimit, 'set fraglimit "%s"')
-        add_var_line(self.zserv.auto_respawn, 'set sv_autorespawn "%s"')
+        if self.zserv.force_respawn:
+            add_bool_line(True, 'set sv_forcerespawn "%s"')
+            add_var_line(self.zserv.force_respawn, 'set sv_deathlimit "%s"')
+        else:
+            add_bool_line(False, 'set sv_forcerespawn "%s"')
         add_var_line(self.zserv.teamdamage, 'set teamdamage "%s"')
         add_var_line(self.zserv.max_teams, 'set maxteams "%s"')
         return self._new_template
