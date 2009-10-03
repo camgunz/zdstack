@@ -430,7 +430,7 @@ class ZServConfigParser(ZDSConfigParser):
         use_global_banlist = self.getboolean('use_global_banlist', False)
         use_global_whitelist = self.getboolean('use_global_whitelist', False)
         copy_zdaemon_banlist = self.getboolean('copy_zdaemon_banlist', False)
-        finetics = self.getboolean('finetics', False)
+        fineticks = self.getboolean('fineticks', False)
         whitelist_file = self.getpath('whitelist_file', None)
         rcon_password = self.get('rcon_password')
         rcon_enabled = rcon_password and True
@@ -559,7 +559,7 @@ class ZServConfigParser(ZDSConfigParser):
         zdslog.debug(ds % (self.zserv.save_logfile, self.zserv.name))
         self.zserv.use_global_banlist = use_global_banlist
         self.zserv.use_global_whitelist = use_global_whitelist
-        self.zserv.finetics = finetics
+        self.zserv.fineticks = fineticks
         self.zserv.copy_zdaemon_banlist = copy_zdaemon_banlist
         self.zserv.rcon_password = rcon_password
         self.zserv.rcon_enabled = rcon_enabled
@@ -778,7 +778,7 @@ class ZServConfigParser(ZDSConfigParser):
         # sv_oldthrust
         # sv_allowzoom
         # item_respawn_time
-        # cl_interp (0 is equivalent to sv_finetics 1.08) 0 - 5
+        # cl_interp (0 is equivalent to sv_fineticks 1.08) 0 - 5
         #
         # sv_fineticks is replaced (sorta) by cl_updatemod:
         #
@@ -830,7 +830,7 @@ class ZServConfigParser(ZDSConfigParser):
         #     addr = (self.zserv.zdstack.hostname, self.zserv.zdstack.port)
         #     banlist_url = 'http://%s:%s/bans' % addr
         #     add_var_line(banlist_url, 'set banlist_url "%s"')
-        add_bool_line(self.zserv.finetics, 'set sv_finetics "%s"')
+        add_bool_line(self.zserv.fineticks, 'set sv_fineticks "%s"')
         if add_bool_line(self.zserv.rcon_enabled, 'set enable_rcon "%s"'):
             add_var_line(self.zserv.rcon_password, 'set rcon_password "%s"')
         if add_bool_line(self.zserv.requires_password, \
