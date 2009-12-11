@@ -1,0 +1,10 @@
+#summary How to submit a bug report for ZDStack
+#labels Phase-QA,Phase-Support
+
+It is tempting to log onto IRC and get me to help you with a problem.  I don't mind this, but frequently I need a lot more information.  To assist me, please do the following:
+
+  * Run `zdstack debug` instead of `zdstack start`, which will generate a lot more debugging output (make sure you have adequate disk space).
+  * Create an issue report [http://code.google.com/p/zdstack/issues/list here] and attach the resulting log file to it.
+  * It is also quite helpful to have a config, so if you could strip out all passwords and sensitive information and attach that as well it is most helpful.
+
+There are lots and lots of things that can go wrong in Doom, because the game is so modifiable.  So the more information I have about the context of the error or behavior you're seeing the better.
