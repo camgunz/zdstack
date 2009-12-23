@@ -430,7 +430,7 @@ class ZServConfigParser(ZDSConfigParser):
             ###
             # This can be confusing, I admit.
             ###
-            save_logfile = self.getboolean('save_logfiles', False)
+            save_logfile = self.getboolean('save_log_files', False)
         use_global_banlist = self.getboolean('use_global_banlist', False)
         use_global_whitelist = self.getboolean('use_global_whitelist', False)
         copy_zdaemon_banlist = self.getboolean('copy_zdaemon_banlist', False)
@@ -441,8 +441,12 @@ class ZServConfigParser(ZDSConfigParser):
         # ZServ stuff
         ###
         add_mapnum_to_hostname = self.getboolean('add_mapnum_to_hostname')
-        add_rocket_explosions = self.getboolean('add_rocket_explosions', False)
+        add_rocket_explosion = self.getboolean('add_rocket_explosion', False)
         admin_email = self.get('admin_email')
+        advertise = self.getboolean('advertise', True)
+        air_control = self.get('air_control', '0')
+        allow_target_names = self.getboolean('allow_target_names', True)
+        lf = lambda x: [y.strip() for y in x.split(',')]
         alternate_wads = self.getlist('alternate_wads', parse_func=lf)
         death_limit = self.getint('death_limit')
         developer = self.getboolean('developer')
@@ -459,7 +463,7 @@ class ZServConfigParser(ZDSConfigParser):
         gravity = self.getint('gravity')
         heapsize = self.getint('heapsize')
         hide_countries = self.getboolean('hide_countries')
-        hostname = self.getstr('hostname')
+        hostname = self.get('hostname')
         infinite_ammo = self.getboolean('infinite_ammo')
         instant_weapon_switching = self.getboolean('instant_weapon_switching')
         keep_keys = self.getboolean('keep_keys')
@@ -535,14 +539,15 @@ class ZServConfigParser(ZDSConfigParser):
         remove_bots_when_humans = self.getboolean('remove_bots_when_humans')
         resend_lost_packets = self.getboolean('resend_lost_packets', True)
         reset_inventory = self.getboolean('reset_inventory')
-        respawn_items = self.getboolean('respawn_items')
         respawn_barrels = self.getboolean('respawn_barrels')
+        respawn_items = self.getboolean('respawn_items')
         respawn_monsters = self.getboolean('respawn_monsters')
         respawn_protection = self.getboolean('respawn_protection')
         respawn_super_items = self.getboolean('respawn_super_items')
         restart_empty_map = self.getboolean('restart_empty_map')
         same_level = self.getboolean('same_level')
         same_spawn_spot = self.getboolean('same_spawn_spot')
+        score_limit = self.getint('team_score_limit')
         server_password = self.get('server_password', '')
         show_killing_sprees = self.getboolean('show_killing_sprees')
         show_multi_kills = self.getboolean('show_multi_kills')
@@ -559,7 +564,6 @@ class ZServConfigParser(ZDSConfigParser):
         team_autoaim = self.getboolean('team_autoaim')
         team_damage = self.getboolean('team_damage')
         team_keys = self.getboolean('team_keys')
-        team_score_limit = self.getboolean('team_score_limit')
         telemissiles = self.getboolean('telemissiles')
         time_limit = self.getint('time_limit')
         unlagged = self.getboolean('unlagged')
@@ -577,7 +581,7 @@ class ZServConfigParser(ZDSConfigParser):
         vote_timeout = self.getint('vote_timeout')
         minimum_vote_percent = self.getint('minimum_vote_percent')
         kick_voting = self.getboolean('vote_kick')
-        kick_vote_percent = sef.getpercent('kick_vote_percent')
+        kick_vote_percent = self.getpercent('kick_vote_percent')
         map_voting = self.getboolean('map_voting')
         random_map_voting = self.getboolean('random_map_voting')
         skip_map_voting = self.getboolean('skip_map_voting')
@@ -654,6 +658,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.admin_email = admin_email
         self.zserv.advertise = advertise
         self.zserv.air_control = air_control
+        self.zserv.allow_target_names = allow_target_names
         self.zserv.alternate_wads = alternate_wads
         self.zserv.death_limit = death_limit
         self.zserv.developer = developer
@@ -736,6 +741,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.rcon_commands_8 = rcon_commands_8
         self.zserv.rcon_commands_9 = rcon_commands_9
         self.zserv.remove_bots_when_humans = remove_bots_when_humans
+        self.zserv.requires_password = requires_password
         self.zserv.resend_lost_packets = resend_lost_packets
         self.zserv.reset_inventory = reset_inventory
         self.zserv.respawn_barrels = respawn_barrels
@@ -746,6 +752,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.restart_empty_map = restart_empty_map
         self.zserv.same_level = same_level
         self.zserv.same_spawn_spot = same_spawn_spot
+        self.zserv.score_limit = score_limit
         self.zserv.server_password = server_password
         self.zserv.show_killing_sprees = show_killing_sprees
         self.zserv.show_multi_kills = show_multi_kills
@@ -762,7 +769,6 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.team_color_instances = team_color_instances
         self.zserv.team_damage = team_damage
         self.zserv.team_keys = team_keys
-        self.zserv.team_score_limit = team_score_limit
         self.zserv.telemissiles = telemissiles
         self.zserv.time_limit = time_limit
         self.zserv.unlagged = unlagged
@@ -845,7 +851,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.air_control, 'sv_aircontrol')
         add_bool_line(self.zserv.allow_target_names, 'sv_allow_target_names')
         add_var_line(self.zserv.alternate_wads, 'setaltwads')
-        add_var_line(self.zserv.banlist_url, 'banlist_url')
+        # add_var_line(self.zserv.banlist_url, 'banlist_url')
         add_var_line(self.zserv.death_limit, 'sv_deathlimit')
         add_var_line(self.zserv.developer, 'developer')
         add_var_line(self.zserv.dmflags, 'dmflags')
@@ -868,6 +874,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.keys_in_team_modes, 'sv_keys_inteammodes')
         add_bool_line(self.zserv.keys_stay, 'sv_keys_stay')
         add_var_line(self.zserv.kill_limit, 'killlimit')
+        add_bool_line(self.zserv.log_sent_packets, 'sv_unlag_report')
         add_var_line(self.zserv.max_lost_souls, 'maxlostsouls')
         add_var_line(self.zserv.max_clients, 'maxclients')
         add_var_line(self.zserv.max_clients_per_ip, 'sv_maxclientsperip')
@@ -945,7 +952,6 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.restart_empty_map, 'restartemptymap')
         add_bool_line(self.zserv.same_level, 'sv_samelevel')
         add_bool_line(self.zserv.same_spawn_spot, 'sv_samespawnspot')
-        add_bool_line(self.zserv.log_sent_packets, 'sv_unlag_report')
         add_bool_line(self.zserv.show_killing_sprees, 'sv_showsprees')
         add_bool_line(self.zserv.show_multi_kills, 'sv_showmultikills')
         add_bool_line(self.zserv.silent_bfg, 'sv_silentbfg')
@@ -985,7 +991,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.random_captain_voting, 'sv_vote_randcaps')
         add_bool_line(self.zserv.game_mode in DM_MODES, 'deathmatch')
         if add_bool_line(self.zserv.game_mode in TEAM_MODES, 'teamplay'):
-            add_var_line(self.zserv.scorelimit, 'teamscorelimit')
+            add_var_line(self.zserv.score_limit, 'teamscorelimit')
         add_bool_line(self.zserv.game_mode in CTF_MODES, 'ctf')
         if self.zserv.maps:
             for map in self.zserv.maps:

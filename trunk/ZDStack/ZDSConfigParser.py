@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import sys
 import os.path
 
 from decimal import Decimal
@@ -12,6 +13,19 @@ from ConfigParser import DEFAULTSECT, NoSectionError, NoOptionError, \
 
 from ZDStack.Utils import resolve_path, requires_instance_lock
 from ZDStack.ZDSFile import SynchronizedFile
+
+class SafeZDSConfigParser(SCP):
+
+    def _interpolate(self, section, option, rawval, vars):
+        if type(rawval) not in (unicode, str):
+            ###
+            # Don't do string interpolation on non-string values :)
+            ###
+            return rawval
+        # do the string interpolation
+        L = []
+        self._interpolate_some(option, L, rawval, section, vars, 1)
+        return ''.join(L)
 
 class RawZDSConfigParser(SynchronizedFile, RCP):
 
@@ -577,7 +591,7 @@ class RawZDSConfigParser(SynchronizedFile, RCP):
         if e:
             raise e
 
-class ZDSConfigParser(RawZDSConfigParser, SCP):
+class ZDSConfigParser(RawZDSConfigParser, SafeZDSConfigParser):
 
     """ZDSConfigParser is RawZDSConfigParser with magic interpolation.
     
@@ -596,7 +610,7 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
     """
 
     def __init__(self, filename=None):
-        SCP.__init__(self)
+        SafeZDSConfigParser.__init__(self)
         RawZDSConfigParser.__init__(self, filename)
 
     @requires_instance_lock()
@@ -694,7 +708,7 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
                   [('option', 'value1'), ('option2', 'value2')]
 
         """
-        return SCP.items(self, section, raw, vars)
+        return SafeZDSConfigParser.items(self, section, raw, vars)
 
     @requires_instance_lock()
     def set(self, section, option, value):
@@ -709,5 +723,5 @@ class ZDSConfigParser(RawZDSConfigParser, SCP):
         :type value: string
 
         """
-        return SCP.set(self, section, option, value)
+        return SafeZDSConfigParser.set(self, section, option, value)
 
