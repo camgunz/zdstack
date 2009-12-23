@@ -7,7 +7,7 @@ if [ ! $1 ]; then
   exit 1
 fi
 
-HOMEDIR='/home/cagunyon/Desktop/Code/zdstack/trunk'
+HOMEDIR='/home/cagunyon/Desktop/Code/ZDStack/trunk'
 RELEASE_NAME="ZDStack-$1"
 RELEASE_DIR="$HOMEDIR/$RELEASE_NAME"
 

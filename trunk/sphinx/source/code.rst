@@ -86,12 +86,6 @@ ZDStack.ZDSModels
    :members:
    :undoc-members:
 
-ZDStack.ZDSPlayer
------------------
-.. automodule:: ZDStack.ZDSPlayer
-   :members:
-   :undoc-members:
-
 ZDStack.ZDSPlayersList
 ----------------------
 .. automodule:: ZDStack.ZDSPlayersList
