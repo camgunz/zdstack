@@ -1,6 +1,9 @@
-- If a player joins a team ('Ladna joined the game on the Red team') before
-  ZDStack can sync its internal list of players, event handling (and thus
-  statistics and plugins) can be hopelessly messed up.  It is recommended
-  that events, statistics and plugins be disabled for the time being.  This
-  issue will be resolved before 0.11 proper is released.
+- DMFLAGS/DMFLAGS2 values are overridden by ZDStack's configuration file default
+  values.  I think that the best way to fix this is to not have default values.
+
+- There used to be an issue where if a player joins a team ('Ladna joined the
+  game on the Red team') before ZDStack can sync its internal list of players,
+  event handling (and thus statistics and plugins) can be hopelessly messed up.
+  At the time it was recommended that events, statistics and plugins be
+  disabled, however, the issue should be resolved at this point.  Test away!
 

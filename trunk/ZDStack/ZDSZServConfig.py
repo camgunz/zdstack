@@ -441,11 +441,11 @@ class ZServConfigParser(ZDSConfigParser):
         # ZServ stuff
         ###
         add_mapnum_to_hostname = self.getboolean('add_mapnum_to_hostname')
-        add_rocket_explosion = self.getboolean('add_rocket_explosion', False)
+        add_rocket_explosion = self.getboolean('add_rocket_explosion')
         admin_email = self.get('admin_email')
-        advertise = self.getboolean('advertise', True)
-        air_control = self.get('air_control', '0')
-        allow_target_names = self.getboolean('allow_target_names', True)
+        advertise = self.getboolean('advertise')
+        air_control = self.get('air_control')
+        allow_target_names = self.getboolean('allow_target_names')
         lf = lambda x: [y.strip() for y in x.split(',')]
         alternate_wads = self.getlist('alternate_wads', parse_func=lf)
         death_limit = self.getint('death_limit')
@@ -455,9 +455,9 @@ class ZServConfigParser(ZDSConfigParser):
         drop_weapons = self.getboolean('drop_weapons')
         falling_damage = self.getboolean('falling_damage')
         fast_monsters = self.getboolean('fast_monsters')
-        fineticks = self.getboolean('fineticks', False)
+        fineticks = self.getboolean('fineticks')
         force_respawn = self.getboolean('force_respawn')
-        force_water = self.getboolean('force_water', False)
+        force_water = self.getboolean('force_water')
         frag_limit = self.getint('frag_limit')
         generate_block_map = self.getboolean('generate_block_map')
         gravity = self.getint('gravity')
@@ -472,7 +472,7 @@ class ZServConfigParser(ZDSConfigParser):
         kill_limit = self.getint('kill_limit')
         log_sent_packets = self.getboolean('log_sent_packets')
         maps = self.getlist('maps') or ['map01']
-        max_lost_souls = self.getint('max_lost_souls', 20)
+        max_lost_souls = self.getint('max_lost_souls')
         max_clients = self.getint('max_clients')
         max_clients_per_ip = self.getint('max_clients_per_ip')
         max_players = \
@@ -537,7 +537,7 @@ class ZServConfigParser(ZDSConfigParser):
         rcon_commands_8 = rcon_password_8 and self.getlist(rcs + '8', None, pf)
         rcon_commands_9 = rcon_password_9 and self.getlist(rcs + '9', None, pf)
         remove_bots_when_humans = self.getboolean('remove_bots_when_humans')
-        resend_lost_packets = self.getboolean('resend_lost_packets', True)
+        resend_lost_packets = self.getboolean('resend_lost_packets')
         reset_inventory = self.getboolean('reset_inventory')
         respawn_barrels = self.getboolean('respawn_barrels')
         respawn_items = self.getboolean('respawn_items')
