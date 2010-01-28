@@ -1,6 +1,3 @@
-- DMFLAGS/DMFLAGS2 values are overridden by ZDStack's configuration file default
-  values.  I think that the best way to fix this is to not have default values.
-
 - There used to be an issue where if a player joins a team ('Ladna joined the
   game on the Red team') before ZDStack can sync its internal list of players,
   event handling (and thus statistics and plugins) can be hopelessly messed up.
