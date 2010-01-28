@@ -968,7 +968,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.team_damage, 'teamdamage')
         add_bool_line(self.zserv.team_keys, 'sv_keys_teamkeys')
         add_bool_line(self.zserv.telemissiles, 'sv_telemissiles')
-        add_bool_line(self.zserv.time_limit, 'timelimit')
+        add_var_line(self.zserv.time_limit, 'timelimit')
         add_bool_line(self.zserv.unlagged, 'sv_unlag')
         add_bool_line(self.zserv.use_blocking, 'sv_useblocking')
         add_bool_line(self.zserv.vampire_mode, 'sv_vampire')
@@ -995,7 +995,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.game_mode in CTF_MODES, 'ctf')
         if self.zserv.maps:
             for map in self.zserv.maps:
-                add_var_line(map, 'addmap')
+                add_line(True, 'addmap %s' % (map))
         if self.zserv.optional_wads:
             add_var_line(' '.join(self.zserv.optional_wads),
                          'optional_wads')

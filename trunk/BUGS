@@ -1,1 +1,6 @@
-- None! (ahahahahahahaha)
+- If a player joins a team ('Ladna joined the game on the Red team') before
+  ZDStack can sync its internal list of players, event handling (and thus
+  statistics and plugins) can be hopelessly messed up.  It is recommended
+  that events, statistics and plugins be disabled for the time being.  This
+  issue will be resolved before 0.11 proper is released.
+

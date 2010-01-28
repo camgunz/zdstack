@@ -9,7 +9,7 @@ fi
 
 HOMEDIR='/home/cagunyon/Desktop/Code/ZDStack/trunk'
 RELEASE_NAME="ZDStack-$1"
-RELEASE_DIR="$HOMEDIR/$RELEASE_NAME"
+RELEASE_DIR="$RELEASE_NAME"
 
 echo "=== Initializing release environment"
 rm -f $RELEASE_NAME.tar.bz2
@@ -47,7 +47,7 @@ chmod 640 $RELEASE_DIR/LICENSE
 chmod 640 $RELEASE_DIR/README
 chmod 750 $RELEASE_DIR/bin
 chmod 750 $RELEASE_DIR/doc
-chmod 750 $RELEASE_DIR/doc/pydocs
+chmod 640 $RELEASE_DIR/doc/pydocs/*
 chmod 750 $RELEASE_DIR/ZDStack
 chmod 750 $RELEASE_DIR/bin/*
 chmod 750 $RELEASE_DIR/setup.py
