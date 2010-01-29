@@ -24,7 +24,7 @@
     Limited RCON is now supported
     zdrpc can now either print the zserv's response as lines from the log, or
       as event data dicts
-    The python documentation files are now generated using sphinx, which is a
+    The Python documentation files are now generated using sphinx, which is a
       big improvement over the ugliness that was pydoc
   Fixes ---
     If an option was defined in the DEFAULT section, as a game_mode default,
@@ -48,6 +48,7 @@
       spinning, errors during shutdown, etc.
     There were many race conditions and non-threadsafe areas of the code, most
       if not all of which have been resolved
+    Lots more, geez!
 
 0.10.1 ---
   Added a bunch of FakeZServ stuff for log parsing, both Client and Server

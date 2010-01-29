@@ -69,6 +69,7 @@ class ZServ(object):
 
         """
         self.round_initialized = Event()
+        self.round_initialized.set()
         self.start_time = None
         self.restarts = list()
         self.map_name = None
