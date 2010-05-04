@@ -16,6 +16,66 @@ from ZDStack.ZDSConfigParser import ZDSConfigParser
 
 zdslog = get_zdslog()
 
+DMFLAGS_OPTIONS = (
+    'no_health',           # sv_nohealth
+    'no_items',            # sv_noitems
+    'weapons_stay',        # sv_weaponstay
+    'falling_damage',      # sv_falldamage
+    'old_falling_damage',  # sv_oldfalldamage
+    'no_exit_kill',        # sv_noexitkill
+    'same_level',          # sv_samelevel
+    'spawn_farthest',      # sv_spawnfarthest
+    'force_respawn',       # sv_forcerespawn
+    'no_armor',            # sv_noarmor
+    'no_exit',             # sv_noexit
+    'infinite_ammo',       # sv_infiniteammo
+    'no_monsters',         # sv_nomonsters
+    'respawn_monsters',    # sv_monsterrespawn
+    'respawn_items',       # sv_itemrespawn
+    'fast_monsters',       # sv_fastmonsters
+    'no_jump',             # sv_nojump
+    'no_freelook',         # sv_nofreelook
+    'respawn_super_items', # sv_respawnsuper
+    'no_passover',         # sv_nopassover
+    'reset_inventory',     # sv_resetinventory
+    'no_super',            # sv_nosuper
+    'no_crosshair',        # sv_nocrosshair
+    'quad_respawn_time',   # sv_quadrespawn
+    'WHO_KNOWS?',
+    'old_thrusting'        # sv_oldthrust
+)
+
+DMFLAGS2_OPTIONS = (
+    'telemissiles',             # sv_telemissiles
+    'drop_weapons',             # sv_weapondrop
+    'same_spawn_spot',          # sv_same_spawn_spot
+    'respawn_barrels',          # sv_barrelrespawn
+    'respawn_protection',       # sv_respawnprotect
+    'nice_weapons',             # sv_niceweapons
+    'keep_keys',                # sv_keepkeys
+    'strong_monsters',          # sv_strong_monsters
+    'powerful_monsters',        # sv_powerful_monsters
+    'old_weapon_sounds',        # sv_oldwepsound
+    'silent_bfg',               # sv_silentbfg
+    'old_wallrun',              # sv_oldwallrun
+    'old_sound_cutoff',         # sv_oldsoundcut
+    'old_player_movement',      # sv_oldpmovement
+    'old_random',               # sv_oldrandom
+    'hide_countries',           # sv_hide_countries
+    'old_weapon_switching',     # sv_oldweaponswitch
+    'allow_target_names',       # sv_allow_target_names
+    'old_jump',                 # sv_oldjump
+    'old_ctf_convention',       # sv_ctf_old_convention
+    'no_team_starts',           # sv_no_team_starts
+    'keys_in_team_modes',       # sv_keys_inteammodes
+    'team_keys',                # sv_keys_teamkeys
+    'keys_stay',                # sv_keys_stay
+    'use_blocking',             # sv_useblocking
+    'voodoo_spawns',            # sv_voodoo_spawns
+    'vampire_mode',             # sv_vampire
+    'instant_weapon_switching', # sv_insta_switch
+)
+
 class ZServTRFH(TimedRotatingFileHandler):
 
     def emit(self, record):
@@ -653,6 +713,9 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.use_global_banlist = use_global_banlist
         self.zserv.use_global_whitelist = use_global_whitelist
         self.zserv.copy_zdaemon_banlist = copy_zdaemon_banlist
+        ###
+        # ZServ-specific stuff starts here.
+        ###
         self.zserv.add_mapnum_to_hostname = add_mapnum_to_hostname
         self.zserv.add_rocket_explosion = add_rocket_explosion
         self.zserv.admin_email = admin_email
