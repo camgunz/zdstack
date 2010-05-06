@@ -41,7 +41,7 @@ DMFLAGS_OPTIONS = (
     'no_super',            # sv_nosuper
     'no_crosshair',        # sv_nocrosshair
     'quad_respawn_time',   # sv_quadrespawn
-    'WHO_KNOWS?',
+    'allow_zoom',          # sv_allow_zoom
     'old_thrusting'        # sv_oldthrust
 )
 
@@ -506,6 +506,7 @@ class ZServConfigParser(ZDSConfigParser):
         advertise = self.getboolean('advertise')
         air_control = self.get('air_control')
         allow_target_names = self.getboolean('allow_target_names')
+        # allow_zoom = self.getboolean('allow_zoom')
         lf = lambda x: [y.strip() for y in x.split(',')]
         alternate_wads = self.getlist('alternate_wads', parse_func=lf)
         death_limit = self.getint('death_limit')
@@ -722,6 +723,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.advertise = advertise
         self.zserv.air_control = air_control
         self.zserv.allow_target_names = allow_target_names
+        # self.zserv.allow_zoom = allow_zoom
         self.zserv.alternate_wads = alternate_wads
         self.zserv.death_limit = death_limit
         self.zserv.developer = developer
@@ -913,6 +915,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.advertise, 'master_advertise')
         add_var_line(self.zserv.air_control, 'sv_aircontrol')
         add_bool_line(self.zserv.allow_target_names, 'sv_allow_target_names')
+        # add_bool_line(self.zserv.allow_zoom, 'sv_allow_zoom')
         add_var_line(self.zserv.alternate_wads, 'setaltwads')
         # add_var_line(self.zserv.banlist_url, 'banlist_url')
         add_var_line(self.zserv.death_limit, 'sv_deathlimit')
