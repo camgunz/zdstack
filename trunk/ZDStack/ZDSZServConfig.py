@@ -507,8 +507,10 @@ class ZServConfigParser(ZDSConfigParser):
         air_control = self.get('air_control')
         allow_target_names = self.getboolean('allow_target_names')
         # allow_zoom = self.getboolean('allow_zoom')
-        lf = lambda x: [y.strip() for y in x.split(',')]
-        alternate_wads = self.getlist('alternate_wads', parse_func=lf)
+        alternate_wads = self.getlist(
+            'alternate_wads',
+            parse_func = lambda x: ' '.join([y.strip() for y in x.split(',')])
+        )
         death_limit = self.getint('death_limit')
         developer = self.getboolean('developer')
         dmflags = self.get('dmflags')
@@ -972,7 +974,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.old_wallrun, 'sv_oldwallrun')
         add_bool_line(self.zserv.old_weapon_switch, 'sv_oldweaponswitch')
         add_bool_line(self.zserv.old_weapon_sounds, 'sv_oldwepsounds')
-        add_var_line(self.zserv.optional_wads, 'optional_wads')
+        # add_var_line(' '.join(self.zserv.optional_wads), 'optional_wads')
         add_bool_line(self.zserv.overtime, 'overtime')
         add_bool_line(self.zserv.powerful_monsters, 'sv_powerful_monsters')
         add_bool_line(self.zserv.quad_respawn_time, 'sv_quadrespawntime')
@@ -1042,7 +1044,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.var_friction, 'var_friction')
         add_bool_line(self.zserv.var_pushers, 'var_pushers')
         add_bool_line(self.zserv.weapons_stay, 'sv_weaponstay')
-        add_bool_line(self.zserv.website, 'website')
+        add_var_line(self.zserv.website, 'website')
         add_var_line(self.zserv.vote_limit, 'sv_vote_limit')
         add_var_line(self.zserv.vote_timeout, 'sv_vote_timeout')
         add_var_line(self.zserv.minimum_vote_percent,
@@ -1065,10 +1067,10 @@ class ZServConfigParser(ZDSConfigParser):
         if self.zserv.optional_wads:
             add_var_line(' '.join(self.zserv.optional_wads),
                          'optional_wads')
-        if self.zserv.alternate_wads:
-            y = ' '.join(['='.join(x) for x in self.zserv.alternate_wads])
-            add_var_line(y, 'setaltwads')
-        cvar_t = 'add_cvaroverride %%s %s'
+        # if self.zserv.alternate_wads:
+        #     y = ' '.join(['='.join(x) for x in self.zserv.alternate_wads])
+        #     add_var_line(y, 'setaltwads')
+        # cvar_t = 'add_cvaroverride %%s %s'
         ###
         # if self.zserv.overtime:
         #     over_t = cvar_t % ('overtime 1')
