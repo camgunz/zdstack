@@ -647,7 +647,7 @@ class ZServConfigParser(ZDSConfigParser):
         kick_vote_percent = self.getpercent('kick_vote_percent')
         map_voting = self.getboolean('map_voting')
         random_map_voting = self.getboolean('random_map_voting')
-        skip_map_voting = self.getboolean('skip_map_voting')
+        map_vote_eligibility = self.getint('map_vote_eligibility')
         map_reset_voting = self.getboolean('map_reset_voting')
         map_vote_percent = self.getpercent('map_vote_percent')
         random_captain_voting = self.getboolean('random_captain_voting')
@@ -853,7 +853,7 @@ class ZServConfigParser(ZDSConfigParser):
         self.zserv.kick_vote_percent = kick_vote_percent
         self.zserv.map_voting = map_voting
         self.zserv.random_map_voting = random_map_voting
-        self.zserv.skip_map_voting = skip_map_voting
+        self.zserv.map_vote_eligibility = map_vote_eligibility
         self.zserv.map_reset_voting = map_reset_voting
         self.zserv.map_vote_percent = map_vote_percent
         self.zserv.random_captain_voting = random_captain_voting
@@ -900,7 +900,7 @@ class ZServConfigParser(ZDSConfigParser):
             return False
         def add_var_line(var, zs_option_name):
             line = 'set %s "%%s"' % (zs_option_name)
-            return add_line(var, line % (var))
+            return add_line(var is not None, line % (var))
         add_line(True, 'set cfg_activated "1"')
         ###
         # 0: old logs are left in self.zserv.home_folder.
@@ -1053,7 +1053,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_var_line(self.zserv.kick_vote_percent, 'sv_vote_kick_percent')
         add_bool_line(self.zserv.map_voting, 'sv_vote_map')
         add_bool_line(self.zserv.random_map_voting, 'sv_vote_randmaps')
-        add_bool_line(self.zserv.skip_map_voting, 'sv_vote_map_skip')
+        add_var_line(self.zserv.map_vote_eligibility, 'sv_vote_map_skip')
         add_bool_line(self.zserv.map_reset_voting, 'sv_vote_reset')
         add_var_line(self.zserv.map_vote_percent, 'sv_vote_map_percent')
         add_bool_line(self.zserv.random_captain_voting, 'sv_vote_randcaps')
