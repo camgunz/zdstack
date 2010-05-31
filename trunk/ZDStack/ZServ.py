@@ -208,7 +208,7 @@ class ZServ(object):
 
         """
         zdslog.debug('Getting map, session: %s' % (session))
-        if self.map_number and self.map_name:
+        if None not in (self.map_number and self.map_name):
             zdslog.debug('Should be able to return a map')
             q = session.query(Map)
             q = q.filter_by(name=self.map_name, number=self.map_number)
@@ -222,6 +222,8 @@ class ZServ(object):
                 session.add(m)
                 zdslog.debug('Returning %s 2' % (m))
             return m
+        else:
+            raise Exception('Round uninitialized, no map name/number')
 
     @requires_session
     def get_game_mode(self, session=None):
@@ -279,7 +281,7 @@ class ZServ(object):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('Change Map')
+        zdslog.debug('Change Map: %s, %s' % (map_number, map_name))
         ###
         # Because there are no player reconnections at the beginning of rounds
         # in 1.08.08, we need to prevent anything from processing events or
