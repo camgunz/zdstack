@@ -138,7 +138,7 @@ class ZServEventHandler(BaseEventHandler):
 
         :param model: an instance of a model, i.e. FlagTouch
         :param event: the time at which the event occurred
-        :type event; :class:`ZDStack.LogEvent.LogEvent`
+        :type event: :class:`ZDStack.LogEvent.LogEvent`
         :param zserv: the originating ZServ
         :type zserv: :class:`~ZDStack.ZDStack.ZServ`
         :param session: a database session
@@ -156,10 +156,14 @@ class ZServEventHandler(BaseEventHandler):
             if not fraggee:
                 zdslog.debug("Couldn't find fraggee")
                 return
-            fraggee_color = fraggee.color.lower()
+            ###
+            fraggee_color = fraggee.color
             model.fraggee_team_color_name = fraggee_color
-            model.fraggee_team_color = \
-                                    zserv.team_color_instances[fraggee_color]
+            if fraggee_color:
+                fraggee_color = fraggee_color.lower()
+                # model.fraggee_team_color = \
+                #                     zserv.team_color_instances[fraggee_color]
+            ###
             model.fraggee = fraggee
             model.fraggee_id = fraggee.id
             if fraggee in zserv.fragged_runners:
@@ -174,12 +178,16 @@ class ZServEventHandler(BaseEventHandler):
                     zdslog.debug("Could find fraggee")
                     return
                 model.is_suicide = False
-                fragger_color = fragger.color.lower()
-                if zserv.game_mode in TEAMDM_MODES:
-                    zserv.team_scores[fragger_color] += 1
+                ###
+                fragger_color = fragger.color
                 model.fragger_team_color_name = fragger_color
-                model.fragger_team_color = \
-                                    zserv.team_color_instances[fragger_color]
+                if fragger_color:
+                    fragger_color = fragger_color.lower()
+                    # model.fragger_team_color = \
+                    #                 zserv.team_color_instances[fragger_color]
+                    if zserv.game_mode in TEAMDM_MODES:
+                        zserv.team_scores[fragger_color] += 1
+                ###
                 model.fragger = fragger
                 model.fragger_id = fragger.id
                 model.fragger_was_holding_flag = \
@@ -188,11 +196,13 @@ class ZServEventHandler(BaseEventHandler):
                 model.is_suicide = True
                 model.fragger_team_color_name = fraggee_color
                 model.fragger_was_holding_flag = model.fraggee_was_holding_flag
-                if zserv.game_mode in TEAMDM_MODES:
+                if fraggee_color and zserv.game_mode in TEAMDM_MODES:
                     zserv.team_scores[fraggee_color] -= 1
-        elif event.category == 'rcon' or event.type in ('flag_pick',
-                                                        'flag_touch',
-                                                        'flag_return'):
+        elif event.category == 'rcon' or event.type in (
+            'flag_pick',
+            'flag_touch',
+            'flag_return'
+        ):
             zdslog.debug("Handling an rcon or flag event")
             alias = self._get_alias(event, 'player', zserv, session=session)
             if not alias:
@@ -202,7 +212,7 @@ class ZServEventHandler(BaseEventHandler):
             if event.type in ('flag_touch', 'flag_pick', 'flag_return'):
                 color = alias.color.lower()
                 model.player_team_color_name = color
-                model.player_team_color = zserv.team_color_instances[color]
+                # model.player_team_color = zserv.team_color_instances[color]
                 if event.type == 'flag_return':
                     model.player_was_holding_flag = \
                                         alias in zserv.players_holding_flags
@@ -249,7 +259,7 @@ class ZServEventHandler(BaseEventHandler):
                     ###
                     # Because the flag-loss happens before the frag, we have
                     # to lookup the fraggee's team and ensure it's set as a
-                    # team that # was holding a flag at the time of the frag.
+                    # team that was holding a flag at the time of the frag.
                     # For the other teams we can just look them up.
                     ###
                     if fraggee_color == 'red':
