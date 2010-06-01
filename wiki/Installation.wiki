@@ -14,7 +14,7 @@ These steps will install ZDStack for a specific user only.  System-wide installa
   # Install the ZDStack configuration file
 
 = Installing the Example Configuration File =
-  `zdstackctl` and `zservctl` will look in the following locations for a configuration file:
+  `zdstack` and `zservctl` will look in the following locations for a configuration file:
   * ./zdstackrc
   * ./zdstack.ini
   * ~/.zdstackrc
