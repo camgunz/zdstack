@@ -72,7 +72,7 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || old_wallrun || boolean ||
 || old_weapon_switch || boolean ||
 || old_weapon_sounds || boolean ||
-|| optional_wads = || comma-separated list ||
+|| optional_wads || comma-separated list ||
 || overtime || boolean ||
 || powerful_monsters || boolean ||
 || quad_respawn_time || boolean ||
@@ -118,7 +118,7 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || spawn_farthest || boolean ||
 || specs_dont_disturb_players || boolean ||
 || speed_check || boolean ||
-|| splash_factor = || float ||
+|| splash_factor || float ||
 || strong_monsters || boolean ||
 || team_autoaim || boolean ||
 || team_damage || boolean ||
