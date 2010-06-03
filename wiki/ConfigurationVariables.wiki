@@ -1,0 +1,146 @@
+#summary ZDStack Configuration Variables
+
+= Introduction =
+
+This is the list of ZDStack's configuration variables that apply to zservs.  There are other configuration variables that apply to ZDStack and not to zservs, those are not in this list.
+
+= Caveats =
+
+DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorry.
+
+= Configuration Variables =
+
+|| add_mapnum_to_hostname || boolean ||
+|| add_rocket_explosion || boolean ||
+|| admin_email || string ||
+|| advertise || boolean ||
+|| air_control || float ||
+|| allow_target_names || boolean ||
+|| alternate_wads || list (see ZDaemon documentation for details) ||
+|| death_limit || integer ||
+|| developer || boolean ||
+|| dmflags || string ||
+|| dmflags2 || string ||
+|| drop_weapons || boolean ||
+|| falling_damage || boolean ||
+|| fast_monsters || boolean ||
+|| fineticks || boolean ||
+|| force_respawn || boolean ||
+|| force_water || boolean ||
+|| frag_limit || integer ||
+|| generate_block_map || boolean ||
+|| gravity || integer ||
+|| heapsize || integer ||
+|| hide_countries || boolean ||
+|| hostname || string ||
+|| infinite_ammo || boolean ||
+|| instant_weapon_switching || boolean ||
+|| keep_keys || boolean ||
+|| keys_in_team_modes || boolean ||
+|| keys_stay || boolean ||
+|| kill_limit || integer ||
+|| log_sent_packets || boolean ||
+|| maps || comma-separated list ||
+|| max_lost_souls || integer ||
+|| max_clients || integer ||
+|| max_clients_per_ip || integer ||
+|| max_players || integer ||
+|| max_players_per_team || integer ||
+|| max_teams || integer ||
+|| min_players || integer ||
+|| motd || string ||
+|| nice_weapons || boolean ||
+|| no_file_compression || boolean ||
+|| no_team_starts || boolean ||
+|| no_armor || boolean ||
+|| no_crosshair || boolean ||
+|| no_exit || boolean ||
+|| no_exit_kill || boolean ||
+|| no_freelook || boolean ||
+|| no_health || boolean ||
+|| no_items || boolean ||
+|| no_jump || boolean ||
+|| no_monsters || boolean ||
+|| no_passover || boolean ||
+|| no_super || boolean ||
+|| old_ctf_convention || boolean ||
+|| old_falling_damage || boolean ||
+|| old_jump || boolean ||
+|| old_player_movement || boolean ||
+|| old_random || boolean ||
+|| old_sound_cutoff || boolean ||
+|| old_wallrun || boolean ||
+|| old_weapon_switch || boolean ||
+|| old_weapon_sounds || boolean ||
+|| optional_wads = || comma-separated list ||
+|| overtime || boolean ||
+|| powerful_monsters || boolean ||
+|| quad_respawn_time || boolean ||
+|| random_maps || boolean ||
+|| rcon_password || string ||
+|| rcon_password_1 || string ||
+|| rcon_password_2 || string ||
+|| rcon_password_3 || string ||
+|| rcon_password_4 || string ||
+|| rcon_password_5 || string ||
+|| rcon_password_6 || string ||
+|| rcon_password_7 || string ||
+|| rcon_password_8 || string ||
+|| rcon_password_9 || string ||
+|| rcon_commands_1 || comma-separated list ||
+|| rcon_commands_2 || comma-separated list ||
+|| rcon_commands_3 || comma-separated list ||
+|| rcon_commands_4 || comma-separated list ||
+|| rcon_commands_5 || comma-separated list ||
+|| rcon_commands_6 || comma-separated list ||
+|| rcon_commands_7 || comma-separated list ||
+|| rcon_commands_8 || comma-separated list ||
+|| rcon_commands_9 || comma-separated list ||
+|| remove_bots_when_humans || boolean ||
+|| resend_lost_packets || boolean ||
+|| reset_inventory || boolean ||
+|| respawn_barrels || boolean ||
+|| respawn_items || boolean ||
+|| respawn_monsters || boolean ||
+|| respawn_protection || boolean ||
+|| respawn_super_items || boolean ||
+|| restart_empty_map || boolean ||
+|| same_level || boolean ||
+|| same_spawn_spot || boolean ||
+|| score_limit || integer ||
+|| server_password || string ||
+|| show_killing_sprees || boolean ||
+|| show_multi_kills || boolean ||
+|| silent_bfg || boolean ||
+|| skill || integer ||
+|| spam_limit || integer ||
+|| spam_window || integer ||
+|| spawn_farthest || boolean ||
+|| specs_dont_disturb_players || boolean ||
+|| speed_check || boolean ||
+|| splash_factor = || float ||
+|| strong_monsters || boolean ||
+|| team_autoaim || boolean ||
+|| team_damage || boolean ||
+|| team_keys || boolean ||
+|| telemissiles || boolean ||
+|| time_limit || integer ||
+|| unlagged || boolean ||
+|| use_blocking || boolean ||
+|| vampire_mode || boolean ||
+|| voodoo_spawns || boolean ||
+|| var_friction || boolean ||
+|| var_pushers || boolean ||
+|| weapons_stay || boolean ||
+|| website || string ||
+|| vote_limit || integer ||
+|| vote_timeout || integer ||
+|| minimum_vote_percent || integer ||
+|| kick_voting || boolean ||
+|| kick_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) ||
+|| map_voting || boolean ||
+|| random_map_voting || boolean ||
+|| map_vote_eligibility || integer ||
+|| map_reset_voting || boolean ||
+|| map_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) ||
+|| random_captain_voting || boolean ||
