@@ -1,4 +1,5 @@
 #summary ZDStack Configuration Variables
+#labels Phase-Deploy
 
 = Introduction =
 
@@ -10,137 +11,138 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 
 = Configuration Variables =
 
-|| add_mapnum_to_hostname || boolean ||
-|| add_rocket_explosion || boolean ||
-|| admin_email || string ||
-|| advertise || boolean ||
-|| air_control || float ||
-|| allow_target_names || boolean ||
-|| alternate_wads || list (see ZDaemon documentation for details) ||
-|| death_limit || integer ||
-|| developer || boolean ||
-|| dmflags || string ||
-|| dmflags2 || string ||
-|| drop_weapons || boolean ||
-|| falling_damage || boolean ||
-|| fast_monsters || boolean ||
-|| fineticks || boolean ||
-|| force_respawn || boolean ||
-|| force_water || boolean ||
-|| frag_limit || integer ||
-|| generate_block_map || boolean ||
-|| gravity || integer ||
-|| heapsize || integer ||
-|| hide_countries || boolean ||
-|| hostname || string ||
-|| infinite_ammo || boolean ||
-|| instant_weapon_switching || boolean ||
-|| keep_keys || boolean ||
-|| keys_in_team_modes || boolean ||
-|| keys_stay || boolean ||
-|| kill_limit || integer ||
-|| log_sent_packets || boolean ||
-|| maps || comma-separated list ||
-|| max_lost_souls || integer ||
-|| max_clients || integer ||
-|| max_clients_per_ip || integer ||
-|| max_players || integer ||
-|| max_players_per_team || integer ||
-|| max_teams || integer ||
-|| min_players || integer ||
-|| motd || string ||
-|| nice_weapons || boolean ||
-|| no_file_compression || boolean ||
-|| no_team_starts || boolean ||
-|| no_armor || boolean ||
-|| no_crosshair || boolean ||
-|| no_exit || boolean ||
-|| no_exit_kill || boolean ||
-|| no_freelook || boolean ||
-|| no_health || boolean ||
-|| no_items || boolean ||
-|| no_jump || boolean ||
-|| no_monsters || boolean ||
-|| no_passover || boolean ||
-|| no_super || boolean ||
-|| old_ctf_convention || boolean ||
-|| old_falling_damage || boolean ||
-|| old_jump || boolean ||
-|| old_player_movement || boolean ||
-|| old_random || boolean ||
-|| old_sound_cutoff || boolean ||
-|| old_wallrun || boolean ||
-|| old_weapon_switch || boolean ||
-|| old_weapon_sounds || boolean ||
-|| optional_wads || comma-separated list ||
-|| overtime || boolean ||
-|| powerful_monsters || boolean ||
-|| quad_respawn_time || boolean ||
-|| random_maps || boolean ||
-|| rcon_password || string ||
-|| rcon_password_1 || string ||
-|| rcon_password_2 || string ||
-|| rcon_password_3 || string ||
-|| rcon_password_4 || string ||
-|| rcon_password_5 || string ||
-|| rcon_password_6 || string ||
-|| rcon_password_7 || string ||
-|| rcon_password_8 || string ||
-|| rcon_password_9 || string ||
-|| rcon_commands_1 || comma-separated list ||
-|| rcon_commands_2 || comma-separated list ||
-|| rcon_commands_3 || comma-separated list ||
-|| rcon_commands_4 || comma-separated list ||
-|| rcon_commands_5 || comma-separated list ||
-|| rcon_commands_6 || comma-separated list ||
-|| rcon_commands_7 || comma-separated list ||
-|| rcon_commands_8 || comma-separated list ||
-|| rcon_commands_9 || comma-separated list ||
-|| remove_bots_when_humans || boolean ||
-|| resend_lost_packets || boolean ||
-|| reset_inventory || boolean ||
-|| respawn_barrels || boolean ||
-|| respawn_items || boolean ||
-|| respawn_monsters || boolean ||
-|| respawn_protection || boolean ||
-|| respawn_super_items || boolean ||
-|| restart_empty_map || boolean ||
-|| same_level || boolean ||
-|| same_spawn_spot || boolean ||
-|| score_limit || integer ||
-|| server_password || string ||
-|| show_killing_sprees || boolean ||
-|| show_multi_kills || boolean ||
-|| silent_bfg || boolean ||
-|| skill || integer ||
-|| spam_limit || integer ||
-|| spam_window || integer ||
-|| spawn_farthest || boolean ||
-|| specs_dont_disturb_players || boolean ||
-|| speed_check || boolean ||
-|| splash_factor || float ||
-|| strong_monsters || boolean ||
-|| team_autoaim || boolean ||
-|| team_damage || boolean ||
-|| team_keys || boolean ||
-|| telemissiles || boolean ||
-|| time_limit || integer ||
-|| unlagged || boolean ||
-|| use_blocking || boolean ||
-|| vampire_mode || boolean ||
-|| voodoo_spawns || boolean ||
-|| var_friction || boolean ||
-|| var_pushers || boolean ||
-|| weapons_stay || boolean ||
-|| website || string ||
-|| vote_limit || integer ||
-|| vote_timeout || integer ||
-|| minimum_vote_percent || integer ||
-|| kick_voting || boolean ||
-|| kick_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) ||
-|| map_voting || boolean ||
-|| random_map_voting || boolean ||
-|| map_vote_eligibility || integer ||
-|| map_reset_voting || boolean ||
-|| map_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) ||
-|| random_captain_voting || boolean ||
+|| option name || option type || description ||
+|| add_mapnum_to_hostname || boolean || Adds the number of the map to the end of the hostname ||
+|| add_rocket_explosion || boolean || Adds explosions to rockets when they collide with something ||
+|| admin_email || string || the e-mail address displayed in IDE/ZDaemon Launcher ||
+|| advertise || boolean || whether or not to advertise the server on the ZDaemon master ||
+|| air_control || float || how much players can move while in the air ||
+|| allow_target_names || boolean || whether or not to display the names of other players when in the client's view ||
+|| alternate_wads || list (see ZDaemon documentation for details) || a list of WADs that can substitute for other WADs, like zvox2.wad=zvox4.wad ||
+|| death_limit || integer || amount of time a player can stay dead before being forced to spectate or respawn ||
+|| developer || boolean || whether or not to enable developer mode ||
+|| dmflags || string || *don't use* ||
+|| dmflags2 || string || *don't use* ||
+|| drop_weapons || boolean || whether or not players drop their weapons when killed ||
+|| falling_damage || boolean || whether or not players experience damage from falling ||
+|| fast_monsters || boolean || whether or not monsters move extra fast ||
+|| fineticks || boolean || update player positions on every tic (as opposed to every other tic) ||
+|| force_respawn || boolean || forces a player to respawn after _death_limit_ seconds ||
+|| force_water || boolean || forces all water to be swimmable, instead of instant death ||
+|| frag_limit || integer || number of frags that wins a player the game ||
+|| generate_block_map || boolean || whether or not to manually generate the block map (used for collision detection) rather than use the one in the WAD ||
+|| gravity || integer || how much gravity to apply, defaults to 800 ||
+|| heapsize || integer || size of ZDaemon's heap (memory setting) ||
+|| hide_countries || boolean || whether or not to  countries of players on the scoreboard ||
+|| hostname || string || the hostname of the server, this is displayed in IDE/ZDaemon Launcher ||
+|| infinite_ammo || boolean || whether or not ammo is infinite ||
+|| instant_weapon_switching || boolean || whether or not weapon switching is instantaneous ||
+|| keep_keys || boolean || whether or not players keep keys after each map ||
+|| keys_in_team_modes || boolean || whether or not to spawn keys in team modes ||
+|| keys_stay || boolean || whether or not keys stay after being picked up by a player ||
+|| kill_limit || integer || number of kills that wins a player the game (cooperative game mode only) ||
+|| log_sent_packets || boolean || logs sent packets to the console ||
+|| maps || comma-separated list || list of maps to rotate through ||
+|| max_lost_souls || integer || maximum number of lost souls that can exist at any time ||
+|| max_clients || integer || maximum number of clients that can be connected to the server ||
+|| max_clients_per_ip || integer || maximum number of clients that can share an IP address ||
+|| max_players || integer || maximum number of players who can be playing at any time ||
+|| max_players_per_team || integer || maximum number of players who can be playing on a team at any time ||
+|| max_teams || integer || maximum number of playing teams (number of teams is always 4, this is just the number of teams that can actually participate in the game) ||
+|| min_players || integer || number of players below which bots are spawned to compensate ||
+|| motd || string || message printed to every client's screen when they first join the server ||
+|| nice_weapons || boolean || whether or not players get double ammo when they pick up a weapon ||
+|| no_file_compression || boolean || whether or not to compress network traffic ||
+|| no_team_starts || boolean || whether or not to treat team starts as generic deathmatch starts ||
+|| no_armor || boolean || if enabled, does not spawn armor ||
+|| no_crosshair || boolean || if enabled, does not allow players to use a crosshair ||
+|| no_exit || boolean || if enabled, does not allow players to exit the level (kills them) ||
+|| no_exit_kill || boolean || if enabled, does not kill players when they attempt to exit the level - simply disables exiting ||
+|| no_freelook || boolean || if enabled, players cannot use freelook (keyboardlook/mouselook) ||
+|| no_health || boolean || if enabled, does not spawn health ||
+|| no_items || boolean || if enabled, does not spawn items ||
+|| no_jump || boolean || if enabled, does not allow players to jump ||
+|| no_monsters || boolean || if enabled, does not spawn monsters ||
+|| no_passover || boolean || if enabled, does not allow things to exist on top of other things (every thing is infinitely tall) ||
+|| no_super || boolean || if enabled, does not spawn super items ||
+|| old_ctf_convention || boolean || whether or not to support the old ZDaemon CTF convention ||
+|| old_falling_damage || boolean || whether or not falling damage uses the old logic ||
+|| old_jump || boolean || whether or not jumping physics uses the old logic ||
+|| old_player_movement || boolean || whether or not movement physics uses the old logic ||
+|| old_random || boolean || whether or not ZDaemon's random number generator uses the old logic (more like Vanilla Doom, but more predictable) ||
+|| old_sound_cutoff || boolean || whether or not ZDaemon's sound cutoff logic uses the old logic ||
+|| old_wallrun || boolean || if enabled, wallrunning will only work 1 way ||
+|| old_weapon_switch || boolean || if enabled, forces players to switch weapons when they are picked up ||
+|| old_weapon_sounds || boolean || if enabled, ZDaemon will use the old sound curve when playing weapon sounds ||
+|| optional_wads || comma-separated list || a list of WADs that will be loaded if the player has them, but aren't required ||
+|| overtime || boolean || whether or not servers will enter overtime if teams/players are tied when _time_limit_ is reached ||
+|| powerful_monsters || boolean || if enabled, monsters deal double damage ||
+|| quad_respawn_time || boolean || if enabled, items will respawn four times slower ||
+|| random_maps || boolean || if enabled, map rotation will be randomized ||
+|| rcon_password || string || the password used for RCON access ||
+|| rcon_password_1 || string || password for limited RCON level 1 ||
+|| rcon_password_2 || string || password for limited RCON level 2 ||
+|| rcon_password_3 || string || password for limited RCON level 3 ||
+|| rcon_password_4 || string || password for limited RCON level 4 ||
+|| rcon_password_5 || string || password for limited RCON level 5 ||
+|| rcon_password_6 || string || password for limited RCON level 6 ||
+|| rcon_password_7 || string || password for limited RCON level 7 ||
+|| rcon_password_8 || string || password for limited RCON level 8 ||
+|| rcon_password_9 || string || password for limited RCON level 9 ||
+|| rcon_commands_1 || comma-separated list || list of enabled commands for RCON level 1 ||
+|| rcon_commands_2 || comma-separated list || list of enabled commands for RCON level 2 ||
+|| rcon_commands_3 || comma-separated list || list of enabled commands for RCON level 3 ||
+|| rcon_commands_4 || comma-separated list || list of enabled commands for RCON level 4 ||
+|| rcon_commands_5 || comma-separated list || list of enabled commands for RCON level 5 ||
+|| rcon_commands_6 || comma-separated list || list of enabled commands for RCON level 6 ||
+|| rcon_commands_7 || comma-separated list || list of enabled commands for RCON level 7 ||
+|| rcon_commands_8 || comma-separated list || list of enabled commands for RCON level 8 ||
+|| rcon_commands_9 || comma-separated list || list of enabled commands for RCON level 9 ||
+|| remove_bots_when_humans || boolean || if enabled, spawns bots until number_of_bots + number_of_players == _min_players_ ||
+|| resend_lost_packets || boolean || whether or not to resend packets that the client did not receive ||
+|| reset_inventory || boolean || whether or not to reset player inventories after each map ||
+|| respawn_barrels || boolean || whether or not barrels respawn ||
+|| respawn_items || boolean || whether or not items respawn ||
+|| respawn_monsters || boolean || whether or not monsters respawn ||
+|| respawn_protection || boolean || whether or not protection items respawn ||
+|| respawn_super_items || boolean || whether or not super items respawn ||
+|| restart_empty_map || boolean || if enabled, maps are reset when all players have left the server ||
+|| same_level || boolean || if enabled, will stay on the same level if someone exits the map ||
+|| same_spawn_spot || boolean || if enabled, players will respawn in the same spot as where they were killed ||
+|| score_limit || integer || score that wins a team the game, in TeamDM this is frags, in CTF this is flags ||
+|| server_password || string || password required to join the server, if blank no password is required ||
+|| show_killing_sprees || boolean || whether or not clients can display killing spree messages ||
+|| show_multi_kills || boolean || whether or not clients can display multi-kill messages ||
+|| silent_bfg || boolean || whether or not players can use the silent BFG technique ||
+|| skill || integer || number between 1 and 5 (1 is Hey, not too rough and 5 is Nightmare) ||
+|| spam_limit || integer || number of messages that can be sent in _spam\_window_ seconds before they get the 'Talk is Cheap' message ||
+|| spam_window || integer || number of seconds before the spam message count is reset ||
+|| spawn_farthest || boolean || if enabled, players spawn at the furthest spawn from where they were killed ||
+|| specs_dont_disturb_players || boolean || if enabled, players will not receive messages sent by spectators ||
+|| speed_check || boolean || if enabled, the server will kick players that exceed a certain speed (lots of false positives) ||
+|| splash_factor || float || amount of splash damage dealt by rockets and other "missiles" ||
+|| strong_monsters || boolean || if enabled, monsters start with 2x normal health ||
+|| team_autoaim || boolean || if enabled, autoaim will apply to team members as well ||
+|| team_damage || percent || percent of damage that will be dealt to team members, defaults to 0 ||
+|| team_keys || boolean || whether or not players receive 'team specific' keys ||
+|| telemissiles || boolean || whether or not rockets and other "missiles" can use teleporters ||
+|| time_limit || integer || amount of time (in minutes) before a match ends or overtime begins (if the match is currently a tie and _overtime_ is enabled) ||
+|| unlagged || boolean || if enabled, ZDaemon will compensate for player latency ||
+|| use_blocking || boolean || something about linedefs, too lazy to look up ||
+|| vampire_mode || boolean || if enabled, players will receive health when they damage other players ||
+|| voodoo_spawns || boolean || whether or not to spawn voodoo dolls ||
+|| var_friction || boolean || something about friction, too lazy to look up ||
+|| var_pushers || boolean || something about moving floors (I think), too lazy to look up ||
+|| weapons_stay || boolean || whether or not weapons stay after players pick them up ||
+|| website || string || the website from which WADs can be downloaded ||
+|| vote_limit || integer || the number of votes that occur during a map ||
+|| vote_timeout || integer || the duration of a vote ||
+|| minimum_vote_percent || percent || the minimum percent of players that must vote in order to not count non-voters ||
+|| kick_voting || boolean || whether or not to enable kick voting ||
+|| kick_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) || the minimum percent of players that must vote 'yes' for a player to be kicked ||
+|| map_voting || boolean || whether or not to enable map voting ||
+|| random_map_voting || boolean || whether or not to enable random map voting ||
+|| map_vote_eligibility || integer || how many maps must be played after a given map for that map to be eligible for voting/play again ||
+|| map_reset_voting || boolean || whether or not to enable map reset voting ||
+|| map_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) || the minimum percent of players that must vote 'yes' to change to the proposed map (potentially random), or reset the current map ||
+|| random_captain_voting || boolean || whether or not to enable random captain voting ||
