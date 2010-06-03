@@ -625,7 +625,7 @@ class ZServConfigParser(ZDSConfigParser):
         splash_factor = self.getdecimal('splash_factor')
         strong_monsters = self.getboolean('strong_monsters')
         team_autoaim = self.getboolean('team_autoaim')
-        team_damage = self.getboolean('team_damage')
+        team_damage = self.getpercent('team_damage')
         team_keys = self.getboolean('team_keys')
         telemissiles = self.getboolean('telemissiles')
         time_limit = self.getint('time_limit')
