@@ -208,7 +208,7 @@ class ZServ(object):
 
         """
         zdslog.debug('Getting map, session: %s' % (session))
-        if None not in (self.map_number and self.map_name):
+        if None not in (self.map_number, self.map_name):
             zdslog.debug('Should be able to return a map')
             q = session.query(Map)
             q = q.filter_by(name=self.map_name, number=self.map_number)
