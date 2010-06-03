@@ -115,7 +115,7 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || show_multi_kills || boolean || whether or not clients can display multi-kill messages ||
 || silent_bfg || boolean || whether or not players can use the silent BFG technique ||
 || skill || integer || number between 1 and 5 (1 is Hey, not too rough and 5 is Nightmare) ||
-|| spam_limit || integer || number of messages that can be sent in _spam\_window_ seconds before they get the 'Talk is Cheap' message ||
+|| spam_limit || integer || number of messages that can be sent in _spam_window_ seconds before they get the 'Talk is Cheap' message ||
 || spam_window || integer || number of seconds before the spam message count is reset ||
 || spawn_farthest || boolean || if enabled, players spawn at the furthest spawn from where they were killed ||
 || specs_dont_disturb_players || boolean || if enabled, players will not receive messages sent by spectators ||
