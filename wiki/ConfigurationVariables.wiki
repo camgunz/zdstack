@@ -3,15 +3,49 @@
 
 = Introduction =
 
-This is the list of ZDStack's configuration variables that apply to zservs.  There are other configuration variables that apply to ZDStack and not to zservs, those are not in this list.
+This is the list of ZDStack's configuration variables that apply to both ZDStack and ZDaemon.
 
-= Caveats =
+= ZDStack Configuration Variables =
+
+|| option name || option type || description ||
+|| zdstack_username || string || ZDStack's admin username ||
+|| zdstack_password || string || ZDStack's admin password ||
+|| zdstack_port || integer || the port that ZDStack should listen on ||
+|| zdstack_rpc_protocol || string (either xml-rpc or json-rpc) || the RPC protocol to use, JSON-RPC is recommended ||
+|| zdstack_rpc_hostname || string || the address that ZDStack should bind to ||
+|| zdstack_log_folder || path || the full path to a folder that will contain logs for ZDStack and all ZServs ||
+|| zdstack_pid_file || path || the full path to a file that ZDStack will use as its PID file (file containing ZDStack's process ID) ||
+|| zdstack_zserv_folder || path || location of the individual ZServ folders ||
+|| zdstack_database_engine || string, either sqlite, postgresql, mysql, oracle, mssql or firebird || the database engine to use ||
+|| zdstack_database_name || string || the name of the database to use ||
+|| zdstack_database_host || string || the address of the database host ||
+|| zdstack_database_username || string || the username to use when connecting to the database ||
+|| zdstack_database_password || string || the password to use when connecting to the database ||
+|| zdstack_plugin_folder || path || the full path to a folder containing plugins available to ZDStack ||
+|| 
+|| zdstack_master_banlist_file || path || full path to a file where ZDStack will save ZDaemon's banlist, if it doesn't exist it will be created ||
+|| zdstack_banlist_file || path || full path to a ZDStack banlist file, if it doesn't exist it will be created ||
+|| zdstack_whitelist_file || path || full path to a ZDStack whitelist file, if it doesn't exist it will be created ||
+|| zdstack_wad_folder || path || full path to a folder containing the WADs available to ZDStack ||
+|| zdstack_iwad_folder || path || full path to a folder containing the IWADs available ot ZDStack ||
+
+
+== Caveats ==
 
 DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorry.
 
-= Configuration Variables =
+= ZServ Configuration Variables =
 
 || option name || option type || description ||
+
+
+
+
+
+
+
+
+
 || add_mapnum_to_hostname || boolean || Adds the number of the map to the end of the hostname ||
 || add_rocket_explosion || boolean || Adds explosions to rockets when they collide with something ||
 || admin_email || string || the e-mail address displayed in IDE/ZDaemon Launcher ||
@@ -19,11 +53,13 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || air_control || float || how much players can move while in the air ||
 || allow_target_names || boolean || whether or not to display the names of other players when in the client's view ||
 || alternate_wads || list (see ZDaemon documentation for details) || a list of WADs that can substitute for other WADs, like zvox2.wad=zvox4.wad ||
+|| copy_zdaemon_banlist || boolean || whether or not to copy ZDaemon's banlist, this only works if _advertise_ is disabled, otherwise a server must use ZDaemon's banlist ||
 || death_limit || integer || amount of time a player can stay dead before being forced to spectate or respawn ||
 || developer || boolean || whether or not to enable developer mode ||
 || dmflags || string || *don't use* ||
 || dmflags2 || string || *don't use* ||
 || drop_weapons || boolean || whether or not players drop their weapons when killed ||
+|| events_enabled || boolean || whether or not to enable events ||
 || falling_damage || boolean || whether or not players experience damage from falling ||
 || fast_monsters || boolean || whether or not monsters move extra fast ||
 || fineticks || boolean || update player positions on every tic (as opposed to every other tic) ||
@@ -37,6 +73,10 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || hostname || string || the hostname of the server, this is displayed in IDE/ZDaemon Launcher ||
 || infinite_ammo || boolean || whether or not ammo is infinite ||
 || instant_weapon_switching || boolean || whether or not weapon switching is instantaneous ||
+|| ip || integer || the ip address that the ZServ should bind to ||
+|| iwad || path || the full path to an IWAD ||
+|| plugins_enabled || boolean || whether or not to enable plugins, requires _events_enabled_ ||
+|| port || integer || the port that the ZServ should listen on ||
 || keep_keys || boolean || whether or not players keep keys after each map ||
 || keys_in_team_modes || boolean || whether or not to spawn keys in team modes ||
 || keys_stay || boolean || whether or not keys stay after being picked up by a player ||
@@ -50,6 +90,7 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || max_players_per_team || integer || maximum number of players who can be playing on a team at any time ||
 || max_teams || integer || maximum number of playing teams (number of teams is always 4, this is just the number of teams that can actually participate in the game) ||
 || min_players || integer || number of players below which bots are spawned to compensate ||
+|| mode || string || game mode of the server, either ctf, 1v1/duel, ffa, teamdm/tdm, or coop ||
 || motd || string || message printed to every client's screen when they first join the server ||
 || nice_weapons || boolean || whether or not players get double ammo when they pick up a weapon ||
 || no_file_compression || boolean || whether or not to compress network traffic ||
@@ -146,3 +187,9 @@ DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorr
 || map_reset_voting || boolean || whether or not to enable map reset voting ||
 || map_vote_percent || percent (no '%' sign though, basically an integer between 0 and 100) || the minimum percent of players that must vote 'yes' to change to the proposed map (potentially random), or reset the current map ||
 || random_captain_voting || boolean || whether or not to enable random captain voting ||
+|| stats_enabled || boolean || whether or not to enable stats, requires _events_enabled_ ||
+|| save_empty_rounds || boolean || whether or not to save empty rounds in the database, only valid if _stats_enabled_ is enabled ||
+|| save_logfile, save_log_files || boolean || whether or not to save logs ||
+|| use_global_banlist || boolean || whether or not to use ZDStack's banlist ||
+|| use_global_whitelist || boolean || whether or not to use ZDStack's whitelist ||
+|| zserv_exe || path || full path to the ZServ executable to use ||
