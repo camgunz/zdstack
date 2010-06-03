@@ -30,22 +30,11 @@ This is the list of ZDStack's configuration variables that apply to both ZDStack
 || zdstack_iwad_folder || path || full path to a folder containing the IWADs available ot ZDStack ||
 
 
-== Caveats ==
-
-DO NOT USE `dmflags` or `dmflags2`, it will cause confusion and you will be sorry.
-
 = ZServ Configuration Variables =
 
+*BEWARE: DO NOT USE `dmflags` OR `dmflags2`, IT WILL CAUSE CONFUSION AND YOU WILL BE SORRY.*
+
 || option name || option type || description ||
-
-
-
-
-
-
-
-
-
 || add_mapnum_to_hostname || boolean || Adds the number of the map to the end of the hostname ||
 || add_rocket_explosion || boolean || Adds explosions to rockets when they collide with something ||
 || admin_email || string || the e-mail address displayed in IDE/ZDaemon Launcher ||
