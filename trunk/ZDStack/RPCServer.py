@@ -31,6 +31,16 @@ from ZDStack import RPCAuthenticationError, get_json_module, get_zdslog, \
 
 zdslog = get_zdslog()
 
+class JSONRPCException(Exception):
+
+    def __init__(self, error):
+        self.code = error['code']
+        self.name = error['name']
+        self.message = error['message']
+        self.exception_name = error['error']['name']
+        self.exception_message = error['error']['message']
+        Exception.__init__(self, self.exception_message)
+
 class AuthenticatedRPCDispatcher(SimpleXMLRPCDispatcher):
 
     """Adds authentication to RPC dispatching.
@@ -584,11 +594,7 @@ class JSONProxy(object):
             ###
             es = "Received error [%s]: %s - %s\nError name: %s\nError "
             es += "message: %s"
-            raise Exception(es % (response['error']['code'],
-                                  response['error']['name'],
-                                  response['error']['message'],
-                                  response['error']['error']['name'],
-                                  response['error']['error']['message']))
+            raise JSONRPCException(response['error'])
         else:
             return response['result']
 
