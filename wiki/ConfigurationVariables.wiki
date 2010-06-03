@@ -45,8 +45,8 @@ This is the list of ZDStack's configuration variables that apply to both ZDStack
 || copy_zdaemon_banlist || boolean || whether or not to copy ZDaemon's banlist, this only works if _advertise_ is disabled, otherwise a server must use ZDaemon's banlist ||
 || death_limit || integer || amount of time a player can stay dead before being forced to spectate or respawn ||
 || developer || boolean || whether or not to enable developer mode ||
-|| dmflags || string || *don't use* ||
-|| dmflags2 || string || *don't use* ||
+|| dmflags || string || *DON'T USE* ||
+|| dmflags2 || string || *DON'T USE* ||
 || drop_weapons || boolean || whether or not players drop their weapons when killed ||
 || events_enabled || boolean || whether or not to enable events ||
 || falling_damage || boolean || whether or not players experience damage from falling ||
