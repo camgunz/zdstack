@@ -50,8 +50,9 @@ To add a server:
 {{{
 $ ### Edit Config Here ###
 $ zdstack reload-config
-$ zservctl start -n 'Public ZD CTF'
 }}}
+
+New servers are automatically started, so a `$ zservctl start -n 'Public ZD CTF'` is unnecessary in this case.
 
 If you want to remove this server, run:
 
