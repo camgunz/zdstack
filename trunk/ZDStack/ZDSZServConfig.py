@@ -1078,7 +1078,7 @@ class ZServConfigParser(ZDSConfigParser):
         #     over_t = cvar_t % ('overtime 0')
         if self.zserv.add_mapnum_to_hostname:
             s = 'hostname "%s - %%s"' % (self.zserv.hostname)
-            host_t = cvar_t % (s)
+            host_t = 'add_cvaroverride %%s %s' % (s)
         for map in self.zserv.maps:
             # add_var_line(map, over_t)
             if self.zserv.add_mapnum_to_hostname:
