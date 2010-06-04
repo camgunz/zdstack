@@ -973,7 +973,7 @@ class ZServConfigParser(ZDSConfigParser):
         add_bool_line(self.zserv.old_sound_cutoff, 'sv_oldsoundcut')
         add_bool_line(self.zserv.old_wallrun, 'sv_oldwallrun')
         add_bool_line(self.zserv.old_weapon_switch, 'sv_oldweaponswitch')
-        add_bool_line(self.zserv.old_weapon_sounds, 'sv_oldwepsounds')
+        add_bool_line(self.zserv.old_weapon_sounds, 'sv_oldwepsound')
         # add_var_line(' '.join(self.zserv.optional_wads), 'optional_wads')
         add_bool_line(self.zserv.overtime, 'overtime')
         add_bool_line(self.zserv.powerful_monsters, 'sv_powerful_monsters')
