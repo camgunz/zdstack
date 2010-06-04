@@ -55,7 +55,7 @@ ZDStack's installation files consume less than 2MB of disk space, and this inclu
 
 ZDStack by default does not write the output of its zservs to disk, however, it can be configured to do so.  Additionally it generates a log file of its own.  All of these output files are rolled-over at midnight for simple maintenance.
 
-If statistics are enabled and ZDStack is not using an in-memory database, statistics will be saved to disk.  The exact amount of space consumed depends upon the database engine used, and of course, the amount of time for which statistics have been saved.  Administration and maintenance of the database is left up to the user.
+If statistics are enabled and ZDStack is not using an in-memory database, statistics will be saved to disk.  The exact amount of space consumed depends upon the database engine used and, of course, the amount of time for which statistics have been saved.  Administration and maintenance of the database is left up to the user.
 
 == CPU Usage ==
 
