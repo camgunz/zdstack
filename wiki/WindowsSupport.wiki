@@ -38,3 +38,9 @@ In this way the disk is never touched, preventing a potential source of scalabil
 === What has to be changed to run on Windows ===
 
 So currently ZDStack just polls `zd.fifo`.  Because Windows doesn't support FIFO files, ZDStack would have to read directly from `zserv`'s log file and track log rolls.  It's not complicated, it's just a hassle and unclean.
+
+=== Where to get requirements to run on Windows ===
+
+This list is ongoing:
+
+[http://www.stickpeople.com/projects/python/win-psycopg/ Psycopg2]
