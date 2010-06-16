@@ -35,49 +35,115 @@ DB_AUTOCOMMIT = None
 # End ORM Stuff
 ###
 
-__all__ = ['SUPPORTED_ENGINE_TYPES', 'NO_AUTH_REQUIRED', 'HOSTNAME',
-           'LOOPBACK', 'DEVNULL', 'CONFIGFILE', 'CONFIGPARSER', 'DEBUGGING',
-           'PLUGINS', 'DATEFMT', 'JSON_MODULE', 'RPC_CLASS', 'RPC_PROXY_CLASS',
-           'TEAM_COLORS', 'TICK', 'MAX_TIMEOUT', 'DIE_THREADS_DIE', 'ZDSLOG',
-           'JSONNotFoundError', 'PlayerNotFoundError', 'TeamNotFoundError',
-           'ZServNotFoundError', 'RPCAuthenticationError', 'DebugTRFH',
-           'DB_SESSION_CLASS', 'DB_METADATA', 'DB_ENGINE', 'DB_AUTOFLUSH',
-           'DB_AUTOCOMMIT', 'ZDAEMON_BANLIST_URL', 'get_hostname',
-           'get_loopback', 'get_engine', 'get_metadata', 'get_db_lock',
-           'get_session_class', 'get_configfile', 'set_configfile',
-           'load_configparser', 'get_configparser', 'get_zdaemon_banlist_data',
-           'get_zdaemon_banlist_file', 'get_server_proxy', 'get_plugins',
-           'set_debugging', 'get_zdslog', 'get_debugging']
+__all__ = [
+  'SUPPORTED_ENGINE_TYPES',
+  'NO_AUTH_REQUIRED',
+  'HOSTNAME',
+  'LOOPBACK',
+  'DEVNULL',
+  'CONFIGFILE',
+  'CONFIGPARSER',
+  'DEBUGGING',
+  'PLUGINS',
+  'DATEFMT',
+  'JSON_MODULE',
+  'RPC_CLASS',
+  'RPC_PROXY_CLASS',
+  'TEAM_COLORS',
+  'TICK',
+  'MAX_TIMEOUT',
+  'DIE_THREADS_DIE',
+  'ZDSLOG',
+  'JSONNotFoundError',
+  'PlayerNotFoundError',
+  'TeamNotFoundError',
+  'ZServNotFoundError',
+  'RPCAuthenticationError',
+  'DebugTRFH',
+  'DB_SESSION_CLASS',
+  'DB_METADATA',
+  'DB_ENGINE',
+  'DB_AUTOFLUSH',
+  'DB_AUTOCOMMIT',
+  'ZDAEMON_BANLIST_URL',
+  'get_hostname',
+  'get_loopback',
+  'get_engine',
+  'get_metadata',
+  'get_db_lock',
+  'get_session_class',
+  'get_configfile',
+  'set_configfile',
+  'load_configparser',
+  'get_configparser',
+  'get_zdaemon_banlist_data',
+  'get_zdaemon_banlist_file',
+  'get_server_proxy',
+  'get_plugins',
+  'set_debugging',
+  'get_zdslog',
+  'get_debugging'
+]
 
-REQUIRED_GLOBAL_CONFIG_OPTIONS = \
-    ('zdstack_username', 'zdstack_password', 'zdstack_port',
-     'zdstack_rpc_protocol', 'zdstack_log_folder', 'zdstack_pid_file',
-     'zdstack_zserv_folder', 'zdstack_plugin_folder', 'zdstack_iwad_folder',
-     'zdstack_wad_folder', 'zdstack_master_banlist_file',
-     'zdstack_banlist_file', 'zdstack_whitelist_file')
+REQUIRED_GLOBAL_CONFIG_OPTIONS = (
+    'zdstack_username',
+    'zdstack_password',
+    'zdstack_port',
+    'zdstack_rpc_protocol',
+    'zdstack_log_folder',
+    'zdstack_pid_file',
+    'zdstack_zserv_folder',
+    'zdstack_plugin_folder',
+    'zdstack_iwad_folder',
+    'zdstack_wad_folder',
+    'zdstack_master_banlist_file',
+    'zdstack_banlist_file',
+    'zdstack_whitelist_file'
+)
 
-REQUIRED_SERVER_CONFIG_OPTIONS = \
-    ('zserv_exe', 'iwad', 'enable_events', 'enable_stats', 'enable_plugins',
-     'hostname', 'admin_email', 'website', 'motd', 'advertise', 'skill',
-     'mode', 'port')
+REQUIRED_SERVER_CONFIG_OPTIONS = (
+    'zserv_exe',
+    'iwad',
+    'enable_events',
+    'enable_stats',
+    'enable_plugins',
+    'hostname',
+    'admin_email',
+    'website',
+    'motd',
+    'advertise',
+    'skill',
+    'mode',
+    'port'
+)
 
-REQUIRED_GLOBAL_VALID_FOLDERS = \
-    (('zdstack_log_folder', os.R_OK | os.W_OK | os.X_OK),
-     ('zdstack_zserv_folder', os.R_OK | os.W_OK | os.X_OK),
-     ('zdstack_plugin_folder', os.R_OK | os.X_OK),
-     ('zdstack_iwad_folder', os.R_OK | os.X_OK),
-     ('zdstack_wad_folder', os.R_OK | os.X_OK))
+REQUIRED_GLOBAL_VALID_FOLDERS = (
+    ('zdstack_log_folder',    os.R_OK | os.W_OK | os.X_OK),
+    ('zdstack_zserv_folder',  os.R_OK | os.W_OK | os.X_OK),
+    ('zdstack_plugin_folder', os.R_OK | os.X_OK),
+    ('zdstack_iwad_folder',   os.R_OK | os.X_OK),
+    ('zdstack_wad_folder',    os.R_OK | os.X_OK)
+)
 
-REQUIRED_GLOBAL_VALID_FILES = \
-    (('zdstack_banlist_file', os.R_OK | os.W_OK),
-     ('zdstack_whitelist_file', os.R_OK | os.W_OK),
-     ('zdstack_master_banlist_file', os.R_OK | os.W_OK))
+REQUIRED_GLOBAL_VALID_FILES = (
+    ('zdstack_banlist_file',        os.R_OK | os.W_OK),
+    ('zdstack_whitelist_file',      os.R_OK | os.W_OK),
+    ('zdstack_master_banlist_file', os.R_OK | os.W_OK)
+)
 
-REQUIRED_SERVER_VALID_FILES = (('zserv_exe', os.R_OK | os.X_OK, False),
-                               ('iwad', os.R_OK, False))
+REQUIRED_SERVER_VALID_FILES = (
+  ('zserv_exe', os.R_OK | os.X_OK, False),
+  ('iwad',      os.R_OK,           False)
+)
 
-SUPPORTED_ENGINE_TYPES = ('sqlite', 'postgres', 'mysql', 'oracle', 'mssql',
-                          'firebird')
+SUPPORTED_ENGINE_TYPES = (
+    'sqlite',
+    'postgres',
+    'mysql',
+    'oracle',
+    'mssql',
+    'firebird'
+)
 
 SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 
@@ -332,9 +398,12 @@ def check_server_config_section(server_name, config):
             es = "Could not locate fake logfile [%s]"
             raise ValueError(es % (d['fake_logfile']))
 
-def load_configparser():
+def load_configparser(check=False):
     """Loads the ZDStack configuration file into a ConfigParser.
     
+    :param check: whether or not to check some files and folders for
+                  existence, proper permissions, etc, defaults to False
+    :type check: boolean
     :rtype: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser`
     
     """
@@ -366,8 +435,9 @@ def load_configparser():
         if not os.access(f, m):
             raise ValueError("Insufficient access provided for %s" % (f))
         # cp.set('DEFAULT', fo, f)
-    for s in cp.sections():
-        check_server_config_section(s, cp)
+    if check:
+        for s in cp.sections():
+            check_server_config_section(s, cp)
     ###
     # Below are some checks for specific options & values
     ###
@@ -734,13 +804,16 @@ def get_server_proxy():
     ZDSLOG.debug("%s(%s)" % (RPC_PROXY_CLASS, address))
     return get_rpc_proxy_class()(address)
 
-def get_configparser(reload=False, raw=False):
+def get_configparser(reload=False, raw=False, check=False):
     """Gets ZDStack's ConfigParser.
 
     :param reload: whether or not to reload the configuration file
     :type reload: boolean
     :param raw: disables value interpolation
     :type raw: boolean
+    :param check: whether or not to check some files and folders for
+                  existence, proper permissions, etc, defaults to False
+    :type check: boolean
     :rtype: :class:`~ZDStack.ZDSConfigParser.ZDSConfigParser` or
             :class:`~ZDStack.ZDSConfigParser.RawZDSConfigParser`
 
@@ -749,7 +822,7 @@ def get_configparser(reload=False, raw=False):
         return RCP(get_configfile())
     global CONFIGPARSER
     if CONFIGPARSER is None or reload:
-        CONFIGPARSER = load_configparser()
+        CONFIGPARSER = load_configparser(check=check)
     return CONFIGPARSER
 
 def get_plugins(plugins='all'):

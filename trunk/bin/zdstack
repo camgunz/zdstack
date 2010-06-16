@@ -23,7 +23,7 @@ def start(config_file=None, debug=False, restart=False):
             set_debugging(True)
         if config_file:
             set_configfile(config_file)
-        cp = get_configparser()
+        cp = get_configparser(check=True)
         pid_file = cp.getpath('DEFAULT', 'zdstack_pid_file')
         if os.path.isfile(pid_file):
             if restart:
@@ -87,7 +87,7 @@ def restart(config_file=None):
 
 def reload_config():
     from ZDStack import get_configparser, get_server_proxy
-    cp = get_configparser() # implicitly loads the configuration file as well
+    cp = get_configparser(check=True)
     username = cp.get('DEFAULT', 'zdstack_username')
     password = cp.get('DEFAULT', 'zdstack_password')
     get_server_proxy().reload_config(username, password)

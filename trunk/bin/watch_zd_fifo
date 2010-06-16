@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+
+import os, sys, time, signal, threading
+
+if os.name == 'nt':
+    SIGNALS = (signal.SIGBREAK, signal.SIGINT, signal.SIGILL, signal.SIGTERM)
+else:
+    SIGNALS = (signal.SIGQUIT, signal.SIGTERM)
+
+from ZDStack.Utils import get_event_from_line, resolve_path
+from ZDStack.ZDSRegexps import get_client_regexps
+
+DEBUGGING = False
+MAX_IDLE = 10
+
+SHOULD_QUIT = False
+INPUT_FILE, OUTPUT_FILE = (None, None)
+
+def debug(s):
+    if DEBUGGING:
+        print >> sys.stderr, s
+
+def print_usage():
+    us = "\nUsage: %s [ zd_fifo ] [ output_file ]\n"
+    print >> sys.stderr, us % (os.path.basename(sys.argv[0]))
+    sys.exit(1)
+
+def handle_signal(signum, frame):
+    debug("Caught signal %d" % (signum))
+    if signum in SIGNALS:
+        quit()
+
+def quit():
+    OUTPUT_FILE.write('\n]')
+    OUTPUT_FILE.close()
+    sys.exit(0)
+
+class IdleTimer(object):
+
+    def __init__(self, max_idle):
+        self.max_idle, self.timer, self.running = (max_idle, None, None)
+
+    def start(self):
+        if not self.running:
+            self.timer = threading.Timer(self.max_idle, self.timeout)
+            self.timer.start()
+            self.running = True
+
+    def stop(self):
+        if self.running:
+            self.timer.cancel()
+            self.running = False
+
+    def timeout(self):
+        global SHOULD_QUIT
+        print >> sys.stderr, 'No events for %d seconds, quitting' % (
+            self.max_idle
+        )
+        SHOULD_QUIT = True
+
+class InputFile(object):
+
+    def __init__(self, filename):
+        self.fobj = open(filename)
+
+    def get_line(self):
+        return self.fobj.readline().rstrip('\r\n')
+
+    def close(self):
+        self.fobj.close()
+
+class OutputFile(object):
+
+    def __init__(self, filename):
+        self.fobj = open(filename, 'wb')
+
+    def write(self, s):
+        if not DEBUGGING:
+            self.fobj.write(s)
+            self.fobj.flush()
+
+    def close(self):
+        if not DEBUGGING:
+            self.fobj.close()
+
+def main(zd_fifoname, output_filename):
+    global INPUT_FILE
+    global OUTPUT_FILE
+    INPUT_FILE = InputFile(zd_fifoname)
+    OUTPUT_FILE = OutputFile(output_filename)
+    OUTPUT_FILE.write('events = [\n')
+    timer = IdleTimer(MAX_IDLE)
+    regexps = get_client_regexps()
+    while 1:
+        if SHOULD_QUIT:
+            quit()
+        line = INPUT_FILE.get_line()
+        debug('Line: %s' % (line))
+        if not line:
+            time.sleep(.027)
+            timer.start()
+            continue
+        timer.stop()
+        OUTPUT_FILE.write('# ' + line + '\n')
+        event = get_event_from_line(line, regexps)
+        if event and \
+          (event.category != 'command' or event.type == 'map_change'):
+            debug(repr(event))
+            OUTPUT_FILE.write(repr(event) + ',\n')
+
+if __name__ == "__main__":
+    if not len(sys.argv) == 3:
+        print >> sys.stderr, 'Incorrect number of arguments'
+        print_usage()
+    zd_fifoname, output_filename = [resolve_path(x) for x in sys.argv[1:]]
+    if not os.path.exists(zd_fifoname):
+        print >> sys.stderr, zd_fifoname + ' must exist before we can watch it'
+        print_usage()
+    try:
+        main(zd_fifoname, output_filename)
+    except KeyboardInterrupt:
+        quit()
+

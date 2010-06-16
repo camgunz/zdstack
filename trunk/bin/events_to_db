@@ -1,0 +1,343 @@
+#!/usr/bin/env python
+
+from __future__ import with_statement
+
+import os
+import sys
+import getopt
+import logging
+import datetime
+
+from sqlalchemy import and_
+from sqlalchemy.orm.exc import NoResultFound
+
+from ZDStack import set_configfile, get_configparser, initialize_database, \
+                    get_engine, set_debugging, get_zdslog
+from ZDStack.Utils import resolve_path
+from ZDStack.LogEvent import LogEvent
+from ZDStack.ZDSModels import Frag, FlagTouch, FlagReturn, Round, GameMode, \
+                              Port, Alias, Weapon, TeamColor
+from ZDStack.ZDSDatabase import global_session
+from ZDStack.ZDSEventHandler import BaseEventHandler
+
+zdslog = get_zdslog()
+
+_WEAPON_CACHE = dict()
+_TEAM_COLOR_CACHE = dict()
+_CURRENT_ROUND = None
+ALIASES = dict()
+PLAYERS_HOLDING_FLAGS = set()
+TEAMS_HOLDING_FLAGS = set()
+FRAGGED_RUNNERS = list()
+TEAM_SCORES = dict([('red', 0), ('blue', 0)])
+ROUND_ID = None
+FRAG_COUNT = 0
+FLAG_TOUCH_COUNT = 0
+FLAG_CAP_COUNT = 0
+DEBUGGING = False
+
+def print_usage(msg=None):
+    if msg:
+        print >> sys.stderr, '\n' + msg
+    script_name = os.path.basename(sys.argv[0])
+    us = '\nUsage: %s [ -c config_file ] [ -m map_id ] [ event_file ]\n'
+    print >> sys.stderr, us % (script_name)
+    sys.exit(1)
+
+def get_new_round(map_id, start_time):
+    global _CURRENT_ROUND
+    zdslog.debug("get_new_round")
+    with global_session() as session:
+        r = Round()
+        ctf = session.query(GameMode).get('ctf')
+        r.game_mode_name = 'ctf'
+        r.game_mode = ctf
+        r.map_id = map_id
+        r.start_time = start_time
+        session.merge(ctf)
+        session.add(r)
+    _CURRENT_ROUND = r
+    return _CURRENT_ROUND
+
+def get_round(session):
+    zdslog.debug("get_round")
+    global _CURRENT_ROUND
+    global ROUND_ID
+    return _CURRENT_ROUND
+
+def get_alias(name, session):
+    zdslog.debug("get_alias")
+    global ALIASES
+    if name not in ALIASES:
+        alias = session.query(Alias).filter(Alias.name==name).first()
+        if not alias:
+            alias = Alias()
+            alias.name = name
+            alias.ip_address = '255.255.255.255'
+            zdslog.debug("Persisting %s" % (alias))
+            session.add(alias)
+        ALIASES[name] = alias
+    zdslog.debug("Alias.id: %s" % (ALIASES[name].id))
+    return ALIASES[name]
+
+def get_weapon(name, session):
+    zdslog.debug("get_weapon")
+    global _WEAPON_CACHE
+    if name not in _WEAPON_CACHE:
+        _WEAPON_CACHE[name] = session.query(Weapon).get(name)
+    return _WEAPON_CACHE[name]
+
+def get_team_color(color, session):
+    zdslog.debug("get_team_color")
+    global _TEAM_COLOR_CACHE
+    if color not in _TEAM_COLOR_CACHE:
+        zdslog.debug("%s not in %s" % (color, _TEAM_COLOR_CACHE))
+        try:
+            team_color = session.query(TeamColor).get(color)
+        except NoResultFound:
+            team_color = TeamColor()
+            team_color.color = color
+            zdslog.debug("Persisting %s" % (team_color))
+            session.add(team_color)
+        _TEAM_COLOR_CACHE[color] = team_color
+    return _TEAM_COLOR_CACHE[color]
+
+class ManualEventHandler(BaseEventHandler):
+
+    def __init__(self):
+        BaseEventHandler.__init__(self)
+        self.set_handler('join', self.handle_join_event)       # game_join
+        self.set_handler('frag', self.handle_frag_event)       # 
+        self.set_handler('death', self.handle_frag_event)      # 
+        self.set_handler('flag', self.handle_flag_event)       # 
+        self.set_handler('rcon', self.handle_rcon_event)       # 
+        self.set_handler('command', self.handle_command_event) # map_change
+
+    def handle_frag_event(self, event):
+        zdslog.debug("handle_frag_event")
+        global FRAG_COUNT
+        with global_session() as session:
+            weapon = get_weapon(event.data['weapon'], session)
+            frag = Frag()
+            frag.round_id = ROUND_ID
+            frag.timestamp = event.dt
+            frag.weapon_name = weapon.name
+            fraggee = get_alias(event.data['fraggee'], session)
+            if 'fragger' in event.data:
+                fragger = get_alias(event.data['fragger'], session)
+                frag.is_suicide = False
+            else:
+                fragger = fraggee
+                frag.is_suicide = True
+            frag.fragger_id = fragger.id
+            frag.fraggee_id = fraggee.id
+            frag.fragger_team_color_name = fragger.color
+            frag.fraggee_team_color_name = fraggee.color
+            if fraggee in FRAGGED_RUNNERS:
+                fraggee_was_holding_flag = True
+                FRAGGED_RUNNERS.remove(fraggee)
+            else:
+                fraggee_was_holding_flag = False
+            if frag.is_suicide:
+                fragger_was_holding_flag = fraggee_was_holding_flag
+            else:
+                fragger_was_holding_flag = fragger in FRAGGED_RUNNERS
+            if (fraggee_was_holding_flag and frag.fraggee_team_color == 'red') or \
+               'red' in TEAMS_HOLDING_FLAGS:
+                frag.red_holding_flag = True
+            else:
+                frag.red_holding_flag = False
+            if (fraggee_was_holding_flag and frag.fraggee_team_color == 'blue') or \
+               'blue' in TEAMS_HOLDING_FLAGS:
+                frag.blue_holding_flag = True
+            else:
+                frag.blue_holding_flag = False
+            if (fraggee_was_holding_flag and \
+                frag.fraggee_team_color == 'green') or \
+                'green' in TEAMS_HOLDING_FLAGS:
+                frag.green_holding_flag = True
+            else:
+                frag.green_holding_flag = False
+            if (fraggee_was_holding_flag and \
+                frag.fraggee_team_color == 'white') or \
+               'white' in TEAMS_HOLDING_FLAGS:
+                frag.white_holding_flag = True
+            else:
+                frag.white_holding_flag = False
+            frag.red_team_score = TEAM_SCORES.get('red', None)
+            frag.blue_team_score = TEAM_SCORES.get('blue', None)
+            frag.green_team_score = TEAM_SCORES.get('green', None)
+            frag.white_team_score = TEAM_SCORES.get('white', None)
+            zdslog.debug("Persisting %s" % (frag))
+            round = get_round(session)
+            zdslog.debug("Setting %s.round to %s" % (frag, round))
+            frag.round = round
+            zdslog.debug("Setting %s.fraggee to %s" % (frag, fraggee))
+            frag.fraggee = fraggee
+            if not frag.is_suicide:
+                zdslog.debug("Setting %s.fragger to %s" % (frag, fragger))
+                frag.fragger = fragger
+            zdslog.debug("Setting %s.weapon to %s" % (frag, weapon))
+            frag.weapon = weapon
+            fraggee_tc = get_team_color(fraggee.color.lower(), session)
+            ds = "Setting %s.fraggee_team_color to %s" % (frag, fraggee_tc)
+            zdslog.debug(ds)
+            frag.fraggee_team_color = fraggee_tc
+            if not frag.is_suicide:
+                fragger_tc = get_team_color(fragger.color.lower(), session)
+                ds = "Setting %s.fragger_team_color to %s" % (frag, fragger_tc)
+                zdslog.debug(ds)
+                frag.fragger_team_color = fragger_tc
+            zdslog.debug("Adding/Merging stuff")
+            session.merge(round)
+            session.merge(fraggee)
+            if not frag.is_suicide:
+                session.merge(fragger)
+            session.merge(weapon)
+            session.add(frag)
+            zdslog.debug("Incrementing Frag Count")
+            FRAG_COUNT += 1
+
+    def handle_join_event(self, event):
+        zdslog.debug("handle_join_event")
+        with global_session() as session:
+            alias = get_alias(event.data['player'], session=session)
+            alias.color = event.data['team'].lower()
+            if event.type == 'team_join':
+                round = get_round(session)
+                round.aliases.append(alias)
+                zdslog.debug("Updating %s" % (alias))
+                session.merge(round)
+
+    def handle_flag_event(self, event):
+        zdslog.debug("handle_flag_event")
+        global FLAG_TOUCH_COUNT
+        global FLAG_CAP_COUNT
+        ###
+        # flag_return
+        # flag_touch
+        # flag_cap
+        # flag_loss
+        ###
+        if event.type == 'auto_flag_return':
+            # Nothing we can do here
+            return
+        with global_session() as session:
+            alias = get_alias(event.data['player'], session)
+            if event.type in ('flag_return', 'flag_touch', 'flag_pick'):
+                if event.type == 'flag_return':
+                    stat = FlagReturn()
+                    stat.timestamp = event.dt
+                    stat.player_holding_flag = alias in PLAYERS_HOLDING_FLAGS
+                elif event.type in ('flag_touch', 'flag_pick'):
+                    stat = FlagTouch()
+                    stat.touch_time = event.dt
+                    stat.loss_time = None
+                    stat.was_picked = event.type == 'flag_pick'
+                stat.round_id = ROUND_ID
+                stat.player_id = alias.id
+                stat.player_team_color_name = alias.color.lower()
+                stat.red_team_holding_flag = 'red' in TEAMS_HOLDING_FLAGS
+                stat.blue_team_holding_flag = 'blue' in TEAMS_HOLDING_FLAGS
+                stat.green_team_holding_flag = 'green' in TEAMS_HOLDING_FLAGS
+                stat.white_team_holding_flag = 'white' in TEAMS_HOLDING_FLAGS
+                stat.red_team_score = TEAM_SCORES.get('red')
+                stat.blue_team_score = TEAM_SCORES.get('blue')
+                stat.green_team_score = TEAM_SCORES.get('green')
+                stat.white_team_score = TEAM_SCORES.get('white')
+                if event.type in ('flag_touch', 'flag_pick'):
+                    PLAYERS_HOLDING_FLAGS.add(alias)
+                    TEAMS_HOLDING_FLAGS.add(alias.color.lower())
+                round = get_round(session)
+                stat.round = round
+                stat.alias = alias
+                stat.player_team_color = get_team_color(alias.color.lower(),
+                                                        session)
+                if event.type != 'flag_return':
+                    zdslog.debug("Loss time: %s" % (stat.loss_time))
+                zdslog.debug("Persisting %s" % (stat))
+                session.add(stat)
+                FLAG_TOUCH_COUNT += 1
+            elif event.type in ('flag_cap', 'flag_loss'):
+                q = session.query(FlagTouch)
+                q = q.filter(and_(FlagTouch.player_id==alias.id,
+                                  FlagTouch.round_id==ROUND_ID))
+                stat = q.order_by(FlagTouch.touch_time.desc()).first()
+                stat.loss_time = event.dt
+                PLAYERS_HOLDING_FLAGS.remove(alias)
+                TEAMS_HOLDING_FLAGS.remove(alias.color.lower())
+                if event.type == 'flag_cap':
+                    stat.resulted_in_score = True
+                    TEAM_SCORES[alias.color.lower()] += 1
+                    FLAG_CAP_COUNT += 1
+                else:
+                    stat.resulted_in_score = False
+                    FRAGGED_RUNNERS.append(alias)
+                zdslog.debug("Updating %s" % (stat))
+                session.merge(stat)
+
+    def handle_command_event(self, event):
+        zdslog.debug("handle_command_event")
+        if event.type == 'map_change':
+            global ROUND_ID
+            global ALIASES
+            global PLAYERS_HOLDING_FLAGS
+            global TEAMS_HOLDING_FLAGS
+            global FRAGGED_RUNNERS
+            global TEAM_SCORES
+            if ROUND_ID:
+                print "Old Round ID: %s" % (ROUND_ID)
+                with global_session() as session:
+                    current_round = get_round(session)
+                    current_round.end_time = event.dt
+                    session.merge(current_round)
+            ROUND_ID = get_new_round(map_id, event.dt).id
+            ALIASES = dict()
+            PLAYERS_HOLDING_FLAGS = set()
+            TEAMS_HOLDING_FLAGS = set()
+            FRAGGED_RUNNERS = list()
+            TEAM_SCORES = dict([('red', 0), ('blue', 0)])
+            print "New Round ID: %d" % (ROUND_ID)
+
+    def handle_connection_event(self, event):
+        pass
+
+    def handle_rcon_event(self, event):
+        pass
+
+try:
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'c:m:', [])
+except GetoptError, ge:
+    print_usage(msg=str(ge))
+opts = dict(opts)
+if not len(args):
+    print_usage('Must specify an event file')
+elif len(args) > 1:
+    print_usage('Invalid number of argument specified')
+elif not '-m' in opts:
+    print_usage('Must specify a Map ID')
+map_id = opts['-m']
+event_file = resolve_path(args[0])
+if not os.path.isfile(event_file):
+    print_usage('Could not locate event file %s' % (event_file))
+if '-c' in opts:
+    config_file = resolve_path(opts['-c'])
+    if not os.path.isfile(config_file):
+        print_usage('Could not locate configuration file %s' % (config_file))
+    set_configfile(resolve_path(opts['-c']))
+if DEBUGGING:
+    set_debugging(True)
+cp = get_configparser() # implicitly loads configuration
+initialize_database()
+engine = get_engine()   # implicitly loads the SQLAlchemy DB engine
+execfile(event_file)
+event_handler = ManualEventHandler()
+for event in events:
+    if DEBUGGING:
+        print "Handling event %r" % (event)
+    elif event.type in ('team_join', 'team_switch'):
+        print repr(event)
+    # elif event.category == 'flag':
+    #     print "Handling event %r" % (event)
+    event_handler.get_handler(event.category)(event)
+

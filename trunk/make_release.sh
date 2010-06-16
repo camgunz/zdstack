@@ -11,6 +11,10 @@ HOMEDIR='/home/cagunyon/Desktop/Code/ZDStack/trunk'
 RELEASE_NAME="ZDStack-$1"
 RELEASE_DIR="$RELEASE_NAME"
 
+echo "=== Creating Windows installer"
+
+python setup.py bdist_wininst && mv dist/* ./
+
 echo "=== Initializing release environment"
 rm -f $RELEASE_NAME.tar.bz2
 rm -f *.tar.bz2
