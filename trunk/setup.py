@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import os, sys
 from distutils.core import setup
 
 a, b, c, d, e = sys.version_info

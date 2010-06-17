@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!C:\Python26\python.exe
 
 from __future__ import with_statement
 
@@ -28,7 +28,7 @@ _CURRENT_ROUND = None
 ALIASES = dict()
 PLAYERS_HOLDING_FLAGS = set()
 TEAMS_HOLDING_FLAGS = set()
-FRAGGED_RUNNERS = list()
+FRAGGED_RUNNERS = set()
 TEAM_SCORES = dict([('red', 0), ('blue', 0)])
 ROUND_ID = None
 FRAG_COUNT = 0
@@ -142,28 +142,24 @@ class ManualEventHandler(BaseEventHandler):
                 fragger_was_holding_flag = fraggee_was_holding_flag
             else:
                 fragger_was_holding_flag = fragger in FRAGGED_RUNNERS
+            frag.red_holding_flag = False
+            frag.blue_holding_flag = False
+            frag.green_holding_flag = False
+            frag.white_holding_flag = False
             if (fraggee_was_holding_flag and frag.fraggee_team_color == 'red') or \
                'red' in TEAMS_HOLDING_FLAGS:
                 frag.red_holding_flag = True
-            else:
-                frag.red_holding_flag = False
             if (fraggee_was_holding_flag and frag.fraggee_team_color == 'blue') or \
                'blue' in TEAMS_HOLDING_FLAGS:
                 frag.blue_holding_flag = True
-            else:
-                frag.blue_holding_flag = False
             if (fraggee_was_holding_flag and \
                 frag.fraggee_team_color == 'green') or \
                 'green' in TEAMS_HOLDING_FLAGS:
                 frag.green_holding_flag = True
-            else:
-                frag.green_holding_flag = False
             if (fraggee_was_holding_flag and \
                 frag.fraggee_team_color == 'white') or \
                'white' in TEAMS_HOLDING_FLAGS:
                 frag.white_holding_flag = True
-            else:
-                frag.white_holding_flag = False
             frag.red_team_score = TEAM_SCORES.get('red', None)
             frag.blue_team_score = TEAM_SCORES.get('blue', None)
             frag.green_team_score = TEAM_SCORES.get('green', None)
@@ -259,20 +255,20 @@ class ManualEventHandler(BaseEventHandler):
                 session.add(stat)
                 FLAG_TOUCH_COUNT += 1
             elif event.type in ('flag_cap', 'flag_loss'):
+                PLAYERS_HOLDING_FLAGS.remove(alias)
+                TEAMS_HOLDING_FLAGS.remove(alias.color.lower())
                 q = session.query(FlagTouch)
                 q = q.filter(and_(FlagTouch.player_id==alias.id,
                                   FlagTouch.round_id==ROUND_ID))
                 stat = q.order_by(FlagTouch.touch_time.desc()).first()
                 stat.loss_time = event.dt
-                PLAYERS_HOLDING_FLAGS.remove(alias)
-                TEAMS_HOLDING_FLAGS.remove(alias.color.lower())
                 if event.type == 'flag_cap':
                     stat.resulted_in_score = True
                     TEAM_SCORES[alias.color.lower()] += 1
                     FLAG_CAP_COUNT += 1
                 else:
                     stat.resulted_in_score = False
-                    FRAGGED_RUNNERS.append(alias)
+                    FRAGGED_RUNNERS.add(alias)
                 zdslog.debug("Updating %s" % (stat))
                 session.merge(stat)
 
@@ -291,11 +287,12 @@ class ManualEventHandler(BaseEventHandler):
                     current_round = get_round(session)
                     current_round.end_time = event.dt
                     session.merge(current_round)
-            ROUND_ID = get_new_round(map_id, event.dt).id
+            round = get_new_round(map_id, event.dt)
+            ROUND_ID = round.id
             ALIASES = dict()
-            PLAYERS_HOLDING_FLAGS = set()
-            TEAMS_HOLDING_FLAGS = set()
-            FRAGGED_RUNNERS = list()
+            PLAYERS_HOLDING_FLAGS.clear()
+            TEAMS_HOLDING_FLAGS.clear()
+            FRAGGED_RUNNERS.clear()
             TEAM_SCORES = dict([('red', 0), ('blue', 0)])
             print "New Round ID: %d" % (ROUND_ID)
 
@@ -330,7 +327,7 @@ if DEBUGGING:
 cp = get_configparser() # implicitly loads configuration
 initialize_database()
 engine = get_engine()   # implicitly loads the SQLAlchemy DB engine
-execfile(event_file)
+execfile(event_file)    # places 'events' in the global scope
 event_handler = ManualEventHandler()
 for event in events:
     if DEBUGGING:
