@@ -13,6 +13,8 @@ These steps will install ZDStack for a specific user only.  System-wide installa
   # Add `~/ZDStack/lib/python<pythonversion>/site-packages/ZDStack` to the PYTHONPATH environment variable ([http://code.google.com/p/zdstack/wiki/PythonPath instructions])
   # Install the ZDStack configuration file
 
+Windows users can just use ZDStack's Windows installer.
+
 = Installing the Example Configuration File =
   `zdstack` and `zservctl` will look in the following locations for a configuration file:
   * ./zdstackrc
@@ -25,3 +27,5 @@ These steps will install ZDStack for a specific user only.  System-wide installa
   * /etc/zdstack/zdstack.ini
 
 For system-wide installations (not recommended), the preferred location is `/etc/zdstack/zdstackrc`.  For user-local installations, the preferred location is `~/.zdstackrc`.
+
+Windows users will notice that the installer creates a `zdstack-example.ini` file in their home folder.  They should edit that file to their liking (specifically database options), and rename it to .zdstackrc.  Because Windows is silly, you might have to do this from a `cmd` window.  I'll see about a better way to handle this at some point.
