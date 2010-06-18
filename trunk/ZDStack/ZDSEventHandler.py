@@ -7,8 +7,9 @@ from sqlalchemy import and_
 from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
 from ZDStack.ZServ import TEAM_MODES, TEAMDM_MODES
 from ZDStack.ZDSModels import Weapon, Round, Alias, Frag, FlagTouch, \
-                              FlagReturn, RCONAccess, RCONDenial, RCONAction
-from ZDStack.ZDSDatabase import global_session, requires_session
+                              FlagReturn, RCONAccess, RCONDenial, RCONAction, \
+                              GameMode, TeamColor
+from ZDStack.ZDSDatabase import requires_session
 
 from sqlalchemy import desc
 from sqlalchemy.orm.exc import NoResultFound
@@ -83,6 +84,277 @@ class BaseEventHandler(object):
 
         """
         pass # do nothing... actually do not handle the event
+
+class ManualEventHandler(BaseEventHandler):
+
+    def __init__(self, map_id):
+        BaseEventHandler.__init__(self)
+        self.map_id = map_id
+        self._weapons = dict()
+        self._team_colors = dict()
+        self._current_round = None
+        self._aliases = dict()
+        self._players_holding_flags = set()
+        self._teams_holding_flags = set()
+        self._fragged_runners = set()
+        self._team_scores = dict(red=0, blue=0)
+        self.set_handler('join', self.handle_join_event)       # game_join
+        self.set_handler('frag', self.handle_frag_event)       # 
+        self.set_handler('death', self.handle_frag_event)      # 
+        self.set_handler('flag', self.handle_flag_event)       # 
+        self.set_handler('rcon', self.handle_rcon_event)       # 
+        self.set_handler('command', self.handle_command_event) # map_change
+
+    def reset(self):
+        self._weapons.clear()
+        self._team_colors.clear()
+        self._current_round = None
+        self._aliases.clear()
+        self._players_holding_flags.clear()
+        self._teams_holding_flags.clear()
+        self._fragged_runners.clear()
+        self._team_scores['red'] = 0
+        self._team_scores['blue'] = 0
+
+    @property
+    def round_id(self):
+        if self._current_round:
+            return self._current_round.id
+        raise Exception(
+            "Cannot get current round's ID when there is no current round"
+        )
+
+    @requires_session
+    def setup_new_round(self, start_time, session=None):
+        zdslog.debug("get_new_round")
+        r = Round()
+        ctf = session.query(GameMode).get('ctf')
+        r.game_mode_name = 'ctf'
+        r.game_mode = ctf
+        r.map_id = self.map_id
+        r.start_time = start_time
+        session.merge(ctf)
+        session.add(r)
+        self._current_round = r
+
+    @requires_session
+    def get_alias(self, name, session=None):
+        zdslog.debug("get_alias")
+        if name not in self._aliases:
+            alias = session.query(Alias).filter(Alias.name==name).first()
+            if not alias:
+                alias = Alias()
+                alias.name = name
+                alias.ip_address = '255.255.255.255'
+                zdslog.debug("Persisting %s" % (alias))
+                session.add(alias)
+            self._aliases[name] = alias
+        zdslog.debug("Alias.id: %s" % (self._aliases[name].id))
+        return self._aliases[name]
+
+    @requires_session
+    def get_weapon(self, name, session=None):
+        zdslog.debug("get_weapon")
+        if name not in self._weapons:
+            self._weapons[name] = session.query(Weapon).get(name)
+        return self._weapons[name]
+
+    @requires_session
+    def get_team_color(self, color, session=None):
+        zdslog.debug("get_team_color")
+        if color not in self._team_colors:
+            zdslog.debug("%s not in %s" % (color, self._team_colors))
+            try:
+                team_color = session.query(TeamColor).get(color)
+            except NoResultFound:
+                team_color = TeamColor()
+                team_color.color = color
+                zdslog.debug("Persisting %s" % (team_color))
+                session.add(team_color)
+            self._team_colors[color] = team_color
+        return self._team_colors[color]
+
+    def add_runner(self, runner):
+        self._players_holding_flags.add(runner)
+        self._teams_holding_flags.add(runner.color.lower())
+
+    def remove_runner(self, runner):
+        self._players_holding_flags.remove(runner)
+        self._teams_holding_flags.remove(runner.color.lower())
+
+    @requires_session
+    def _add_common_state(self, event, stat, player_holding_flag,
+                                player_color, session=None):
+        stat.round = self._current_round
+        stat.red_team_score = self._team_scores.get('red', None)
+        stat.blue_team_score = self._team_scores.get('blue', None)
+        stat.green_team_score = self._team_scores.get('green', None)
+        stat.white_team_score = self._team_scores.get('white', None)
+        stat.red_holding_flag = False
+        stat.blue_holding_flag = False
+        stat.green_holding_flag = False
+        stat.white_holding_flag = False
+        if (player_holding_flag and player_color == 'red') or \
+            'red' in self._teams_holding_flags:
+            stat.red_holding_flag = True
+        if (player_holding_flag and player_color == 'blue') or \
+            'blue' in self._teams_holding_flags:
+            stat.blue_holding_flag = True
+        if (player_holding_flag and player_color == 'green') or \
+            'green' in self._teams_holding_flags:
+            stat.green_holding_flag = True
+        if (player_holding_flag and player_color == 'white') or \
+            'white' in self._teams_holding_flags:
+            stat.white_holding_flag = True
+
+    @requires_session
+    def handle_frag_event(self, event, session=None):
+        zdslog.debug("handle_frag_event")
+        weapon = self.get_weapon(event.data['weapon'], session=session)
+        frag = Frag()
+        frag.timestamp = event.dt
+        frag.weapon = weapon
+        frag.fraggee = self.get_alias(event.data['fraggee'], session=session)
+        frag.fraggee_team_color = self.get_team_color(
+            frag.fraggee.color,
+            session=session
+        )
+        if frag.fraggee in self._fragged_runners:
+            frag.fraggee_was_holding_flag = True
+            self._fragged_runners.remove(frag.fraggee)
+        else:
+            frag.fraggee_was_holding_flag = False
+        self._add_common_state(
+            event,
+            frag,
+            frag.fraggee_was_holding_flag,
+            frag.fraggee_team_color.color,
+            session=session
+        )
+        if 'fragger' in event.data:
+            frag.is_suicide = False
+            frag.fragger = self.get_alias(
+                event.data['fragger'],
+                session=session
+            )
+            frag.fragger_team_color = self.get_team_color(
+                frag.fragger.color,
+                session=session
+            )
+            if frag.fragger in self._players_holding_flags:
+                frag.fragger_was_holding_flag = True
+            else:
+                frag.fragger_was_holding_flag = False
+        else:
+            frag.is_suicide = True
+            frag.fragger = frag.fraggee
+            frag.fragger_team_color = frag.fraggee_team_color
+            frag.fragger_was_holding_flag = frag.fraggee_was_holding_flag
+        zdslog.debug("Fragger holding flag: %s" % (frag.fragger_was_holding_flag))
+        zdslog.debug("Fraggee holding flag: %s" % (frag.fraggee_was_holding_flag))
+        session.add(frag)
+        ###
+        # session.merge(weapon)
+        # session.merge(fraggee)
+        # session.merge(self._current_round)
+        # if not frag.is_suicide:
+        #     session.merge(fragger)
+        # session.add(frag)
+        ###
+
+    @requires_session
+    def handle_flag_event(self, event, session=None):
+        zdslog.debug("handle_flag_event")
+        ###
+        # flag_return
+        # flag_touch
+        # flag_cap
+        # flag_loss
+        ###
+        if event.type == 'auto_flag_return':
+            # Nothing we can do here
+            return
+        alias = self.get_alias(event.data['player'], session=session)
+        if event.type in ('flag_return', 'flag_touch', 'flag_pick'):
+            if event.type == 'flag_return':
+                stat = FlagReturn()
+                stat.timestamp = event.dt
+                stat.player_holding_flag = alias in self._players_holding_flags
+                player_holding_flag = True
+            elif event.type in ('flag_touch', 'flag_pick'):
+                stat = FlagTouch()
+                stat.touch_time = event.dt
+                stat.loss_time = None
+                stat.was_picked = event.type == 'flag_pick'
+                stat.resulted_in_score = None
+                player_holding_flag = False
+            stat.alias = alias
+            stat.player_team_color = self.get_team_color(
+                alias.color,
+                session=session
+            )
+            self._add_common_state(
+                event,
+                stat,
+                player_holding_flag,
+                stat.player_team_color.color,
+                session=session
+            )
+            if event.type in ('flag_touch', 'flag_pick'):
+                self.add_runner(alias)
+            zdslog.debug("Persisting %s" % (stat))
+            zdslog.debug('Recording flag touch/pick by %s in round %s' % (
+                alias.id, self._current_round.id
+            ))
+            session.add(stat)
+        elif event.type in ('flag_cap', 'flag_loss'):
+            self.remove_runner(alias)
+            q = session.query(FlagTouch)
+            q = q.filter(and_(
+                FlagTouch.player_id==alias.id,
+                FlagTouch.round_id==self._current_round.id,
+            ))
+            stat = q.order_by(FlagTouch.touch_time.desc()).first()
+            if not stat:
+                raise Exception('No flag touch by %s in round %s recorded' % (
+                    alias.id, self._current_round.id
+                ))
+            stat.loss_time = event.dt
+            if event.type == 'flag_cap':
+                stat.resulted_in_score = True
+                self._team_scores[stat.player_team_color_name] += 1
+            else:
+                stat.resulted_in_score = False
+                self._fragged_runners.add(alias)
+            zdslog.debug("Updating %s" % (stat))
+            session.merge(stat)
+
+    @requires_session
+    def handle_join_event(self, event, session=None):
+        zdslog.debug("handle_join_event")
+        alias = self.get_alias(event.data['player'], session=session)
+        alias.color = event.data['team'].lower()
+        if event.type == 'team_join':
+            self._current_round.aliases.append(alias)
+            zdslog.debug("Updating %s" % (alias))
+            session.merge(self._current_round)
+
+    @requires_session
+    def handle_command_event(self, event, session=None):
+        zdslog.debug("handle_command_event")
+        if event.type == 'map_change':
+            if self._current_round is not None:
+                self._current_round.end_time = event.dt
+                session.merge(self._current_round)
+            self.reset()
+            self.setup_new_round(event.dt, session=session)
+
+    def handle_connection_event(self, event):
+        pass
+
+    def handle_rcon_event(self, event):
+        pass
+
 
 class ZServEventHandler(BaseEventHandler):
 
