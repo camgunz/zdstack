@@ -31,4 +31,4 @@ Simply run `python events_to_db -m <map_id> events.txt`.  As the script runs, it
 
 == Link the Rounds to their Game ==
 
-In the IDL Admin section, open up Games and Rounds.  For each round id the script printed out, create a new Game and Round instance using that round id.  Finally, open up the Games section and check the "has been played" box.
+In the IDL Admin section, open up Games and Rounds.  For each round id the script printed out, create a new Game and Round instance using that round id.  Finally, open up the Games section and check the "has been played" box.  99% of the time, the demo starts during a round you don't want to save, so make sure you're only adding rounds to the game that were actually part of the game.
