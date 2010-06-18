@@ -4,16 +4,31 @@
 
 ZDStack isn't perfect, and one of its most common source of bugs is stat calculation.  In the event that realtime stats aren't saved, it is possible to re-generate them using a demo.  This wiki page describes that procedure for Windows.
 
-= Install ZDStack =
+= Procedure =
 
-You need to download Python, ZDStack, SQLAlchemy, and potentially Psycopg2 (see WindowsSupport for more information).  Installation of SQLAlchemy requires that you decompress the archive, open a `cmd` window to that new folder, and run `python setup.py install`.
+Manually generating events is a multi-step process.
 
-= On with the show =
-
-Manually calculating statistics is a two-part process
-
-== Generate Events ==
+== Generate the Event Log ==
 
 ZDStack uses the concept of "events" to represent very basic stats, and calculates more complicated, aggregate stats from them; examples are frags, flag touches, flag drops, etc.  These events must be timestamped, and we really prefer that the timestamp have a resolution of at least a millisecond (i.e. `2010-06-11 23:57:43.147` or `2010-06-11 23:57:43.147695` is microseconds).  This is why normal server logs are useless for ZDStack and stats generation; the resolution is limited only to seconds.  *35 events can occur in a second!!!!*
 
-More to come later...
+So the first thing to do is generate an event log.  To do this:
+
+  * Open up a `cmd` window at `C:\Python26\Scripts` (or wherever your Python is actually installed)
+  * Load the demo using whatever launcher you use.  Don't configure a logfile just yet though.
+  * When ZDaemon starts, type `logfile blah.log` into the console.  You can name the logfile whatever you like, it doesn't have to be `blah.log`.
+  * In the `cmd` window, type `python watch_zd_fifo "C:\ZDaemon\blah.log" events.txt` (assuming your ZDaemon is installed in `C:\ZDaemon`.
+
+The script will finish shortly after the demo finishes - 10 seconds, to be precise.
+
+== Locate the Game's Map Id ==
+
+In the IDL Admin section, you can locate the ID for a map by clicking on the Maps section on the left.  In the "Select a Map:" box, choose whichever map is used for the game.  The map's id will be listed in the "Id:" box.
+
+== Save the Events to the Database ==
+
+Simply run `python events_to_db -m <map_id> events.txt`.  As the script runs, it prints out all the connection/join events it finds, and the round ids of the rounds it creates.  This is important, make sure you keep track of this information.
+
+== Link the Rounds to their Game ==
+
+In the IDL Admin section, open up Games and Rounds.  For each round id the script printed out, create a new Game and Round instance using that round id.  Finally, open up the Games section and check the "has been played" box.
