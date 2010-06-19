@@ -27,7 +27,7 @@ The following features are available using only the above packages:
 
 Python and ZDaemon (zserv) both have Windows installers, but SQLAlchemy doesn't.  To install it, download it and un-archive it.  Then, open a `cmd` window and change to its folder.  Run `python setup.py install`.  That should take care of it.
 
-Finally, if you're interested in doing anything IDL-related, you'll need [http://www.stickpeople.com/projects/python/win-psycopg/ Psycopg2].
+Finally, if you're interested in doing anything IDL-related, you'll need [http://www.stickpeople.com/projects/python/win-psycopg/index.2.0.14.html Psycopg2].  Note that you need to install an old 2.0.XXX version, because the new 2.2.XXX versions have a problem in the build.
 
 = Optional Features and Their Requirements =
 
