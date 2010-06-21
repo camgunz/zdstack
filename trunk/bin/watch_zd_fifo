@@ -114,8 +114,8 @@ if __name__ == "__main__":
         print_usage()
     zd_fifoname, output_filename = [resolve_path(x) for x in sys.argv[1:]]
     if not os.path.exists(zd_fifoname):
-        print >> sys.stderr, zd_fifoname + ' must exist before we can watch it'
-        print_usage()
+        print >> sys.stderr, 'Creating log file %s' % (zd_fifoname)
+        open(zd_fifoname, 'w').close()
     try:
         main(zd_fifoname, output_filename)
     except KeyboardInterrupt:

@@ -3,14 +3,14 @@ import datetime
 from sqlalchemy import Table, Column, ForeignKey, Index, String, DateTime, \
                        Integer, Boolean, Unicode, UniqueConstraint, MetaData
 
-from ZDStack import get_engine, get_metadata, get_zdslog
+from ZDStack import get_engine, get_metadata
 
-zdslog = get_zdslog()
+# zdslog = get_zdslog()
 
 ###
 # Get the DB engine.
 ###
-zdslog.debug("Initializing Database")
+# zdslog.debug("Initializing Database")
 __engine = get_engine()
 __metadata = get_metadata()
 

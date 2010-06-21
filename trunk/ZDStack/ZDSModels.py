@@ -4,15 +4,15 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from ZDStack.Utils import parse_player_name
 from ZDStack.ZDSDatabase import global_session
-from ZDStack import get_engine, get_metadata, get_zdslog
+from ZDStack import get_engine, get_metadata
 from ZDStack.ZDSTables import *
 
-zdslog = get_zdslog()
+# zdslog = get_zdslog()
 
 ###
 # Get the DB engine.
 ###
-zdslog.debug("Initializing Database")
+# zdslog.debug("Initializing Database")
 __engine = get_engine()
 __metadata = get_metadata()
 

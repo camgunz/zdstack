@@ -145,6 +145,17 @@ SUPPORTED_ENGINE_TYPES = (
     'firebird'
 )
 
+class DummyLog(object):
+
+    def debug(self, s):
+        pass
+
+    def info(self, s):
+        pass
+
+    def error(self, s):
+        raise Exception(s)
+
 SUPPORTED_GAME_MODES = ('ctf', 'coop', 'duel', 'ffa', 'teamdm')
 
 NO_AUTH_REQUIRED = ('list_zserv_names', 'get_zserv_info', 'get_all_zserv_info')
@@ -181,7 +192,7 @@ DB_ENGINE = None
 JSON_MODULE = None
 RPC_CLASS = None
 RPC_PROXY_CLASS = None
-ZDSLOG = None
+ZDSLOG = DummyLog()
 
 class PlayerNotFoundError(Exception):
 
@@ -323,13 +334,26 @@ def get_configfile():
     """
     global CONFIGFILE
     if not CONFIGFILE:
-        possible_config_files = ['./zdstackrc', './zdstack.ini',
-                                 '~/.zdstackrc', '~/.zdstack.ini',
-                                 '~/.zdstack/zdstackrc',
-                                 '~/.zdstack/zdstack.ini', '/etc/zdstackrc',
-                                 '/etc/zdstack.ini',
-                                 '/etc/zdstack/zdstackrc'
-                                 '/etc/zdstack/zdstack.ini']
+        if os.name == 'nt':
+            possible_config_files = [
+                'zdstackrc',
+                'zdstack.ini',
+                '~\\ZDStack\\zdstackrc',
+                '~\\ZDStack\\zdstack.ini',
+            ]
+        else:
+            possible_config_files = [
+                './zdstackrc',
+                './zdstack.ini',
+                '~/.zdstackrc',
+                '~/.zdstack.ini',
+                '~/.zdstack/zdstackrc',
+                '~/.zdstack/zdstack.ini',
+                '/etc/zdstackrc',
+                '/etc/zdstack.ini',
+                '/etc/zdstack/zdstackrc'
+                '/etc/zdstack/zdstack.ini'
+            ]
         possible_config_files = \
                         [resolve_path(x) for x in possible_config_files]
         possible_config_files = \
@@ -880,7 +904,7 @@ def get_zdslog(reload=False):
     """
     global ZDSLOG
     global DEBUGGING
-    if reload or not ZDSLOG:
+    if reload or isinstance(ZDSLOG, DummyLog):
         ZDSLOG = logging.getLogger('ZDStack')
         for handler in ZDSLOG.handlers:
             ZDSLOG.removeHandler(handler)
