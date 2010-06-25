@@ -122,51 +122,18 @@ class Wad(object):
     """
 
     name = None
+    full_name = None
+    short_name = None
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, full_name=None, short_name=None):
         self.name = name
+        self.full_name = full_name
+        self.short_name = short_name
 
     def __unicode__(self):
         return self.name
 
     __repr__ = __str__ = __unicode__
-
-    @property
-    def short_name(self):
-        """The short name of this WAD.
-
-        :rtype: unicode
-        :returns: the short name of the WAD.  WADs have history of
-                  having their names shortened, i.e. ZDCTF or EpicCTF,
-                  this method attempts to figure these short-hand names
-                  out for the given WAD.
-
-        """
-        if not self.name:
-            return u''
-        if self.name == 'zdctfmp.wad':
-            return u'ZDCTF'
-        elif self.name == 'zdctfmp2.wad':
-            return u'ZDCTF2'
-        elif self.name == 'zdctfmp3-.wad':
-            return u'ZDCTF3'
-        elif self.name == u'32in24-4final.wad':
-            return u'THIRTY4'
-        elif self.name == u'32in24-7.wad':
-            return u'THIRTY7'
-        elif self.name == u'zdcctfmpc.wad':
-            return u'CRAZY'
-        elif self.name == u'odactf1.wad':
-            return u'ODACTF'
-        elif self.name == u'dwango5.wad':
-            return u'DWANGO5'
-        elif self.name == u'dwango6.wad':
-            return u'DWANGO6'
-        elif self.name == u'doom2.wad':
-            return u'doom2'
-        else:
-            s = self.name.upper().replace('.wad', '').replace('-', '')
-            return s.replace('_', '').decode('utf8')
 
     @property
     def prefix(self):

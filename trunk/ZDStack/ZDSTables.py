@@ -43,7 +43,9 @@ team_colors_table = Table('team_colors', __metadata,
 )
 
 wads_table = Table('wads', __metadata,
-    Column('name', String(20), primary_key=True)
+    Column('name', String(20), primary_key=True),
+    Column('full_name', String(255), unique=True),
+    Column('short_name', String(20))
 )
 
 maps_table = Table('maps', __metadata,

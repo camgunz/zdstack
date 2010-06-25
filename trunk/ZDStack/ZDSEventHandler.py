@@ -135,6 +135,7 @@ class ManualEventHandler(BaseEventHandler):
         r.start_time = start_time
         session.merge(ctf)
         session.add(r)
+        zdslog.info('Created new round %r' % (r))
         self._current_round = r
 
     @requires_session

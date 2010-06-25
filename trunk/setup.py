@@ -17,9 +17,9 @@ setup(
   author_email = 'charles.gunyon@gmail.com',
   url          = 'http://zdstack.googlecode.com/',
   packages     = ['ZDStack'],
-  requires     = ['sqlalchemy(>=0.5.3)'],
+  requires     = ['sqlalchemy(>=0.6.1)'],
   data_files   = [
-    (os.path.expanduser('~'), ['doc/zdstack-example.ini'])
+    ('ZDStack', ['doc/zdstack.ini'])
   ],
   scripts      = [
     'bin/zdstack',

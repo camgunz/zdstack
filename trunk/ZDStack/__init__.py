@@ -21,6 +21,7 @@ from ZDStack.ZDSConfigParser import RawZDSConfigParser as RCP
 ###
 
 from sqlalchemy import create_engine, MetaData, select, and_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker, relation, mapper, \
                            column_property
 from sqlalchemy.pool import StaticPool, NullPool
@@ -138,7 +139,7 @@ REQUIRED_SERVER_VALID_FILES = (
 
 SUPPORTED_ENGINE_TYPES = (
     'sqlite',
-    'postgres',
+    'postgresql',
     'mysql',
     'oracle',
     'mssql',
@@ -680,7 +681,7 @@ def get_engine():
             # somehow.
             ###
             DB_ENGINE = _get_embedded_engine(db_engine, cp)
-            DB_AUTOFLUSH, DB_AUTOCOMMIT = (False, True)
+            DB_AUTOFLUSH, DB_AUTOCOMMIT = (True, True)
         else:
             DB_ENGINE = _get_full_engine(db_engine, cp)
             DB_AUTOFLUSH, DB_AUTOCOMMIT = (True, True)
@@ -986,7 +987,6 @@ def initialize_database(do_not_map=False):
          'rcon_denials': relation(RCONDenial, backref='alias', cascade=_pc),
          'rcon_actions': relation(RCONAction, backref='alias', cascade=_pc)
         })
-
         mapper(TeamColor, team_colors_table, properties={
          'frags': relation(Frag, backref='fragger_team_color', cascade=_pc,
                            primaryjoin=frags_table.c.fragger_team_color_name==\
@@ -999,28 +999,22 @@ def initialize_database(do_not_map=False):
          'flag_returns': relation(FlagReturn, backref='player_team_color',
                                   cascade=_pc)
         })
-
         mapper(Wad, wads_table, properties={
           'maps': relation(Map, order_by=maps_table.c.number, backref='wad')
         })
-
         mapper(Map, maps_table, properties={
          'rounds': relation(Round, backref='map', cascade=_pc)
         })
-
         mapper(Weapon, weapons_table, properties={
          'frags': relation(Frag, backref='weapon', cascade=_pc)
         })
-
         mapper(Port, ports_table, properties={
          'game_modes': relation(GameMode, secondary=ports_and_gamemodes)
         })
-
         mapper(GameMode, game_modes_table, properties={
          'ports': relation(Port, secondary=ports_and_gamemodes),
          'rounds': relation(Round, backref='game_mode', cascade=_pc)
         })
-
         mapper(Round, rounds_table, properties={
          'aliases': relation(Alias, secondary=rounds_and_aliases),
          'frags': relation(Frag, backref='round', cascade=_pc),
@@ -1030,7 +1024,6 @@ def initialize_database(do_not_map=False):
          'rcon_denials': relation(RCONDenial, backref='round', cascade=_pc),
          'rcon_actions': relation(RCONAction, backref='round', cascade=_pc)
         })
-
         mapper(RoundsAndAliases, rounds_and_aliases, properties={
           'alias': relation(Alias),
           'round': relation(Round),
@@ -1041,30 +1034,39 @@ def initialize_database(do_not_map=False):
                                  stored_players_table.c.name),
             viewonly=True)
         })
-
         mapper(StoredPlayer, stored_players_table, properties={
          'aliases': relation(Alias, backref='stored_player'),
         })
-
         mapper(Frag, frags_table)
         mapper(FlagTouch, flag_touches_table)
         mapper(FlagReturn, flag_returns_table)
         mapper(RCONAccess, rcon_accesses_table)
         mapper(RCONDenial, rcon_denials_table)
         mapper(RCONAction, rcon_actions_table)
-
     zdslog.debug("Creating tables")
     metadata.create_all(engine)
-    zdslog.debug("Persisting all supported team colors")
+    zdslog.debug("Initializing Database Data")
+    from ZDStack.ZDSDatabaseData import insert_initial_data
     session = get_session_class()()
+    # try:
+    #     session.begin()
+    #     existing_colors = [x.color for x in session.query(TeamColor).all()]
+    #     for color in [x for x in TEAM_COLORS if x not in existing_colors]:
+    #         tc = TeamColor()
+    #         tc.color = color
+    #         session.add(tc)
+    #     session.commit()
+    # except:
+    #     session.rollback()
+    #     raise
+    # session = get_session_class()()
     try:
         session.begin()
-        existing_colors = [x.color for x in session.query(TeamColor).all()]
-        for color in [x for x in TEAM_COLORS if x not in existing_colors]:
-            tc = TeamColor()
-            tc.color = color
-            session.add(tc)
+        insert_initial_data(session)
         session.commit()
+    except IntegrityError:
+        zdslog.info('Database already contains initial data, skipping')
+        session.rollback()
     except:
         session.rollback()
         raise
