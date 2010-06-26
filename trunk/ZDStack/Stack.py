@@ -150,14 +150,21 @@ class Stack(Server):
         self.keep_handling_events = True
         if not self.loglink_check_timer:
             self.start_checking_loglinks()
-        self.polling_thread = \
-            ZDSThreadPool.get_thread(self.poll_zservs,
-                                     "ZDStack Polling Thread",
-                                     lambda: self.keep_polling == True)
-        ZDSThreadPool.process_queue(self.output_queue, 'ZServ Output Queue',
-                                    lambda: self.keep_parsing == True)
-        ZDSThreadPool.process_queue(self.event_queue, 'ZServ Event Queue',
-                            lambda: self.keep_handling_events == True)
+        self.polling_thread = ZDSThreadPool.get_thread(
+            self.poll_zservs,
+            "ZDStack Polling Thread",
+            lambda: self.keep_polling == True
+        )
+        ZDSThreadPool.process_queue(
+            self.output_queue,
+            'ZServ Output Queue',
+            lambda: self.keep_parsing == True
+        )
+        ZDSThreadPool.process_queue(
+            self.event_queue,
+            'ZServ Event Queue',
+            lambda: self.keep_handling_events == True
+        )
         ###
         # Start the spawning timer last.
         ###
@@ -321,8 +328,9 @@ class Stack(Server):
                     ###
                     data = os.read(fd, 1024)
                     if data:
-                        ds = "Got data from %r: [%r]"
-                        zdslog.debug(ds % (zserv.name, data))
+                        zdslog.debug('Got data from %r: [%r]' % (
+                            zserv.name, data
+                        ))
                         logging.getLogger(zserv.name).info(data)
                         lines = data.splitlines()
                         if zserv._fragment:
@@ -331,9 +339,12 @@ class Stack(Server):
                         if not data.endswith('\n'):
                             lines, zserv._fragment = lines[:-1], lines[-1]
                         output = (zserv, datetime.now(), lines)
-                        task = Task(self.parse_zserv_output, args=output,
-                                    name='Parsing')
-                        self.output_queue.put_nowait(task)
+                        zdslog.debug('Putting parse output task in queue')
+                        self.output_queue.put_nowait(Task(
+                            self.parse_zserv_output,
+                            args=output,
+                            name='Parsing'
+                        ))
                     else:
                         ###
                         # Non-blocking FDs should raise exceptions instead
@@ -378,7 +389,7 @@ class Stack(Server):
             try:
                 event = get_event_from_line(line, self.regexps, dt)
             except Exception, e:
-                es = "Received error processing line [%s] from [%s]: [%s]"
+                es = 'Received error processing line [%s] from [%s]: [%s]'
                 zdslog.error(es % (line, zserv.name, e))
                 continue
             if not event:
@@ -396,70 +407,75 @@ class Stack(Server):
                 # is finished, if it's waiting on something.
                 #
                 ###
-                zdslog.debug("No event for [%s]" % (line))
-                if zserv.event_type_to_watch_for:
-                    zdslog.debug("Response is finished")
+                zdslog.debug('No event for [%s]' % (line))
+                if zserv.messenger.is_waiting_for_response:
+                    zdslog.debug('Response is finished')
                     ###
                     # Received an event that was not a response to the
                     # command after events that were responses to the
                     # command, so notify the zserv that its response
                     # is complete.
                     ###
-                    zserv.response_finished.set()
+                    zserv.messenger.response_finished.set()
                     ###
                     # We want to wait until the ZServ finished processing
                     # the response, because the current event may depend
                     # upon it.
                     ###
-                    zdslog.debug("Waiting until response is processed")
-                    zserv.finished_processing_response.wait()
-                    zdslog.debug("Done waiting")
+                    zdslog.debug('Waiting until response is processed')
+                    zserv.messenger.response_processed.wait()
+                    zdslog.debug('Response has been processed')
                 continue
             try:
                 if event.type == 'message':
-                    zdslog.debug("Converting message event")
+                    zdslog.debug('Converting message event')
                     ppn = event.data['possible_player_names']
                     c = event.data['contents'] 
                     player = zserv.players.get_first_matching_player(ppn)
                     if not player:
-                        s = "Received a message from a non-existent player"
-                        s += ", PPN: %s, Message: %s"
+                        s = 'Received a message from a non-existent player'
+                        s += ', PPN: %s, Message: %s'
                         zdslog.error(s % (ppn, line))
                         event.category, event.type = ('junk', 'junk')
                     else:
-                        zdslog.debug("Updating event.data")
+                        zdslog.debug('Updating event.data')
                         m = c.replace(player.name, '', 1)[3:]
                         event.data = {'message': m, 'messenger': player}
-                        zdslog.debug("Event data: %s" % (str(event.data)))
-                if zserv.event_type_to_watch_for:
-                    s = "%s is watching for %s events"
-                    zdslog.debug(s % (zserv.name,
-                                      zserv.event_type_to_watch_for))
-                    if event.type == zserv.event_type_to_watch_for:
-                        zdslog.debug("Found a response event")
-                        zserv.response_events.append(event)
-                    elif zserv.response_events:
-                        zdslog.debug("Response is finished")
-                        zserv.response_finished.set()
-                        zdslog.debug("Waiting until response is processed")
-                        zserv.finished_processing_response.wait()
-                        zdslog.debug("Done waiting")
-                    else:
+                        zdslog.debug('Event data: %s' % (str(event.data)))
+                if zserv.messenger.is_waiting_for_response:
+                    zdslog.debug('[%s] is watching for [%s] events' % (
+                        zserv.name,
+                        zserv.messenger.event_type_to_watch_for
+                    ))
+                    if zserv.messenger.is_waiting_for(event.type):
+                        zdslog.debug('Found a response event')
+                        zserv.messenger.response_events.append(event)
+                        return
+                    if not zserv.messenger.has_received_response_data:
                         zdslog.debug("Response hasn't started yet")
-                task = Task(self.handle_events, args=[event, zserv],
-                            name='%s Event Handling' % (event.type.capitalize()))
-                s = "Putting [%s] from %s in the event queue"
-                zdslog.debug(s % (event, zserv.name))
+                    else:
+                        zdslog.debug('Response is finished')
+                        zserv.messenger.response_finished.set()
+                        zdslog.debug('Waiting until response is processed')
+                        zserv.messenger.response_processed.wait()
+                        zdslog.debug('Response has been processed')
+                zdslog.debug('Putting [%s] from %s in the event queue' % (
+                    event, zserv.name
+                ))
                 ###
                 # Because response events are saved by the ZServ, we don't need
                 # a separate queue for them; whatever called send_to_zserv()
-                # will process the events asynchronously.
+                # will process the events separately from this control flow.
                 ###
-                self.event_queue.put_nowait(task)
+                self.event_queue.put_nowait(Task(
+                    self.handle_events,
+                    args=[event, zserv],
+                    name='%s Event Handling' % (event.type.capitalize())
+                ))
             except Exception, e:
-                es = "Received error while processing event from [%s]: "
-                es += "[%s]"
-                zdslog.error(es % (zserv.name, e))
+                zdslog.error('Error processing event from [%s]: %s]' % (
+                    zserv.name, e
+                ))
                 continue
 
     def handle_events(self, event, zserv):
@@ -474,7 +490,6 @@ class Stack(Server):
         """
         ds = "Handling %s event (Line: [%s])"
         zdslog.debug(ds % (event.type, event.line))
-        handler = self.event_handler.get_handler(event.category)
         with zserv.event_lock:
             ###
             # We want to wait until the ZServ is finished initializing the
@@ -482,7 +497,10 @@ class Stack(Server):
             # sets it upon stopping.
             ###
             zserv.round_initialized.wait()
-            handler(event, zserv)
+            zdslog.debug('Waiting for any command responses to be processed')
+            zserv.messenger.response_processed.wait()
+            zdslog.debug('Done waiting on command responses to be processed')
+            self.event_handler.get_handler(event.category)(event, zserv)
             if zserv.plugins_enabled:
                 for plugin in zserv.plugins:
                     ds = "Processing %s with %s"
@@ -836,7 +854,7 @@ class Stack(Server):
 
         """
         # zdslog.debug('')
-        return self.get_zserv(zserv_name).send_to_zserv(message)
+        return self.get_zserv(zserv_name).messenger.send(message)
 
     def addban(self, zserv_name, ip_address, reason='rofl'):
         """Adds an address to a ZServ's banlist.

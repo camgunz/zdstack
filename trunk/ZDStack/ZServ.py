@@ -78,14 +78,10 @@ class ZServ(object):
         self.name = name
         self.zdstack = zdstack
         self._fragment = None
-        self.event_type_to_watch_for = None
-        self.response_events = list()
-        self.response_finished = Event()
-        self.finished_processing_response = Event()
+        self.messenger = Messenger(self)
         self.whitelist_lock = Lock()
         self.event_lock = Lock()
         self.state_lock = Lock()
-        self._zserv_stdin_lock = Lock()
         self.config_lock = Lock()
         self.ban_timers = set()
         self.ban_timer_lock = Lock()
@@ -287,7 +283,9 @@ class ZServ(object):
         # in 1.08.08, we need to prevent anything from processing events or
         # accessing the list of players until we sync it up.
         ###
-        # with nested(self.players.lock, self.event_lock):
+        ###
+        # Do not acquire self.event_lock here, we're already inside it.
+        ###
         self.round_initialized.clear()
         with self.players.lock:
             self.clean_up(session=session)
@@ -314,8 +312,16 @@ class ZServ(object):
                 zdslog.error("Round %s has no ID")
             self.round_id = r.id
             zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
-            self.players.sync(acquire_lock=False, session=session,
-                              check_bans=True)
+            self.messenger.send(
+                message='players',
+                event_response_type='players_command',
+                handler=lambda events: self.players.sync(
+                    acquire_lock=False,
+                    session=session
+                    zplayers=events
+                    check_bans=True
+                )
+            )
             zdslog.debug('Done changing map')
         self.round_initialized.set()
 
@@ -534,80 +540,6 @@ class ZServ(object):
                 raise Exception(error_stopping)
         self.start()
 
-    def send_to_zserv(self, message, event_response_type=None):
-        """Sends a message to the running zserv process.
-
-        :param message: the message to send (cannot contain newlines)
-        :type message: string
-        :param event_response_type: the type of event to wait for in
-                                    response
-        :type event_response_type: string
-        :rtype: list of :class:`~ZDStack.LogEvent.LogEvent` instances
-        :returns: a list of response events, if event_response_type is
-                  None, the list will be empty
-
-        """
-        # zdslog.debug('')
-        if '\n' in message or '\r' in message:
-            es = "Message cannot contain newlines or carriage returns"
-            raise ValueError(es)
-        if not self.is_running():
-            zdslog.error("Cannot send data to a stopped ZServ")
-            return
-        def _send(message):
-            zdslog.debug("Writing to STDIN")
-            self.zserv.stdin.write(message + '\n')
-            self.zserv.stdin.flush()
-        zdslog.debug("Obtaining STDIN lock")
-        with self._zserv_stdin_lock:
-            zdslog.debug("Obtained STDIN lock")
-            ###
-            # zserv's STDIN is (obviously) not threadsafe, so we need to ensure
-            # that access to it is limited to 1 thread at a time, which is both
-            # writing to it, and waiting for responses from its STDOUT.
-            ###
-            if not self.events_enabled or event_response_type is None:
-                return _send(message)
-            ##################################################################
-            #                                                                #
-            # Everything past this point only happens if event_response_type #
-            # is not None and events are enabled.                            #
-            #                                                                #
-            ##################################################################
-            zdslog.debug("Setting response type")
-            self.response_events = []
-            self.event_type_to_watch_for = event_response_type
-            self.response_finished.clear()
-            _send(message)
-            response = []
-            zdslog.debug("Waiting for response")
-            ###
-            # In case a server is restarted before a non-response event occurs,
-            # we need a timeout here.  500ms is probably enough.
-            ###
-            self.response_finished.wait(.5)
-            ###
-            # We want to process this response before any other events, so make
-            # other threads wait until we're finished processing the response.
-            ###
-            zdslog.debug("Response is finished")
-            self.finished_processing_response.clear()
-            try:
-                zdslog.debug("Processing response events")
-                for event in self.response_events:
-                    d = {'type': event.type, 'line': event.line}
-                    d.update(event.data)
-                    response.append(d)
-                zdslog.debug("Send to ZServ response: [%s]" % (response))
-                return response
-            finally:
-                zdslog.debug("Clearing response state")
-                self.response_events = []
-                self.event_type_to_watch_for = None
-                zdslog.debug("Setting response processing finished")
-                self.finished_processing_response.set()
-                self.response_finished.set()
-
 ###
 # Commands:
 #    acl_add
@@ -682,8 +614,10 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('addban %s %s' % (ip_address, reason),
-                                  'addban_command')
+        self.messenger.send(
+            'addban %s %s' % (ip_address, reason),
+            'addban_command'
+        )
 
     def zaddtimedban(self, duration, ip_address, reason='rofl'):
         """Adds a ban with an expiration.
@@ -730,7 +664,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('addbot %s' % (bot_name), 'addbot_command')
+        return self.messenger.send('addbot %s' % (bot_name), 'addbot_command')
 
     def zaddmap(self, map_number):
         """Adds a map to the maplist.
@@ -740,12 +674,12 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('addmap %s' % (map_number))
+        return self.messenger.send('addmap %s' % (map_number))
 
     def zclearmaplist(self):
         """Clears the maplist."""
         # zdslog.debug('')
-        return self.send_to_zserv('clearmaplist', 'clearmaplist_command')
+        return self.messenger.send('clearmaplist', 'clearmaplist_command')
 
     def zget(self, variable_name):
         """Gets a variable.
@@ -757,7 +691,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('get %s', 'get_command')
+        return self.messenger.send('get %s' % (variable_name), 'get_command')
 
     def zkick(self, player_number, reason='rofl'):
         """Kicks a player.
@@ -769,8 +703,10 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('kick %s %s' % (player_number, reason),
-                                  'kick_command')
+        return self.messenger.send(
+            'kick %s %s' % (player_number, reason),
+            'kick_command'
+        )
 
     def zkillban(self, ip_address):
         """Removes a ban.
@@ -780,8 +716,10 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('killban %s' % (ip_address),
-                                  'killban_command')
+        return self.messenger.send(
+            'killban %s' % (ip_address),
+            'killban_command'
+        )
 
     def zmap(self, map_number):
         """Changes the current map.
@@ -791,7 +729,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('map %s' % (map_number))
+        return self.messenger.send('map %s' % (map_number))
 
     def zmaplist(self):
         """Gets the maplist.
@@ -800,7 +738,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('maplist', 'maplist_command')
+        return self.messenger.send('maplist', 'maplist_command')
 
     def zplayerinfo(self, player_number):
         """Returns information about a player.
@@ -811,8 +749,10 @@ class ZServ(object):
         :rtype: list of :class:`~ZDStack.LogEvent` instances
 
         """
-        return self.send_to_zserv('playerinfo %s' % (player_number),
-                                  'playerinfo_command')
+        return self.messenger.send(
+            'playerinfo %s' % (player_number),
+            'playerinfo_command'
+        )
 
     def zplayers(self):
         """Returns a list of players in the server.
@@ -821,17 +761,17 @@ class ZServ(object):
         
         """
         # zdslog.debug('')
-        return self.send_to_zserv('players', 'players_command')
+        return self.messenger.send('players', 'players_command')
 
     def zremovebots(self):
         """Removes all bots."""
         # zdslog.debug('')
-        return self.send_to_zserv('removebots', 'removebots_command')
+        return self.messenger.send('removebots', 'removebots_command')
 
     def zresetscores(self):
         """Resets all scores."""
         # zdslog.debug('')
-        return self.send_to_zserv('resetscores', 'resetscores_command')
+        return self.messenger.send('resetscores', 'resetscores_command')
 
     def zsay(self, message):
         """Sends a message as '] CONSOLE ['.
@@ -841,7 +781,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('say %s' % (message), 'say_command')
+        return self.messenger.send('say %s' % (message), 'say_command')
 
     def zset(self, variable_name, variable_value):
         """Sets a variable.
@@ -854,8 +794,10 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        s = 'set %s "%s"' % (variable_name, variable_value)
-        return self.send_to_zserv(s, 'set_command')
+        return self.messenger.send(
+            'set %s "%s"' % (variable_name, variable_value)
+            'set_command'
+        )
 
     def ztoggle(self, boolean_variable):
         """Toggles a boolean variable.
@@ -866,8 +808,10 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('toggle %s' % (boolean_variable),
-                                  'toggle_command')
+        return self.messenger.send(
+            'toggle %s' % (boolean_variable),
+            'toggle_command'
+        )
 
     def zunset(self, variable_name):
         """Un-sets a variable.
@@ -878,7 +822,7 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('unset %s' % (variable_name))
+        return self.messenger.send('unset %s' % (variable_name))
 
     def zwads(self):
         """Gets the currently used WADs.
@@ -887,5 +831,5 @@ class ZServ(object):
 
         """
         # zdslog.debug('')
-        return self.send_to_zserv('wads', 'wads_command')
+        return self.messenger.send('wads', 'wads_command')
 
