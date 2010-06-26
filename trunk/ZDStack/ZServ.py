@@ -317,8 +317,8 @@ class ZServ(object):
                 event_response_type='players_command',
                 handler=lambda events: self.players.sync(
                     acquire_lock=False,
-                    session=session
-                    zplayers=events
+                    session=session,
+                    zplayers=events,
                     check_bans=True
                 )
             )
@@ -795,7 +795,7 @@ class ZServ(object):
         """
         # zdslog.debug('')
         return self.messenger.send(
-            'set %s "%s"' % (variable_name, variable_value)
+            'set %s "%s"' % (variable_name, variable_value),
             'set_command'
         )
 
