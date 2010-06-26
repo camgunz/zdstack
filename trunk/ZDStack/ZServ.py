@@ -27,6 +27,7 @@ from ZDStack.ZDSModels import Round, GameMode, Port, Map, Alias
 from ZDStack.ZDSDatabase import requires_session, global_session
 from ZDStack.ZDSPlayersList import PlayersList
 from ZDStack.ZDSZServConfig import ZServConfigParser
+from ZDStack.ZDSZServMessenger import Messenger
 from ZDStack.ZDSZServAccessList import ZServAccessList
 
 from sqlalchemy.orm.exc import NoResultFound

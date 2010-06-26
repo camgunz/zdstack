@@ -20,14 +20,17 @@ class Messenger(object):
         self.event_response_type = None
 
     def __write(self, message):
-        self.zserv.stdin.write(message + '\n')
-        self.zserv.stdin.flush()
+        self.zserv.zserv.stdin.write(message + '\n')
+        self.zserv.zserv.stdin.flush()
 
     def clear(self):
         self.response_events = []
+        zdslog.debug('Clearing response_started')
         self.response_started.clear()
+        zdslog.debug('Clearing response_finished')
         self.response_finished.clear()
-        self.response_processed.clear()
+        zdslog.debug('Setting response_processed')
+        self.response_processed.set()
         self.event_response_type = None
 
     @property
@@ -37,6 +40,10 @@ class Messenger(object):
     @property
     def has_received_response_data(self):
         return self.response_started.isSet()
+
+    @property
+    def is_processing_response(self):
+        return not self.response_processed.isSet()
 
     def is_waiting_for(self, event_type):
         return event_type == self.event_response_type
@@ -65,24 +72,31 @@ class Messenger(object):
             raise ValueError(es)
         if not self.zserv.is_running():
             zdslog.error("Cannot send data to a stopped ZServ")
-            return
+            return self.clear()
         with self.lock:
             self.response_processed.clear()
-            self.event_type_to_watch_for = event_response_type
+            self.event_response_type = event_response_type
             self.__write(message)
             if not self.zserv.events_enabled or event_response_type is None:
-                return
+                return self.clear()
+            zdslog.debug('Waiting for response from command [%s]' % (message))
             self.response_started.wait(self.TIMEOUT)
             if not self.response_started.isSet():
-                zdslog.error('Timed out waiting for a response to start')
-                return
+                zdslog.debug('Timed out waiting for a response to start')
+                return self.clear()
             self.response_finished.wait(self.TIMEOUT)
             if not self.response_finished.isSet():
-                zdslog.error('Timed out waiting for a response to finish')
-                return
-            if handler:
-                try:
-                    return handler(self.response_events)
-                finally:
-                    self.clear()
+                zdslog.debug('Timed out waiting for a response to finish')
+                return self.clear()
+            try:
+                if handler:
+                    output = handler(self.response_events)
+                else:
+                    output = [x for x in self.response_events]
+            except:
+                self.clear()
+                raise
+            self.clear()
+            zdslog.debug('Returning [%s]' % (output))
+            return output
 

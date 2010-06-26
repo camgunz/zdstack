@@ -916,7 +916,7 @@ def get_zdslog(reload=False):
             log_level = logging.DEBUG
             sa_log_level = logging.DEBUG
             log_format = '[%(asctime)s] '
-            log_format += '%(filename)-18s - %(funcName)-25s '
+            log_format += '%(filename)-22s - %(funcName)-25s '
             log_format += '- %(lineno)-4d: '
             log_format += '%(levelname)-5s %(message)s'
             formatter = DebugFormatter(log_format, datefmt=DATEFMT)

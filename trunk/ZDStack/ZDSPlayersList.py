@@ -175,6 +175,10 @@ class PlayersList(object):
                 time.sleep(sleep)
             zdslog.debug("Manually populating zplayers")
             zplayers = self.zserv.zplayers()
+        if zplayers is None:
+            zdslog.info('No players!')
+            return
+        zplayers = [e.data for e in zplayers]
         for d in zplayers:
             d['player_port'] = int(d['player_port'])
             d['player_num'] = int(d['player_num'])
@@ -277,9 +281,9 @@ class PlayersList(object):
         if self.zserv.game_mode in TEAM_MODES:
             zdslog.debug("Updating player teams")
             for player in [x for x in self if not x.disconnected]:
-                for d in self.zserv.zplayerinfo(player.number):
-                    if d['playerinfo_attribute'] == 'Color':
-                        team_number = d['playerinfo_value']
+                for event in self.zserv.zplayerinfo(player.number):
+                    if event.data['playerinfo_attribute'] == 'Color':
+                        team_number = event.data['playerinfo_value']
                         team_color = NUMBERS_TO_COLORS[team_number]
                         if player.color != team_color:
                             ds = "Updating color for %s from %s to %s"

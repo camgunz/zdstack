@@ -380,6 +380,9 @@ class Stack(Server):
         
         """
         # zdslog.debug("Events for [%s]: %s" % (zserv.name, events))
+        zdslog.debug('Parsing lines for [%s]:\n\t%s' % (
+            zserv, '\n\t'.join(lines).rstrip()
+        ))
         if not zserv.events_enabled:
             ###
             # If events are disabled, this is as far as we go.
@@ -409,22 +412,23 @@ class Stack(Server):
                 ###
                 zdslog.debug('No event for [%s]' % (line))
                 if zserv.messenger.is_waiting_for_response:
-                    zdslog.debug('Response is finished')
-                    ###
-                    # Received an event that was not a response to the
-                    # command after events that were responses to the
-                    # command, so notify the zserv that its response
-                    # is complete.
-                    ###
-                    zserv.messenger.response_finished.set()
-                    ###
-                    # We want to wait until the ZServ finished processing
-                    # the response, because the current event may depend
-                    # upon it.
-                    ###
-                    zdslog.debug('Waiting until response is processed')
-                    zserv.messenger.response_processed.wait()
-                    zdslog.debug('Response has been processed')
+                    if zserv.messenger.has_received_response_data:
+                        zdslog.debug('Response is finished')
+                        ###
+                        # Received an event that was not a response to the
+                        # command after events that were responses to the
+                        # command, so notify the zserv that its response
+                        # is complete.
+                        ###
+                        zserv.messenger.response_finished.set()
+                        ###
+                        # We want to wait until the ZServ finished processing
+                        # the response, because the current event may depend
+                        # upon it.
+                        ###
+                        zdslog.debug('Waiting until response is processed')
+                        zserv.messenger.response_processed.wait()
+                        zdslog.debug('Response has been processed')
                 continue
             try:
                 if event.type == 'message':
@@ -445,12 +449,18 @@ class Stack(Server):
                 if zserv.messenger.is_waiting_for_response:
                     zdslog.debug('[%s] is watching for [%s] events' % (
                         zserv.name,
-                        zserv.messenger.event_type_to_watch_for
+                        zserv.messenger.event_response_type
                     ))
                     if zserv.messenger.is_waiting_for(event.type):
                         zdslog.debug('Found a response event')
+                        if not zserv.messenger.has_received_response_data:
+                            zdslog.debug((
+                                'Telling the messenger that the response has '
+                                'started'
+                            ))
+                            zserv.messenger.response_started.set()
                         zserv.messenger.response_events.append(event)
-                        return
+                        continue
                     if not zserv.messenger.has_received_response_data:
                         zdslog.debug("Response hasn't started yet")
                     else:
@@ -497,9 +507,10 @@ class Stack(Server):
             # sets it upon stopping.
             ###
             zserv.round_initialized.wait()
-            zdslog.debug('Waiting for any command responses to be processed')
-            zserv.messenger.response_processed.wait()
-            zdslog.debug('Done waiting on command responses to be processed')
+            if zserv.messenger.is_waiting_for_response:
+                zdslog.debug('Waiting for command responses to be processed')
+                zserv.messenger.response_processed.wait()
+                zdslog.debug('Command responses finished processing')
             self.event_handler.get_handler(event.category)(event, zserv)
             if zserv.plugins_enabled:
                 for plugin in zserv.plugins:
