@@ -320,12 +320,10 @@ class ZServ(object):
             ###
             events = self.messenger.send('players', 'players_command')
             self.players.sync(
-                handler=lambda events: self.players.sync(
-                    acquire_lock=False,
-                    session=session,
-                    zplayers=events,
-                    check_bans=True
-                )
+                acquire_lock=False,
+                session=session,
+                zplayers=events,
+                check_bans=True
             )
             zdslog.debug('Done changing map')
         self.round_initialized.set()
