@@ -8,7 +8,7 @@ zdslog = get_zdslog()
 
 class Messenger(object):
 
-    TIMEOUT = 1 # in seconds
+    TIMEOUT = 5 # in seconds
 
     def __init__(self, zserv):
         self.zserv = zserv
@@ -82,12 +82,19 @@ class Messenger(object):
             zdslog.debug('Waiting for response from command [%s]' % (message))
             self.response_started.wait(self.TIMEOUT)
             if not self.response_started.isSet():
-                zdslog.debug('Timed out waiting for a response to start')
-                return self.clear()
+                self.clear()
+                raise Exception('Timed out waiting for a response to start')
             self.response_finished.wait(self.TIMEOUT)
             if not self.response_finished.isSet():
-                zdslog.debug('Timed out waiting for a response to finish')
-                return self.clear()
+                self.clear()
+                raise Exception('Timed out waiting for a response to finish')
+            ###
+            # I'm not totally happy about this hack, but so be it.
+            ###
+            if message == 'players':
+                self.response_events = [
+                    x for x in self.response_events if 'player_num' in x.data
+                ]
             try:
                 if handler:
                     output = handler(self.response_events)

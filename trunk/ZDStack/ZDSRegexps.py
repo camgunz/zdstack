@@ -224,6 +224,7 @@ COMMANDS = (
 ("\x1c\\+(?P<name>.*)$", 'map_change', None), # Yeah I know, WTF
 (r"(?P<sequence_number>\d\d\d|\d\d|\d)\. (?P<map_number>.*)$", 'maplist_command', False),
 (r'(?P<player_num>\d\d|\d):\s*(?P<player_name>.*)\s\((?P<player_ip>(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)\.(?:\d\d\d|\d\d|\d)):(?P<player_port>\d\d\d\d\d|\d\d\d\d|\d\d\d|\d\d|\d)', 'players_command', False),
+(r'(?P<number_of_players>\d|\d\d) players$', 'players_command', False),
 (r"Removed all bots.$", 'removebots_command', False),
 (r"=== ALL SCORES RESET BY SERVER ADMIN ===$", 'resetscores_command', True),
 (r"\] CONSOLE \[ (?P<message>.*)$", 'say_command', False),
