@@ -277,7 +277,9 @@ class PlayersList(object):
                     ds = "Somehow player [%s] was already in %s"
                     zdslog.debug(ds % (p, self.__players))
         zdslog.debug("Players list: %s" % (self.__players))
-        zdslog.debug("Disconnected list: %s" % ([x for x in self if x.disconnected]))
+        zdslog.debug("Disconnected list: %s" % ([
+            x for x in self if x.disconnected
+        ]))
         if self.zserv.game_mode in TEAM_MODES:
             zdslog.debug("Updating player teams")
             for player in [x for x in self if not x.disconnected]:

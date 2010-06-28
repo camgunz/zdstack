@@ -313,9 +313,13 @@ class ZServ(object):
                 zdslog.error("Round %s has no ID")
             self.round_id = r.id
             zdslog.debug('%s Round ID: [%s]' % (self.name, self.round_id))
-            self.messenger.send(
-                message='players',
-                event_response_type='players_command',
+            ###
+            # We can't just use self.players.sync as a callback here, because
+            # it will also send commands to the messenger and cause a
+            # deadlock.
+            ###
+            events = self.messenger.send('players', 'players_command')
+            self.players.sync(
                 handler=lambda events: self.players.sync(
                     acquire_lock=False,
                     session=session,
