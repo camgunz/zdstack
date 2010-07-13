@@ -31,6 +31,7 @@ DB_SESSION_CLASS = None
 DB_METADATA = None
 DB_AUTOFLUSH = None
 DB_AUTOCOMMIT = None
+DB_INITIALIZED = False
 
 ###
 # End ORM Stuff
@@ -935,19 +936,23 @@ def get_zdslog(reload=False):
         logging.getLogger('sqlalchemy.engine').setLevel(sa_log_level)
     return ZDSLOG
 
-def initialize_database(do_not_map=False):
+def initialize_database(do_not_map=False, insert_initial_data=True):
     """Initializes the Database.
 
     :param do_not_map: whether or not initialize_database() should map
                        classes to tables.
     :type do_not_map: boolean
+    :param insert_initial_data: inserts some initial data regarding
+                                weapons, maps, etc.  defaults to True
+    :type insert_initial_data: boolean
 
     This *MUST* be called before running importing Stack, but can only
     be called AFTER initializing logging (set_debugging and all that).
 
     """
-    zdslog = get_zdslog()
-    zdslog.debug("Initializing Database")
+    global DB_INITIALIZED
+    # zdslog = get_zdslog()
+    # zdslog.debug("Initializing Database")
     engine = get_engine()
     metadata = get_metadata()
     ###
@@ -1043,33 +1048,23 @@ def initialize_database(do_not_map=False):
         mapper(RCONAccess, rcon_accesses_table)
         mapper(RCONDenial, rcon_denials_table)
         mapper(RCONAction, rcon_actions_table)
-    zdslog.debug("Creating tables")
+    # zdslog.debug("Creating tables")
     metadata.create_all(engine)
-    zdslog.debug("Initializing Database Data")
-    from ZDStack.ZDSDatabaseData import insert_initial_data
-    session = get_session_class()()
-    # try:
-    #     session.begin()
-    #     existing_colors = [x.color for x in session.query(TeamColor).all()]
-    #     for color in [x for x in TEAM_COLORS if x not in existing_colors]:
-    #         tc = TeamColor()
-    #         tc.color = color
-    #         session.add(tc)
-    #     session.commit()
-    # except:
-    #     session.rollback()
-    #     raise
-    # session = get_session_class()()
-    try:
-        session.begin()
-        insert_initial_data(session)
-        session.commit()
-    except IntegrityError:
-        zdslog.info('Database already contains initial data, skipping')
-        session.rollback()
-    except:
-        session.rollback()
-        raise
+    # zdslog.debug("Initializing Database Data")
+    if insert_initial_data:
+        from ZDStack.ZDSDatabaseData import insert_initial_data
+        session = get_session_class()()
+        try:
+            session.begin()
+            insert_initial_data(session)
+            session.commit()
+        except IntegrityError:
+            # zdslog.info('Database already contains initial data, skipping')
+            session.rollback()
+        except:
+            session.rollback()
+            raise
+    DB_INITIALIZED = True
 
 # set_debugging(False)
 

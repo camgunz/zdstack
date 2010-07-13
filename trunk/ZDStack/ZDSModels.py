@@ -3,7 +3,6 @@ from __future__ import with_statement
 from sqlalchemy.orm.exc import NoResultFound
 
 from ZDStack.Utils import parse_player_name
-from ZDStack.ZDSDatabase import global_session
 from ZDStack import get_engine, get_metadata
 from ZDStack.ZDSTables import *
 
