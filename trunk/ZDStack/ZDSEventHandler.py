@@ -87,9 +87,9 @@ class BaseEventHandler(object):
 
 class ManualEventHandler(BaseEventHandler):
 
-    def __init__(self, map_id):
+    def __init__(self, map_ids):
         BaseEventHandler.__init__(self)
-        self.map_id = map_id
+        self.map_ids = map_ids
         self._weapons = dict()
         self._team_colors = dict()
         self._current_round = None
@@ -126,12 +126,17 @@ class ManualEventHandler(BaseEventHandler):
 
     @requires_session
     def setup_new_round(self, start_time, session=None):
+        current_map_id = self._current_round.map_id
+        next_map_id_index = self.map_ids.index(current_map_id) + 1
+        if next_map_id_index >= len(self.map_ids):
+            next_map_id_index = 0
+        map_id = self.map_ids[next_map_id_index]
         zdslog.debug("get_new_round")
         r = Round()
         ctf = session.query(GameMode).get('ctf')
         r.game_mode_name = 'ctf'
         r.game_mode = ctf
-        r.map_id = self.map_id
+        r.map_id = map_id
         r.start_time = start_time
         session.merge(ctf)
         session.add(r)

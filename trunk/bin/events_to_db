@@ -40,6 +40,10 @@ elif len(args) > 1:
 elif not '-m' in opts:
     print_usage('Must specify a Map ID')
 map_id = opts['-m']
+if ',' in map_id:
+    map_ids = map_id.split(',')
+else:
+    map_ids = [map_id]
 event_file = resolve_path(args[0])
 if not os.path.isfile(event_file):
     print_usage('Could not find event file %s' % (event_file))
@@ -54,7 +58,7 @@ cp = get_configparser() # implicitly loads configuration
 initialize_database()
 engine = get_engine()   # implicitly loads the SQLAlchemy DB engine
 execfile(event_file)    # places 'events' in the global scope
-event_handler = ManualEventHandler(map_id)
+event_handler = ManualEventHandler(map_ids)
 for event in events:
     zdslog.debug("Handling event %r" % (event))
     if event.type in ('team_join', 'team_switch'):
