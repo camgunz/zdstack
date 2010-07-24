@@ -3,13 +3,13 @@
 
 = Introduction =
 
-Doom and ZDaemon have traditionally employed the DMFLAGS and DMFLAGS2 configuration variables as shorthand for a number of boolean configuration options.  However, there are now over 20 of these variables and the use of DMFLAGS and DMFLAGS2 has become irritating and obscure, despite being a great way to encapsulate and communicate many server settings.
+Doom and ZDaemon have traditionally employed the DMFLAGS and DMFLAGS2 configuration variables as shorthand for a number of boolean configuration options.  However, there are now over 50 of these variables and the use of DMFLAGS and DMFLAGS2 has become irritating and obscure, despite being a great way to encapsulate and communicate many server settings.
 
 == Why do DMFLAGS/DMFLAGS2 suck? ==
 
 Well, here's a list:
 
-  * ZDaemon DMFLAGS/DMFLAGS2 combine over 50 different options, making it impossible to remember them all.
+  * ZDaemon's DMFLAGS/DMFLAGS2 combine over 50 different options, making it impossible to remember them all.
   * The separation between DMFLAGS/DMFLAGS2 is silly and confusing; there should be no such separation, unless the goal is to make using the variables even more difficult.
   * Every DMFLAGS/DMFLAGS2 has a corresponding option, like sv_oldwallrun, etc., so they're redundant (and thus useless).
   * Precedence of the DMFLAGS/DMFLAGS2 or its corresponding long option is decided by its location in the zserv.cfg configuration file; options further down take precedence, which leads to confusion during the configuration process.
