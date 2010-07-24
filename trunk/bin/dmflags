@@ -7,11 +7,7 @@ from ZDStack.ZDSZServConfig import DMFLAGS_OPTIONS, DMFLAGS2_OPTIONS
 
 def print_usage():
     print >> sys.stderr, """
-Usage: %s [ DMFLAGS ] [ DMFLAGS2 ]
-
-If you only care about either DMFLAGS or DMFLAGS2 (not both), just leave the
-other blank.
-""" % (os.path.basename(sys.argv[0]))
+Usage: %s [ DMFLAGS ] [ DMFLAGS2 ]""" % (os.path.basename(sys.argv[0]))
     sys.exit(1)
 
 if not len(sys.argv) == 3 or \
