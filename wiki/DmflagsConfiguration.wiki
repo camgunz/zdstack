@@ -1,0 +1,25 @@
+#summary Configuration using DMFLAGS/DMFLAGS2
+#labels Phase-Deploy
+
+= Introduction =
+
+Doom and ZDaemon have traditionally employed the DMFLAGS and DMFLAGS2 configuration variables as shorthand for a number of boolean configuration options.  However, there are now over 20 of these variables and the use of DMFLAGS and DMFLAGS2 has become irritating and obscure, despite being a great way to encapsulate and communicate many server settings.
+
+= Why do DMFLAGS/DMFLAGS2 suck? =
+
+Well, here's a list:
+
+  * ZDaemon DMFLAGS/DMFLAGS2 combine over 50 different options
+  * The separation between DMFLAGS/DMFLAGS2 is silly and confusing; there should be no such separation
+  * Every DMFLAGS/DMFLAGS2 has a corresponding option, like sv_oldwallrun, etc.
+  * Precedence of the DMFLAGS/DMFLAGS2 or its corresponding long option is decided by its location in the zserv.cfg configuration file; options further down take precedence.
+  * DMFLAGS/DMFLAGS2 aren't standard across Doom source ports, so knowledge doesn't translate
+  * You always need a separate program to figure out what variables you need, whether this be a web-based calculator or a calculator built into your launcher, you're still launching an entirely separate program just to "encode" your options.
+
+= Why doesn't ZDStack just figure out what I want? =
+
+Because it's impossible.  You can specify `allow_target_names = yes` in the zdstack.ini file, and then override it later on in that file with a `dmflags` declaration.  Other than some crappy, arbitrary solution (like options lower in the file take precedence or dmflags/long options always take precedence) ZDStack can't possibly figure out what you mean.  So it just won't allow you to use DMFLAGS/DMFLAGS2 in the configuration file.
+
+= But what if someone gives me DMFLAGS/DMFLAGS2 when requesting a server? =
+
+You can use the handy `dmflags` script!  It converts DMFLAGS/DMFLAGS2 into zdstack.ini options.
