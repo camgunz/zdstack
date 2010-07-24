@@ -9,11 +9,11 @@ Doom and ZDaemon have traditionally employed the DMFLAGS and DMFLAGS2 configurat
 
 Well, here's a list:
 
-  * ZDaemon DMFLAGS/DMFLAGS2 combine over 50 different options
-  * The separation between DMFLAGS/DMFLAGS2 is silly and confusing; there should be no such separation
-  * Every DMFLAGS/DMFLAGS2 has a corresponding option, like sv_oldwallrun, etc.
-  * Precedence of the DMFLAGS/DMFLAGS2 or its corresponding long option is decided by its location in the zserv.cfg configuration file; options further down take precedence.
-  * DMFLAGS/DMFLAGS2 aren't standard across Doom source ports, so knowledge doesn't translate
+  * ZDaemon DMFLAGS/DMFLAGS2 combine over 50 different options, making it impossible to remember them all.
+  * The separation between DMFLAGS/DMFLAGS2 is silly and confusing; there should be no such separation, unless the goal is to make using the variables even more difficult.
+  * Every DMFLAGS/DMFLAGS2 has a corresponding option, like sv_oldwallrun, etc., so they're redundant (and thus useless).
+  * Precedence of the DMFLAGS/DMFLAGS2 or its corresponding long option is decided by its location in the zserv.cfg configuration file; options further down take precedence, which leads to confusion during the configuration process.
+  * DMFLAGS/DMFLAGS2 aren't standard across Doom source ports, so any knowledge you might have accumulated with a different source port is useless, and you get to learn a whole new set of arbitrary, obscure numbers if you want to use DMFLAGS/DMFLAGS2.
   * You always need a separate program to figure out what variables you need, whether this be a web-based calculator or a calculator built into your launcher, you're still launching an entirely separate program just to "encode" your options.
 
 == Why doesn't ZDStack just figure out what I want? ==
