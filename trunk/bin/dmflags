@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+from ZDStack.ZDSZServConfig import DMFLAGS_OPTIONS, DMFLAGS2_OPTIONS
+
+def print_usage():
+    print >> sys.stderr, """
+Usage: %s [ DMFLAGS ] [ DMFLAGS2 ]
+
+If you only care about either DMFLAGS or DMFLAGS2 (not both), just leave the
+other blank.
+""" % (os.path.basename(sys.argv[0]))
+    sys.exit(1)
+
+if not len(sys.argv) == 3 or \
+   not str.isdigit(sys.argv[1]) or \
+   not str.isdigit(sys.argv[2]):
+    print_usage()
+dmflags, dmflags2 = int(sys.argv[1]), int(sys.argv[2])
+print
+for user_flags, option_list in [
+    (dmflags, DMFLAGS_OPTIONS),
+    (dmflags2, DMFLAGS2_OPTIONS)
+]:
+    for n, config_option in enumerate(option_list):
+        if user_flags & (1 << n):
+            print '%s = yes' % (config_option)
+

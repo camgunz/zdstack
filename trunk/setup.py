@@ -22,6 +22,7 @@ setup(
     ('ZDStack', ['doc/zdstack.ini'])
   ],
   scripts      = [
+    'bin/dmflags',
     'bin/zdstack',
     'bin/zservctl',
     'bin/fakezserv',
