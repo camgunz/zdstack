@@ -27,4 +27,6 @@ for user_flags, option_list in [
     for n, config_option in enumerate(option_list):
         if user_flags & (1 << n):
             print '%s = yes' % (config_option)
+        else:
+            print '%s = no' % (config_option)
 
