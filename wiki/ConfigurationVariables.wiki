@@ -32,7 +32,7 @@ This is the list of ZDStack's configuration variables that apply to both ZDStack
 
 = ZServ Configuration Variables =
 
-*BEWARE: DO NOT USE `dmflags` OR `dmflags2`, IT WILL CAUSE CONFUSION AND YOU WILL BE SORRY.*
+*BEWARE: DO NOT USE `dmflags` OR `dmflags2`, IT WILL CAUSE CONFUSION AND YOU WILL BE SORRY.  See [DmflagsConfiguration] for more information.*
 
 || *Option Name* || *Option Type* || *Description* ||
 || add_mapnum_to_hostname || boolean || Adds the number of the map to the end of the hostname ||
