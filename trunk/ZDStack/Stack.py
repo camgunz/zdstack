@@ -21,6 +21,7 @@ from ZDStack.Utils import get_event_from_line, requires_instance_lock, \
 from ZDStack.ZServ import ZServ
 from ZDStack.Server import Server
 from ZDStack.ZDSTask import Task
+from ZDStack.LogEvent import LogEvent
 from ZDStack.ZDSRegexps import get_server_regexps
 from ZDStack.ZDSAccessList import WhiteList, BanList, ZDaemonBanList
 from ZDStack.ZDSConfigParser import ZDSConfigParser as CP
@@ -395,6 +396,8 @@ class Stack(Server):
                 es = 'Received error processing line [%s] from [%s]: [%s]'
                 zdslog.error(es % (line, zserv.name, e))
                 continue
+            if event is None:
+                event = LogEvent(now, 'junk', {}, 'junk', line)
             try:
                 if event.type == 'junk':
                     ###

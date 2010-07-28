@@ -232,8 +232,6 @@ def get_event_from_line(line, regexps, now=None):
             e.data['team'] = e.data['team'].lower()
         if e.type == 'map_change' and 'number' in e.data:
             e.data['number'] = int(e.data['number'])
-    else:
-        e = LogEvent(now, 'junk', {}, 'junk', line)
     return e
 
 def requires_lock(lck):
