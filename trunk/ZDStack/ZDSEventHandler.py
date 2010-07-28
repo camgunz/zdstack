@@ -87,9 +87,8 @@ class BaseEventHandler(object):
 
 class ManualEventHandler(BaseEventHandler):
 
-    def __init__(self, map_ids):
+    def __init__(self):
         BaseEventHandler.__init__(self)
-        self.map_ids = map_ids
         self._weapons = dict()
         self._team_colors = dict()
         self._current_round = None
@@ -125,18 +124,19 @@ class ManualEventHandler(BaseEventHandler):
         )
 
     @requires_session
-    def setup_new_round(self, start_time, session=None):
-        current_map_id = self._current_round.map_id
-        next_map_id_index = self.map_ids.index(current_map_id) + 1
-        if next_map_id_index >= len(self.map_ids):
-            next_map_id_index = 0
-        map_id = self.map_ids[next_map_id_index]
+    def setup_new_round(self, start_time, map_name, session=None):
+        try:
+            map = session.query(Map).filter_by(name=map_name).one()
+        except NoResultFound:
+            map = Map(name=map_name)
+            session.add(map)
         zdslog.debug("get_new_round")
         r = Round()
         ctf = session.query(GameMode).get('ctf')
         r.game_mode_name = 'ctf'
         r.game_mode = ctf
-        r.map_id = map_id
+        r.map_id = map.id
+        r.map = map
         r.start_time = start_time
         session.merge(ctf)
         session.add(r)
@@ -353,7 +353,7 @@ class ManualEventHandler(BaseEventHandler):
                 self._current_round.end_time = event.dt
                 session.merge(self._current_round)
             self.reset()
-            self.setup_new_round(event.dt, session=session)
+            self.setup_new_round(event.dt, event.data['name'], session=session)
 
     def handle_connection_event(self, event):
         pass
