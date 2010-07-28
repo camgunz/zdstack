@@ -153,24 +153,10 @@ class Regexp(object):
         if d:
             # zdslog.debug("Returning a %s event" % (self.event_type))
             return LogEvent(now, self.event_type, d, self.category, s)
-        output = get_possible_player_names(s)
-        if output:
-            ppn, message = output
-            if ppn:
-                d = {'contents': message, 'possible_player_names': ppn}
-                return LogEvent(now, 'message', d, 'message', s)
         ###
-        # if (s.startswith('<') or (len(s) >= 20 and s[20] == '<')) and '>' in s:
-        #     ###
-        #     # At this point, the string is probably a message.
-        #     ###
-        #     tokens = s.split('>')
-        #     possible_player_names =  [tokens[0][1:]]
-        #     for x in range(1, len(tokens)):
-        #         possible_player_names.append('>'.join(tokens[:x])[1:])
-        #     zdslog.debug("Returning a message event")
-        #     return LogEvent(now, 'message', d, 'message', s)
+        # This Regexp didn't match, so just return None.
         ###
+        return None
 
 class ServerRegexp(Regexp):
 

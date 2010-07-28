@@ -374,6 +374,8 @@ class ZServEventHandler(BaseEventHandler):
         self.set_handler('death', self.handle_frag_event)
         self.set_handler('rcon', self.handle_rcon_event)
         self.set_handler('command', self.handle_map_change_event)
+        self.set_handler('junk', self.handle_junk_event)
+        self.set_handler('message', self.handle_message_event)
 
         ###
         # Old type-based handler stuff
@@ -789,4 +791,64 @@ class ZServEventHandler(BaseEventHandler):
             return
         zdslog.debug("handle_map_change_event(%s)" % (event))
         zserv.change_map(event.data['number'], event.data['name'])
+
+    @requires_session
+    def handle_junk_event(self, event, zserv, session=None):
+        """Handles a junk event.
+
+        :param event: the junk event
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
+
+        """
+        if not event.type == 'junk':
+            return
+        zdslog.debug('handle_junk_event(%s)' % (event))
+        output = get_possible_player_names(event.line)
+        if not output:
+            ###
+            # Event was not a message event.
+            ###
+            return None
+        ###
+        # Event is a message event.
+        #
+        # Plugins process events after this EventHandler does, so we modify the
+        # event in-place here so the plugin will get the proper type, category,
+        # and data.
+        ###
+        event.type = 'message'
+        event.category = 'message'
+        ppn, message = output
+        player = zserv.players.get_first_matching_player(ppn, session=session)
+        if not player:
+            s = (
+                'Received a message from a non-existent player'
+                ', PPN: %s, Message: %s, Line: %s'
+            )
+            zdslog.error(s % (ppn, message, event.line))
+            return
+        message = message.replace(player.name, '', 1)[3:]
+        event.data = {'message': message, 'messenger': player}
+        self.get_handler('message')(event, zserv, session=session)
+
+    @requires_session
+    def handle_message_event(self, event, zserv, session=None):
+        """Handles a message event.
+
+        :param event: the message event
+        :type event: :class:`~ZDStack.LogEvent.LogEvent`
+        :param zserv: the event's generating :class:`~ZDStack.ZServ.ZServ`
+        :type zserv: :class:`~ZDStack.ZServ.ZServ`
+        :param session: a database session
+        :type session: SQLAlchemy Session
+
+        """
+        if not event.type == 'message':
+            return
+        zdslog.debug('Handling a message event')
+        pass
 

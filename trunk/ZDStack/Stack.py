@@ -395,57 +395,27 @@ class Stack(Server):
                 es = 'Received error processing line [%s] from [%s]: [%s]'
                 zdslog.error(es % (line, zserv.name, e))
                 continue
-            if not event:
-                ###
-                # Skip junk events.
-                #
-                # Normally lines with no matching Regexp are converted as
-                # 'junk' events.  In the modern age, however, we just don't
-                # generate anything.  Here's what the mythical 'junk' event
-                # used to look like:
-                #
-                #   return LogEvent(now, 'junk', d, 'junk', line))
-                #
-                # We do, however, want to let the ZServ know that its response
-                # is finished, if it's waiting on something.
-                #
-                ###
-                zdslog.debug('No event for [%s]' % (line))
-                if zserv.messenger.is_waiting_for_response:
-                    if zserv.messenger.has_received_response_data:
-                        zdslog.debug('Response is finished')
-                        ###
-                        # Received an event that was not a response to the
-                        # command after events that were responses to the
-                        # command, so notify the zserv that its response
-                        # is complete.
-                        ###
-                        zserv.messenger.response_finished.set()
-                        ###
-                        # We want to wait until the ZServ finished processing
-                        # the response, because the current event may depend
-                        # upon it.
-                        ###
-                        zdslog.debug('Waiting until response is processed')
-                        zserv.messenger.response_processed.wait()
-                        zdslog.debug('Response has been processed')
-                continue
             try:
-                if event.type == 'message':
-                    zdslog.debug('Converting message event')
-                    ppn = event.data['possible_player_names']
-                    c = event.data['contents'] 
-                    player = zserv.players.get_first_matching_player(ppn)
-                    if not player:
-                        s = 'Received a message from a non-existent player'
-                        s += ', PPN: %s, Message: %s'
-                        zdslog.error(s % (ppn, line))
-                        event.category, event.type = ('junk', 'junk')
-                    else:
-                        zdslog.debug('Updating event.data')
-                        m = c.replace(player.name, '', 1)[3:]
-                        event.data = {'message': m, 'messenger': player}
-                        zdslog.debug('Event data: %s' % (str(event.data)))
+                if event.type == 'junk':
+                    ###
+                    # We used to not skip junk events, then we used to skip
+                    # them, but it turns out it's impossible to create a
+                    # regular expression that matches all message events.  So
+                    # any junk is potentially a message event, and we can't
+                    # just skip them.
+                    #
+                    # Furthermore, figuring out which player sent a message
+                    # may require sending commands to the running zserv, and it
+                    # might already be waiting on commands, which can lead to
+                    # errors that cause stat loss.  So junk events must be
+                    # handled by the EventHandler, and that handler must figure
+                    # out if the event is a message event and do all the things
+                    # we normally used to do right here in this method.
+                    #
+                    # Now all the cool handling we used to do is reduced to a
+                    # simple debugging logging call.
+                    ###
+                    zdslog.debug('Got junk event for line [%s]' % (line))
                 if zserv.messenger.is_waiting_for_response:
                     zdslog.debug('[%s] is watching for [%s] events' % (
                         zserv.name,
@@ -512,6 +482,12 @@ class Stack(Server):
                 zserv.messenger.response_processed.wait()
                 zdslog.debug('Command responses finished processing')
             self.event_handler.get_handler(event.category)(event, zserv)
+            ###
+            # Message events are modified by the default EventHandler so that
+            # they have the correct type, category, and data.  Thus, plugins
+            # can rely on receiving proper message events, as opposed to junk
+            # events they have process (again) themselves.
+            ###
             if zserv.plugins_enabled:
                 for plugin in zserv.plugins:
                     ds = "Processing %s with %s"
