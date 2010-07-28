@@ -9,6 +9,7 @@ from ZDStack.ZServ import TEAM_MODES, TEAMDM_MODES
 from ZDStack.ZDSModels import Weapon, Round, Alias, Frag, FlagTouch, \
                               FlagReturn, RCONAccess, RCONDenial, RCONAction, \
                               GameMode, TeamColor
+from ZDStack.ZDSRegexps import get_possible_player_names
 from ZDStack.ZDSDatabase import requires_session
 
 from sqlalchemy import desc
@@ -813,6 +814,12 @@ class ZServEventHandler(BaseEventHandler):
             # Event was not a message event.
             ###
             return None
+        ppn, message = output
+        if not ppn:
+            ###
+            # Event was not a message event.
+            ###
+            return None
         ###
         # Event is a message event.
         #
@@ -822,7 +829,6 @@ class ZServEventHandler(BaseEventHandler):
         ###
         event.type = 'message'
         event.category = 'message'
-        ppn, message = output
         player = zserv.players.get_first_matching_player(ppn, session=session)
         if not player:
             s = (
