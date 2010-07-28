@@ -397,7 +397,7 @@ class Stack(Server):
                 zdslog.error(es % (line, zserv.name, e))
                 continue
             if event is None:
-                event = LogEvent(now, 'junk', {}, 'junk', line)
+                event = LogEvent(dt, 'junk', {}, 'junk', line)
             try:
                 if event.type == 'junk':
                     ###
