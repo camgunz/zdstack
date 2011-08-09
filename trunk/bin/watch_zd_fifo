@@ -88,6 +88,7 @@ def main(zd_fifoname, output_filename):
     global OUTPUT_FILE
     INPUT_FILE = InputFile(zd_fifoname)
     OUTPUT_FILE = OutputFile(output_filename)
+    OUTPUT_FILE.write('# -*- coding: latin-1 -*-\n')
     OUTPUT_FILE.write('events = [\n')
     timer = IdleTimer(MAX_IDLE)
     regexps = get_client_regexps()
