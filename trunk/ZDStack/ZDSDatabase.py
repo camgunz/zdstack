@@ -4,8 +4,11 @@ import datetime
 
 from contextlib import contextmanager
 
+try:
+    from sqlalchemy.exc import IntegrityError, OperationalError
+except ImportError:
+    from sqlalchemy.exceptions import IntegrityError, OperationalError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exceptions import IntegrityError, OperationalError
 
 from ZDStack import get_db_lock, get_session_class, get_zdslog
 from ZDStack.Utils import requires_lock

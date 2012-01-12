@@ -1,0 +1,68 @@
+#!C:\Python26\python.exe
+
+from __future__ import with_statement
+
+import os
+import sys
+import json
+import getopt
+import datetime
+
+from ZDStack import set_configfile, set_debugging
+from ZDStack.Utils import resolve_path, timedelta_in_seconds
+from ZDStack.LogEvent import LogEvent
+from ZDStack.ZDSEventHandler import ManualEventHandler
+
+DEBUGGING = True
+
+def stderr(s):
+    print >> sys.stderr, s
+
+def print_usage(msg=None):
+    if msg:
+        stderr('\n' + msg)
+    script_name = os.path.basename(sys.argv[0])
+    us = '\nUsage: %s [ -c config_file ] [ event_file ] [ json_file ]'
+    stderr(us % (script_name))
+    sys.exit(1)
+
+try:
+    opts, args = getopt.gnu_getopt(sys.argv[1:], 'c:m:', [])
+except GetoptError, ge:
+    print_usage(msg=str(ge))
+opts = dict(opts)
+if len(args) != 2:
+    print_usage('Must specify an event file and an output file')
+event_file = resolve_path(args[0])
+output_file = resolve_path(args[1])
+if not os.path.isfile(event_file):
+    print_usage('Could not find event file %s' % (event_file))
+if '-c' in opts:
+    config_file = resolve_path(opts['-c'])
+    if not os.path.isfile(config_file):
+        print_usage('Could not find configuration file %s' % (config_file))
+    set_configfile(resolve_path(opts['-c']))
+if DEBUGGING:
+    set_debugging(True)
+output_fobj = open(output_file, 'wb')
+output_fobj.write('{"events": [\n')
+execfile(event_file)    # places 'events' in the global scope
+event_handler = ManualEventHandler()
+epoch = datetime.datetime(1970, 1, 1)
+last_event = events[-1]
+for e in events:
+    td = e.dt - epoch
+    ts = '%s.%s' % (timedelta_in_seconds(td), td.microseconds)
+    output_fobj.write('    ')
+    output_fobj.write(json.dumps(dict(
+        timestamp=ts,
+        type=e.type,
+        data=e.data,
+        category=e.category
+    )))
+    if e != last_event:
+        output_fobj.write(',')
+    output_fobj.write('\n')
+output_fobj.write(']}\n')
+output_fobj.close()
+
