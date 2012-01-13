@@ -8,7 +8,7 @@ from ZDStack import TICK, PlayerNotFoundError, get_session_class, get_zdslog
 from ZDStack.ZServ import TEAM_MODES, TEAMDM_MODES
 from ZDStack.ZDSModels import Weapon, Round, Alias, Frag, FlagTouch, \
                               FlagReturn, RCONAccess, RCONDenial, RCONAction, \
-                              GameMode, TeamColor
+                              GameMode, TeamColor, Map
 from ZDStack.ZDSRegexps import get_possible_player_names
 from ZDStack.ZDSDatabase import requires_session
 
