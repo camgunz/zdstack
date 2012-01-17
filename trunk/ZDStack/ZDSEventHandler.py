@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import datetime
+import traceback
 
 from sqlalchemy import and_
 
@@ -72,8 +73,8 @@ class BaseEventHandler(object):
         :type zserv: :class:`~ZDStack.ZServ.ZServ`
 
         """
-        zdslog.error('Event error: %s' % (event.data['error']))
-        zdslog.error('Event traceback: \n%s\n' % (event.data['traceback']))
+        zdslog.error("Event error: %s" % (event.data['error']))
+        zdslog.error("Event traceback: \n%s\n" % (event.data['traceback']))
 
     def handle_unhandled_event(self, event, zserv=None):
         """Handles an unhandled event.
@@ -126,12 +127,13 @@ class ManualEventHandler(BaseEventHandler):
 
     @requires_session
     def setup_new_round(self, start_time, map_name, session=None):
-        try:
-            map = session.query(Map).filter_by(name=map_name).one()
-        except NoResultFound:
-            map = Map(name=map_name)
+        maps = session.query(Map).filter_by(name=map_name).all()
+        if maps:
+            map = maps[0]
+        else:
+            map = Map(name=map_name, number=0)
             session.add(map)
-        zdslog.debug('get_new_round')
+        # zdslog.debug("get_new_round")
         r = Round()
         ctf = session.query(GameMode).get('ctf')
         r.game_mode_name = 'ctf'
@@ -146,37 +148,37 @@ class ManualEventHandler(BaseEventHandler):
 
     @requires_session
     def get_alias(self, name, session=None):
-        zdslog.debug('get_alias')
+        zdslog.debug("get_alias")
         if name not in self._aliases:
             alias = session.query(Alias).filter(Alias.name==name).first()
             if not alias:
                 alias = Alias()
                 alias.name = name
                 alias.ip_address = '255.255.255.255'
-                zdslog.debug('Persisting %s' % (alias))
+                zdslog.debug("Persisting %s" % (alias))
                 session.add(alias)
             self._aliases[name] = alias
-        zdslog.debug('Alias.id: %s' % (self._aliases[name].id))
+        zdslog.debug("Alias.id: %s" % (self._aliases[name].id))
         return self._aliases[name]
 
     @requires_session
     def get_weapon(self, name, session=None):
-        zdslog.debug('get_weapon')
+        zdslog.debug("get_weapon")
         if name not in self._weapons:
             self._weapons[name] = session.query(Weapon).get(name)
         return self._weapons[name]
 
     @requires_session
     def get_team_color(self, color, session=None):
-        zdslog.debug('get_team_color')
+        zdslog.debug("get_team_color")
         if color not in self._team_colors:
-            zdslog.debug('%s not in %s' % (color, self._team_colors))
+            zdslog.debug("%s not in %s" % (color, self._team_colors))
             try:
                 team_color = session.query(TeamColor).get(color)
             except NoResultFound:
                 team_color = TeamColor()
                 team_color.color = color
-                zdslog.debug('Persisting %s' % (team_color))
+                zdslog.debug("Persisting %s" % (team_color))
                 session.add(team_color)
             self._team_colors[color] = team_color
         return self._team_colors[color]
@@ -216,7 +218,7 @@ class ManualEventHandler(BaseEventHandler):
 
     @requires_session
     def handle_frag_event(self, event, session=None):
-        zdslog.debug('handle_frag_event')
+        zdslog.debug("handle_frag_event")
         weapon = self.get_weapon(event.data['weapon'], session=session)
         frag = Frag()
         frag.timestamp = event.dt
@@ -257,8 +259,8 @@ class ManualEventHandler(BaseEventHandler):
             frag.fragger = frag.fraggee
             frag.fragger_team_color = frag.fraggee_team_color
             frag.fragger_was_holding_flag = frag.fraggee_was_holding_flag
-        zdslog.debug('Fragger holding flag: %s' % (frag.fragger_was_holding_flag))
-        zdslog.debug('Fraggee holding flag: %s' % (frag.fraggee_was_holding_flag))
+        zdslog.debug("Fragger holding flag: %s" % (frag.fragger_was_holding_flag))
+        zdslog.debug("Fraggee holding flag: %s" % (frag.fraggee_was_holding_flag))
         session.add(frag)
         ###
         # session.merge(weapon)
@@ -271,7 +273,7 @@ class ManualEventHandler(BaseEventHandler):
 
     @requires_session
     def handle_flag_event(self, event, session=None):
-        zdslog.debug('handle_flag_event')
+        zdslog.debug("handle_flag_event")
         ###
         # flag_return
         # flag_touch
@@ -309,7 +311,7 @@ class ManualEventHandler(BaseEventHandler):
             )
             if event.type in ('flag_touch', 'flag_pick'):
                 self.add_runner(alias)
-            zdslog.debug('Persisting %s' % (stat))
+            zdslog.debug("Persisting %s" % (stat))
             zdslog.debug('Recording flag touch/pick by %s in round %s' % (
                 alias.id, self._current_round.id
             ))
@@ -333,28 +335,32 @@ class ManualEventHandler(BaseEventHandler):
             else:
                 stat.resulted_in_score = False
                 self._fragged_runners.add(alias)
-            zdslog.debug('Updating %s' % (stat))
+            zdslog.debug("Updating %s" % (stat))
             session.merge(stat)
 
     @requires_session
     def handle_join_event(self, event, session=None):
-        zdslog.debug('handle_join_event')
+        zdslog.debug("handle_join_event")
         alias = self.get_alias(event.data['player'], session=session)
         alias.color = event.data['team'].lower()
         if event.type == 'team_join':
             self._current_round.aliases.append(alias)
-            zdslog.debug('Updating %s' % (alias))
+            zdslog.debug("Updating %s" % (alias))
             session.merge(self._current_round)
 
     @requires_session
     def handle_command_event(self, event, session=None):
-        zdslog.debug('handle_command_event')
+        zdslog.debug("handle_command_event")
         if event.type == 'map_change':
             if self._current_round is not None:
                 self._current_round.end_time = event.dt
                 session.merge(self._current_round)
             self.reset()
-            self.setup_new_round(event.dt, event.data['name'], session=session)
+            try:
+                self.setup_new_round(event.dt, event.data['name'], session=session)
+            except:
+                print traceback.format_exc()
+                raise
 
     def handle_connection_event(self, event):
         pass
@@ -408,9 +414,9 @@ class ZServEventHandler(BaseEventHandler):
                                      acquire_lock=False)
         except PlayerNotFoundError:
             if event.type[0] in 'aeiou':
-                es = 'Received an %s event for non-existent player [%s]'
+                es = "Received an %s event for non-existent player [%s]"
             else:
-                es = 'Received a %s event for non-existent player [%s]'
+                es = "Received a %s event for non-existent player [%s]"
             zdslog.error(es % (event.type.replace('_', ' '), event.data[key]))
 
     @requires_session
@@ -426,13 +432,13 @@ class ZServEventHandler(BaseEventHandler):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('Adding common state to %s' % (model))
+        zdslog.debug("Adding common state to %s" % (model))
         model.round_id = zserv.round_id
         model.round = zserv.get_round(session=session)
-        zdslog.debug('Event category is %s' % (event.category))
-        zdslog.debug('Event type is %s' % (event.type))
+        zdslog.debug("Event category is %s" % (event.category))
+        zdslog.debug("Event type is %s" % (event.type))
         if event.category in ('frag', 'death'):
-            zdslog.debug('Handling a frag/death event')
+            zdslog.debug("Handling a frag/death event")
             fraggee = self._get_alias(event, 'fraggee', zserv, session=session)
             if not fraggee:
                 zdslog.debug("Couldn't find fraggee")
@@ -456,7 +462,7 @@ class ZServEventHandler(BaseEventHandler):
                 fragger = self._get_alias(event, 'fragger', zserv,
                                           session=session)
                 if not fragger:
-                    zdslog.debug("Couldn't find fraggee")
+                    zdslog.debug("Could find fraggee")
                     return
                 model.is_suicide = False
                 ###
@@ -484,7 +490,7 @@ class ZServEventHandler(BaseEventHandler):
             'flag_touch',
             'flag_return'
         ):
-            zdslog.debug('Handling an rcon or flag event')
+            zdslog.debug("Handling an rcon or flag event")
             alias = self._get_alias(event, 'player', zserv, session=session)
             if not alias:
                 return
@@ -510,12 +516,12 @@ class ZServEventHandler(BaseEventHandler):
             if event.type == 'rcon_action':
                 model.action = event.data['action']
         else:
-            zdslog.debug('Handling some other kind of event: %r' % (event))
+            zdslog.debug("Handling some other kind of event: %r" % (event))
         if event.type not in ('flag_touch', 'flag_pick'):
-            zdslog.debug('Setting timestamp of %s to %s' % (model, event.dt))
+            zdslog.debug("Setting timestamp of %s to %s" % (model, event.dt))
             model.timestamp = event.dt
         else:
-            zdslog.debug('Not setting timestamp of %s' % (model))
+            zdslog.debug("Not setting timestamp of %s" % (model))
         if event.category in ('frag', 'death') or \
            event.type in ('flag_pick', 'flag_touch', 'flag_return'):
             model.red_team_holding_flag = 'red' in zserv.teams_holding_flags
@@ -569,7 +575,7 @@ class ZServEventHandler(BaseEventHandler):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('handle_connection_event(%s)' % (event))
+        zdslog.debug("_sync_players(%s)" % (event))
         ###
         # Handled event types:
         #
@@ -597,7 +603,7 @@ class ZServEventHandler(BaseEventHandler):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('handle_game_join_event(%s)' % (event))
+        zdslog.debug("handle_game_join_event(%s)" % (event))
         ###
         # Here's an example of how 1.08.08 logs player connections in CTF:
         #
@@ -618,9 +624,9 @@ class ZServEventHandler(BaseEventHandler):
         # ------------------------------------------------------------
         #
         ###
-        zdslog.debug('Acquiring %s' % (zserv.players.lock))
+        zdslog.debug("Acquiring %s" % (zserv.players.lock))
         with zserv.players.lock:
-            zdslog.debug('Acquired %s' % (zserv.players.lock))
+            zdslog.debug("Acquired %s" % (zserv.players.lock))
             if event.type == 'team_switch':
                 zserv.players.sync(check_bans=True, acquire_lock=False,
                                    session=session)
@@ -654,7 +660,7 @@ class ZServEventHandler(BaseEventHandler):
                 round.aliases.append(player)
             session.merge(player)
             session.merge(round)
-        zdslog.debug('Released %s' % (zserv.players.lock))
+        zdslog.debug("Released %s" % (zserv.players.lock))
 
     @requires_session
     def handle_rcon_event(self, event, zserv, session=None):
@@ -675,13 +681,13 @@ class ZServEventHandler(BaseEventHandler):
             s = RCONAccess()
         elif event.type == 'rcon_action':
             s = RCONAction()
-        zdslog.debug('Acquiring %s' % (zserv.state_lock))
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
-            zdslog.debug('Acquired %s' % (zserv.state_lock))
-            zdslog.debug('Persisting [%s]' % (s))
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
+            zdslog.debug("Persisting [%s]" % (s))
             s = self._add_common_state(s, event, zserv, session=session)
             session.add(s)
-            zdslog.debug('Released %s' % (zserv.state_lock))
+            zdslog.debug("Released %s" % (zserv.state_lock))
 
     @requires_session
     def handle_flag_event(self, event, zserv, session=None):
@@ -695,15 +701,15 @@ class ZServEventHandler(BaseEventHandler):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('handle_flag_event(%s)' % (event))
+        zdslog.debug("handle_flag_event(%s)" % (event))
         if event.type == 'auto_flag_return':
             ###
             # Nothing really to be done here.
             ###
             return
-        zdslog.debug('Acquiring %s' % (zserv.state_lock))
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
-            zdslog.debug('Acquired %s' % (zserv.state_lock))
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
             if event.type in ('flag_cap', 'flag_loss'):
                 player = self._get_alias(event, 'player', zserv,
                                          session=session)
@@ -721,24 +727,24 @@ class ZServEventHandler(BaseEventHandler):
                 try:
                     zserv.players_holding_flags.remove(player)
                 except KeyError:
-                    ds = '%s not in %s'
+                    ds = "%s not in %s"
                     zdslog.error(ds % (player, zserv.players_holding_flags))
                 try:
                     zserv.teams_holding_flags.remove(player.color.lower())
                 except KeyError:
-                    ds = '%s not in %s'
+                    ds = "%s not in %s"
                     zdslog.error(ds % (player.color.lower(),
                                        zserv.teams_holding_flags))
                 if event.type == 'flag_cap':
                     stat.resulted_in_score = True
                     color = player.color.lower()
-                    ds = 'Player team score: %d'
+                    ds = "Player team score: %d"
                     zdslog.debug(ds % (zserv.team_scores[color]))
                     zserv.team_scores[color] += 1
                 else:
                     stat.resulted_in_score = False
                     zserv.fragged_runners.append(player)
-                zdslog.debug('Updating [%s]' % (stat))
+                zdslog.debug("Updating [%s]" % (stat))
                 session.merge(stat)
             elif event.type in ('flag_touch', 'flag_pick', 'flag_return'):
                 if event.type == 'flag_return':
@@ -747,11 +753,11 @@ class ZServEventHandler(BaseEventHandler):
                     stat = FlagTouch()
                 stat = self._add_common_state(stat, event, zserv,
                                               session=session)
-                zdslog.debug('Persisting[%s]' % (stat))
+                zdslog.debug("Persisting[%s]" % (stat))
                 session.add(stat)
             else:
-                zdslog.error('Unsupported event type: [%s]' % (event.type))
-        zdslog.debug('Released %s' % (zserv.state_lock))
+                zdslog.error("Unsupported event type: [%s]" % (event.type))
+        zdslog.debug("Released %s" % (zserv.state_lock))
 
     @requires_session
     def handle_frag_event(self, event, zserv, session=None):
@@ -765,19 +771,19 @@ class ZServEventHandler(BaseEventHandler):
         :type session: SQLAlchemy Session
 
         """
-        zdslog.debug('handle_frag_event(%s)' % (event))
-        zdslog.debug('Acquiring %s' % (zserv.state_lock))
+        zdslog.debug("handle_frag_event(%s)" % (event))
+        zdslog.debug("Acquiring %s" % (zserv.state_lock))
         with zserv.state_lock:
-            zdslog.debug('Acquired %s' % (zserv.state_lock))
-            zdslog.debug('Persisting Frag')
+            zdslog.debug("Acquired %s" % (zserv.state_lock))
+            zdslog.debug("Persisting Frag")
             frag = self._add_common_state(Frag(), event, zserv, session=session)
             if frag:
                 session.add(frag)
             else:
-                es = 'Something horrible happened in _add_common_state'
+                es = "Something horrible happened in _add_common_state"
                 zdslog.error(es)
-            zdslog.debug('Done!')
-        zdslog.debug('Released %s' % (zserv.state_lock))
+            zdslog.debug("Done!")
+        zdslog.debug("Released %s" % (zserv.state_lock))
 
     def handle_map_change_event(self, event, zserv):
         """Handles a map_change event.
@@ -790,7 +796,7 @@ class ZServEventHandler(BaseEventHandler):
         """
         if not event.type == 'map_change':
             return
-        zdslog.debug('handle_map_change_event(%s)' % (event))
+        zdslog.debug("handle_map_change_event(%s)" % (event))
         zserv.change_map(event.data['number'], event.data['name'])
 
     @requires_session

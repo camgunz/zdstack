@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
-import os, sys, time, signal, threading
+import os
+import sys
+import json
+import time
+import getopt
+import signal
+import datetime
+import threading
 
 if os.name == 'nt':
     SIGNALS = (signal.SIGBREAK, signal.SIGINT, signal.SIGILL, signal.SIGTERM)
@@ -8,11 +15,12 @@ else:
     SIGNALS = (signal.SIGQUIT, signal.SIGTERM)
 
 from ZDStack import get_json_module
-from ZDStack.Utils import get_event_from_line, resolve_path
+from ZDStack.Utils import get_event_from_line, resolve_path, \
+                          timedelta_in_seconds
 from ZDStack.ZDSRegexps import get_client_regexps
 
 DEBUGGING = False
-MAX_IDLE = 10
+MAX_IDLE = 30
 
 SHOULD_QUIT = False
 INPUT_FILE, OUTPUT_FILE = (None, None)
@@ -32,7 +40,7 @@ def handle_signal(signum, frame):
         quit()
 
 def quit():
-    OUTPUT_FILE.write('\n]}')
+    OUTPUT_FILE.write('\n]}\n')
     OUTPUT_FILE.close()
     sys.exit(0)
 
@@ -90,10 +98,11 @@ def main(zd_fifoname, output_filename):
     json = get_json_module()
     INPUT_FILE = InputFile(zd_fifoname)
     OUTPUT_FILE = OutputFile(output_filename)
-    # OUTPUT_FILE.write('# -*- coding: latin-1 -*-\n')
-    OUTPUT_FILE.write('{"events" = [\n')
+    OUTPUT_FILE.write('{"events": [\n')
     timer = IdleTimer(MAX_IDLE)
     regexps = get_client_regexps()
+    epoch = datetime.datetime(1970, 1, 1)
+    first_event = True
     while 1:
         if SHOULD_QUIT:
             quit()
@@ -104,17 +113,23 @@ def main(zd_fifoname, output_filename):
             timer.start()
             continue
         timer.stop()
-        # OUTPUT_FILE.write('# ' + line + '\n')
         e = get_event_from_line(line, regexps)
         if e and (e.category != 'command' or e.type == 'map_change'):
+            td = e.dt - epoch
+            ts = '%s.%s' % (timedelta_in_seconds(td), td.microseconds)
             json_string = json.dumps(dict(
-                timestamp=e.dt,
+                timestamp=ts,
                 type=e.type,
                 data=e.data,
                 category=e.category
             ))
             debug(json_string)
-            OUTPUT_FILE.write(', '.join((json_string, '\n')))
+            if first_event:
+                first_event = False
+            else:
+                OUTPUT_FILE.write(',\n')
+            OUTPUT_FILE.write('    ')
+            OUTPUT_FILE.write(json_string)
 
 if __name__ == "__main__":
     if not len(sys.argv) == 3:
